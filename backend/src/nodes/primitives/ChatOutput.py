@@ -1,14 +1,14 @@
 from src.nodes.NodeBase import Node, NodeSpec
 
-class ChatInput(Node):
+class ChatOutput(Node):
 
     spec: NodeSpec = NodeSpec(
-        name="Chat Input",
-        description="A node that accepts user input and returns a message.",
+        name="Chat Output",
+        description="A node that output a message.",
         inputs={"message": str},
-        outputs={"message": str},
+        outputs={},
         parameters={},
     )
-
+    
     def run(self, **inputs):
         return inputs["message"]
