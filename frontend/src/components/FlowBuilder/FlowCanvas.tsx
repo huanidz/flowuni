@@ -12,6 +12,7 @@ import {
   ReactFlowProvider,
 } from '@xyflow/react';
 import type { Edge, Node, Connection, ReactFlowInstance } from '@xyflow/react';
+import { Handle, Position } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import type { FlowBuilderContentProps } from '@/types/FlowBuilderType';
 
@@ -50,23 +51,18 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
       const y = event.clientY - bounds.top;
       const position = reactFlowInstance.screenToFlowPosition({ x, y });
 
-      const newNode: Node = {
-        id: `node_${nodeId}`,
-        type: type === 'start' ? 'input' : type === 'end' ? 'output' : 'default',
+      const customNode: Node = {
+        id: 'nodeId_' + nodeId,
+        type,
         position,
-        data: {
-          label:
-            type === 'start'
-              ? 'Start'
-              : type === 'end'
-              ? 'End'
-              : type === 'process'
-              ? 'Process'
-              : 'Decision',
-        },
+        data: { label: 'New Node' },
+        style: { background: '#fff', color: '#000' },
+        selected: true,
+        sourcePosition: Position.Right,
+        targetPosition: Position.Left,
       };
 
-      setNodes((nds) => [...nds, newNode]);
+      setNodes((nds) => [...nds, customNode]);
       setNodeId((id) => id + 1);
     },
     [nodeId, reactFlowInstance, setNodes]

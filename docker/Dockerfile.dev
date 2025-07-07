@@ -1,0 +1,16 @@
+# Backend stage
+FROM python:3.11-slim AS backend-build
+COPY backend/ /app/backend/
+WORKDIR /app/backend
+RUN python generate_catalog.py --output /shared/nodes-catalog.json
+
+# Frontend stage  
+FROM node:18 AS frontend-build
+COPY --from=backend-build /shared/nodes-catalog.json /app/frontend/public/
+COPY frontend/ /app/frontend/
+WORKDIR /app/frontend
+RUN npm install && npm run build
+
+# Final stage
+FROM nginx
+COPY --from=frontend-build /app/frontend/dist /usr/share/nginx/html

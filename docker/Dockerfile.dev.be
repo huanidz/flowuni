@@ -22,5 +22,4 @@ COPY . .
 
 EXPOSE 5001
 
-# CMD ["sh", "-c", "alembic upgrade head && uvicorn src.main:app --host 0.0.0.0 --port 5001 --reload"]
-CMD ["sh", "-c", "uvicorn src.main:app --host 0.0.0.0 --port 5001 --reload"]
+CMD ["sh", "-c", "alembic upgrade head && uvicorn src.main:app --host 0.0.0.0 --port 5001 --reload"]
