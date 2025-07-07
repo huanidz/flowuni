@@ -2,6 +2,7 @@
 
 interface NodeSpec {
   name: string;
+  description?: string; // Add this line
   inputs: Record<string, string>; // port name -> type
   outputs: Record<string, string>; // port name -> type
   parameters: Record<string, any>; // parameter name -> value/type (customize as needed)
