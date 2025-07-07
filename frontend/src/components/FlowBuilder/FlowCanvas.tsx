@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import FlowToolbar from './FlowToolBar';
 import NodePalette from './FlowNodePallete';
 import {
@@ -15,6 +15,8 @@ import type { Edge, Node, Connection, ReactFlowInstance } from '@xyflow/react';
 import { Handle, Position } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import type { FlowBuilderContentProps } from '@/types/FlowBuilderType';
+import nodeRegistry from '@/parsers/NodeRegistry';
+import { NodeFactory } from '@/parsers/NodeFactory';
 
 const initialNodes: Node[] = [];
 const initialEdges: Edge[] = [];
@@ -26,6 +28,27 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [nodeId, setNodeId] = useState(1);
+  const [nodeTypes, setNodeTypes] = useState({});
+
+  useEffect(() => {
+      const loadNodes = async () => {
+          try {
+              await nodeRegistry.loadCatalog();
+              const allNodes = nodeRegistry.getAllNodes();
+              const customNodeTypes: { [key: string]: React.FC<any> } = {};
+              allNodes.forEach(nodeSpec => {
+                  const CustomNodeComponent = NodeFactory.createNodeComponent(nodeSpec.name);
+                  if (CustomNodeComponent) {
+                      customNodeTypes[nodeSpec.name] = CustomNodeComponent;
+                  }
+              });
+              setNodeTypes(customNodeTypes);
+          } catch (error) {
+              console.error("Failed to load node catalog or create node components:", error);
+          }
+      };
+      loadNodes();
+  }, []);
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
@@ -51,11 +74,23 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
       const y = event.clientY - bounds.top;
       const position = reactFlowInstance.screenToFlowPosition({ x, y });
 
+      const nodeSpec = nodeRegistry.getNode(type);
+      if (!nodeSpec) {
+          console.error(`Node type "${type}" not found in registry.`);
+          return;
+      }
+
       const customNode: Node = {
         id: 'nodeId_' + nodeId,
-        type,
+        type, // This 'type' now directly corresponds to the node name from the catalog
         position,
-        data: { label: 'New Node' },
+        data: {
+            label: nodeSpec.name,
+            nodeType: nodeSpec.name,
+            parameters: Object.fromEntries(
+                Object.entries(nodeSpec.parameters).map(([key, paramSpec]) => [key, (paramSpec as any).default])
+            )
+        },
         style: { background: '#fff', color: '#000' },
         selected: true,
         sourcePosition: Position.Right,
@@ -109,6 +144,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
           minZoom={1}
           maxZoom={2}
           className="bg-gray-50"
+          nodeTypes={nodeTypes}
         >
           <Controls />
           <Background variant={BackgroundVariant.Dots} gap={12} size={1} />

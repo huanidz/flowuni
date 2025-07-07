@@ -111,4 +111,4 @@ class NodeFactoryClass {
 }
 
 // Export the class as a constant
-export const NodeFactory = NodeFactoryClass;
+export const NodeFactory = new NodeFactoryClass();

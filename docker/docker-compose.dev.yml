@@ -6,6 +6,7 @@ services:
     volumes:
       - ../backend/src:/app/src
       - ../backend/alembic:/app/alembic
+      - ../backend/public:/app/public
     env_file:
       - ../.env
     ports:
