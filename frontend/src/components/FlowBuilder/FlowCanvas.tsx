@@ -10,9 +10,8 @@ import {
   addEdge,
   BackgroundVariant,
   ReactFlowProvider,
-  ReactFlowInstance,
 } from '@xyflow/react';
-import type { Edge, Node, Connection } from '@xyflow/react';
+import type { Edge, Node, Connection, ReactFlowInstance } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import type { FlowBuilderContentProps } from '@/types/FlowBuilderType';
 
@@ -49,7 +48,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
       const bounds = (event.currentTarget as HTMLDivElement).getBoundingClientRect();
       const x = event.clientX - bounds.left;
       const y = event.clientY - bounds.top;
-      const position = reactFlowInstance.project({ x, y });
+      const position = reactFlowInstance.screenToFlowPosition({ x, y });
 
       const newNode: Node = {
         id: `node_${nodeId}`,
@@ -111,7 +110,6 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onInit={onInit}
-          fitView
           minZoom={1}
           maxZoom={2}
           className="bg-gray-50"
