@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import FlowToolbar from './FlowToolBar';
 import NodePalette from './FlowNodePallete';
 import {
@@ -9,25 +9,23 @@ import {
   useEdgesState,
   addEdge,
   BackgroundVariant,
-  ReactFlowProvider
+  ReactFlowProvider,
+  ReactFlowInstance,
 } from '@xyflow/react';
 import type { Edge, Node, Connection } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import type { FlowBuilderContentProps } from '@/types/FlowBuilderType';
 
-
-// ============================================================================================================
-
 const initialNodes: Node[] = [];
 const initialEdges: Edge[] = [];
 
-
-
 const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
+  const reactFlowWrapper = useRef<HTMLDivElement>(null);
+  const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-  const [nodeId, setNodeId] = useState(5);
+  const [nodeId, setNodeId] = useState(1);
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
@@ -40,49 +38,53 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
   };
 
   const onDrop = useCallback(
-    (event: React.DragEvent) => {
+    (event: React.DragEvent<HTMLDivElement>) => {
       event.preventDefault();
+      if (!reactFlowWrapper.current || !reactFlowInstance) return;
 
       const type = event.dataTransfer.getData('application/reactflow');
-      if (typeof type === 'undefined' || !type) return;
+      if (!type) return;
 
-      const reactFlowBounds = (event.target as Element).getBoundingClientRect();
-      const position = {
-        x: event.clientX - reactFlowBounds.left,
-        y: event.clientY - reactFlowBounds.top,
-      };
+      // Use currentTarget to ensure we get wrapper bounds
+      const bounds = (event.currentTarget as HTMLDivElement).getBoundingClientRect();
+      const x = event.clientX - bounds.left;
+      const y = event.clientY - bounds.top;
+      const position = reactFlowInstance.project({ x, y });
 
       const newNode: Node = {
         id: `node_${nodeId}`,
         type: type === 'start' ? 'input' : type === 'end' ? 'output' : 'default',
         position,
-        data: { 
-          label: type === 'start' ? 'Start' : 
-                type === 'end' ? 'End' : 
-                type === 'process' ? 'Process' : 
-                'Decision' 
+        data: {
+          label:
+            type === 'start'
+              ? 'Start'
+              : type === 'end'
+              ? 'End'
+              : type === 'process'
+              ? 'Process'
+              : 'Decision',
         },
       };
 
-      setNodes((nds) => nds.concat(newNode));
+      setNodes((nds) => [...nds, newNode]);
       setNodeId((id) => id + 1);
     },
-    [nodeId, setNodes]
+    [nodeId, reactFlowInstance, setNodes]
   );
 
-  const onDragOver = useCallback((event: React.DragEvent) => {
+  const onDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
   }, []);
 
+  const onInit = useCallback((instance: ReactFlowInstance) => {
+    setReactFlowInstance(instance);
+  }, []);
+
   const onRunFlow = () => {
-    // Simple flow execution - just highlight connected nodes
-    console.log('Running flow...');
-    console.log('Nodes:', nodes);
-    console.log('Edges:', edges);
-    
-    // You can add flow execution logic here
-    alert('Flow executed! Check console for flow data.');
+    console.log('Running flow...', nodes, edges);
+    alert('Flow executed! Check console for data.');
   };
 
   const onClearFlow = () => {
@@ -92,39 +94,40 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
   };
 
   return (
-    <React.Fragment>
-      <div className="w-full h-screen bg-gray-100">
-        <div className="relative w-full h-full">
-          <NodePalette onDragStart={onDragStart} />
-          <FlowToolbar onRun={onRunFlow} onClear={onClearFlow} />
-          
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            onDrop={onDrop}
-            onDragOver={onDragOver}
-            fitView
-            minZoom={1}
-            maxZoom={2}
-            className="bg-gray-50"
-          >
-            <Controls />
-            <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
-          </ReactFlow>
-        </div>
+    <div className="w-full h-screen bg-gray-100">
+      <div
+        className="relative w-full h-full"
+        ref={reactFlowWrapper}
+        onDrop={onDrop}
+        onDragOver={onDragOver}
+      >
+        <NodePalette onDragStart={onDragStart} />
+        <FlowToolbar onRun={onRunFlow} onClear={onClearFlow} />
+
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
+          onInit={onInit}
+          fitView
+          minZoom={1}
+          maxZoom={2}
+          className="bg-gray-50"
+        >
+          <Controls />
+          <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
+        </ReactFlow>
       </div>
-    </React.Fragment>
+    </div>
   );
 };
 
 export default function FlowBuilder() {
-  
   return (
     <ReactFlowProvider>
-      <FlowBuilderContent flow_id='template'/>    
+      <FlowBuilderContent flow_id="template" />
     </ReactFlowProvider>
   );
 }
