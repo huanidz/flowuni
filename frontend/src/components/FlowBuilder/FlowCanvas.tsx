@@ -9,18 +9,22 @@ import {
   useEdgesState,
   addEdge,
   BackgroundVariant,
+  ReactFlowProvider
 } from '@xyflow/react';
 import type { Edge, Node, Connection } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import type { FlowBuilderContentProps } from '@/types/FlowBuilderType';
 
-// Initial nodes
+
+// ============================================================================================================
+
 const initialNodes: Node[] = [];
-
-// Initial edges
 const initialEdges: Edge[] = [];
 
-export default function FlowBuilder() {
-  
+
+
+const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
+
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [nodeId, setNodeId] = useState(5);
@@ -88,26 +92,39 @@ export default function FlowBuilder() {
   };
 
   return (
-    <div className="w-full h-screen bg-gray-100">
-      <div className="relative w-full h-full">
-        <NodePalette onDragStart={onDragStart} />
-        <FlowToolbar onRun={onRunFlow} onClear={onClearFlow} />
-        
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
-          onDrop={onDrop}
-          onDragOver={onDragOver}
-          fitView
-          className="bg-gray-50"
-        >
-          <Controls />
-          <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
-        </ReactFlow>
+    <React.Fragment>
+      <div className="w-full h-screen bg-gray-100">
+        <div className="relative w-full h-full">
+          <NodePalette onDragStart={onDragStart} />
+          <FlowToolbar onRun={onRunFlow} onClear={onClearFlow} />
+          
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            onDrop={onDrop}
+            onDragOver={onDragOver}
+            fitView
+            minZoom={1}
+            maxZoom={2}
+            className="bg-gray-50"
+          >
+            <Controls />
+            <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
+          </ReactFlow>
+        </div>
       </div>
-    </div>
+    </React.Fragment>
+  );
+};
+
+export default function FlowBuilder() {
+  
+  return (
+    <ReactFlowProvider>
+      <FlowBuilderContent flow_id='template'/>    
+    </ReactFlowProvider>
   );
 }
