@@ -1,7 +1,27 @@
+from typing import Optional
+
 from loguru import logger
 import sys
 
-def setup_logger(level="INFO"):
+from .config import get_settings
+
+def setup_logger(level: Optional[str] = None):
+    """
+    Set up the application logger with the specified logging level.
+
+    Args:
+        level: The logging level to use. If not provided, uses the level from settings.
+    """
+    settings = get_settings()
+
+    # Use the setting's log level if none is provided
+    log_level = level or settings.LOG_LEVEL
+
     logger.remove()
-    logger.add(sys.stdout, level=level, backtrace=True, diagnose=True)
-    logger.info(f"Logging level set to {level}")
+    logger.add(
+        sys.stdout,
+        level=log_level,
+        backtrace=settings.LOG_BACKTRACE,
+        diagnose=True
+    )
+    logger.info(f"Logging configured with level: {log_level}, backtrace: {settings.LOG_BACKTRACE}")

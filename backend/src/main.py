@@ -5,10 +5,11 @@ from fastapi.middleware.gzip import GZipMiddleware
 from src.scripts.generate_node_catalog import generate_node_catalog_json
 
 from src.configs.config import get_settings
+from src.configs.LoggingConfig import setup_logger
 
-from loguru import logger
-
+# Get application settings and set up logging
 app_settings = get_settings()
+setup_logger(app_settings.LOG_LEVEL)
 
 generate_node_catalog_json(output_path=app_settings.BACKEND_GENERATED_NODE_CATALOG_JSON_PATH)
 
