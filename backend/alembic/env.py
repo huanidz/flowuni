@@ -5,9 +5,27 @@ from sqlalchemy import pool
 
 from alembic import context
 
+import os
+from dotenv import load_dotenv
+
+from loguru import logger
+
+# Load dotenv, only used in development
+load_dotenv()
+
+DATABASE_URL = os.getenv("DATABASE_URL") # This is async version (alemic not support asyncpg)
+
+DATABASE_URL = DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://") # This is sync version
+
+logger.info("Replacing asyncpg with sync version. DATABASE_URL: ", DATABASE_URL)
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
+config.set_main_option("sqlalchemy.url", DATABASE_URL)
+
+from src.models.alchemy.AppBaseModel import AppBaseModel
+logger.info("Linked models: ", AppBaseModel.metadata.tables.keys())
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
@@ -18,7 +36,7 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-target_metadata = None
+target_metadata = AppBaseModel.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
@@ -65,7 +83,7 @@ def run_migrations_online() -> None:
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            connection=connection, target_metadata=target_metadata,
         )
 
         with context.begin_transaction():
@@ -73,6 +91,8 @@ def run_migrations_online() -> None:
 
 
 if context.is_offline_mode():
+    logger.info("Running migrations offline")
     run_migrations_offline()
 else:
+    logger.info("Running migrations online")
     run_migrations_online()

@@ -1,13 +1,13 @@
 services:
   app:
     build: 
-      context: .
-      dockerfile: Dockerfile.dev.be
+      context: ..
+      dockerfile: docker/Dockerfile.dev.be
     volumes:
       - ../backend/src:/app/src
       - ../backend/alembic:/app/alembic
     env_file:
-      - .env
+      - ../.env
     ports:
       - "5001:5001"
     depends_on:
@@ -15,9 +15,9 @@ services:
         condition: service_healthy
 
   db_service:
-    image: huanidz/pgvector_pgsearch:pg16
+    image: postgres:16
     env_file:
-      - .env
+      - ../.env
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 3s

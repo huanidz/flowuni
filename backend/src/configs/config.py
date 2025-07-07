@@ -18,18 +18,14 @@ class Settings(BaseSettings):
     LOG_FILENAME: str
     LOG_LEVEL: str
     LOG_BACKTRACE: bool
+
+    BACKEND_GENERATED_NODE_CATALOG_JSON_PATH: str
     
     @field_validator("ENVIRONMENT")
     def validate_environment(cls, v):
         allowed = ["development", "testing", "production"]
         if v not in allowed:
             raise ValueError(f"Environment must be one of {allowed}")
-        return v
-
-    @field_validator("VERTEX_AI_SERVICE_ACCOUNT_CREDENTIALS")
-    def validate_credentials_path(cls, v):
-        if not os.path.exists(v):
-            raise ValueError(f"Credentials file not found at: {v}")
         return v
 
     class Config:
