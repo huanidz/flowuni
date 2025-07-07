@@ -1,0 +1,1 @@
+docker exec -it piscale-law-qa-refractored-app-1 bash

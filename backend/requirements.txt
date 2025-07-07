@@ -1,0 +1,18 @@
+fastapi[standard]
+uvicorn==0.34.0
+pydantic==2.10.6
+redis==5.2.1
+asyncpg==0.30.0
+requests==2.32.3
+alembic==1.14.1
+loguru==0.7.3
+python-dotenv==1.0.1
+pydantic-settings==2.7.1
+
+# Database
+sqlalchemy==2.0.38
+psycopg2-binary==2.9.10
+asyncpg
+
+# Others
+natsort==8.4.0

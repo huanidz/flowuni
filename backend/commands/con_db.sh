@@ -1,0 +1,1 @@
+docker exec -it piscale-law-qa-refractored-db_service-1 psql -U postgres -d law-qa-refractored-db
