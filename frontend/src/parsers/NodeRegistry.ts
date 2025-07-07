@@ -25,6 +25,7 @@ class NodeRegistry {
 
       this.loaded = true;
       console.log(`Loaded ${this.nodes.size} node types`);
+      console.log(this.nodes);
     } catch (error) {
       console.error('Failed to load node catalog:', error);
       throw error;

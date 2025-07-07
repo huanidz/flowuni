@@ -92,10 +92,11 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
             )
         },
         style: { background: '#fff', color: '#000' },
-        selected: true,
         sourcePosition: Position.Right,
         targetPosition: Position.Left,
       };
+
+      console.log(customNode);
 
       setNodes((nds) => [...nds, customNode]);
       setNodeId((id) => id + 1);
