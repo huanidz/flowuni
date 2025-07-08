@@ -33,6 +33,22 @@ export const useDragDropHandler = (
         return;
       }
 
+      // Initialize parameters with default values
+      const initialParameters = Object.fromEntries(
+        Object.entries(nodeSpec.parameters).map(([key, paramSpec]) => [
+          key,
+          (paramSpec as any).default || ""
+        ])
+      );
+
+      // Initialize input values with default values
+      const initialInputValues = Object.fromEntries(
+        nodeSpec.inputs.map((input) => [
+          input.name,
+          input.default || ""
+        ])
+      );
+
       const customNode: Node = {
         id: `nodeId_${type}_${nodeId}`,
         type,
@@ -40,19 +56,15 @@ export const useDragDropHandler = (
         data: {
           label: nodeSpec.name,
           nodeType: nodeSpec.name,
-          parameters: Object.fromEntries(
-            Object.entries(nodeSpec.parameters).map(([key, paramSpec]) => [
-              key, 
-              (paramSpec as any).default
-            ])
-          )
+          parameters: initialParameters,
+          inputValues: initialInputValues
         },
         style: { background: '#fff', color: '#000' },
         sourcePosition: Position.Right,
         targetPosition: Position.Left,
       };
 
-      console.log('Dropped node:', customNode);
+      console.log('Dropped node with data:', customNode);
       setNodes((nds) => [...nds, customNode]);
       setNodeId((id) => id + 1);
     },

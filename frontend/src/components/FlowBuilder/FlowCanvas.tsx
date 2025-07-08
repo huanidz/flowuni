@@ -31,8 +31,40 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
   const [nodeId, setNodeId] = useState(1);
   const [nodeTypes, setNodeTypes] = useState({});
 
-  // Load node from catalog. This is code for the sidebar
-  useNodeTypes(setNodeTypes);
+  // Enhanced node data update function
+  const updateNodeData = useCallback((nodeId: string, newData: any) => {
+    setNodes((nds) =>
+      nds.map((node) =>
+        node.id === nodeId
+          ? { ...node, data: { ...node.data, ...newData } }
+          : node
+      )
+    );
+  }, [setNodes]);
+
+  // Enhanced node parameter update function
+  const updateNodeParameter = useCallback((nodeId: string, parameterName: string, value: any) => {
+    setNodes((nds) =>
+      nds.map((node) =>
+        node.id === nodeId
+          ? {
+              ...node,
+              data: {
+                ...node.data,
+                parameters: {
+                  ...node.data.parameters,
+                  [parameterName]: value
+                }
+              }
+            }
+          : node
+      )
+    );
+  }, [setNodes]);
+
+  // Create node types with update functions
+  useNodeTypes(setNodeTypes, updateNodeData, updateNodeParameter);
+  
   const { onDragStart, onDrop, onDragOver } = useDragDropHandler(reactFlowInstance, nodeId, setNodes, setNodeId);
   const { onCompileFlow, onRunFlow, onClearFlow } = useFlowActions(nodes, edges, setNodes, setEdges, setNodeId);
 
@@ -50,7 +82,6 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
   const onInit = useCallback((instance: ReactFlowInstance) => {
     setReactFlowInstance(instance);
   }, []);
-
 
   return (
     <div className="w-full h-screen bg-gray-100">

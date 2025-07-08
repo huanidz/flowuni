@@ -2,12 +2,16 @@ import { useCallback } from 'react';
 import type { Node, Edge } from '@xyflow/react';
 import axios from 'axios';
 
-// Helper function to prepare the data payload
 const get_flow_graph_data = (nodes: Node[], edges: Edge[]) => {
     const flow_graph_data = {
-        nodes: nodes.map(({ id, type, position, data }) => ({ id, type, position, data })),
+        nodes: nodes.map(({ id, type, position, data }) => {
+            console.log(`Node ${id} data:`, data);
+            return { id, type, position, data };
+        }),
         edges: edges.map(({ id, source, target, sourceHandle, targetHandle }) => ({ id, source, target, sourceHandle, targetHandle })),
     };
+    
+    console.log('Complete flow graph data:', JSON.stringify(flow_graph_data, null, 2));
     return flow_graph_data;
 };
 
@@ -20,26 +24,35 @@ export const useFlowActions = (
 ) => {
 
     const onCompileFlow = useCallback(async () => {
+        console.log('=== COMPILATION START ===');
+        console.log('Raw nodes:', nodes);
+        console.log('Raw edges:', edges);
+        
         const flow_graph_data = get_flow_graph_data(nodes, edges);
         console.log('Compiling flow with payload:', flow_graph_data);
 
-        try {
-            // 👇 Send a POST request to the backend
-            const response = await axios.post('http://localhost:5002/api/flow_execution/compile', flow_graph_data);
-            
-            console.log('Compilation successful:', response.data);
-            // You can add further logic here, like showing a success notification
-            // alert(`Compilation successful: ${response.data.message}`);
+        // Check each node's data structure
+        nodes.forEach((node, index) => {
+            console.log(`Node ${index} (${node.id}):`, {
+                type: node.type,
+                parameters: node.data.parameters,
+                inputValues: node.data.inputValues,
+                fullData: node.data
+            });
+        });
 
+        try {
+            const response = await axios.post('http://localhost:5002/api/flow_execution/compile', flow_graph_data);
+            console.log('Compilation successful:', response.data);
         } catch (error) {
             console.error('Error compiling flow:', error);
             if (axios.isAxiosError(error)) {
-                // Access more specific error information
                 console.error('Server responded with:', error.response?.data);
             }
-             // You can add further logic here, like showing an error notification
         }
-    }, [nodes, edges]); // Dependencies remain the same
+        
+        console.log('=== COMPILATION END ===');
+    }, [nodes, edges]);
 
     const onRunFlow = useCallback(() => {
         const flowExport = get_flow_graph_data(nodes, edges);

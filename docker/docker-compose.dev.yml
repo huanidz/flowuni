@@ -25,7 +25,7 @@ services:
       timeout: 3s
       retries: 3
     ports:
-      - "5411:5432"
+      - "5422:5432"
     volumes:
       - ./postgres_data:/var/lib/postgresql/data
     restart: always
