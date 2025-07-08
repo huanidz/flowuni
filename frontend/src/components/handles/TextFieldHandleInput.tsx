@@ -14,21 +14,28 @@ export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
   onChange,
 }) => {
   return (
-    <div>
-      <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px' }}>
+    <div style={{ display: "flex", flexDirection: "column", fontSize: "12px", width: "100%" }}>
+      <div style={{ marginBottom: "2px", color: "#333" }}>
         {label}
         {description && (
-          <span style={{ color: '#666', fontSize: '10px' }}>
-            {' '}({description})
+          <span style={{ color: "#888", fontSize: "11px", marginLeft: "6px" }}>
+            ({description})
           </span>
         )}
-      </label>
+      </div>
       <input
         type="text"
         value={value}
         onChange={(e) => onChange?.(e.target.value)}
         className="nodrag"
-        style={{ width: '90%', padding: '4px' }}
+        style={{
+          padding: "4px 6px",
+          fontSize: "12px",
+          border: "1px solid #ccc",
+          borderRadius: "4px",
+          width: "100%",
+          boxSizing: "border-box",
+        }}
       />
     </div>
   );
