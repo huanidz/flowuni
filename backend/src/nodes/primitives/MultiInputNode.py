@@ -6,11 +6,11 @@ class MultiInputNode(Node):
         name="Multiple Inputs Node",
         description="A node that accepts user input and returns a message.",
         inputs=[
-            NodeInput(type=str, description="The first input."),
-            NodeInput(type=int, description="The second input.")
+            NodeInput(name="string_in", type=str, description="The first input."),
+            NodeInput(name="int_in", type=int, description="The second input.")
         ],
         outputs=[
-            NodeOutput(type=str, description="The output.")
+            NodeOutput(name="message_out", type=str, description="The output.")
         ],
         parameters={},
     )

@@ -8,12 +8,14 @@ from pydantic import BaseModel
 
 class ParameterSpec(BaseModel):
     """Describe a single node‑parameter: its type, default value, and description."""
+    name: str
     type: Type
     default: Any
     description: str = ""
 
 class NodeInput(BaseModel):
     """Describe a single node‑input: its type, default value, and description."""
+    name: str
     type: Type
     default: Optional[Any] = None
     description: str = ""
@@ -21,6 +23,7 @@ class NodeInput(BaseModel):
 
 class NodeOutput(BaseModel):
     """Describe a single node‑output: its type, default value, and description."""
+    name: str
     type: Type
     default: Optional[Any] = None
     description: str = ""
@@ -66,6 +69,7 @@ class Node(ABC):
         serialized_inputs = []
         for input_spec in self.spec.inputs:
             serialized_inputs.append({
+                "name": input_spec.name,
                 "type": _serialize_type(input_spec.type),
                 "default": input_spec.default,
                 "description": input_spec.description,
@@ -77,6 +81,7 @@ class Node(ABC):
         serialized_outputs = []
         for output_spec in self.spec.outputs:
             serialized_outputs.append({
+                "name": output_spec.name,
                 "type": _serialize_type(output_spec.type),
                 "default": output_spec.default,
                 "description": output_spec.description
@@ -87,6 +92,7 @@ class Node(ABC):
         params = {}
         for name, p in self.spec.parameters.items():
             params[name] = {
+                "name": p.name,
                 "type": _serialize_type(p.type),
                 "default": p.default,
                 "description": p.description,

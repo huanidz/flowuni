@@ -6,7 +6,7 @@ class ChatOutput(Node):
         name="Chat Output",
         description="A node that output a message.",
         inputs=[
-            NodeInput(type=str, description="The message to be output.")
+            NodeInput(name="message_in", type=str, description="The message to be output.")
         ],
         outputs=[],
         parameters={},

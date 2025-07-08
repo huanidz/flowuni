@@ -38,6 +38,7 @@ def generate_node_catalog():
             logger.error(f"Error processing class {_class.__name__}: {e}. {traceback.format_exc()}")
 
     logger.debug(f"Generated catalog with {len(catalog)} nodes")
+    logger.debug(f"🔴==>> catalog: {catalog}")
     return catalog
 
 def generate_node_catalog_json(output_path: str):
@@ -70,6 +71,7 @@ class NodeMixin:
         serialized_inputs = []
         for input_spec in self.spec.inputs:
             serialized_inputs.append({
+                "name": input_spec.name,
                 "type": _serialize_type(input_spec.type),
                 "default": input_spec.default,
                 "description": input_spec.description,
@@ -81,6 +83,7 @@ class NodeMixin:
         serialized_outputs = []
         for output_spec in self.spec.outputs:
             serialized_outputs.append({
+                "name": output_spec.name,
                 "type": _serialize_type(output_spec.type),
                 "default": output_spec.default,
                 "description": output_spec.description
@@ -91,6 +94,7 @@ class NodeMixin:
         params = {}
         for name, p in self.spec.parameters.items():
             params[name] = {
+                "name": p.name,
                 "type": _serialize_type(p.type),
                 "default": p.default,
                 "description": p.description,

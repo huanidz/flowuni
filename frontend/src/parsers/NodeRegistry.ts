@@ -41,6 +41,8 @@ class NodeRegistry {
         validateStatus: (status) => status === 200 || status === 304
       });
 
+      console.log('Response:', response);
+
       if (response.status === 304) {
         console.log("Catalog not modified — using cached version");
         return;

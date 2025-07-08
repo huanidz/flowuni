@@ -3,6 +3,7 @@ import nodeRegistry from "./NodeRegistry";
 import { Handle, Position, type Node as RFNode, type NodeProps } from "@xyflow/react";
 
 interface NodeParameterSpec {
+  name: string;
   default: any;
   type?: string;
   description?: string;
@@ -10,6 +11,7 @@ interface NodeParameterSpec {
 }
 
 interface NodeInput {
+  name: string;
   type: string;
   default?: any;
   description?: string;
@@ -17,6 +19,7 @@ interface NodeInput {
 }
 
 interface NodeOutput {
+  name: string;
   type: string;
   default?: any;
   description?: string;
@@ -43,6 +46,8 @@ class NodeFactoryClass {
   // Create a ReactFlow node component for a given node type
   createNodeComponent(nodeType: string): React.FC<CustomNodeProps> | null {
     const nodeSpec = nodeRegistry.getNode(nodeType) as NodeSpec | undefined;
+
+    console.log('NodeSpec:', nodeSpec);
 
     if (!nodeSpec) {
       console.error(`Node type "${nodeType}" not found in registry`);
@@ -95,7 +100,7 @@ class NodeFactoryClass {
                   }}
                 />
                 <span style={{ marginLeft: '15px' }}>
-                  Input {index + 1} ({input.type})
+                  {input.name} {index + 1} ({input.type})
                   {input.required && <span style={{ color: 'red' }}>*</span>}
                 </span>
               </div>
@@ -163,7 +168,7 @@ class NodeFactoryClass {
                   }}
                 />
                 <span style={{ marginRight: '15px' }}>
-                  Output {index + 1} ({output.type})
+                  {output.name} {index + 1} ({output.type})
                 </span>
               </div>
             ))}
