@@ -43,12 +43,12 @@ class NodeFactoryClass {
         <div style={nodeStyles.container}>
           <NodeHeader label={label} description={description} />
           
-          {/* <ParametersSection
+          <ParametersSection
             parameters={nodeSpec.parameters}
             parameterValues={parameters}
             nodeId={id}
             onParameterChange={handleParameterChange}
-          /> */}
+          />
           
           <InputsSection
             inputs={nodeSpec.inputs}

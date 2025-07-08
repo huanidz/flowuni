@@ -99,7 +99,7 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
             <Handle
               type="target"
               position={Position.Left}
-              id={`input-${index}`}
+              id={`${input.name}-index:${index}`}
               style={nodeStyles.handle.input}
             />
 
@@ -144,7 +144,7 @@ export const OutputsSection: React.FC<OutputsSectionProps> = ({ outputs }) => {
           <Handle
             type="source"
             position={Position.Right}
-            id={`output-${index}`}
+            id={`${output.name}-index:${index}`}
             style={nodeStyles.handle.output}
           />
           <span style={nodeStyles.outputLabel}>

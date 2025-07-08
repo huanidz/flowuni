@@ -34,9 +34,7 @@ class NodeOutput(BaseModel):
 class NodeSpec(BaseModel):
     name: str
     description: str
-    # inputs: Dict[str, NodeInput]
     inputs: List[NodeInput]
-    # outputs: Dict[str, NodeOutput]
     outputs: List[NodeOutput]
     parameters: Dict[str, ParameterSpec]
 
