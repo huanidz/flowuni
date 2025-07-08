@@ -1,7 +1,8 @@
-from src.nodes.primitives import ChatInput, ChatOutput, MultiInputNode
+from src.nodes.primitives import ChatInput, ChatOutput, MultiInputNode, MultiOutputNode
 
 __all__ = [
     ChatInput, 
     ChatOutput,
-    MultiInputNode
+    MultiInputNode,
+    MultiOutputNode
 ]

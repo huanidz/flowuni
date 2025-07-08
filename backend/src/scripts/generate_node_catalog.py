@@ -38,7 +38,6 @@ def generate_node_catalog():
             logger.error(f"Error processing class {_class.__name__}: {e}. {traceback.format_exc()}")
 
     logger.debug(f"Generated catalog with {len(catalog)} nodes")
-    logger.debug(f"🔴==>> catalog: {catalog}")
     return catalog
 
 def generate_node_catalog_json(output_path: str):

@@ -1,6 +1,7 @@
 import React from "react";
 import nodeRegistry from "./NodeRegistry";
 import { Handle, Position, type Node as RFNode, type NodeProps } from "@xyflow/react";
+import { NodeInputType } from "@/types/NodeIOHandleType";
 
 interface NodeParameterSpec {
   name: string;
@@ -47,8 +48,6 @@ class NodeFactoryClass {
   createNodeComponent(nodeType: string): React.FC<CustomNodeProps> | null {
     const nodeSpec = nodeRegistry.getNode(nodeType) as NodeSpec | undefined;
 
-    console.log('NodeSpec:', nodeSpec);
-
     if (!nodeSpec) {
       console.error(`Node type "${nodeType}" not found in registry`);
       return null;
@@ -57,6 +56,8 @@ class NodeFactoryClass {
     const CustomNode: React.FC<CustomNodeProps> = ({ data, id }) => {
       const { label = nodeSpec.name, parameters = {} } = data;
 
+
+      // Only care about inputs and outputs. parameters will be handled by modal-toggle.
       return (
         <div style={{
             border: '1px solid #777',
@@ -105,42 +106,6 @@ class NodeFactoryClass {
                 </span>
               </div>
             ))}
-          </div>
-
-          {/* Render Parameter Controls */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '10px' }}>
-            {Object.entries(nodeSpec.parameters).map(([key, paramSpec]) => {
-              // Safe default value extraction
-              const getDefaultValue = (spec: NodeParameterSpec) => {
-                if (spec.default !== undefined && spec.default !== null) {
-                  // If it's an object, convert to string for display
-                  if (typeof spec.default === 'object') {
-                    return JSON.stringify(spec.default);
-                  }
-                  return spec.default;
-                }
-                return '';
-              };
-
-              return (
-                <div key={key}>
-                  <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px' }}>
-                    {key}
-                    {paramSpec.description && (
-                      <span style={{ color: '#666', fontSize: '10px' }}>
-                        {' '}({paramSpec.description})
-                      </span>
-                    )}
-                  </label>
-                  <input
-                    type={paramSpec.type || "text"}
-                    defaultValue={parameters[key] ?? getDefaultValue(paramSpec)}
-                    className="nodrag" // Prevents node dragging when interacting with the input
-                    style={{ width: '90%', padding: '4px' }}
-                  />
-                </div>
-              );
-            })}
           </div>
 
           {/* Render Output Handles */}
