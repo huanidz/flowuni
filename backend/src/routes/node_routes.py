@@ -10,12 +10,12 @@ from src.core.cache import generate_catalog_etag
 
 from loguru import logger
 
-router = APIRouter(
+node_router = APIRouter(
     prefix="/api/node",
     tags=["node"],
 )
 
-@router.get("/catalog", response_model=List[NodeSpec])
+@node_router.get("/catalog", response_model=List[NodeSpec])
 def get_catalog(request: Request):
     try:
         # Generate catalog in-memory

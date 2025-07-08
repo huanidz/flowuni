@@ -5,6 +5,8 @@ from fastapi.middleware.gzip import GZipMiddleware
 from src.configs.config import get_settings
 from src.configs.LoggingConfig import setup_logger
 
+from src.routes.node_routes import node_router
+
 # Get application settings and set up logging
 app_settings = get_settings()
 setup_logger(app_settings.LOG_LEVEL)
@@ -20,3 +22,4 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(GZipMiddleware, minimum_size=1000)
+app.include_router(node_router)
