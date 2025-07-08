@@ -10,6 +10,7 @@ class ParameterSpec(BaseModel):
     """Describe a single node‑parameter: its type, default value, and description."""
     name: str
     type: Type
+    value: Any
     default: Any
     description: str = ""
 
@@ -17,6 +18,7 @@ class NodeInput(BaseModel):
     """Describe a single node‑input: its type, default value, and description."""
     name: str
     type: Type
+    value: Optional[Any] = None
     default: Optional[Any] = None
     description: str = ""
     required: bool = False
@@ -25,6 +27,7 @@ class NodeOutput(BaseModel):
     """Describe a single node‑output: its type, default value, and description."""
     name: str
     type: Type
+    value: Optional[Any] = None
     default: Optional[Any] = None
     description: str = ""
 
@@ -71,6 +74,7 @@ class Node(ABC):
             serialized_inputs.append({
                 "name": input_spec.name,
                 "type": _serialize_type(input_spec.type),
+                "value": input_spec.value,
                 "default": input_spec.default,
                 "description": input_spec.description,
                 "required": input_spec.required
@@ -83,6 +87,7 @@ class Node(ABC):
             serialized_outputs.append({
                 "name": output_spec.name,
                 "type": _serialize_type(output_spec.type),
+                "value": input_spec.value,
                 "default": output_spec.default,
                 "description": output_spec.description
             })
@@ -94,6 +99,7 @@ class Node(ABC):
             params[name] = {
                 "name": p.name,
                 "type": _serialize_type(p.type),
+                "value": input_spec.value,
                 "default": p.default,
                 "description": p.description,
             }

@@ -6,6 +6,7 @@ import { HandleComponentRegistry } from "@/components/handles/HandleComponentReg
 
 interface NodeParameterSpec {
   name: string;
+  value: string;
   default: any;
   type?: string;
   description?: string;
@@ -15,6 +16,7 @@ interface NodeParameterSpec {
 interface NodeInput {
   name: string;
   type: string;
+  value?: string;
   default?: any;
   description?: string;
   required?: boolean;
@@ -23,6 +25,7 @@ interface NodeInput {
 interface NodeOutput {
   name: string;
   type: string;
+  value?: string;
   default?: any;
   description?: string;
 }
