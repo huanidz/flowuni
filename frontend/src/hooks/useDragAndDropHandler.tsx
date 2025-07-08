@@ -9,8 +9,8 @@ export const useDragDropHandler = (
   setNodes: (updater: (nodes: Node[]) => Node[]) => void,
   setNodeId: (updater: (id: number) => number) => void
 ) => {
-  const onDragStart = useCallback((event: React.DragEvent, nodeType: string) => {
-    event.dataTransfer.setData('application/reactflow', nodeType);
+  const onDragStart = useCallback((event: React.DragEvent, node_type: string) => {
+    event.dataTransfer.setData('application/reactflow', node_type);
     event.dataTransfer.effectAllowed = 'move';
   }, []);
 
@@ -55,9 +55,9 @@ export const useDragDropHandler = (
         position,
         data: {
           label: nodeSpec.name,
-          nodeType: nodeSpec.name,
+          node_type: nodeSpec.name,
           parameters: initialParameters,
-          inputValues: initialInputValues
+          input_values: initialInputValues
         },
         style: { background: '#fff', color: '#000' },
         sourcePosition: Position.Right,

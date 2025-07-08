@@ -10,7 +10,8 @@ class Position(BaseModel):
 class NodeData(BaseModel):
     """Represents metadata and parameters associated with a node."""
     label: Optional[str] = None
-    nodeType: str  # corresponds to 'nodeType' in JSON
+    node_type: str  # corresponds to 'node_type' in JSON
+    input_values: Optional[Dict[str, Any]] = None
     parameters: Dict[str, Any]  # consider replacing with a typed model if possible
 
 class FlowNode(BaseModel):

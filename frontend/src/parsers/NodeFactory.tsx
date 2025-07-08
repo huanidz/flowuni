@@ -13,14 +13,14 @@ import { nodeStyles } from "@/styles/nodeStyles";
 
 class NodeFactoryClass {
   createNodeComponent(
-    nodeType: string,
+    node_type: string,
     updateNodeData?: UpdateNodeDataFunction,
     updateNodeParameter?: UpdateNodeParameterFunction
   ): React.FC<CustomNodeProps> | null {
-    const nodeSpec = nodeRegistry.getNode(nodeType) as NodeSpec | undefined;
+    const nodeSpec = nodeRegistry.getNode(node_type) as NodeSpec | undefined;
 
     if (!nodeSpec) {
-      console.error(`Node type "${nodeType}" not found in registry`);
+      console.error(`Node type "${node_type}" not found in registry`);
       return null;
     }
 
@@ -29,12 +29,12 @@ class NodeFactoryClass {
         label = nodeSpec.name, 
         description = nodeSpec.description, 
         parameters = {},
-        inputValues = {}
+        input_values = {}
       } = data;
 
       const { handleParameterChange, handleInputValueChange } = useNodeHandlers(
         id,
-        inputValues,
+        input_values,
         updateNodeData,
         updateNodeParameter
       );
@@ -52,7 +52,7 @@ class NodeFactoryClass {
           
           <InputsSection
             inputs={nodeSpec.inputs}
-            inputValues={inputValues}
+            input_values={input_values}
             nodeId={id}
             onInputValueChange={handleInputValueChange}
           />

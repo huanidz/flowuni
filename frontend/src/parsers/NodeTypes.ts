@@ -37,9 +37,9 @@ export interface NodeSpec {
 
 export interface NodeData {
   label: string;
-  nodeType: string;
+  node_type: string;
   parameters: Record<string, any>;
-  inputValues?: Record<string, any>;
+  input_values?: Record<string, any>;
   [key: string]: any;
 }
 

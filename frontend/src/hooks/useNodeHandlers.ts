@@ -4,7 +4,7 @@ import type { UpdateNodeDataFunction, UpdateNodeParameterFunction } from '@/pars
 
 export const useNodeHandlers = (
   nodeId: string,
-  inputValues: Record<string, any>,
+  input_values: Record<string, any>,
   updateNodeData?: UpdateNodeDataFunction,
   updateNodeParameter?: UpdateNodeParameterFunction
 ) => {
@@ -19,13 +19,13 @@ export const useNodeHandlers = (
     console.log(`Input value changed: ${inputName} = ${value} for node ${nodeId}`);
     if (updateNodeData) {
       updateNodeData(nodeId, {
-        inputValues: {
-          ...inputValues,
+        input_values: {
+          ...input_values,
           [inputName]: value
         }
       });
     }
-  }, [nodeId, inputValues, updateNodeData]);
+  }, [nodeId, input_values, updateNodeData]);
 
   return {
     handleParameterChange,

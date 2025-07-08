@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import nodeRegistry from '@/parsers/NodeRegistry';
 
 interface NodePaletteProps {
-  onDragStart: (event: React.DragEvent, nodeType: string) => void;
+  onDragStart: (event: React.DragEvent, node_type: string) => void;
 }
 
 const NodePalette: React.FC<NodePaletteProps> = ({ onDragStart }) => {

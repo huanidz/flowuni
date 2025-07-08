@@ -36,7 +36,7 @@ export const useFlowActions = (
             console.log(`Node ${index} (${node.id}):`, {
                 type: node.type,
                 parameters: node.data.parameters,
-                inputValues: node.data.inputValues,
+                input_values: node.data.input_values,
                 fullData: node.data
             });
         });

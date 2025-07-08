@@ -75,14 +75,14 @@ export const ParametersSection: React.FC<ParametersSectionProps> = ({
 // Inputs Section Component
 interface InputsSectionProps {
   inputs: NodeInput[];
-  inputValues: Record<string, any>;
+  input_values: Record<string, any>;
   nodeId: string;
   onInputValueChange: (inputName: string, value: any) => void;
 }
 
 export const InputsSection: React.FC<InputsSectionProps> = ({
   inputs,
-  inputValues,
+  input_values,
   nodeId,
   onInputValueChange
 }) => {
@@ -115,7 +115,7 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
               <div style={nodeStyles.inputComponent}>
                 <InputComponent
                   label=""
-                  value={inputValues[input.name] || input.default || ""}
+                  value={input_values[input.name] || input.default || ""}
                   onChange={(value: string) => onInputValueChange(input.name, value)}
                   nodeId={nodeId}
                 />
