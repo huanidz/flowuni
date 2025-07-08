@@ -1,16 +1,14 @@
 # --- Builder Stage ---
-FROM python:3.11-slim AS builder
+FROM ghcr.io/astral-sh/uv:python3.11-alpine AS builder
 
 WORKDIR /app
 
 # Install uv temporarily and uninstall after dependencies are installed
 COPY ./backend/requirements.txt .
-RUN pip install --no-cache-dir uv \
-    && uv pip install --system --no-cache-dir -r requirements.txt \
-    && pip uninstall -y uv  # Remove uv to save space
+RUN uv pip install --system --no-cache-dir -r requirements.txt
 
 # --- Final Stage ---
-FROM python:3.11-slim
+FROM python:3.11-alpine
 
 WORKDIR /app
 

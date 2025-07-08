@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import FlowToolbar from './FlowToolBar';
 import NodePalette from './FlowNodePallete';
 import {
@@ -34,7 +34,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
   // Load node from catalog. This is code for the sidebar
   useNodeTypes(setNodeTypes);
   const { onDragStart, onDrop, onDragOver } = useDragDropHandler(reactFlowInstance, nodeId, setNodes, setNodeId);
-  const { onRunFlow, onClearFlow } = useFlowActions(nodes, edges, setNodes, setEdges,setNodeId);
+  const { onCompileFlow, onRunFlow, onClearFlow } = useFlowActions(nodes, edges, setNodes, setEdges, setNodeId);
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
@@ -55,7 +55,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
         onDragOver={onDragOver}
       >
         <NodePalette onDragStart={onDragStart} />
-        <FlowToolbar onRun={onRunFlow} onClear={onClearFlow} />
+        <FlowToolbar onCompile={onCompileFlow} onRun={onRunFlow} onClear={onClearFlow} />
 
         <ReactFlow
           nodes={nodes}

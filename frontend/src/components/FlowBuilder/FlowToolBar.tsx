@@ -1,8 +1,14 @@
 import React, { useState } from 'react';
 import ConfirmModal from '../ui/ConfirmModal';
 
+interface FlowToolbarProps {
+  onRun: () => void;
+  onClear: () => void;
+  onCompile: () => void;
+}
+
 // Toolbar component
-const FlowToolbar = ({ onRun, onClear }: { onRun: () => void; onClear: () => void }) => {
+const FlowToolbar: React.FC<FlowToolbarProps> = ({ onRun, onClear, onCompile }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleClearClick = () => {
@@ -26,6 +32,12 @@ const FlowToolbar = ({ onRun, onClear }: { onRun: () => void; onClear: () => voi
           className="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600"
         >
           Run Flow
+        </button>
+        <button
+          onClick={onCompile}
+          className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
+        >
+          Compile Flow
         </button>
         <button
           onClick={handleClearClick}
