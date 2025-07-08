@@ -12,8 +12,46 @@ flow_execution_router = APIRouter(
     tags=["flow_execution"],
 )
 
+# ✅ Idiomatic FastAPI approach
 @flow_execution_router.post("/compile")
 async def compile_flow(request: Request):
-    flow_grahp_request: FlowGraphRequest = await FlowGraphRequest(**request.json())
-    logger.info(f"Received flow graph request: {flow_grahp_request.model_dump_json(indent=2)}")
-    pass
+    """
+    Receives, validates, and processes a flow graph from the frontend.
+    """
+    try:
+
+        request_json = await request.json()
+        logger.debug(f"🔴==>> request_json: {request_json}")
+        flow_graph_request: FlowGraphRequest =  FlowGraphRequest(**request_json)
+
+        # The request body is automatically parsed and validated into flow_graph_request
+        logger.info("Successfully received and validated flow graph request.")
+        logger.debug(f"Received data: {flow_graph_request.model_dump_json(indent=2)}")
+
+        # --- YOUR COMPILATION LOGIC GOES HERE ---
+        # This is where you would:
+        # 1. Validate the graph's structure (e.g., check for unconnected nodes).
+        # 2. Convert the graph into an executable format.
+        # 3. Save the compiled flow to a database or cache.
+        #
+        # For this example, we'll just acknowledge receipt.
+        # -----------------------------------------
+
+        # Return a success response
+        return JSONResponse(
+            status_code=200,
+            content={
+                "status": "success",
+                "message": "Flow compiled successfully.",
+                "received_at": datetime.utcnow().isoformat(),
+                "node_count": len(flow_graph_request.nodes),
+                "edge_count": len(flow_graph_request.edges),
+            }
+        )
+    except Exception as e:
+        # This will catch errors from your compilation logic
+        logger.error(f"An unexpected error occurred during compilation: {e}")
+        raise HTTPException(
+            status_code=500, 
+            detail="An internal error occurred while compiling the flow."
+        )

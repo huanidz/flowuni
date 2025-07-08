@@ -6,6 +6,7 @@ from src.configs.config import get_settings
 from src.configs.LoggingConfig import setup_logger
 
 from src.routes.node_routes import node_router
+from src.routes.flow_execution_routes import flow_execution_router
 
 # Get application settings and set up logging
 app_settings = get_settings()
@@ -23,3 +24,4 @@ app.add_middleware(
 )
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.include_router(node_router)
+app.include_router(flow_execution_router)
