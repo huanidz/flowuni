@@ -16,7 +16,8 @@ class NodeRegistry {
     if (this.loaded) return;
 
     try {
-      const response = await fetch('/node_catalog.json');
+      // const response = await fetch('/node_catalog.json');
+      const response = await fetch('http://localhost:5002/api/node/catalog');
       const catalog: NodeSpec[] = await response.json();
 
       catalog.forEach((nodeSpec: NodeSpec) => {

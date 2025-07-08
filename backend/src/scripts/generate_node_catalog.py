@@ -14,7 +14,7 @@ def generate_node_catalog():
         try:
             # Init an instance then call get_spec_json()
             instance: Node = _class()
-            spec = instance.get_spec()
+            spec = instance.get_spec_json()
             catalog.append(spec)
             logger.debug(f"Added spec for {_class.__name__}")
         except Exception as e:
