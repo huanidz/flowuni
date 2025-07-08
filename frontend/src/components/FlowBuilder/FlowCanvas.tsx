@@ -31,23 +31,24 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
   const [nodeTypes, setNodeTypes] = useState({});
 
   useEffect(() => {
-      const loadNodes = async () => {
-          try {
-              await nodeRegistry.loadCatalog();
-              const allNodes = nodeRegistry.getAllNodes();
-              const customNodeTypes: { [key: string]: React.FC<any> } = {};
-              allNodes.forEach(nodeSpec => {
-                  const CustomNodeComponent = NodeFactory.createNodeComponent(nodeSpec.name);
-                  if (CustomNodeComponent) {
-                      customNodeTypes[nodeSpec.name] = CustomNodeComponent;
-                  }
-              });
-              setNodeTypes(customNodeTypes);
-          } catch (error) {
-              console.error("Failed to load node catalog or create node components:", error);
+    const loadNodes = async () => {
+      try {
+        await nodeRegistry.loadCatalog();
+        const allNodes = nodeRegistry.getAllNodes();
+        const customNodeTypes: { [key: string]: React.FC<any> } = {};
+        allNodes.forEach(nodeSpec => {
+          const CustomNodeComponent = NodeFactory.createNodeComponent(nodeSpec.name);
+          if (CustomNodeComponent) {
+            customNodeTypes[nodeSpec.name] = CustomNodeComponent;
           }
-      };
-      loadNodes();
+        });
+        setNodeTypes(customNodeTypes);
+      } catch (error) {
+        console.error("Failed to load node catalog or create node components:", error);
+      }
+    };
+
+    loadNodes();
   }, []);
 
   const onConnect = useCallback(
@@ -68,7 +69,6 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
       const type = event.dataTransfer.getData('application/reactflow');
       if (!type) return;
 
-      // Use currentTarget to ensure we get wrapper bounds
       const bounds = (event.currentTarget as HTMLDivElement).getBoundingClientRect();
       const x = event.clientX - bounds.left;
       const y = event.clientY - bounds.top;
@@ -76,27 +76,27 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
 
       const nodeSpec = nodeRegistry.getNode(type);
       if (!nodeSpec) {
-          console.error(`Node type "${type}" not found in registry.`);
-          return;
+        console.error(`Node type "${type}" not found in registry.`);
+        return;
       }
 
       const customNode: Node = {
         id: 'nodeId_' + nodeId,
-        type, // This 'type' now directly corresponds to the node name from the catalog
+        type,
         position,
         data: {
-            label: nodeSpec.name,
-            nodeType: nodeSpec.name,
-            parameters: Object.fromEntries(
-                Object.entries(nodeSpec.parameters).map(([key, paramSpec]) => [key, (paramSpec as any).default])
-            )
+          label: nodeSpec.name,
+          nodeType: nodeSpec.name,
+          parameters: Object.fromEntries(
+            Object.entries(nodeSpec.parameters).map(([key, paramSpec]) => [key, (paramSpec as any).default])
+          )
         },
         style: { background: '#fff', color: '#000' },
         sourcePosition: Position.Right,
         targetPosition: Position.Left,
       };
 
-      console.log(customNode);
+      console.log('Dropped node:', customNode);
 
       setNodes((nds) => [...nds, customNode]);
       setNodeId((id) => id + 1);
@@ -113,9 +113,14 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
     setReactFlowInstance(instance);
   }, []);
 
+  // Modified onRunFlow to export flow structure
   const onRunFlow = () => {
-    console.log('Running flow...', nodes, edges);
-    alert('Flow executed! Check console for data.');
+    const flowExport = {
+      nodes: nodes.map(({ id, type, position, data }) => ({ id, type, position, data })),
+      edges: edges.map(({ id, source, target, sourceHandle, targetHandle }) => ({ id, source, target, sourceHandle, targetHandle })),
+    };
+
+    console.log('Flow export payload:', flowExport);
   };
 
   const onClearFlow = () => {
