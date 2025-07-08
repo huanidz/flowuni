@@ -1,0 +1,203 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+4. Repository files, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+<additional_info>
+
+</additional_info>
+
+</file_summary>
+
+<directory_structure>
+primitives/
+  __init__.py
+  ChatInput.py
+  ChatOutput.py
+  MultiInputNode.py
+__init__.py
+NodeBase.py
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="primitives/__init__.py">
+from .ChatInput import ChatInput
+from .ChatOutput import ChatOutput
+from .MultiInputNode import MultiInputNode
+
+__all__ = [
+    'ChatInput',
+    'ChatOutput',
+    'MultiInputNode'
+]
+</file>
+
+<file path="primitives/ChatInput.py">
+from src.nodes.NodeBase import Node, NodeSpec
+
+class ChatInput(Node):
+
+    spec: NodeSpec = NodeSpec(
+        name="Chat Input",
+        description="A node that accepts user input and returns a message.",
+        inputs={"message": str},
+        outputs={"message": str},
+        parameters={},
+    )
+
+    def run(self, **inputs):
+        return inputs["message"]
+</file>
+
+<file path="primitives/ChatOutput.py">
+from src.nodes.NodeBase import Node, NodeSpec
+
+class ChatOutput(Node):
+
+    spec: NodeSpec = NodeSpec(
+        name="Chat Output",
+        description="A node that output a message.",
+        inputs={"message": str},
+        outputs={},
+        parameters={},
+    )
+    
+    def run(self, **inputs):
+        return inputs["message"]
+</file>
+
+<file path="primitives/MultiInputNode.py">
+from src.nodes.NodeBase import Node, NodeSpec
+
+class MultiInputNode(Node):
+
+    spec: NodeSpec = NodeSpec(
+        name="Multiple Inputs Node",
+        description="A node that accepts user input and returns a message.",
+        inputs={"message": str, "test": int},
+        outputs={"message": str},
+        parameters={},
+    )
+
+    def run(self, **inputs):
+        return inputs["message"]
+</file>
+
+<file path="__init__.py">
+from src.nodes.primitives import ChatInput, ChatOutput, MultiInputNode
+
+__all__ = [
+    ChatInput, 
+    ChatOutput,
+    MultiInputNode
+]
+</file>
+
+<file path="NodeBase.py">
+# node_base.py
+import json
+from abc import ABC, abstractmethod
+from typing import Any, Dict, Type
+
+from pydantic import BaseModel
+
+
+class ParameterSpec(BaseModel):
+    """Describe a single node‑parameter: its type, default value, and description."""
+    type: Type
+    default: Any
+    description: str = ""
+
+
+class NodeSpec(BaseModel):
+    name: str
+    description: str
+    inputs: Dict[str, Type]
+    outputs: Dict[str, Type]
+    parameters: Dict[str, ParameterSpec]
+
+
+class Node(ABC):
+    spec: NodeSpec
+
+    @abstractmethod
+    def run(self, **inputs) -> Any:
+        ...
+
+    def get_spec_json(self) -> Dict[str, Any]:
+        """
+        Return a JSON‑serializable dict describing:
+         - name, description
+         - inputs  (port → type name)
+         - outputs (port → type name)
+         - parameters (param → {type name, default, description})
+        """
+        def _serialize_type(t: Type) -> Any:
+            # If it's a Pydantic model, embed its JSON schema:
+            if isinstance(t, type) and issubclass(t, BaseModel):
+                return {
+                    "type": t.__name__,
+                    "schema": t.model_json_schema()
+                }
+            # Otherwise just return the class name:
+            return getattr(t, "__name__", str(t))
+
+        raw = self.spec.model_dump()  # gives you a dict with raw types still in it
+        # replace inputs/outputs with their stringified versions:
+        raw["inputs"] = {k: _serialize_type(v) for k, v in self.spec.inputs.items()}
+        raw["outputs"] = {k: _serialize_type(v) for k, v in self.spec.outputs.items()}
+
+        # rebuild parameters into a JSON‑safe form:
+        params = {}
+        for name, p in self.spec.parameters.items():
+            params[name] = {
+                "type": _serialize_type(p.type),
+                "default": p.default,
+                "description": p.description,
+            }
+        raw["parameters"] = params
+
+        return raw
+
+    def get_spec_json_str(self) -> str:
+        """Pretty‑print the above dict as JSON."""
+        return json.dumps(self.get_spec_json(), indent=2)
+</file>
+
+</files>

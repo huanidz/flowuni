@@ -1,9 +1,11 @@
-from fastapi import APIRouter, HTTPException, Request, Response
+from fastapi import APIRouter, HTTPException, Request, Response, Depends
 from fastapi.responses import JSONResponse
 from typing import List
 from datetime import datetime
 
 from src.schemas.flowbuilder.flow_graph_schemas import FlowGraphRequest
+
+from src.nodes.GraphLoader import GraphLoader
 
 from loguru import logger
 
@@ -23,6 +25,9 @@ async def compile_flow(request: Request):
         request_json = await request.json()
         logger.debug(f"🔴==>> request_json: {request_json}")
         flow_graph_request: FlowGraphRequest =  FlowGraphRequest(**request_json)
+
+        # Load graph
+        G = GraphLoader.from_request(flow_graph_request)
 
         # The request body is automatically parsed and validated into flow_graph_request
         logger.info("Successfully received and validated flow graph request.")
