@@ -12,11 +12,12 @@ import {
   ReactFlowProvider,
 } from '@xyflow/react';
 import type { Edge, Node, Connection, ReactFlowInstance } from '@xyflow/react';
-import { Handle, Position } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import type { FlowBuilderContentProps } from '@/types/FlowBuilderType';
-import nodeRegistry from '@/parsers/NodeRegistry';
-import { NodeFactory } from '@/parsers/NodeFactory';
+
+import { useNodeTypes } from '@/hooks/useNodeTypes';
+import { useDragDropHandler } from '@/hooks/useDragAndDropHandler';
+import { useFlowActions } from '@/hooks/useFlowActions';
 
 const initialNodes: Node[] = [];
 const initialEdges: Edge[] = [];
@@ -30,104 +31,20 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
   const [nodeId, setNodeId] = useState(1);
   const [nodeTypes, setNodeTypes] = useState({});
 
-  useEffect(() => {
-    const loadNodes = async () => {
-      try {
-        await nodeRegistry.loadCatalog();
-        const allNodes = nodeRegistry.getAllNodes();
-        const customNodeTypes: { [key: string]: React.FC<any> } = {};
-        allNodes.forEach(nodeSpec => {
-          const CustomNodeComponent = NodeFactory.createNodeComponent(nodeSpec.name);
-          if (CustomNodeComponent) {
-            customNodeTypes[nodeSpec.name] = CustomNodeComponent;
-          }
-        });
-        setNodeTypes(customNodeTypes);
-      } catch (error) {
-        console.error("Failed to load node catalog or create node components:", error);
-      }
-    };
-
-    loadNodes();
-  }, []);
+  // Load node from catalog. This is code for the sidebar
+  useNodeTypes(setNodeTypes);
+  const { onDragStart, onDrop, onDragOver } = useDragDropHandler(reactFlowInstance, nodeId, setNodes, setNodeId);
+  const { onRunFlow, onClearFlow } = useFlowActions(nodes, edges, setNodes, setEdges,setNodeId);
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
     [setEdges]
   );
 
-  const onDragStart = (event: React.DragEvent, nodeType: string) => {
-    event.dataTransfer.setData('application/reactflow', nodeType);
-    event.dataTransfer.effectAllowed = 'move';
-  };
-
-  const onDrop = useCallback(
-    (event: React.DragEvent<HTMLDivElement>) => {
-      event.preventDefault();
-      if (!reactFlowWrapper.current || !reactFlowInstance) return;
-
-      const type = event.dataTransfer.getData('application/reactflow');
-      if (!type) return;
-
-      const bounds = (event.currentTarget as HTMLDivElement).getBoundingClientRect();
-      const x = event.clientX - bounds.left;
-      const y = event.clientY - bounds.top;
-      const position = reactFlowInstance.screenToFlowPosition({ x, y });
-
-      const nodeSpec = nodeRegistry.getNode(type);
-      if (!nodeSpec) {
-        console.error(`Node type "${type}" not found in registry.`);
-        return;
-      }
-
-      const customNode: Node = {
-        id: 'nodeId_' + nodeId,
-        type,
-        position,
-        data: {
-          label: nodeSpec.name,
-          nodeType: nodeSpec.name,
-          parameters: Object.fromEntries(
-            Object.entries(nodeSpec.parameters).map(([key, paramSpec]) => [key, (paramSpec as any).default])
-          )
-        },
-        style: { background: '#fff', color: '#000' },
-        sourcePosition: Position.Right,
-        targetPosition: Position.Left,
-      };
-
-      console.log('Dropped node:', customNode);
-
-      setNodes((nds) => [...nds, customNode]);
-      setNodeId((id) => id + 1);
-    },
-    [nodeId, reactFlowInstance, setNodes]
-  );
-
-  const onDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
-  }, []);
-
   const onInit = useCallback((instance: ReactFlowInstance) => {
     setReactFlowInstance(instance);
   }, []);
 
-  // Modified onRunFlow to export flow structure
-  const onRunFlow = () => {
-    const flowExport = {
-      nodes: nodes.map(({ id, type, position, data }) => ({ id, type, position, data })),
-      edges: edges.map(({ id, source, target, sourceHandle, targetHandle }) => ({ id, source, target, sourceHandle, targetHandle })),
-    };
-
-    console.log('Flow export payload:', flowExport);
-  };
-
-  const onClearFlow = () => {
-    setNodes([]);
-    setEdges([]);
-    setNodeId(1);
-  };
 
   return (
     <div className="w-full h-screen bg-gray-100">
