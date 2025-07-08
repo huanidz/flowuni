@@ -1,35 +1,54 @@
 // nodeRegistry.ts
+import axios from 'axios';
 
 interface NodeSpec {
   name: string;
-  description?: string; // Add this line
-  inputs: Record<string, string>; // port name -> type
-  outputs: Record<string, string>; // port name -> type
-  parameters: Record<string, any>; // parameter name -> value/type (customize as needed)
+  description?: string;
+  inputs: Record<string, string>;
+  outputs: Record<string, string>;
+  parameters: Record<string, any>;
 }
 
 class NodeRegistry {
   private nodes: Map<string, NodeSpec> = new Map();
   private loaded: boolean = false;
+  private axiosInstance = axios.create({
+    baseURL: 'http://localhost:5002/api',
+    timeout: 5000
+  });
 
   async loadCatalog(): Promise<void> {
-    if (this.loaded) return;
+    if (this.loaded) {
+      console.log("Node catalog already loaded");
+      return;
+    }
 
     try {
       const etag = localStorage.getItem("nodeCatalogEtag");
+      const headers: Record<string, string> = {};
+      
+      if (etag) {
+        console.log(`Using cached catalog with ETag ${etag}`);
+        headers['If-None-Match'] = etag;
+      }
 
-      const response = await fetch('http://localhost:5002/api/node/catalog', {
-        headers: etag ? { 'If-None-Match': etag } : {}
+      // NOTE: Disble axios validation to allow 304 responses
+      const response = await this.axiosInstance.get('/node/catalog', {
+        headers,
+        params: {
+          _t: new Date().getTime()  // REMOVE THIS LINE ON PRODUCTION
+        },
+        validateStatus: (status) => status === 200 || status === 304
       });
 
       if (response.status === 304) {
         console.log("Catalog not modified — using cached version");
-        // You would need to also persist `catalog` in localStorage or IndexedDB to restore it here
         return;
       }
 
-      const catalog: NodeSpec[] = await response.json();
-      const newEtag = response.headers.get("ETag");
+      const catalog: NodeSpec[] = response.data;
+      const newEtag = response.headers.etag;
+      
       if (newEtag) {
         console.log(`New catalog ETag: ${newEtag}`);
         localStorage.setItem("nodeCatalogEtag", newEtag);
@@ -43,7 +62,15 @@ class NodeRegistry {
       this.loaded = true;
       console.log(`Loaded ${this.nodes.size} node types`);
     } catch (error) {
-      console.error('Failed to load node catalog:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('Failed to load node catalog:', error.message);
+        if (error.response) {
+          console.error('Response data:', error.response.data);
+          console.error('Response status:', error.response.status);
+        }
+      } else {
+        console.error('Failed to load node catalog:', error);
+      }
       throw error;
     }
   }
