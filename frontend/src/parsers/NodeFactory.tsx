@@ -43,7 +43,8 @@ class NodeFactoryClass {
             padding: '10px',
             borderRadius: '5px',
             background: 'white',
-            minWidth: '180px'
+            minWidth: '180px',
+            position: 'relative'
            }}>
           <div style={{
               fontWeight: 'bold',
@@ -58,12 +59,25 @@ class NodeFactoryClass {
           {/* Render Input Handles */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '10px' }}>
             {Object.entries(nodeSpec.inputs).map(([key, type], index) => (
-              <div key={key} style={{ textAlign: 'left' }}>
+              <div key={key} style={{ 
+                position: 'relative', 
+                textAlign: 'left',
+                height: '20px',
+                display: 'flex',
+                alignItems: 'center'
+              }}>
                 <Handle
                   type="target"
                   position={Position.Left}
                   id={key}
-                  style={{ top: `${(index + 1) * 35 + 20}px`, width: 12, height: 12 }}
+                  style={{ 
+                    position: 'absolute',
+                    left: '-6px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    width: 12, 
+                    height: 12 
+                  }}
                 />
                 <span style={{ marginLeft: '15px' }}>{key} ({type})</span>
               </div>
@@ -90,14 +104,28 @@ class NodeFactoryClass {
           {/* Render Output Handles */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {Object.entries(nodeSpec.outputs).map(([key, type], index) => (
-              <div key={key} style={{ textAlign: 'right' }}>
+              <div key={key} style={{ 
+                position: 'relative', 
+                textAlign: 'right',
+                height: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-end'
+              }}>
                 <Handle
                   type="source"
                   position={Position.Right}
                   id={key}
-                  style={{ top: `${(index + 1) * 35 + 20}px`, width: 12, height: 12 }}
+                  style={{ 
+                    position: 'absolute',
+                    right: '-6px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    width: 12, 
+                    height: 12 
+                  }}
                 />
-                 <span style={{ marginRight: '15px' }}>{key} ({type})</span>
+                <span style={{ marginRight: '15px' }}>{key} ({type})</span>
               </div>
             ))}
           </div>
