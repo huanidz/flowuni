@@ -16,9 +16,25 @@ class NodeRegistry {
     if (this.loaded) return;
 
     try {
-      // const response = await fetch('/node_catalog.json');
-      const response = await fetch('http://localhost:5002/api/node/catalog');
+      const etag = localStorage.getItem("nodeCatalogEtag");
+
+      const response = await fetch('http://localhost:5002/api/node/catalog', {
+        headers: etag ? { 'If-None-Match': etag } : {}
+      });
+
+      if (response.status === 304) {
+        console.log("Catalog not modified — using cached version");
+        // You would need to also persist `catalog` in localStorage or IndexedDB to restore it here
+        return;
+      }
+
       const catalog: NodeSpec[] = await response.json();
+      const newEtag = response.headers.get("ETag");
+      if (newEtag) {
+        console.log(`New catalog ETag: ${newEtag}`);
+        localStorage.setItem("nodeCatalogEtag", newEtag);
+      }
+      localStorage.setItem("nodeCatalogData", JSON.stringify(catalog));
 
       catalog.forEach((nodeSpec: NodeSpec) => {
         this.nodes.set(nodeSpec.name, nodeSpec);
@@ -26,7 +42,6 @@ class NodeRegistry {
 
       this.loaded = true;
       console.log(`Loaded ${this.nodes.size} node types`);
-      console.log(this.nodes);
     } catch (error) {
       console.error('Failed to load node catalog:', error);
       throw error;

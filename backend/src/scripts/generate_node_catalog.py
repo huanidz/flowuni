@@ -7,7 +7,7 @@ import json
 
 def generate_node_catalog():
     """Generate node catalog in memory without writing to file"""
-    logger.info("Start generating node catalog...")
+    logger.debug("Start generating node catalog...")
     catalog = []
 
     for _class in __all__:
@@ -20,7 +20,7 @@ def generate_node_catalog():
         except Exception as e:
             logger.error(f"Error processing class {_class.__name__}: {e}. {traceback.format_exc()}")
 
-    logger.success(f"Generated catalog with {len(catalog)} nodes")
+    logger.debug(f"Generated catalog with {len(catalog)} nodes")
     return catalog
 
 def generate_node_catalog_json(output_path: str):
