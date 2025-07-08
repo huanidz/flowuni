@@ -10,7 +10,7 @@ services:
     env_file:
       - ../.env
     ports:
-      - "5001:5001"
+      - "5002:5001"
     depends_on:
       db_service:
         condition: service_healthy
@@ -25,7 +25,7 @@ services:
       timeout: 3s
       retries: 3
     ports:
-      - "5499:5432"
+      - "5411:5432"
     volumes:
       - ./postgres_data:/var/lib/postgresql/data
     restart: always
