@@ -63,7 +63,7 @@ class NodeFactoryClass {
                   type="target"
                   position={Position.Left}
                   id={key}
-                  style={{ top: `${(index + 1) * 35 + 20}px` }}
+                  style={{ top: `${(index + 1) * 35 + 20}px`, width: 12, height: 12 }}
                 />
                 <span style={{ marginLeft: '15px' }}>{key} ({type})</span>
               </div>
@@ -95,7 +95,7 @@ class NodeFactoryClass {
                   type="source"
                   position={Position.Right}
                   id={key}
-                  style={{ top: `${(index + 1) * 35 + 20}px` }}
+                  style={{ top: `${(index + 1) * 35 + 20}px`, width: 12, height: 12 }}
                 />
                  <span style={{ marginRight: '15px' }}>{key} ({type})</span>
               </div>
