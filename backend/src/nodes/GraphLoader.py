@@ -19,13 +19,13 @@ class GraphLoader:
 
         # Load nodes
         list_of_nodes: List[FlowNode] = flow.nodes
-        logger.info(f"Found {len(list_of_nodes)} nodes in the flow request")
+        logger.debug(f"Found {len(list_of_nodes)} nodes in the flow request")
 
         for idx, node in enumerate(list_of_nodes):
             logger.debug(f"Processing node {idx + 1}/{len(list_of_nodes)} with ID: {node.id}, type: {node.type}")
             node_spec = nodeRegistry.get_node(node.type)
             if not node_spec:
-                logger.error(f"Unknown node type encountered: {node.type}")
+                logger.debug(f"Unknown node type encountered: {node.type}")
                 raise ValueError(f"Unknown node type: {node.type}")
 
             # Optionally: create node instance (runtime execution)
@@ -41,12 +41,12 @@ class GraphLoader:
             )
 
         # Load edges
-        logger.info(f"Adding edges to the graph")
+        logger.debug(f"Adding edges to the graph")
         for idx, edge in enumerate(flow.edges):
             logger.debug(f"Adding edge {idx + 1}/{len(flow.edges)}: {edge.source} -> {edge.target}")
             G.add_edge(edge.source, edge.target)
 
-        logger.success("Flow graph successfully constructed")
+        logger.debug("Flow graph successfully constructed")
         return G
 
     @staticmethod

@@ -6,6 +6,7 @@ from datetime import datetime
 from src.schemas.flowbuilder.flow_graph_schemas import FlowGraphRequest
 
 from src.nodes.GraphLoader import GraphLoader
+from src.nodes.GraphCompiler import GraphCompiler
 
 from loguru import logger
 
@@ -23,15 +24,19 @@ async def compile_flow(request: Request):
     try:
 
         request_json = await request.json()
-        logger.debug(f"🔴==>> request_json: {request_json}")
         flow_graph_request: FlowGraphRequest =  FlowGraphRequest(**request_json)
 
         # Load graph
         G = GraphLoader.from_request(flow_graph_request)
 
+        # Compile graph
+        compiler = GraphCompiler(graph=G)
+        compiler.compile()
+        compiler.debug_print_plan()
+
         # The request body is automatically parsed and validated into flow_graph_request
         logger.info("Successfully received and validated flow graph request.")
-        logger.debug(f"Received data: {flow_graph_request.model_dump_json(indent=2)}")
+        # logger.debug(f"Received data: {flow_graph_request.model_dump_json(indent=2)}")
 
         # --- YOUR COMPILATION LOGIC GOES HERE ---
         # This is where you would:
