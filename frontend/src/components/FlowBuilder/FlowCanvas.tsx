@@ -37,7 +37,13 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
   const { onCompileFlow, onRunFlow, onClearFlow } = useFlowActions(nodes, edges, setNodes, setEdges, setNodeId);
 
   const onConnect = useCallback(
-    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
+    (params: Connection) => setEdges((eds) => addEdge({
+      ...params,
+      style: {
+        stroke: '#555',
+        strokeWidth: 2,
+      }
+    }, eds)),
     [setEdges]
   );
 
