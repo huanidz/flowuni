@@ -8,21 +8,11 @@ interface TextFieldHandleInputProps {
 }
 
 export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
-  label,
-  description,
   value,
   onChange,
 }) => {
   return (
     <div style={{ display: "flex", flexDirection: "column", fontSize: "12px", width: "100%" }}>
-      <div style={{ marginBottom: "2px", color: "#333" }}>
-        {label}
-        {description && (
-          <span style={{ color: "#888", fontSize: "11px", marginLeft: "6px" }}>
-            ({description})
-          </span>
-        )}
-      </div>
       <input
         type="text"
         value={value}

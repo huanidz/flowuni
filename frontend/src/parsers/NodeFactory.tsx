@@ -103,16 +103,14 @@ class NodeFactoryClass {
 
                   {/* Input Label */}
                   <div style={{ paddingLeft: '12px', fontSize: '12px', color: '#222' }}>
-                    <strong>{input.name}</strong> {index + 1} ({input.type})
+                    <strong>{input.name}</strong> {index + 1} ({input.description})
                     {input.required && <span style={{ color: 'red' }}> *</span>}
                   </div>
 
                   {/* Optional Input Component */}
                   {InputComponent && (
-                    <div style={{ paddingLeft: '12px', marginTop: '4px' }}>
+                    <div style={{ paddingLeft: '4px', marginTop: '4px' }}>
                       <InputComponent
-                        label={input.name}
-                        description={input.description}
                         value={input.default}
                         onChange={(value: string) =>
                           console.log("Input value changed:", value)
