@@ -1,7 +1,7 @@
 # node_base.py
 import json
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Type
+from typing import Any, Dict, Type, Optional, List
 
 from pydantic import BaseModel
 
@@ -12,12 +12,26 @@ class ParameterSpec(BaseModel):
     default: Any
     description: str = ""
 
+class NodeInput(BaseModel):
+    """Describe a single node‑input: its type, default value, and description."""
+    type: Type
+    default: Optional[Any] = None
+    description: str = ""
+    required: bool = False
+
+class NodeOutput(BaseModel):
+    """Describe a single node‑output: its type, default value, and description."""
+    type: Type
+    default: Optional[Any] = None
+    description: str = ""
 
 class NodeSpec(BaseModel):
     name: str
     description: str
-    inputs: Dict[str, Type]
-    outputs: Dict[str, Type]
+    # inputs: Dict[str, NodeInput]
+    inputs: List[NodeInput]
+    # outputs: Dict[str, NodeOutput]
+    outputs: List[NodeOutput]
     parameters: Dict[str, ParameterSpec]
 
 
@@ -31,10 +45,10 @@ class Node(ABC):
     def get_spec_json(self) -> Dict[str, Any]:
         """
         Return a JSON‑serializable dict describing:
-         - name, description
-         - inputs  (port → type name)
-         - outputs (port → type name)
-         - parameters (param → {type name, default, description})
+        - name, description
+        - inputs  (list of NodeInput objects)
+        - outputs (list of NodeOutput objects)
+        - parameters (param → {type name, default, description})
         """
         def _serialize_type(t: Type) -> Any:
             # If it's a Pydantic model, embed its JSON schema:
@@ -47,11 +61,29 @@ class Node(ABC):
             return getattr(t, "__name__", str(t))
 
         raw = self.spec.model_dump()  # gives you a dict with raw types still in it
-        # replace inputs/outputs with their stringified versions:
-        raw["inputs"] = {k: _serialize_type(v) for k, v in self.spec.inputs.items()}
-        raw["outputs"] = {k: _serialize_type(v) for k, v in self.spec.outputs.items()}
+        
+        # Serialize inputs (now a list of NodeInput objects)
+        serialized_inputs = []
+        for input_spec in self.spec.inputs:
+            serialized_inputs.append({
+                "type": _serialize_type(input_spec.type),
+                "default": input_spec.default,
+                "description": input_spec.description,
+                "required": input_spec.required
+            })
+        raw["inputs"] = serialized_inputs
 
-        # rebuild parameters into a JSON‑safe form:
+        # Serialize outputs (now a list of NodeOutput objects)
+        serialized_outputs = []
+        for output_spec in self.spec.outputs:
+            serialized_outputs.append({
+                "type": _serialize_type(output_spec.type),
+                "default": output_spec.default,
+                "description": output_spec.description
+            })
+        raw["outputs"] = serialized_outputs
+
+        # Rebuild parameters into a JSON‑safe form (unchanged from before)
         params = {}
         for name, p in self.spec.parameters.items():
             params[name] = {
