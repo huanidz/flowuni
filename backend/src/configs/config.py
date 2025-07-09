@@ -3,6 +3,7 @@ from pydantic_settings import BaseSettings
 from functools import lru_cache
 
 from pydantic import Field, field_validator
+import os
         
 class Settings(BaseSettings):
     """Configuration settings for the application."""
@@ -17,6 +18,10 @@ class Settings(BaseSettings):
 
     # Database configuration
     DATABASE_URL: str
+
+    VERTEX_AI_SERVICE_PROJECT_ID: str
+    VERTEX_AI_SERVICE_LOCATION: str
+    VERTEX_AI_SERVICE_ACCOUNT_CREDENTIALS: str
 
     # Logging configuration
     LOG_DIR: str
@@ -33,6 +38,12 @@ class Settings(BaseSettings):
         allowed = ["development", "testing", "production"]
         if v not in allowed:
             raise ValueError(f"Environment must be one of {allowed}")
+        return v
+
+    @field_validator("VERTEX_AI_SERVICE_ACCOUNT_CREDENTIALS")
+    def validate_credentials_path(cls, v):
+        if not os.path.exists(v):
+            raise ValueError(f"Credentials file not found at: {v}")
         return v
 
     class Config:

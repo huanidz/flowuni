@@ -17,5 +17,9 @@ asyncpg
 # Others
 natsort==8.4.0
 
+# LLM-related
+instructor[vertexai]
+langfuse==2.44.0
+
 # Graph and Nodes
 networkx==3.5

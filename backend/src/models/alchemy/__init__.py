@@ -1,1 +1,1 @@
-from src.models.alchemy.AppBaseModel import AppBaseModel
+from src.models.alchemy.shared.AppBaseModel import AppBaseModel
