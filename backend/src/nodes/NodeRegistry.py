@@ -1,21 +1,23 @@
-# src/parsers/NodeRegistry.py
-
 import importlib
 import pkgutil
 from typing import Dict, Type, Optional
 from src.nodes.NodeBase import Node, NodeSpec
-import src.nodes.primitives as primitives_pkg
+import src.nodes as nodes_pkg
+
 
 class NodeRegistry:
     def __init__(self):
         self._node_classes: Dict[str, Type[Node]] = {}
-        self._load_nodes_from_package(primitives_pkg)
+        self._load_nodes_recursively(nodes_pkg)
 
-    def _load_nodes_from_package(self, package):
-        for _, module_name, _ in pkgutil.iter_modules(package.__path__):
-            module = importlib.import_module(f"{package.__name__}.{module_name}")
+    def _load_nodes_recursively(self, package):
+        for finder, name, ispkg in pkgutil.walk_packages(package.__path__, package.__name__ + "."):
+            try:
+                module = importlib.import_module(name)
+            except Exception as e:
+                print(f"Failed to import module {name}: {e}")
+                continue
 
-            # Register all Node subclasses in the module
             for attr_name in dir(module):
                 attr = getattr(module, attr_name)
                 if (
@@ -23,7 +25,10 @@ class NodeRegistry:
                     and issubclass(attr, Node)
                     and attr is not Node
                 ):
-                    self.register(attr)
+                    try:
+                        self.register(attr)
+                    except ValueError as e:
+                        print(f"Skipping duplicate or invalid node: {e}")
 
     def register(self, node_cls: Type[Node]):
         spec: NodeSpec = node_cls.spec
@@ -46,5 +51,4 @@ class NodeRegistry:
         return {name: cls.spec for name, cls in self._node_classes.items()}
 
 
-# Instantiate a shared global instance
 nodeRegistry = NodeRegistry()

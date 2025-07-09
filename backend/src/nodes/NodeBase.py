@@ -7,8 +7,6 @@ from pydantic import BaseModel
 
 from src.schemas.flowbuilder.flow_graph_schemas import NodeData
 
-from src.decorators.node_decorators import enforce_spec
-
 class ParameterSpec(BaseModel):
     """Describe a single node‑parameter: its type, default value, and description."""
     name: str

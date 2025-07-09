@@ -16,5 +16,5 @@ class MultiInputNode(Node):
         parameters={},
     )
 
-    def run(self, **inputs):
-        return inputs["message"]
+    def process(self, inputs, parameters):
+        return super().process(inputs, parameters)

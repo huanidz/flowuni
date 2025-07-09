@@ -1,7 +1,4 @@
 from src.nodes.NodeBase import Node, NodeSpec, NodeInput, NodeOutput
-from src.schemas.flowbuilder.flow_graph_schemas import NodeData
-
-from typing import Dict, Any
 class ChatInput(Node):
 
     spec: NodeSpec = NodeSpec(
