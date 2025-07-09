@@ -1,4 +1,4 @@
-from src.nodes.NodeBase import Node, NodeSpec, NodeInput, NodeOutput
+from src.nodes.NodeBase import Node, NodeSpec, NodeInput
 
 class ChatOutput(Node):
 

@@ -1,10 +1,8 @@
-from typing import Optional
 
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 
 from pydantic import Field, field_validator
-import os
         
 class Settings(BaseSettings):
     """Configuration settings for the application."""
