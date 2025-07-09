@@ -70,7 +70,7 @@ async def execute_flow(request: Request):
 
         request_json = await request.json()
         flow_graph_request: FlowGraphRequest =  FlowGraphRequest(**request_json)
-        logger.debug(f"🔴==>> flow_graph_request: {flow_graph_request.model_dump_json(indent=2)}")
+        # logger.debug(f"🔴==>> flow_graph_request: {flow_graph_request.model_dump_json(indent=2)}")
 
         # Load graph
         G = GraphLoader.from_request(flow_graph_request)
@@ -78,10 +78,10 @@ async def execute_flow(request: Request):
         # Compile graph
         compiler = GraphCompiler(graph=G)
         execution_plan = compiler.compile()
-        compiler.debug_print_plan()
 
         # Executor
         executor = GraphExecutor(graph=G, execution_plan=execution_plan)
+        executor.prepare()
         executor.execute()
 
         # The request body is automatically parsed and validated into flow_graph_request

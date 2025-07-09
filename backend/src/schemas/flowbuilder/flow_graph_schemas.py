@@ -26,8 +26,8 @@ class FlowEdge(BaseModel):
     id: Optional[str] = None
     source: str
     target: str
-    source_handle: Optional[str] = None  # corresponds to 'sourceHandle'
-    target_handle: Optional[str] = None  # corresponds to 'targetHandle'
+    sourceHandle: Optional[str] = None  # corresponds to 'sourceHandle'
+    targetHandle: Optional[str] = None  # corresponds to 'targetHandle'
 
 
 class FlowGraphRequest(BaseModel):

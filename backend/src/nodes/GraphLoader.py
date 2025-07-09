@@ -45,7 +45,7 @@ class GraphLoader:
         logger.debug(f"Adding edges to the graph")
         for idx, edge in enumerate(flow.edges):
             logger.debug(f"Adding edge {idx + 1}/{len(flow.edges)}: {edge.source} -> {edge.target}")
-            G.add_edge(edge.source, edge.target)
+            G.add_edge(edge.source, edge.target, source_handle=edge.sourceHandle, target_handle=edge.targetHandle)
 
         logger.debug("Flow graph successfully constructed")
         return G
