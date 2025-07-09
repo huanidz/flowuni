@@ -12,10 +12,13 @@ class GraphExecutor:
         self.graph: nx.DiGraph = graph
         self.execution_plan: List[List[str]] = execution_plan
 
+        """
+        Since there's many kind of nodes that not actually a processing-node but that node is still connect to other processing-nodes
+        For example, multiple ToolNode (non-proc) can be connected to an AgentNode (proc) as the sub data. The preparation need to be done.
+        """
+        self.prepared_execution_plan: List[List[str]] = [] # This is where the prepared execution plan will be stored after the prepare()
+
     def execute(self):
-        pass
-            
-    def prepare(self):
         logger.info("Starting graph execution preparation")
         
         for layer_index, layer in enumerate(self.execution_plan, 1):
@@ -72,3 +75,6 @@ class GraphExecutor:
                         logger.success(f"Successfully updated successor node data")
 
         logger.success("Graph preparation completed successfully")
+            
+    def prepare(self):
+        pass
