@@ -23,8 +23,8 @@ class LawAgent(Agent):
 
         self.settings = AgentSettings(
             agent_id=str(uuid4()),
-            agent_name="Law Agent",
-            agent_profile=GENERIC_DEFAULT_PROMPTS.PROFILE,
+            agent_name=agent_name,
+            agent_profile=profile,
         )
 
         self.max_iteration = 6
