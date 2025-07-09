@@ -142,7 +142,7 @@ class Node(ABC):
             serialized_outputs.append({
                 "name": output_spec.name,
                 "type": _serialize_type(output_spec.type),
-                "value": input_spec.value,
+                "value": output_spec.value,
                 "default": output_spec.default,
                 "description": output_spec.description
             })

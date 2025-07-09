@@ -4,11 +4,9 @@ class ChatInput(Node):
     spec: NodeSpec = NodeSpec(
         name="Chat Input",
         description="A node that accepts user input and returns a message.",
-        inputs=[
-            NodeInput(name="message_in", type=str, description="The message to be sent.")
-        ],
+        inputs=[],
         outputs=[
-            NodeOutput(name="message_out", type=str, description="The message received.")
+            NodeOutput(name="user_message", type=str, description="The message received.")
         ],
         parameters={},
     )
