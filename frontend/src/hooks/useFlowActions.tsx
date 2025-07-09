@@ -54,9 +54,35 @@ export const useFlowActions = (
         console.log('=== COMPILATION END ===');
     }, [nodes, edges]);
 
-    const onRunFlow = useCallback(() => {
-        const flowExport = get_flow_graph_data(nodes, edges);
-        console.log('Flow export payload:', flowExport);
+    const onRunFlow = useCallback(async () => {
+        console.log('=== COMPILATION & RUN FLOW START ===');
+        console.log('Raw nodes:', nodes);
+        console.log('Raw edges:', edges);
+        
+        const flow_graph_data = get_flow_graph_data(nodes, edges);
+        console.log('Compiling flow with payload:', flow_graph_data);
+
+        // Check each node's data structure
+        nodes.forEach((node, index) => {
+            console.log(`Node ${index} (${node.id}):`, {
+                type: node.type,
+                parameters: node.data.parameters,
+                input_values: node.data.input_values,
+                fullData: node.data
+            });
+        });
+        
+        try {
+            const response = await axios.post('http://localhost:5002/api/flow_execution/execute', flow_graph_data);
+            console.log('Execution successful:', response.data);
+        } catch (error) {
+            console.error('Error executing flow:', error);
+            if (axios.isAxiosError(error)) {
+                console.error('Server responded with:', error.response?.data);
+            }
+        }
+
+        console.log('=== COMPILATION & RUN FLOW END ===');
     }, [nodes, edges]);
 
     const onClearFlow = useCallback(() => {

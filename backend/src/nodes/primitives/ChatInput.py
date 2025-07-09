@@ -1,5 +1,7 @@
 from src.nodes.NodeBase import Node, NodeSpec, NodeInput, NodeOutput
+from src.schemas.flowbuilder.flow_graph_schemas import NodeData
 
+from typing import Dict, Any
 class ChatInput(Node):
 
     spec: NodeSpec = NodeSpec(
@@ -14,5 +16,5 @@ class ChatInput(Node):
         parameters={},
     )
 
-    def run(self, **inputs):
-        return inputs["message"]
+    def process(self, inputs, parameters):
+        return super().process(inputs, parameters)

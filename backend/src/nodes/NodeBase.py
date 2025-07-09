@@ -5,6 +5,9 @@ from typing import Any, Dict, Type, Optional, List
 
 from pydantic import BaseModel
 
+from src.schemas.flowbuilder.flow_graph_schemas import NodeData
+
+from src.decorators.node_decorators import enforce_spec
 
 class ParameterSpec(BaseModel):
     """Describe a single node‑parameter: its type, default value, and description."""
@@ -42,8 +45,64 @@ class NodeSpec(BaseModel):
 class Node(ABC):
     spec: NodeSpec
 
+    def get_input_map(self, node_data: NodeData) -> Dict[str, Any]:
+        input_values = node_data.input_values or {}
+        inputs = {}
+        for input_spec in self.spec.inputs:
+            val = input_values.get(input_spec.name, input_spec.default)
+            if val is None and input_spec.required:
+                raise ValueError(f"Missing required input: '{input_spec.name}'")
+            inputs[input_spec.name] = val
+        return inputs
+
+    def get_parameter_map(self, node_data: NodeData) -> Dict[str, Any]:
+        param_values = node_data.parameters or {}
+        return {
+            name: param_values.get(name, spec.default)
+            for name, spec in self.spec.parameters.items()
+        }
+
+    def build_output_map(self, result: Any) -> Dict[str, Any]:
+        outputs = self.spec.outputs
+        if len(outputs) == 0:
+            return {}
+
+        if len(outputs) == 1:
+            if not isinstance(result, dict):
+                return {outputs[0].name: result}
+            # Even if it's a dict, extract the value by name
+            return {outputs[0].name: result.get(outputs[0].name)}
+
+        if not isinstance(result, dict):
+            raise ValueError("Multiple outputs require the result to be a dictionary.")
+
+        declared = [o.name for o in outputs]
+        missing = [name for name in declared if name not in result]
+        if missing:
+            raise ValueError(f"Missing output keys: {missing}")
+
+        extra = set(result.keys()) - set(declared)
+        if extra:
+            raise ValueError(f"Unexpected output keys: {extra}")
+
+        return {name: result[name] for name in declared}
+
+    def run(self, node_data: NodeData) -> NodeData:
+        inputs = self.get_input_map(node_data)
+        parameters = self.get_parameter_map(node_data)
+
+        result = self.process(inputs, parameters)
+        output_values = self.build_output_map(result)
+
+        return NodeData(
+            label=node_data.label,
+            node_type=node_data.node_type,
+            input_values=output_values,
+            parameters=node_data.parameters
+        )
+
     @abstractmethod
-    def run(self, **inputs) -> Any:
+    def process(self, inputs: Dict[str, Any], parameters: Dict[str, Any]) -> Any:
         ...
 
     def get_spec_json(self) -> Dict[str, Any]:

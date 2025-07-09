@@ -37,6 +37,7 @@ class GraphLoader:
                 node.id,
                 type=node.type,
                 position=node.position,
+                data=node.data,
                 spec=node_spec,  # Pydantic NodeSpec
             )
 

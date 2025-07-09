@@ -7,6 +7,10 @@ from src.schemas.flowbuilder.flow_graph_schemas import FlowGraphRequest
 from src.nodes.GraphLoader import GraphLoader
 from src.nodes.GraphCompiler import GraphCompiler
 
+from src.executors.GraphExecutor import GraphExecutor
+
+import traceback
+
 from loguru import logger
 
 flow_execution_router = APIRouter(
@@ -52,6 +56,52 @@ async def compile_flow(request: Request):
     except Exception as e:
         # This will catch errors from your compilation logic
         logger.error(f"An unexpected error occurred during compilation: {e}")
+        raise HTTPException(
+            status_code=500, 
+            detail="An internal error occurred while compiling the flow."
+        )
+    
+@flow_execution_router.post("/execute")
+async def execute_flow(request: Request):
+    """
+    Receives, validates, and processes a flow graph from the frontend.
+    """
+    try:
+
+        request_json = await request.json()
+        flow_graph_request: FlowGraphRequest =  FlowGraphRequest(**request_json)
+        logger.debug(f"🔴==>> flow_graph_request: {flow_graph_request.model_dump_json(indent=2)}")
+
+        # Load graph
+        G = GraphLoader.from_request(flow_graph_request)
+
+        # Compile graph
+        compiler = GraphCompiler(graph=G)
+        execution_plan = compiler.compile()
+        compiler.debug_print_plan()
+
+        # Executor
+        executor = GraphExecutor(graph=G, execution_plan=execution_plan)
+        executor.execute()
+
+        # The request body is automatically parsed and validated into flow_graph_request
+        logger.info("Successfully received and validated flow graph request.")
+        # logger.debug(f"Received data: {flow_graph_request.model_dump_json(indent=2)}")
+
+        # Return a success response
+        return JSONResponse(
+            status_code=200,
+            content={
+                "status": "success",
+                "message": "Flow compiled successfully.",
+                "received_at": datetime.utcnow().isoformat(),
+                "node_count": len(flow_graph_request.nodes),
+                "edge_count": len(flow_graph_request.edges),
+            }
+        )
+    except Exception as e:
+        # This will catch errors from your compilation logic
+        logger.error(f"An unexpected error occurred during compilation: {e}. {traceback.format_exc()}")
         raise HTTPException(
             status_code=500, 
             detail="An internal error occurred while compiling the flow."
