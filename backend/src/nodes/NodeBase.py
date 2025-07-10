@@ -38,10 +38,22 @@ class NodeSpec(BaseModel):
     inputs: List[NodeInput]
     outputs: List[NodeOutput]
     parameters: Dict[str, ParameterSpec]
-
+    can_be_tool: bool = False
 
 class Node(ABC):
     spec: NodeSpec
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        spec = getattr(cls, "spec", None)
+        if spec is None:
+            raise ValueError(f"{cls.__name__} must define a `spec` attribute.")
+
+        if spec.can_be_tool:
+            if not spec.outputs:
+                raise ValueError(f"{cls.__name__} marked as tool but has no outputs.")
+            if not spec.inputs and not spec.parameters:
+                raise ValueError(f"{cls.__name__} marked as tool but has no inputs or parameters.")
 
     def get_input_map(self, node_data: NodeData) -> Dict[str, Any]:
         input_values = node_data.input_values or {}

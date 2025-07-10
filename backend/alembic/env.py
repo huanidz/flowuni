@@ -24,7 +24,7 @@ logger.info("Replacing asyncpg with sync version. DATABASE_URL: ", DATABASE_URL)
 config = context.config
 config.set_main_option("sqlalchemy.url", DATABASE_URL)
 
-from backend.src.models.alchemy.shared.AppBaseModel import AppBaseModel
+from src.models.alchemy.shared.AppBaseModel import AppBaseModel
 logger.info("Linked models: ", AppBaseModel.metadata.tables.keys())
 
 # Interpret the config file for Python logging.
