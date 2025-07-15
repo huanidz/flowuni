@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import React, { useCallback } from 'react';
 import type { Node, Edge } from '@xyflow/react';
 import axios from 'axios';
 
@@ -20,7 +20,9 @@ export const useFlowActions = (
   edges: Edge[],
   setNodes: (nodes: Node[]) => void,
   setEdges: (edges: Edge[]) => void,
-  setNodeId: (id: number) => void
+  setNodeId: (id: number) => void,
+  selectedNodeIds: string[],
+  selectedEdgeIds: string[]
 ) => {
 
     const onCompileFlow = useCallback(async () => {
@@ -91,5 +93,22 @@ export const useFlowActions = (
         setNodeId(1);
     }, [setNodes, setEdges, setNodeId]);
 
-    return { onCompileFlow, onRunFlow, onClearFlow };
+    const onDeleteSelectedElements = useCallback(() => {
+        setNodes((nds: Node[]) => nds.filter((node: Node) => !selectedNodeIds.includes(node.id)));
+        setEdges((eds: Edge[]) => eds.filter((edge: Edge) => !selectedEdgeIds.includes(edge.id)));
+    }, [selectedNodeIds, selectedEdgeIds, setNodes, setEdges]);
+
+    const onKeyDown = useCallback((event: React.KeyboardEvent) => {
+        switch (event.key) {
+            case 'Delete':
+            case 'Backspace':
+                onDeleteSelectedElements();
+                break;
+            // Thêm các trường hợp khác cho các phím tắt trong tương lai
+            default:
+                break;
+        }
+    }, [onDeleteSelectedElements]);
+
+    return { onCompileFlow, onRunFlow, onClearFlow, onDeleteSelectedElements, onKeyDown };
 };

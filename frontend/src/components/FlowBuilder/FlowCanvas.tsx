@@ -33,6 +33,8 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
     setEdges,
     onEdgesChange,
     onSelectionChange,
+    selectedNodeIds,
+    selectedEdgeIds,
   } = useFlowSelection(initialNodes, initialEdges);
 
   const [nodeId, setNodeId] = useState(1);
@@ -73,7 +75,15 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
   useNodeTypes(setNodeTypes, updateNodeData, updateNodeParameter);
   
   const { onDragStart, onDrop, onDragOver } = useDragDropHandler(reactFlowInstance, nodeId, setNodes, setNodeId);
-  const { onCompileFlow, onRunFlow, onClearFlow } = useFlowActions(nodes, edges, setNodes, setEdges, setNodeId);
+  const { onCompileFlow, onRunFlow, onClearFlow, onDeleteSelectedElements, onKeyDown } = useFlowActions(
+    nodes,
+    edges,
+    setNodes,
+    setEdges,
+    setNodeId,
+    selectedNodeIds,
+    selectedEdgeIds
+  );
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
@@ -92,6 +102,8 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
         ref={reactFlowWrapper}
         onDrop={onDrop}
         onDragOver={onDragOver}
+        onKeyDown={onKeyDown}
+        tabIndex={1} // Make the div focusable to capture keyboard events
       >
         <NodePalette onDragStart={onDragStart} />
         <FlowToolbar onCompile={onCompileFlow} onRun={onRunFlow} onClear={onClearFlow} />
