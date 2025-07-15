@@ -118,3 +118,10 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Styles for selected nodes */
+.react-flow__node.selected {
+  box-shadow: 0 0 0 2px #007bff, 0 0 0 4px rgba(0, 123, 255, 0.5); /* Blue glow effect */
+  border-color: #007bff;
+  border-radius: 8px;
+}

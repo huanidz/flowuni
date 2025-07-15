@@ -5,8 +5,6 @@ import {
   ReactFlow,
   Controls,
   Background,
-  useNodesState,
-  useEdgesState,
   addEdge,
   BackgroundVariant,
   ReactFlowProvider,
@@ -18,6 +16,7 @@ import type { FlowBuilderContentProps } from '@/types/FlowBuilderType';
 import { useNodeTypes } from '@/hooks/useNodeTypes';
 import { useDragDropHandler } from '@/hooks/useDragAndDropHandler';
 import { useFlowActions } from '@/hooks/useFlowActions';
+import { useFlowSelection } from '@/hooks/useFlowSelection';
 
 const initialNodes: Node[] = [];
 const initialEdges: Edge[] = [];
@@ -26,8 +25,16 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const {
+    nodes,
+    setNodes,
+    onNodesChange,
+    edges,
+    setEdges,
+    onEdgesChange,
+    onSelectionChange,
+  } = useFlowSelection(initialNodes, initialEdges);
+
   const [nodeId, setNodeId] = useState(1);
   const [nodeTypes, setNodeTypes] = useState({});
 
@@ -52,7 +59,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
               data: {
                 ...node.data,
                 parameters: {
-                  ...node.data.parameters,
+                  ...(node.data.parameters || {}), // Ensure parameters is an object
                   [parameterName]: value
                 }
               }
@@ -83,6 +90,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
     setReactFlowInstance(instance);
   }, []);
 
+
   return (
     <div className="w-full h-screen bg-gray-100">
       <div
@@ -99,6 +107,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
           edges={edges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
+          onSelectionChange={onSelectionChange}
           onConnect={onConnect}
           onInit={onInit}
           minZoom={1}
