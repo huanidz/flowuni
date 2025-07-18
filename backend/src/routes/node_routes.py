@@ -17,8 +17,6 @@ node_router = APIRouter(
 
 @node_router.get("/catalog", response_model=List[NodeSpec])
 def get_catalog(request: Request):
-    logger.info("Received catalog request")  # Add this
-    logger.info(f"Request headers: {request.headers}")  # Add this
     
     try:
         catalog = generate_node_catalog()
@@ -28,7 +26,6 @@ def get_catalog(request: Request):
             logger.info("304 Not Modified")
             return Response(status_code=304)
         
-        logger.info(f"Sending catalog with {len(catalog)} nodes")  # Add this
         
         headers = {
             # "Cache-Control": "public, max-age=31536000, immutable",
@@ -40,7 +37,6 @@ def get_catalog(request: Request):
         return JSONResponse(content=catalog, headers=headers)
     except Exception as e:
         logger.error(f"Error generating catalog: {str(e)}")
-        logger.exception("Full traceback:")  # Add this for full traceback
         raise HTTPException(
             status_code=500,
             detail="Internal server error while generating node catalog"
