@@ -31,6 +31,13 @@ const handleFlowRequest = async (
   console.log('Raw nodes:', nodes);
   console.log('Raw edges:', edges);
 
+  // Block request if there are no nodes in the graph
+  if (nodes.length === 0) {
+    console.warn(`Cannot ${actionLabel.toLowerCase()}: No nodes in the graph`);
+    // alert(`Cannot ${actionLabel.toLowerCase()}: Please add at least one node to the flow before proceeding.`);
+    return;
+  }
+
   const flowGraphData = getFlowGraphData(nodes, edges);
   console.log('Compiling flow with payload:', flowGraphData);
 
