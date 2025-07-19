@@ -16,7 +16,7 @@ const NodePalette: React.FC<NodePaletteProps> = ({ onDragStart }) => {
         // For now, assign a default color. In a real app, you might have colors in the catalog or derive them.
         const paletteNodes = allNodes.map(node => ({
           name: node.name,
-          description: node.description,
+          description: node.description || '',
           color: '#3b82f6' // Default color, can be customized
         }));
         setNodeOptions(paletteNodes);
