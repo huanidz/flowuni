@@ -12,6 +12,7 @@ class NodeData(BaseModel):
     label: Optional[str] = None
     node_type: str  # corresponds to 'node_type' in JSON
     input_values: Optional[Dict[str, Any]] = None
+    output_values: Optional[Dict[str, Any]] = None
     parameters: Optional[Dict[str, Any]] = None  # consider replacing with a typed model if possible
 
 class FlowNode(BaseModel):
