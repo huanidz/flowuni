@@ -6,7 +6,6 @@ import networkx as nx
 
 from loguru import logger
 
-
 class GraphCompilerError(Exception):
     """Custom exception for graph compilation errors."""
     pass

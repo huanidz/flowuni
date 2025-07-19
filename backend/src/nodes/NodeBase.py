@@ -183,7 +183,8 @@ class Node(ABC):
         return NodeData(
             label=original.label,
             node_type=original.node_type,
-            input_values=outputs,  # Outputs become inputs for next node
+            input_values=original.input_values,
+            output_values=outputs,
             parameters=original.parameters
         )
 

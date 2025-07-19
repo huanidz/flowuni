@@ -29,7 +29,7 @@ class NodeFactoryClass {
         label = nodeSpec.name, 
         description = nodeSpec.description, 
         parameters = {},
-        input_values = {}
+        input_values = {},
       } = data;
 
       const { handleParameterChange, handleInputValueChange } = useNodeHandlers(

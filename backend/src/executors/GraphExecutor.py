@@ -1,9 +1,11 @@
 import networkx as nx
 from typing import List
 from src.schemas.flowbuilder.flow_graph_schemas import NodeData
-from src.nodes.NodeBase import NodeSpec, NodeInput, NodeOutput
+from src.nodes.NodeBase import NodeSpec, NodeInput, NodeOutput, Node
 from src.nodes.NodeRegistry import nodeRegistry
 from loguru import logger
+
+from typing import Optional
 
 class GraphExecutor:
     def __init__(self, 
@@ -36,9 +38,14 @@ class GraphExecutor:
                 logger.debug(f"└── Data: {node_data.model_dump_json(indent=2)}")
 
                 logger.info(f"Creating and executing node instance: {node_spec.name}")
-                node_instance = nodeRegistry.create_node_instance(node_spec.name)
-                output = node_instance.run(node_data)
-                logger.success(f"Node execution complete. Output: {output}")
+                node_instance: Optional[Node] = nodeRegistry.create_node_instance(node_spec.name)
+
+                if not node_instance:
+                    logger.error(f"Node instance not found for name: {node_spec.name}")
+                    raise ValueError(f"Node instance not found for name: {node_spec.name}")
+
+                current_node_executed_data: NodeData = node_instance.run(node_data)
+                logger.success(f"Node execution complete. Output: {current_node_executed_data}")
 
                 successors = list(self.graph.successors(node_name))
                 if not successors:
@@ -66,7 +73,8 @@ class GraphExecutor:
                         
                         # Update the values
                         successor_input_values = successor_node_data.input_values
-                        successor_input_values[target_handle] = output.model_dump()["input_values"][source_handle]
+
+                        successor_input_values[target_handle] = current_node_executed_data.output_values[source_handle]
                         
                         # Log after update
                         logger.debug(f"Updated successor input values: {successor_input_values}")

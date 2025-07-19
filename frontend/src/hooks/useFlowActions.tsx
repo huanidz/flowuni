@@ -15,6 +15,7 @@ const logNodeDetails = (nodes: Node[]) => {
       type: node.type,
       parameters: node.data.parameters,
       input_values: node.data.input_values,
+      output_values: node.data.output_values,
       fullData: node.data,
     });
   });
@@ -33,7 +34,7 @@ const handleFlowRequest = async (
   const flowGraphData = getFlowGraphData(nodes, edges);
   console.log('Compiling flow with payload:', flowGraphData);
 
-//   logNodeDetails(nodes);
+  logNodeDetails(nodes);
 
   try {
     const response = await axios.post(endpoint, flowGraphData);
