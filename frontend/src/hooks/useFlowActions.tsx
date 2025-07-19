@@ -5,13 +5,13 @@ import axios from 'axios';
 const get_flow_graph_data = (nodes: Node[], edges: Edge[]) => {
     const flow_graph_data = {
         nodes: nodes.map(({ id, type, position, data }) => {
-            console.log(`Node ${id} data:`, data);
+            // console.log(`Node ${id} data:`, data);
             return { id, type, position, data };
         }),
         edges: edges.map(({ id, source, target, sourceHandle, targetHandle }) => ({ id, source, target, sourceHandle, targetHandle })),
     };
     
-    console.log('Complete flow graph data:', JSON.stringify(flow_graph_data, null, 2));
+    // console.log('Complete flow graph data:', JSON.stringify(flow_graph_data, null, 2));
     return flow_graph_data;
 };
 

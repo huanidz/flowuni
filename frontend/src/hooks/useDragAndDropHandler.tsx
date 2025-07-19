@@ -64,7 +64,6 @@ export const useDragDropHandler = (
         targetPosition: Position.Left,
       };
 
-      console.log('Dropped node with data:', customNode);
       setNodes((nds) => [...nds, customNode]);
       setNodeId((id) => id + 1);
     },

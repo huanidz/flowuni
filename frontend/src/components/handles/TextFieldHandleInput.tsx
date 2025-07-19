@@ -18,7 +18,7 @@ export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
   parameterName,
 }) => {
   const handleChange = (newValue: string) => {
-    console.log(`Input changed: ${newValue} for node ${nodeId} param ${parameterName}`);
+    // console.log(`Input changed: ${newValue} for node ${nodeId} param ${parameterName}`);
     if (onChange) {
       onChange(newValue);
     }

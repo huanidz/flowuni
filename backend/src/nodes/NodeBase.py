@@ -3,113 +3,206 @@ import json
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Type, Optional, List
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from src.schemas.flowbuilder.flow_graph_schemas import NodeData
 
+from src.exceptions.node_exceptions import NodeValidationError
+
 class ParameterSpec(BaseModel):
-    """Describe a single node‑parameter: its type, default value, and description."""
-    name: str
-    type: Type
-    value: Any
-    default: Any
-    description: str = ""
+    """Specification for a node parameter with type, default value, and description."""
+    name: str = Field(..., description="Parameter name")
+    type: Type = Field(..., description="Expected parameter type")
+    value: Any = Field(..., description="Current parameter value")
+    default: Any = Field(..., description="Default parameter value")
+    description: str = Field(default="", description="Parameter description")
+
 
 class NodeInput(BaseModel):
-    """Describe a single node‑input: its type, default value, and description."""
-    name: str
-    type: Type
-    value: Optional[Any] = None
-    default: Optional[Any] = None
-    description: str = ""
-    required: bool = False
+    """Specification for a node input with validation and metadata."""
+    name: str = Field(..., description="Input name")
+    type: Type = Field(..., description="Expected input type")
+    value: Optional[Any] = Field(default=None, description="Current input value")
+    default: Optional[Any] = Field(default=None, description="Default input value")
+    description: str = Field(default="", description="Input description")
+    required: bool = Field(default=False, description="Whether input is required")
+
 
 class NodeOutput(BaseModel):
-    """Describe a single node‑output: its type, default value, and description."""
-    name: str
-    type: Type
-    value: Optional[Any] = None
-    default: Optional[Any] = None
-    description: str = ""
+    """Specification for a node output with type information and metadata."""
+    name: str = Field(..., description="Output name")
+    type: Type = Field(..., description="Expected output type")
+    value: Optional[Any] = Field(default=None, description="Current output value")
+    default: Optional[Any] = Field(default=None, description="Default output value")
+    description: str = Field(default="", description="Output description")
+
 
 class NodeSpec(BaseModel):
-    name: str
-    description: str
-    inputs: List[NodeInput]
-    outputs: List[NodeOutput]
-    parameters: Dict[str, ParameterSpec]
-    can_be_tool: bool = False
+    """Complete specification for a node including inputs, outputs, and parameters."""
+    name: str = Field(..., description="Node name")
+    description: str = Field(..., description="Node description")
+    inputs: List[NodeInput] = Field(default_factory=list, description="Node inputs")
+    outputs: List[NodeOutput] = Field(default_factory=list, description="Node outputs")
+    parameters: Dict[str, ParameterSpec] = Field(default_factory=dict, description="Node parameters")
+    can_be_tool: bool = Field(default=False, description="Whether node can be used as a tool")
 
 class Node(ABC):
+    """Abstract base class for all nodes in the processing graph."""
+    
     spec: NodeSpec
 
     def __init_subclass__(cls, **kwargs):
+        """Validate node specification when subclass is created."""
         super().__init_subclass__(**kwargs)
+        cls._validate_node_spec()
+
+    @classmethod
+    def _validate_node_spec(cls) -> None:
+        """Validate that the node specification is properly defined."""
         spec = getattr(cls, "spec", None)
         if spec is None:
-            raise ValueError(f"{cls.__name__} must define a `spec` attribute.")
+            raise NodeValidationError(f"{cls.__name__} must define a `spec` attribute")
 
         if spec.can_be_tool:
-            if not spec.outputs:
-                raise ValueError(f"{cls.__name__} marked as tool but has no outputs.")
-            if not spec.inputs and not spec.parameters:
-                raise ValueError(f"{cls.__name__} marked as tool but has no inputs or parameters.")
+            cls._validate_tool_requirements(spec)
 
-    def get_input_map(self, node_data: NodeData) -> Dict[str, Any]:
+    @classmethod
+    def _validate_tool_requirements(cls, spec: NodeSpec) -> None:
+        """Validate requirements for nodes that can be used as tools."""
+        if not spec.outputs:
+            raise NodeValidationError(
+                f"{cls.__name__} marked as tool but has no outputs"
+            )
+        if not spec.inputs and not spec.parameters:
+            raise NodeValidationError(
+                f"{cls.__name__} marked as tool but has no inputs or parameters"
+            )
+
+    def _extract_input_values(self, node_data: 'NodeData') -> Dict[str, Any]:
+        """Extract and validate input values from node data."""
         input_values = node_data.input_values or {}
-        inputs = {}
+        extracted_inputs = {}
+        
         for input_spec in self.spec.inputs:
-            val = input_values.get(input_spec.name, input_spec.default)
-            if val is None and input_spec.required:
-                raise ValueError(f"Missing required input: '{input_spec.name}'")
-            inputs[input_spec.name] = val
-        return inputs
+            value = input_values.get(input_spec.name, input_spec.default)
+            
+            if value is None and input_spec.required:
+                raise NodeValidationError(f"Missing required input: '{input_spec.name}'")
+            
+            extracted_inputs[input_spec.name] = value
+            
+        return extracted_inputs
 
-    def get_parameter_map(self, node_data: NodeData) -> Dict[str, Any]:
+    def _extract_parameter_values(self, node_data: 'NodeData') -> Dict[str, Any]:
+        """Extract parameter values from node data with defaults."""
         param_values = node_data.parameters or {}
         return {
             name: param_values.get(name, spec.default)
             for name, spec in self.spec.parameters.items()
         }
 
-    def build_output_map(self, result: Any) -> Dict[str, Any]:
-        outputs = self.spec.outputs
-        if len(outputs) == 0:
+    def _build_output_mapping(self, result: Any) -> Dict[str, Any]:
+        """Convert processing result into properly mapped output values."""
+        if not self.spec.outputs:
             return {}
 
-        if len(outputs) == 1:
-            if not isinstance(result, dict):
-                return {outputs[0].name: result}
-            # Even if it's a dict, extract the value by name
-            return {outputs[0].name: result.get(outputs[0].name)}
+        if len(self.spec.outputs) == 1:
+            return self._handle_single_output(result)
+        
+        return self._handle_multiple_outputs(result)
 
+    def _handle_single_output(self, result: Any) -> Dict[str, Any]:
+        """Handle case where node has exactly one output."""
+        output_name = self.spec.outputs[0].name
+        
+        if isinstance(result, dict):
+            # If result is a dict, try to extract by output name, fallback to the dict itself
+            return {output_name: result.get(output_name, result)}
+        
+        # For non-dict results, use the value directly
+        return {output_name: result}
+
+    def _handle_multiple_outputs(self, result: Any) -> Dict[str, Any]:
+        """Handle case where node has multiple outputs."""
         if not isinstance(result, dict):
-            raise ValueError("Multiple outputs require the result to be a dictionary.")
+            raise NodeValidationError(
+                "Multiple outputs require the result to be a dictionary"
+            )
 
-        declared = [o.name for o in outputs]
-        missing = [name for name in declared if name not in result]
+        declared_outputs = {output.name for output in self.spec.outputs}
+        result_keys = set(result.keys())
+        
+        self._validate_output_completeness(declared_outputs, result_keys)
+        
+        return {name: result[name] for name in declared_outputs}
+
+    def _validate_output_completeness(self, declared: set, actual: set) -> None:
+        """Validate that all required outputs are present and no extra outputs exist."""
+        missing = declared - actual
         if missing:
-            raise ValueError(f"Missing output keys: {missing}")
+            raise NodeValidationError(f"Missing output keys: {sorted(missing)}")
 
-        extra = set(result.keys()) - set(declared)
+        extra = actual - declared
         if extra:
-            raise ValueError(f"Unexpected output keys: {extra}")
+            raise NodeValidationError(f"Unexpected output keys: {sorted(extra)}")
 
-        return {name: result[name] for name in declared}
+    @abstractmethod
+    def process(self, inputs: Dict[str, Any], parameters: Dict[str, Any]) -> Any:
+        """
+        Process inputs and parameters to produce outputs.
+        
+        Args:
+            inputs: Dictionary of input values
+            parameters: Dictionary of parameter values
+            
+        Returns:
+            Processing result (single value for single output, dict for multiple outputs)
+        """
+        pass
 
-    def run(self, node_data: NodeData) -> NodeData:
-        inputs = self.get_input_map(node_data)
-        parameters = self.get_parameter_map(node_data)
-
+    def execute(self, node_data: 'NodeData') -> 'NodeData':
+        """
+        Execute the node with given data and return updated node data.
+        
+        Args:
+            node_data: Input node data containing values and parameters
+            
+        Returns:
+            Updated node data with processing results
+        """
+        inputs = self._extract_input_values(node_data)
+        parameters = self._extract_parameter_values(node_data)
+        
         result = self.process(inputs, parameters)
-        output_values = self.build_output_map(result)
+        output_values = self._build_output_mapping(result)
+        
+        return self._create_result_node_data(node_data, output_values)
 
+    def _create_result_node_data(self, original: 'NodeData', outputs: Dict[str, Any]) -> 'NodeData':
+        """Create result node data with outputs."""
         return NodeData(
-            label=node_data.label,
-            node_type=node_data.node_type,
-            input_values=output_values,
-            parameters=node_data.parameters
+            label=original.label,
+            node_type=original.node_type,
+            input_values=outputs,  # Outputs become inputs for next node
+            parameters=original.parameters
         )
+
+    # Deprecated methods for backwards compatibility
+    def get_input_map(self, node_data: 'NodeData') -> Dict[str, Any]:
+        """Deprecated: Use _extract_input_values instead."""
+        return self._extract_input_values(node_data)
+
+    def get_parameter_map(self, node_data: 'NodeData') -> Dict[str, Any]:
+        """Deprecated: Use _extract_parameter_values instead."""
+        return self._extract_parameter_values(node_data)
+
+    def build_output_map(self, result: Any) -> Dict[str, Any]:
+        """Deprecated: Use _build_output_mapping instead."""
+        return self._build_output_mapping(result)
+
+    def run(self, node_data: 'NodeData') -> 'NodeData':
+        """Deprecated: Use execute instead."""
+        return self.execute(node_data)
 
     @abstractmethod
     def process(self, inputs: Dict[str, Any], parameters: Dict[str, Any]) -> Any:
