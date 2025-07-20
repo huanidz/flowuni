@@ -12,7 +12,7 @@ pydantic-settings==2.7.1
 # Database
 sqlalchemy==2.0.38
 psycopg2-binary==2.9.10
-asyncpg
+asyncpg==0.30.0
 
 # Others
 natsort==8.4.0
@@ -23,3 +23,7 @@ langfuse==2.44.0
 
 # Graph and Nodes
 networkx==3.5
+
+# Task Queue
+celery==5.5.3
+redis==5.2.1

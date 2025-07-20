@@ -12,6 +12,7 @@ sudo docker compose -f "$COMPOSE_FILE" -p "$PROJECT_NAME" down -v
 echo "🧹 Removing local data directories..."
 sudo rm -rf ./docker/redis_data/
 sudo rm -rf ./docker/postgres_data/
+sudo rm -rf ./docker/celery_postgres_data/
 sudo rm -rf ./docker/logs/
 
 echo "🗑 Removing named Docker volumes..."

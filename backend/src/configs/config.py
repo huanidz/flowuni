@@ -3,7 +3,6 @@ from pydantic_settings import BaseSettings
 from functools import lru_cache
 
 from pydantic import Field, field_validator
-import os
         
 class Settings(BaseSettings):
     """Configuration settings for the application."""
@@ -32,6 +31,10 @@ class Settings(BaseSettings):
     # Backend node catalog path
     BACKEND_GENERATED_NODE_CATALOG_JSON_PATH: str
     
+    # Celery configuration
+    CELERY_BROKER_URL: str
+    CELERY_RESULT_BACKEND: str
+
     @field_validator("ENVIRONMENT")
     def validate_environment(cls, v: str) -> str:
         """Validate that the environment is valid."""
