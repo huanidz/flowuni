@@ -25,6 +25,11 @@ services:
       - ../backend/src:/app/src
     env_file:
       - ../.env
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A src.celery_worker.worker.celery_app inspect ping -d celery@$$HOSTNAME | grep -q 'pong'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     depends_on:
       db_service:
         condition: service_healthy
@@ -32,6 +37,25 @@ services:
         condition: service_healthy
     command: >
       celery -A src.celery_worker.worker.celery_app worker --loglevel=info
+
+  flower:
+    image: mher/flower:master
+    env_file:
+      - ../.env
+    command: >
+      celery
+      --broker=${CELERY_BROKER_URL}
+      flower
+      --port=5555
+    ports:
+      - "5555:5555"
+    depends_on:
+      redis-broker:
+        condition: service_healthy
+      celery-worker:
+        condition: service_healthy
+    # Add this to command (if needed) to enable basic auth
+    # --basic_auth=admin:secret
 
   db_service:
     image: postgres:16

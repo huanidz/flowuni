@@ -27,3 +27,4 @@ networkx==3.5
 # Task Queue
 celery==5.5.3
 redis==5.2.1
+flower==2.0.1
