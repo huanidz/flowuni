@@ -28,3 +28,4 @@ networkx==3.5
 celery==5.5.3
 redis==5.2.1
 flower==2.0.1
+aioredis==2.0.1
