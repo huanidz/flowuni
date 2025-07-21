@@ -1,43 +1,41 @@
 import traceback
-from datetime import datetime
 
-from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, HTTPException, Request
 from loguru import logger
-from src.celery_worker.tasks.flow_execution_tasks import compile_flow, run_flow
-from src.schemas.flowbuilder.flow_graph_schemas import FlowGraphRequest
+from sqlalchemy.orm import Session
+from src.dependencies.db_dependency import get_db
+from src.models.alchemy.flows.FlowModel import FlowModel
+from src.repositories.FlowRepositories import FlowRepository
+from src.schemas.flowbuilder.flow_crud_schemas import EmptyFlowCreateResponse
 
-flow_execution_router = APIRouter(
-    prefix="/api/flow_execution",
-    tags=["flow_execution"],
+flow_router = APIRouter(
+    prefix="/api/flow",
+    tags=["flow_crud"],
 )
 
 
-@flow_execution_router.post("/compile")
-async def compile_flow_endpoint(request: Request):
+# Dependencies
+def get_flow_repository(db_session: Session = Depends(get_db)) -> FlowRepository:
+    return FlowRepository(db_session=db_session)
+
+
+@flow_router.post("/create", response_model=EmptyFlowCreateResponse)
+async def create_empty_flow(
+    request: Request, flow_repository: FlowRepository = Depends(get_flow_repository)
+):
     """
     Receives, validates, and queues a flow graph compilation task.
     """
     try:
         request_json = await request.json()
-        flow_graph_request = FlowGraphRequest(**request_json)
 
-        # Submit compile task to Celery
-        task = compile_flow.delay("flow-compile", flow_graph_request.model_dump())
+        flow: FlowModel = flow_repository.create_empty_flow()
 
-        logger.info("Compilation task submitted to Celery.")
-
-        return JSONResponse(
-            status_code=202,
-            content={
-                "status": "queued",
-                "task_id": task.id,
-                "message": "Flow compilation task has been queued.",
-                "received_at": datetime.utcnow().isoformat(),
-                "node_count": len(flow_graph_request.nodes),
-                "edge_count": len(flow_graph_request.edges),
-            },
+        response = EmptyFlowCreateResponse(
+            flow_id=flow.flow_id, message="new empty flow created successfully"
         )
+
+        return response
 
     except Exception as e:
         logger.error(
@@ -46,38 +44,4 @@ async def compile_flow_endpoint(request: Request):
         raise HTTPException(
             status_code=500,
             detail="An error occurred while queuing the compilation task.",
-        )
-
-
-@flow_execution_router.post("/execute")
-async def execute_flow_endpoint(request: Request):
-    """
-    Receives, validates, and queues a flow graph execution task.
-    """
-    try:
-        request_json = await request.json()
-        flow_graph_request = FlowGraphRequest(**request_json)
-
-        # Submit run task to Celery
-        task = run_flow.delay("flow-execute", flow_graph_request.model_dump())
-
-        logger.info("Execution task submitted to Celery.")
-
-        return JSONResponse(
-            status_code=202,
-            content={
-                "status": "queued",
-                "task_id": task.id,
-                "message": "Flow execution task has been queued.",
-                "received_at": datetime.utcnow().isoformat(),
-                "node_count": len(flow_graph_request.nodes),
-                "edge_count": len(flow_graph_request.edges),
-            },
-        )
-
-    except Exception as e:
-        logger.error(f"Error queuing execution task: {e}\n{traceback.format_exc()}")
-        raise HTTPException(
-            status_code=500,
-            detail="An error occurred while queuing the execution task.",
         )

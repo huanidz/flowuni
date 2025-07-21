@@ -4,7 +4,8 @@ from fastapi.middleware.gzip import GZipMiddleware
 from src.configs.config import get_settings
 from src.configs.LoggingConfig import setup_logger
 from src.routes.common_routes import common_router
-from src.routes.flow_routes import flow_execution_router
+from src.routes.flow_routes import flow_router
+from src.routes.flow_runner_routes import flow_execution_router
 from src.routes.node_routes import node_router
 
 # Get application settings and set up logging
@@ -24,5 +25,6 @@ app.add_middleware(
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 app.include_router(node_router)
+app.include_router(flow_router)
 app.include_router(flow_execution_router)
 app.include_router(common_router)
