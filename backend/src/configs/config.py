@@ -1,7 +1,7 @@
-from pydantic_settings import BaseSettings
 from functools import lru_cache
 
 from pydantic import Field, field_validator
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -34,6 +34,12 @@ class Settings(BaseSettings):
     # Celery configuration
     CELERY_BROKER_URL: str
     CELERY_RESULT_BACKEND: str
+
+    CELERY_MAX_RETRIES: int = 5
+    CELERY_RETRY_DELAY: int = 3
+    CELERY_RETRY_BACKOFF_MAX: int = 60
+    CELERY_RETRY_BACKOFF: bool = True
+    CELERY_RETRY_JITTER: bool = True
 
     @field_validator("ENVIRONMENT")
     def validate_environment(cls, v: str) -> str:
