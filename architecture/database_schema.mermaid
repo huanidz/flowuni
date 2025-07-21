@@ -1,0 +1,63 @@
+erDiagram
+    flows {
+        UUID id PK
+        UUID user_id FK
+        VARCHAR name
+        JSONB definition
+        BOOLEAN is_active
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+
+    flow_executions {
+        UUID id PK
+        UUID flow_id FK
+        ENUM status "pending,running,completed,failed"
+        ENUM execution_mode "full,partial"
+        VARCHAR starting_node_id "null for full execution"
+        JSONB flow_definition_snapshot "backup definition at execution time"
+        TIMESTAMP started_at
+        TIMESTAMP finished_at
+        TIMESTAMP created_at
+    }
+
+    node_executions {
+        UUID id PK
+        UUID flow_execution_id FK
+        VARCHAR node_id "matches node ID in flow definition"
+        ENUM status "pending,running,completed,failed,skipped"
+        JSONB input_data "data received from previous nodes"
+        JSONB output_data "data produced by this node"
+        TEXT error_message "error details if failed"
+        INTEGER execution_order "order in which node was executed"
+        TEXT parent_node_ids[] "array of parent node IDs"
+        TIMESTAMP started_at
+        TIMESTAMP finished_at
+        TIMESTAMP created_at
+    }
+
+    node_dependencies {
+        UUID id PK
+        UUID flow_id FK
+        VARCHAR source_node_id
+        VARCHAR target_node_id
+        VARCHAR connection_type "default,conditional,loop"
+        JSONB connection_config "additional connection parameters"
+        TIMESTAMP created_at
+    }
+
+    execution_logs {
+        UUID id PK
+        UUID flow_execution_id FK
+        UUID node_execution_id FK "nullable"
+        ENUM log_level "info,warning,error,debug"
+        TEXT message
+        JSONB metadata "additional log context"
+        TIMESTAMP created_at
+    }
+
+    flows ||--o{ flow_executions : "has many executions"
+    flows ||--o{ node_dependencies : "defines dependencies"
+    flow_executions ||--o{ node_executions : "contains node executions"
+    flow_executions ||--o{ execution_logs : "generates logs"
+    node_executions ||--o{ execution_logs : "generates logs"

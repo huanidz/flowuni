@@ -1,1 +1,1 @@
-docker exec -it piscale-law-qa-refractored-app-1 bash
+docker exec -it flowuni-app-1 bash

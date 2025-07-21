@@ -1,5 +1,5 @@
 # --- Builder Stage ---
-FROM ghcr.io/astral-sh/uv:python3.11-alpine AS builder
+FROM ghcr.io/astral-sh/uv:python3.11-bookworm-slim AS builder
 
 WORKDIR /app
 
@@ -8,7 +8,7 @@ COPY ./backend/requirements.txt .
 RUN uv pip install --system --no-cache-dir -r requirements.txt
 
 # --- Final Stage ---
-FROM python:3.11-alpine
+FROM python:3.11-slim
 
 WORKDIR /app
 

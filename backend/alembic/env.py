@@ -1,14 +1,10 @@
+import os
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
-
 from alembic import context
-
-import os
 from dotenv import load_dotenv
-
 from loguru import logger
+from sqlalchemy import engine_from_config, pool
 
 # Load dotenv, only used in development
 load_dotenv()
@@ -27,6 +23,11 @@ logger.info("Replacing asyncpg with sync version. DATABASE_URL: ", DATABASE_URL)
 # access to the values within the .ini file in use.
 config = context.config
 config.set_main_option("sqlalchemy.url", DATABASE_URL)
+
+# Ensure the versions directory exists
+alembic_dir = os.path.dirname(__file__)
+versions_dir = os.path.join(alembic_dir, "versions")
+os.makedirs(versions_dir, exist_ok=True)
 
 from src.models.alchemy.shared.AppBaseModel import AppBaseModel
 

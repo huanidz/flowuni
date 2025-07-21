@@ -1,8 +1,6 @@
 from datetime import datetime
-import uuid
-from sqlalchemy import Column, BigInteger, Boolean, DateTime, String
-from sqlalchemy.dialects.postgresql import UUID
 
+from sqlalchemy import BigInteger, Boolean, Column, DateTime, String
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
@@ -15,10 +13,9 @@ class AppBaseModel(Base):
     Contains common columns and methods for all models.
     """
 
-    __abstract__ = True  # Chỉ định model này không tạo bảng trong DB
+    __abstract__ = True
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
-    uuid = Column(UUID(as_uuid=True), default=uuid.uuid4, nullable=False, unique=True)
     is_deleted = Column(Boolean, default=False)
     time_created = Column(DateTime, default=datetime.utcnow)
     time_modified = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

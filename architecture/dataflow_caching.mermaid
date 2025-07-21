@@ -1,0 +1,64 @@
+graph TD
+    subgraph "Flow Definition (JSONB)"
+        FlowDef["Flow Definition<br/>{<br/>  nodes: [A, B, C],<br/>  edges: [A→B, B→C]<br/>}"]
+    end
+    
+    subgraph "Execution Context"
+        FullExec["Full Execution<br/>execution_mode: 'full'<br/>starting_node: null"]
+        PartialExec["Partial Execution<br/>execution_mode: 'partial'<br/>starting_node: 'B'"]
+    end
+    
+    subgraph "Node Execution Data"
+        NodeA["Node A Execution<br/>status: 'completed'<br/>output_data: {result: 'A_output'}<br/>finished_at: timestamp"]
+        NodeB["Node B Execution<br/>status: 'completed'<br/>input_data: {result: 'A_output'}<br/>output_data: {result: 'B_output'}<br/>finished_at: timestamp"]
+        NodeC["Node C Execution<br/>status: 'completed'<br/>input_data: {result: 'B_output'}<br/>output_data: {result: 'C_output'}<br/>finished_at: timestamp"]
+    end
+    
+    subgraph "UI State Management"
+        UIState["Frontend State<br/>{<br/>  nodeStatuses: {A: 'completed', B: 'running', C: 'pending'},<br/>  nodeData: {A: {...}, B: {...}},<br/>  showDataToggle: true<br/>}"]
+    end
+    
+    subgraph "Real-time Updates"
+        WSEvents["WebSocket Events<br/>• node_started<br/>• node_completed<br/>• node_failed<br/>• flow_completed"]
+    end
+    
+    %% Flow connections
+    FlowDef --> FullExec
+    FlowDef --> PartialExec
+    
+    %% Full execution flow
+    FullExec --> NodeA
+    NodeA --> NodeB
+    NodeB --> NodeC
+    
+    %% Partial execution with data reuse
+    PartialExec --> NodeA
+    NodeA -.->|"Reuse cached data"| NodeB
+    NodeB --> NodeC
+    
+    %% Real-time updates
+    NodeA --> WSEvents
+    NodeB --> WSEvents
+    NodeC --> WSEvents
+    WSEvents --> UIState
+    
+    %% Data persistence and caching
+    subgraph "Caching Strategy"
+        CacheLogic["Data Caching Logic<br/>1. Save output_data after each node<br/>2. For partial execution, load previous outputs<br/>3. Use timestamp to ensure data freshness"]
+    end
+    
+    NodeA --> CacheLogic
+    NodeB --> CacheLogic
+    NodeC --> CacheLogic
+    CacheLogic -.-> PartialExec
+    
+    %% Styling
+    classDef execution fill:#e3f2fd
+    classDef data fill:#f1f8e9
+    classDef ui fill:#fce4ec
+    classDef cache fill:#fff8e1
+    
+    class FullExec,PartialExec execution
+    class NodeA,NodeB,NodeC data
+    class UIState,WSEvents ui
+    class CacheLogic cache

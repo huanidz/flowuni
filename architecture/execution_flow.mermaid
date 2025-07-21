@@ -1,0 +1,74 @@
+sequenceDiagram
+    participant UI as Frontend UI
+    participant API as Backend API
+    participant Engine as Flow Engine
+    participant Runner as Node Runner
+    participant DB as Database
+    participant WS as WebSocket
+    
+    Note over UI,WS: FULL FLOW EXECUTION
+    UI->>API: POST /flows/{id}/execute
+    API->>DB: Create flow_execution (mode='full')
+    API->>Engine: Start full execution
+    API-->>UI: execution_id
+    
+    Engine->>DB: Get flow definition
+    Engine->>Engine: Build DAG & execution plan
+    
+    loop For each node in execution order
+        Engine->>Runner: Execute Node A
+        Runner->>DB: Create node_execution (status='running')
+        Runner->>WS: Emit 'node_started' {nodeId: A, status: 'running'}
+        WS-->>UI: Update Node A visual (running)
+        
+        Runner->>Runner: Process Node A logic
+        Runner->>DB: Update node_execution (status='completed', output_data)
+        Runner->>WS: Emit 'node_completed' {nodeId: A, status: 'completed', data}
+        WS-->>UI: Update Node A visual (completed) + Show data if enabled
+        
+        Engine->>Runner: Execute Node B (with A's output)
+        Runner->>DB: Create node_execution (status='running', input_data from A)
+        Runner->>WS: Emit 'node_started' {nodeId: B, status: 'running'}
+        WS-->>UI: Update Node B visual (running)
+        
+        Runner->>Runner: Process Node B logic
+        Runner->>DB: Update node_execution (status='completed', output_data)
+        Runner->>WS: Emit 'node_completed' {nodeId: B, status: 'completed', data}
+        WS-->>UI: Update Node B visual (completed) + Show data if enabled
+    end
+    
+    Engine->>DB: Update flow_execution (status='completed')
+    Engine->>WS: Emit 'flow_completed'
+    WS-->>UI: Show flow completion status
+    
+    Note over UI,WS: START FROM NODE EXECUTION
+    UI->>API: POST /flows/{id}/execute-from-node {starting_node: 'B'}
+    API->>DB: Get latest completed execution
+    API->>DB: Get output_data from previous nodes (Node A)
+    API->>DB: Create new flow_execution (mode='partial', starting_node='B')
+    API->>Engine: Start partial execution from Node B
+    API-->>UI: new_execution_id
+    
+    Engine->>Runner: Execute Node B (with cached data from A)
+    Runner->>DB: Create node_execution (status='running', input_data from cache)
+    Runner->>WS: Emit 'node_started' {nodeId: B, status: 'running'}
+    WS-->>UI: Update Node B visual (running)
+    
+    Runner->>Runner: Process Node B logic
+    Runner->>DB: Update node_execution (status='completed', output_data)
+    Runner->>WS: Emit 'node_completed' {nodeId: B, status: 'completed', data}
+    WS-->>UI: Update Node B visual (completed) + Show data if enabled
+    
+    Engine->>Runner: Execute Node C (with B's new output)
+    Runner->>DB: Create node_execution (status='running')
+    Runner->>WS: Emit 'node_started' {nodeId: C, status: 'running'}
+    WS-->>UI: Update Node C visual (running)
+    
+    Runner->>Runner: Process Node C logic
+    Runner->>DB: Update node_execution (status='completed', output_data)
+    Runner->>WS: Emit 'node_completed' {nodeId: C, status: 'completed', data}
+    WS-->>UI: Update Node C visual (completed) + Show data if enabled
+    
+    Engine->>DB: Update flow_execution (status='completed')
+    Engine->>WS: Emit 'flow_completed'
+    WS-->>UI: Show flow completion status
