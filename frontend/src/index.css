@@ -119,6 +119,12 @@
   }
 }
 
+.react-flow__edge path {
+  stroke: #0d0d0e !important;
+  stroke-width: 2px !important;
+  filter: drop-shadow(0 0 2px rgba(0, 15, 14, 0.4));
+}
+
 /* Styles for selected nodes */
 .react-flow__node.selected {
   box-shadow: 0 0 0 2px #007bff, 0 0 0 4px rgba(0, 123, 255, 0.5); /* Blue glow effect */
