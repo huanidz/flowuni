@@ -1,8 +1,9 @@
 import importlib
 import pkgutil
-from typing import Dict, Type, Optional
-from src.nodes.NodeBase import Node, NodeSpec
+from typing import Dict, Optional, Type
+
 import src.nodes as nodes_pkg
+from src.nodes.NodeBase import Node, NodeSpec
 
 
 class NodeRegistry:
@@ -51,6 +52,3 @@ class NodeRegistry:
 
     def get_all_nodes(self) -> Dict[str, NodeSpec]:
         return {name: cls.spec for name, cls in self._node_classes.items()}
-
-
-nodeRegistry = NodeRegistry()

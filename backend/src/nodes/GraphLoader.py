@@ -1,10 +1,9 @@
-from loguru import logger
+from typing import Any, Dict, List
 
 import networkx as nx
-from typing import Dict, List, Any
-
+from loguru import logger
+from src.nodes.NodeRegistry import NodeRegistry
 from src.schemas.flowbuilder.flow_graph_schemas import FlowGraphRequest, FlowNode
-from src.nodes.NodeRegistry import nodeRegistry
 
 
 class GraphLoader:
@@ -16,6 +15,8 @@ class GraphLoader:
         """
         logger.debug("Loading flow graph from request")
         G = nx.DiGraph()
+
+        nodeRegistry = NodeRegistry()
 
         # Load nodes
         list_of_nodes: List[FlowNode] = flow.nodes

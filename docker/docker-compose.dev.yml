@@ -36,7 +36,9 @@ services:
       redis-broker:
         condition: service_healthy
     command: >
-      celery -A src.celery_worker.celery_worker.celery_app worker --loglevel=info
+      sh -c "
+        watchfiles 'celery -A src.celery_worker.celery_worker.celery_app worker --loglevel=info' /app/src
+      "
 
   flower:
     image: mher/flower:master

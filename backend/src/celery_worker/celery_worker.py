@@ -1,5 +1,10 @@
+import os
+import sys
+
 from celery import Celery
 from src.configs.config import get_settings
+
+sys.path.insert(0, os.getcwd())
 
 app_settings = get_settings()
 
@@ -20,9 +25,9 @@ celery_app.conf.update(
     enable_utc=True,
 )
 
-celery_app.autodiscover_tasks(["src.celery_worker.tasks"])
+celery_app.autodiscover_tasks(["src.celery_worker.tasks.flow_execution_tasks"])
 
 
-@celery_app.task
-def ping():
-    return "pong"
+# @celery_app.task
+# def ping():
+#     return "pong"

@@ -12,11 +12,14 @@ FROM python:3.11-alpine
 
 WORKDIR /app
 
+
 # Copy only necessary dependencies from builder
 COPY --from=builder /usr/local /usr/local
 
 # Copy application code (ensure .dockerignore excludes non-essential files)
 COPY ./backend .
+
+ENV PYTHONPATH=/app
 
 EXPOSE 5001
 
