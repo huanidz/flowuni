@@ -1,9 +1,9 @@
-
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 
 from pydantic import Field, field_validator
-        
+
+
 class Settings(BaseSettings):
     """Configuration settings for the application."""
 
@@ -30,7 +30,7 @@ class Settings(BaseSettings):
 
     # Backend node catalog path
     BACKEND_GENERATED_NODE_CATALOG_JSON_PATH: str
-    
+
     # Celery configuration
     CELERY_BROKER_URL: str
     CELERY_RESULT_BACKEND: str
@@ -51,11 +51,12 @@ class Settings(BaseSettings):
 
     class Config:
         """Pydantic configuration for environment variables."""
+
         env_file = ".env"
         env_file_encoding = "utf-8"
         case_sensitive = True
         extra = "allow"
-        
+
     @property
     def is_development(self) -> bool:
         """Check if the current environment is development."""
@@ -65,7 +66,8 @@ class Settings(BaseSettings):
     def is_production(self) -> bool:
         """Check if the current environment is production."""
         return self.ENVIRONMENT == "production"
-        
+
+
 @lru_cache()
 def get_settings() -> Settings:
     """Get the application settings."""

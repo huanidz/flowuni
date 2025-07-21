@@ -1,5 +1,6 @@
 from functools import wraps
 
+
 def enforce_spec(func):
     @wraps(func)
     def wrapper(self, inputs: dict, parameters: dict):
@@ -38,7 +39,9 @@ def enforce_spec(func):
         # Optional: check for extra undeclared outputs
         extra_keys = set(result.keys()) - set(output_names)
         if extra_keys:
-            raise ValueError(f"Unexpected output keys: {extra_keys}. Only allowed: {output_names}")
+            raise ValueError(
+                f"Unexpected output keys: {extra_keys}. Only allowed: {output_names}"
+            )
 
         return result
 

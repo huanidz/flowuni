@@ -23,7 +23,7 @@ class InstructorService:
         DEFAULT_MIXIN_INSTRUCTION = (
             f"Thời gian hiện tại: {get_current_time(timezone=7)}\n"
             f"Sử dụng ngôn ngữ giống với User trong output (Nếu không nhận ra ngôn ngữ của user, sử dụng tiếng Anh.)\n"
-            f"Khi có media (ảnh, audio) thì không mô tả chúng, cố gắng hiểu ý đồ của người dùng thông qua ảnh. Nếu không hiểu thì hỏi người dùng để làm rõ mong muốn của họ." 
+            f"Khi có media (ảnh, audio) thì không mô tả chúng, cố gắng hiểu ý đồ của người dùng thông qua ảnh. Nếu không hiểu thì hỏi người dùng để làm rõ mong muốn của họ."
         )
 
         final_mixin = (

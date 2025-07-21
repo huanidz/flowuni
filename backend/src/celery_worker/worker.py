@@ -14,6 +14,7 @@ celery_app = Celery(
     backend=RESULT_BACKEND,
 )
 
+
 @celery_app.task
 def ping():
     return "pong"

@@ -83,14 +83,16 @@ class StructuredOutputModelBuilder:
         # Create main model
         return create_model(
             pydantic_model_name,
-            reasoning=(str, Field(
-                description=
-                "Reasoning for the task planning (Based on other agent's capabilities and limitations). Your reasoning should follow and output these steps:"
-                "## STEP 1: Identify the user query"
-                "## STEP 2: Identify other agents capabilities and limitations. DO NOT assume their capabilities other than provided."
-                "## STEP 3: Decide whether the capabilities of other agents are enough to handle the user query. If not, then the task planning should be empty."
-                "## SETP 4: If there're agent that can handle the query, identify the most suitable agent to handle it. Do not guess or make things up."
-            )),
+            reasoning=(
+                str,
+                Field(
+                    description="Reasoning for the task planning (Based on other agent's capabilities and limitations). Your reasoning should follow and output these steps:"
+                    "## STEP 1: Identify the user query"
+                    "## STEP 2: Identify other agents capabilities and limitations. DO NOT assume their capabilities other than provided."
+                    "## STEP 3: Decide whether the capabilities of other agents are enough to handle the user query. If not, then the task planning should be empty."
+                    "## SETP 4: If there're agent that can handle the query, identify the most suitable agent to handle it. Do not guess or make things up."
+                ),
+            ),
             task_items=(List[TaskItem], Field(description="List of task items.")),
             __base__=BaseModel,
         )

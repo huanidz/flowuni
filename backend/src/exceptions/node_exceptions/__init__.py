@@ -1,5 +1,3 @@
 from .node_exceptions import NodeValidationError
 
-__all__ = [
-    "NodeValidationError"
-]
+__all__ = ["NodeValidationError"]

@@ -22,7 +22,9 @@ class GraphLoader:
         logger.debug(f"Found {len(list_of_nodes)} nodes in the flow request")
 
         for idx, node in enumerate(list_of_nodes):
-            logger.debug(f"Processing node {idx + 1}/{len(list_of_nodes)} with ID: {node.id}, type: {node.type}")
+            logger.debug(
+                f"Processing node {idx + 1}/{len(list_of_nodes)} with ID: {node.id}, type: {node.type}"
+            )
             node_spec = nodeRegistry.get_node(node.type)
             if not node_spec:
                 logger.debug(f"Unknown node type encountered: {node.type}")
@@ -31,7 +33,9 @@ class GraphLoader:
             # Optionally: create node instance (runtime execution)
             NodeClass = nodeRegistry.create_node_class(node.type)
             node_instance = NodeClass() if NodeClass else None
-            logger.debug(f"Instantiated node {node.id} with class: {NodeClass.__name__ if NodeClass else 'None'}")
+            logger.debug(
+                f"Instantiated node {node.id} with class: {NodeClass.__name__ if NodeClass else 'None'}"
+            )
 
             G.add_node(
                 node.id,
@@ -44,8 +48,15 @@ class GraphLoader:
         # Load edges
         logger.debug("Adding edges to the graph")
         for idx, edge in enumerate(flow.edges):
-            logger.debug(f"Adding edge {idx + 1}/{len(flow.edges)}: {edge.source} -> {edge.target}")
-            G.add_edge(edge.source, edge.target, source_handle=edge.sourceHandle, target_handle=edge.targetHandle)
+            logger.debug(
+                f"Adding edge {idx + 1}/{len(flow.edges)}: {edge.source} -> {edge.target}"
+            )
+            G.add_edge(
+                edge.source,
+                edge.target,
+                source_handle=edge.sourceHandle,
+                target_handle=edge.targetHandle,
+            )
 
         logger.debug("Flow graph successfully constructed")
         return G
@@ -61,29 +72,32 @@ class GraphLoader:
         nodes = []
         for node_id, data in G.nodes(data=True):
             logger.trace(f"Serializing node: {node_id}")
-            nodes.append({
-                "id": node_id,
-                "type": data["type"],
-                "label": data.get("label"),
-                "position": data.get("position"),
-                "inputs": data.get("inputs"),
-                "outputs": data.get("outputs"),
-                "parameters": data.get("parameters"),
-                "spec": data["spec"].model_dump() if hasattr(data["spec"], "model_dump") else None
-            })
+            nodes.append(
+                {
+                    "id": node_id,
+                    "type": data["type"],
+                    "label": data.get("label"),
+                    "position": data.get("position"),
+                    "inputs": data.get("inputs"),
+                    "outputs": data.get("outputs"),
+                    "parameters": data.get("parameters"),
+                    "spec": data["spec"].model_dump()
+                    if hasattr(data["spec"], "model_dump")
+                    else None,
+                }
+            )
 
         edges = []
         for source, target, data in G.edges(data=True):
             logger.trace(f"Serializing edge: {source} -> {target}")
-            edges.append({
-                "source": source,
-                "target": target,
-                "sourceHandle": data.get("source_handle"),
-                "targetHandle": data.get("target_handle")
-            })
+            edges.append(
+                {
+                    "source": source,
+                    "target": target,
+                    "sourceHandle": data.get("source_handle"),
+                    "targetHandle": data.get("target_handle"),
+                }
+            )
 
         logger.success("Graph successfully converted to serializable format")
-        return {
-            "nodes": nodes,
-            "edges": edges
-        }
+        return {"nodes": nodes, "edges": edges}

@@ -22,6 +22,7 @@ from src.schemas.chat_schemas import ChatWebhookRequestMetadata
 
 from loguru import logger
 
+
 class AgentSettings:
     """
     Settings for LLM-based agents.
@@ -92,11 +93,12 @@ class Agent(ABC):
     def get_llm_client(self, custom_system_prompt: str = None):
         llm_client: Instructor = instructor_service.get_client(
             model_name=GenConfig.SHARED_MODEL,
-            system_instruction=self._construct_system_prompt() if not custom_system_prompt else custom_system_prompt,
+            system_instruction=self._construct_system_prompt()
+            if not custom_system_prompt
+            else custom_system_prompt,
         )
 
         return llm_client
-
 
     def prepare_multimodal_contents(self, message: AgentMessage) -> List[Part]:
         """
@@ -116,9 +118,7 @@ class Agent(ABC):
 
         metadata_item: ChatWebhookRequestMetadata
         for metadata_item in metadata_items:
-            
             if metadata_item.type == METADATA_TYPE.IMAGE:
-
                 image_extension = metadata_item.path.split(".")[-1]
 
                 uri = "https://image-2.piscale.com" + metadata_item.path
@@ -128,7 +128,6 @@ class Agent(ABC):
                 )
 
             elif metadata_item.type == METADATA_TYPE.AUDIO:
-
                 audio_extension = metadata_item.path.split(".")[-1]
 
                 uri = "https://file-2.piscale.com" + metadata_item.path
@@ -150,7 +149,9 @@ class Agent(ABC):
         pass
 
     @abstractmethod
-    def process_message_generator(self, message: AgentMessage) -> Generator[AgentMessage, None, None]:
+    def process_message_generator(
+        self, message: AgentMessage
+    ) -> Generator[AgentMessage, None, None]:
         """
         Processes a message and yields the generated response.
 
@@ -161,9 +162,11 @@ class Agent(ABC):
             AgentMessage: The generated response.
         """
         pass
-    
+
     @abstractmethod
-    def handle_exceed_max_iteration(self, llm_client: Instructor, current_completion_inputs: List[Dict[str, str]]) -> AgentMessage:
+    def handle_exceed_max_iteration(
+        self, llm_client: Instructor, current_completion_inputs: List[Dict[str, str]]
+    ) -> AgentMessage:
         pass
 
     # Tools
@@ -175,13 +178,13 @@ class Agent(ABC):
         """Execute một tool với parameters"""
         if tool_name not in self.tools:
             return ToolResult(False, None, f"Tool '{tool_name}' not found")
-        
+
         tool = self.tools[tool_name]
         try:
             return tool.execute(**parameters)
         except Exception as e:
             return ToolResult(False, None, f"Error executing tool: {str(e)}")
-        
+
     def process_tools(self, tool_useds: List[ToolUsed]) -> str:
         """
         Process tools and return the result in string format.
@@ -199,7 +202,9 @@ class Agent(ABC):
             tool_params: List[ToolParam] = tool_used.tool_params
 
             if tool_name not in self.tools:
-                logger.error(f"Tool '{tool_name}' not found in agent's registered tools.")
+                logger.error(
+                    f"Tool '{tool_name}' not found in agent's registered tools."
+                )
                 tool_results_in_str.append(f"Error: Tool '{tool_name}' not found.")
                 continue
 
@@ -231,12 +236,16 @@ class Agent(ABC):
         system_prompt_template = self.settings.agent_profile
 
         if not system_prompt_template:
-            logger.warning("AgentSettings.agent_profile is empty. Using default system prompt.")
+            logger.warning(
+                "AgentSettings.agent_profile is empty. Using default system prompt."
+            )
 
-        tools_description = "\n".join([
-            f"- `{tool.name}`: {tool.description}\n  Parameters: {json.dumps(tool.parameters, indent=2)}"
-            for tool in self.tools.values()
-        ])
+        tools_description = "\n".join(
+            [
+                f"- `{tool.name}`: {tool.description}\n  Parameters: {json.dumps(tool.parameters, indent=2)}"
+                for tool in self.tools.values()
+            ]
+        )
 
         system_prompt = system_prompt_template.replace(
             "[!!REPLACE_TOOL_PROMPT!!]", tools_description

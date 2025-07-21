@@ -1,7 +1,8 @@
 from pydantic import BaseModel
 from typing import Optional
 
-class ModelSimplifier():
+
+class ModelSimplifier:
     def __init__(self):
         pass
 

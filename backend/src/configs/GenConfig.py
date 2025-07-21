@@ -1,5 +1,4 @@
 class GenConfig:
-
     SHARED_MODEL = "gemini-2.5-flash"
 
     DEFAULTS = {

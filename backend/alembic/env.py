@@ -13,9 +13,13 @@ from loguru import logger
 # Load dotenv, only used in development
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL") # This is async version (alemic not support asyncpg)
+DATABASE_URL = os.getenv(
+    "DATABASE_URL"
+)  # This is async version (alemic not support asyncpg)
 
-DATABASE_URL = DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://") # This is sync version
+DATABASE_URL = DATABASE_URL.replace(
+    "postgresql+asyncpg://", "postgresql://"
+)  # This is sync version
 
 logger.info("Replacing asyncpg with sync version. DATABASE_URL: ", DATABASE_URL)
 
@@ -25,6 +29,7 @@ config = context.config
 config.set_main_option("sqlalchemy.url", DATABASE_URL)
 
 from src.models.alchemy.shared.AppBaseModel import AppBaseModel
+
 logger.info("Linked models: ", AppBaseModel.metadata.tables.keys())
 
 # Interpret the config file for Python logging.
@@ -83,7 +88,8 @@ def run_migrations_online() -> None:
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata,
+            connection=connection,
+            target_metadata=target_metadata,
         )
 
         with context.begin_transaction():

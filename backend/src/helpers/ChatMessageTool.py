@@ -4,6 +4,7 @@ from typing import List, Dict
 from src.messaging.AgentMessage import AgentMessage, ContentType
 from src.utils.chat_route_utils import create_text_message, construct_communi_message
 
+
 class ChatMessageTool:
     def __init__(self):
         pass
@@ -29,7 +30,6 @@ class ChatMessageTool:
         Returns:
             Dict: The constructed conversation message.
         """
-
 
         message_content = {}
         if message.content_type == ContentType.TEXT:

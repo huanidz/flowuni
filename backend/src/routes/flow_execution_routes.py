@@ -18,6 +18,7 @@ flow_execution_router = APIRouter(
     tags=["flow_execution"],
 )
 
+
 # ✅ Idiomatic FastAPI approach
 @flow_execution_router.post("/compile")
 async def compile_flow(request: Request):
@@ -25,10 +26,11 @@ async def compile_flow(request: Request):
     Receives, validates, and processes a flow graph from the frontend.
     """
     try:
-
         request_json = await request.json()
-        flow_graph_request: FlowGraphRequest =  FlowGraphRequest(**request_json)
-        logger.debug(f"🔴==>> flow_graph_request: {flow_graph_request.model_dump_json(indent=2)}")
+        flow_graph_request: FlowGraphRequest = FlowGraphRequest(**request_json)
+        logger.debug(
+            f"🔴==>> flow_graph_request: {flow_graph_request.model_dump_json(indent=2)}"
+        )
 
         # Load graph
         G = GraphLoader.from_request(flow_graph_request)
@@ -51,25 +53,25 @@ async def compile_flow(request: Request):
                 "received_at": datetime.utcnow().isoformat(),
                 "node_count": len(flow_graph_request.nodes),
                 "edge_count": len(flow_graph_request.edges),
-            }
+            },
         )
     except Exception as e:
         # This will catch errors from your compilation logic
         logger.error(f"An unexpected error occurred during compilation: {e}")
         raise HTTPException(
-            status_code=500, 
-            detail="An internal error occurred while compiling the flow."
+            status_code=500,
+            detail="An internal error occurred while compiling the flow.",
         )
-    
+
+
 @flow_execution_router.post("/execute")
 async def execute_flow(request: Request):
     """
     Receives, validates, and processes a flow graph from the frontend.
     """
     try:
-
         request_json = await request.json()
-        flow_graph_request: FlowGraphRequest =  FlowGraphRequest(**request_json)
+        flow_graph_request: FlowGraphRequest = FlowGraphRequest(**request_json)
         # logger.debug(f"🔴==>> flow_graph_request: {flow_graph_request.model_dump_json(indent=2)}")
 
         # Load graph
@@ -97,12 +99,14 @@ async def execute_flow(request: Request):
                 "received_at": datetime.utcnow().isoformat(),
                 "node_count": len(flow_graph_request.nodes),
                 "edge_count": len(flow_graph_request.edges),
-            }
+            },
         )
     except Exception as e:
         # This will catch errors from your compilation logic
-        logger.error(f"An unexpected error occurred during compilation: {e}. {traceback.format_exc()}")
+        logger.error(
+            f"An unexpected error occurred during compilation: {e}. {traceback.format_exc()}"
+        )
         raise HTTPException(
-            status_code=500, 
-            detail="An internal error occurred while compiling the flow."
+            status_code=500,
+            detail="An internal error occurred while compiling the flow.",
         )

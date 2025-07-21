@@ -2,6 +2,7 @@ from typing import List
 from pydantic import BaseModel, Field
 from ..tools.ToolBase import ToolUsed
 
+
 class AgentOutputSchema(BaseModel):
     reasoning: str = Field(
         description=(

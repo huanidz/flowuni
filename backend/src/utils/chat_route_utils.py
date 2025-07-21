@@ -161,7 +161,7 @@ def get_curl_request(url, data=None, headers=None, method="POST", params=None) -
         curl_command.append(f"--data '{data}'")
 
     # Join the command with spaces and print it
-    curl = (" \\n    ".join(curl_command))
+    curl = " \\n    ".join(curl_command)
     return curl
 
 

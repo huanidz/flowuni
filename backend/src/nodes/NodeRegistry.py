@@ -11,7 +11,9 @@ class NodeRegistry:
         self._load_nodes_recursively(nodes_pkg)
 
     def _load_nodes_recursively(self, package):
-        for finder, name, ispkg in pkgutil.walk_packages(package.__path__, package.__name__ + "."):
+        for finder, name, ispkg in pkgutil.walk_packages(
+            package.__path__, package.__name__ + "."
+        ):
             try:
                 module = importlib.import_module(name)
             except Exception as e:

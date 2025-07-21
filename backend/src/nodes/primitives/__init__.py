@@ -5,9 +5,9 @@ from .MultiOutputNode import MultiOutputNode
 from .OneInOneOutNode import OneInOneOutNode
 
 __all__ = [
-    'ChatInput',
-    'ChatOutput',
-    'MultiInputNode',
-    'MultiOutputNode',
-    'OneInOneOutNode'
+    "ChatInput",
+    "ChatOutput",
+    "MultiInputNode",
+    "MultiOutputNode",
+    "OneInOneOutNode",
 ]

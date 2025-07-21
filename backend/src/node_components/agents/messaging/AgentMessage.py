@@ -1,9 +1,11 @@
 from dataclasses import dataclass, field
 from typing import Dict
 
+
 @dataclass
 class ContentType:
     TEXT = "text"
+
 
 @dataclass
 class AgentMessage:
