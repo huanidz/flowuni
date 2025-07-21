@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, forwardRef } from 'react'; // Import forwardRef
 import nodeRegistry from '@/parsers/NodeRegistry';
 
 interface NodePaletteProps {
   onDragStart: (event: React.DragEvent, node_type: string) => void;
 }
 
-const NodePalette: React.FC<NodePaletteProps> = ({ onDragStart }) => {
+const NodePalette = forwardRef<HTMLDivElement, NodePaletteProps>(({ onDragStart }, ref) => { // Sử dụng forwardRef
   const [nodeOptions, setNodeOptions] = useState<Array<{ name: string; description: string; color: string }>>([]);
 
   useEffect(() => {
@@ -28,7 +28,10 @@ const NodePalette: React.FC<NodePaletteProps> = ({ onDragStart }) => {
   }, []);
 
   return (
-    <div className="absolute top-4 left-4 z-10 bg-white/95 backdrop-blur-sm rounded-xl shadow-xl border border-gray-200 p-5 max-h-[70vh] overflow-y-auto">
+    <div
+      className="absolute top-4 left-4 z-10 bg-white/95 backdrop-blur-sm rounded-xl shadow-xl border border-gray-200 p-5 max-h-[70vh] overflow-y-auto"
+      ref={ref} // Gán ref cho div ngoài cùng
+    >
       <div className="flex items-center mb-4">
         <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mr-3">
           <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -95,6 +98,6 @@ const NodePalette: React.FC<NodePaletteProps> = ({ onDragStart }) => {
       )}
     </div>
   );
-};
+});
 
 export default NodePalette;

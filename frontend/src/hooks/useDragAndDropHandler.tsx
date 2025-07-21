@@ -7,7 +7,8 @@ export const useDragDropHandler = (
   reactFlowInstance: ReactFlowInstance | null,
   nodeId: number,
   setNodes: (updater: (nodes: Node[]) => Node[]) => void,
-  setNodeId: (updater: (id: number) => number) => void
+  setNodeId: (updater: (id: number) => number) => void,
+  nodePaletteRef: React.RefObject<HTMLDivElement | null> // Cập nhật kiểu của nodePaletteRef
 ) => {
   const onDragStart = useCallback((event: React.DragEvent, node_type: string) => {
     event.dataTransfer.setData('application/reactflow', node_type);
@@ -18,6 +19,20 @@ export const useDragDropHandler = (
     (event: React.DragEvent<HTMLDivElement>) => {
       event.preventDefault();
       if (!reactFlowInstance) return;
+
+      // Kiểm tra xem vị trí thả có nằm trong NodePalette hay không
+      if (nodePaletteRef.current) {
+        const paletteRect = nodePaletteRef.current.getBoundingClientRect();
+        if (
+          event.clientX >= paletteRect.left &&
+          event.clientX <= paletteRect.right &&
+          event.clientY >= paletteRect.top &&
+          event.clientY <= paletteRect.bottom
+        ) {
+          console.log("Drop avoided: Dropped on NodePalette.");
+          return; // Không cho phép thả vào NodePalette
+        }
+      }
 
       const type = event.dataTransfer.getData('application/reactflow');
       if (!type) return;
@@ -43,9 +58,9 @@ export const useDragDropHandler = (
 
       // Initialize input values with default values
       const initialInputValues = Object.fromEntries(
-        nodeSpec.inputs.map((input) => [
-          input.name,
-          input.default || ""
+        Object.entries(nodeSpec.inputs).map(([key, value]) => [
+          key,
+          value || "" // Giả sử giá trị mặc định là chuỗi rỗng nếu không có
         ])
       );
 
@@ -68,7 +83,7 @@ export const useDragDropHandler = (
       setNodes((nds) => [...nds, customNode]);
       setNodeId((id) => id + 1);
     },
-    [nodeId, reactFlowInstance, setNodes, setNodeId]
+    [nodeId, reactFlowInstance, setNodes, setNodeId, nodePaletteRef] // Thêm nodePaletteRef vào dependencies
   );
 
   const onDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
