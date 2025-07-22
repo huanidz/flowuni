@@ -25,3 +25,10 @@ class UserLoginError(Exception):
 
     def __init__(self, message="User login failed."):
         super().__init__(message)
+
+
+class TokenInvalidError(Exception):
+    """Exception raised for invalid or expired tokens."""
+
+    def __init__(self, message="Invalid or expired token."):
+        super().__init__(message)
