@@ -22,6 +22,10 @@ class Settings(BaseSettings):
     # VERTEX_AI_SERVICE_LOCATION: str
     # VERTEX_AI_SERVICE_ACCOUNT_CREDENTIALS: str
 
+    REDIS_HOST: str
+    REDIS_PORT: str
+    REDIS_DB: str
+
     # Logging configuration
     LOG_DIR: str
     LOG_FILENAME: str
