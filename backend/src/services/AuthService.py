@@ -24,6 +24,7 @@ class AuthService(AuthServiceInterface):
         self,
         secret_key: str,
         algorithm: "str" = "HS256",
+        expires_delta: int = 3600,
         redis_client: redis.Redis = None,
     ):
         """Initialize auth service with security parameters
@@ -35,6 +36,7 @@ class AuthService(AuthServiceInterface):
         self.secret_key = secret_key
         self.algorithm = algorithm
         self.redis = redis_client
+        self.expires_in = expires_delta
 
         if not self.redis:
             raise ValueError("Redis client is required for AuthService")

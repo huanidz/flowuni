@@ -9,3 +9,7 @@ class UserRegister(BaseModel):
 class UserLogin(BaseModel):
     username: str
     password: str
+
+
+class LogoutRequest(BaseModel):
+    refresh_token: str
