@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
 from typing import Tuple
+from uuid import uuid4
 
+import redis
 from jose import JWTError, jwt
 from loguru import logger
 from src.exceptions.user_exceptions import TokenInvalidError
@@ -19,17 +21,25 @@ class AuthServiceInterface(ABC):
 
 class AuthService(AuthServiceInterface):
     def __init__(
-        self, secret_key: str, algorithm: "str" = "RS256", expires_delta: int = 3600
+        self,
+        secret_key: str,
+        algorithm: "str" = "HS256",
+        redis_client: redis.Redis = None,
     ):
         """Initialize auth service with security parameters
         Args:
             secret_key (str): JWT secret key
-            algorithm (str): JWT algorithm (default RS256)
+            algorithm (str): JWT algorithm (default HS256)
             expires_delta (int): Token expiration in seconds (default 1 hour)
         """
         self.secret_key = secret_key
         self.algorithm = algorithm
-        self.expires_in = expires_delta
+        self.redis = redis_client
+
+        if not self.redis:
+            raise ValueError("Redis client is required for AuthService")
+
+        self.token_blacklist_prefix = "blacklist:token:"
 
     def generate_tokens(self, user_id: int) -> Tuple[str, str]:
         """Generate JWT token for user
@@ -38,26 +48,34 @@ class AuthService(AuthServiceInterface):
         try:
             now = datetime.utcnow()
 
+            access_expires = now + timedelta(seconds=self.expires_in)
+            refresh_expires = now + timedelta(days=7)
+
+            jti = str(uuid4())
+            refresh_jti = str(uuid4())
+
             access_payload = {
-                "user_id": user_id,
-                "exp": now + timedelta(hours=1),
+                "sub": str(user_id),
+                "exp": access_expires,
                 "iat": now,
                 "type": "access",
+                "jti": jti,
             }
 
             # Refresh token payload
             refresh_payload = {
-                "user_id": user_id,
-                "exp": now + timedelta(days=1),
+                "sub": str(user_id),
+                "exp": refresh_expires,
                 "iat": now,
                 "type": "refresh",
+                "jti": refresh_jti,
             }
 
             access_token = jwt.encode(
-                access_payload, self.secret_key, algorithm="RS256"
+                access_payload, self.secret_key, algorithm=self.algorithm
             )
             refresh_token = jwt.encode(
-                refresh_payload, self.secret_key, algorithm="RS256"
+                refresh_payload, self.secret_key, algorithm=self.algorithm
             )
 
             logger.info(f"Generated token for user {user_id}")
@@ -66,7 +84,7 @@ class AuthService(AuthServiceInterface):
             logger.error(f"Token generation failed: {str(e)}")
             raise TokenInvalidError("Failed to generate token") from e
 
-    def verify_token(self, token: str) -> int:
+    def verify_token(self, token: str) -> bool:
         """Verify JWT token and return user ID
         Returns user ID if valid, raises TokenInvalidError otherwise
         """
@@ -76,7 +94,50 @@ class AuthService(AuthServiceInterface):
             if not user_id:
                 logger.warning("Token missing subject claim")
                 raise TokenInvalidError("Invalid token structure")
-            return user_id
+            return True
         except JWTError as e:
             logger.error(f"Token verification failed: {str(e)}")
             raise TokenInvalidError("Invalid or expired token") from e
+
+    def blacklist_token(self, token: str) -> bool:
+        try:
+            payload = jwt.decode(
+                token,
+                self.secret_key,
+                algorithms=[self.algorithm],
+                options={"verify_exp": False},  # We handle expiry manually
+            )
+            jti = payload.get("jti")
+            exp = payload.get("exp")
+            if not jti or not exp:
+                logger.warning("Token missing jti or exp claim")
+                return False
+
+            expiry_time = datetime.fromtimestamp(exp)
+            ttl = int((expiry_time - datetime.utcnow()).total_seconds())
+            if ttl <= 0:
+                return False
+
+            key = f"{self.token_blacklist_prefix}{jti}"
+            self.redis.setex(key, ttl, "blacklisted")
+            logger.info(f"Token {jti} blacklisted with TTL: {ttl}s")
+            return True
+        except JWTError:
+            logger.warning("Invalid token during blacklisting attempt")
+            return False
+
+    def is_token_blacklisted(self, token: str) -> bool:
+        try:
+            payload = jwt.decode(
+                token,
+                self.secret_key,
+                algorithms=[self.algorithm],
+                options={"verify_signature": False},  # Only check local blacklist
+            )
+            jti = payload.get("jti")
+            if not jti:
+                return False
+            key = f"{self.token_blacklist_prefix}{jti}"
+            return bool(self.redis.exists(key))
+        except JWTError:
+            return True  # Optionally treat invalid tokens as blacklisted

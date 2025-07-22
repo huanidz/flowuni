@@ -27,6 +27,13 @@ class UserLoginError(Exception):
         super().__init__(message)
 
 
+class UserLogoutError(Exception):
+    """Generic exception raised for user logout failures."""
+
+    def __init__(self, message="User logout failed."):
+        super().__init__(message)
+
+
 class TokenInvalidError(Exception):
     """Exception raised for invalid or expired tokens."""
 

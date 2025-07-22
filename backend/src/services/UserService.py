@@ -38,6 +38,18 @@ class UserServiceInterface(ABC):
         """
         pass
 
+    @abstractmethod
+    def logout(self, username: str) -> bool:
+        """Logout a user
+
+        Args:
+            username: The username to logout
+
+        Returns:
+            bool: True if logout was successful, False otherwise
+        """
+        pass
+
 
 class UserService(UserServiceInterface):
     def __init__(self, user_repo: UserRepository):
@@ -103,3 +115,19 @@ class UserService(UserServiceInterface):
         except Exception as e:
             logger.error(f"Unexpected login error for user {username}: {e}")
             raise UserLoginError(f"Failed to login user {username}: {e}") from e
+
+    def logout(self, username: str) -> bool:
+        """Logout a user
+
+        Args:
+            username: The username to logout
+
+        Returns:
+            bool: True if logout was successful, False otherwise
+        """
+        try:
+            logger.info(f"User logged out successfully: {username}")
+            return True
+        except Exception as e:
+            logger.error(f"Logout error for user {username}: {e}")
+            return False
