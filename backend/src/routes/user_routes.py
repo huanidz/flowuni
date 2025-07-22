@@ -1,40 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from loguru import logger
-from redis import Redis
-from src.configs.config import get_settings
-from src.dependencies.db_dependency import get_db
+from src.dependencies.auth_dependency import get_auth_service
+from src.dependencies.user_dependency import get_user_service
 from src.models.alchemy.users.UserModel import UserModel
-from src.repositories.UserRepository import UserRepository
 from src.schemas.users.user_schemas import LogoutRequest, UserLogin, UserRegister
 from src.services.AuthService import AuthService
 from src.services.UserService import UserService
 
 user_router = APIRouter()
-
-
-# Dependencies
-def get_redis_client():
-    app_settings = get_settings()
-
-    return Redis(
-        host=app_settings.REDIS_HOST,
-        port=app_settings.REDIS_PORT,
-        db=app_settings.REDIS_DB,
-        decode_responses=True,
-    )
-
-
-def get_user_repository(db_session=Depends(get_db)):
-    return UserRepository(db_session=db_session)
-
-
-def get_user_service(user_repository=Depends(get_user_repository)):
-    return UserService(user_repo=user_repository)
-
-
-def get_auth_service(redis_client=Depends(get_redis_client)):
-    return AuthService(redis_client=redis_client)
 
 
 @user_router.post("/register", response_model=UserModel)
