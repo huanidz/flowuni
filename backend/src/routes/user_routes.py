@@ -4,7 +4,11 @@ from loguru import logger
 from src.dependencies.auth_dependency import get_auth_service
 from src.dependencies.user_dependency import get_user_service
 from src.models.alchemy.users.UserModel import UserModel
-from src.schemas.users.user_schemas import LogoutRequest, UserLogin, UserRegister
+from src.schemas.users.user_schemas import (
+    LogoutRequest,
+    UserLoginRequest,
+    UserRegisterRequest,
+)
 from src.services.AuthService import AuthService
 from src.services.UserService import UserService
 
@@ -19,7 +23,7 @@ def register_user(
     try:
         request_data = request.json()
 
-        user_request = UserRegister(request_data)
+        user_request = UserRegisterRequest(request_data)
 
         registered_user = user_service.register(
             user_request.username, user_request.password
@@ -43,7 +47,7 @@ def register_user(
 
 @user_router.post("/login", response_model=UserModel)
 def login_user(
-    user: UserLogin,
+    user: UserLoginRequest,
     user_service: UserService = Depends(get_user_service),
     auth_service: AuthService = Depends(get_auth_service),
 ):
