@@ -1,54 +1,156 @@
 import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { toast } from 'sonner';
+import { Toaster } from "@/components/ui/sonner"
+
+// Validation schemas
+const loginSchema = z.object({
+  username: z.string().min(3, 'Username must be at least 3 characters'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+});
+
+const registerSchema = loginSchema.extend({
+  confirmPassword: z.string().min(6, 'Password must be at least 6 characters'),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
+type LoginFormData = z.infer<typeof loginSchema>;
+type RegisterFormData = z.infer<typeof registerSchema>;
 
 const AuthenticationPage = () => {
   const [isLogin, setIsLogin] = useState(true);
 
-  return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl">
-            {isLogin ? 'Welcome back' : 'Create account'}
-          </CardTitle>
-          <CardDescription>
-            {isLogin 
-              ? 'Enter your credentials to sign in' 
-              : 'Enter your details to create your account'
+  const form = useForm<LoginFormData | RegisterFormData>({
+    resolver: zodResolver(isLogin ? loginSchema : registerSchema),
+    defaultValues: {
+      username: '',
+      password: '',
+      ...(isLogin ? {} : { confirmPassword: '' }),
+    },
+    mode: 'onBlur', // Validate on blur for better UX
+  });
+
+  const onSubmit = async (data: LoginFormData | RegisterFormData) => {
+        try {
+            // Simulate API call
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            if (isLogin) {
+            toast("Login Successful", {
+                description: `Welcome back, ${data.username}!`,
+            });
+            } else {
+            toast("Account Created", {
+                description: `Welcome ${data.username}! Your account has been created successfully.`,
+            });
             }
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="username">Username</Label>
-            <Input id="username" placeholder="Enter your username" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" placeholder="Enter your password" />
-          </div>
-          {!isLogin && (
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <Input id="confirmPassword" type="password" placeholder="Confirm your password" />
-            </div>
-          )}
-          <Button className="w-full">
-            {isLogin ? 'Sign In' : 'Create Account'}
-          </Button>
-          <Button 
-            variant="ghost" 
-            className="w-full"
-            onClick={() => setIsLogin(!isLogin)}
-          >
-            {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
+            
+            // Reset form after successful submission
+            form.reset();
+        } catch (error) {
+            toast("Error", {
+            description: "Something went wrong. Please try again.",
+            });
+        }
+    };
+
+  const toggleMode = () => {
+    setIsLogin(!isLogin);
+    form.reset(); // Clear form when switching modes
+  };
+
+  return (
+    <>
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <Card className="w-full max-w-md">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl">
+              {isLogin ? 'Welcome back' : 'Create account'}
+            </CardTitle>
+            <CardDescription>
+              {isLogin 
+                ? 'Enter your credentials to sign in' 
+                : 'Enter your details to create your account'
+              }
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="username"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Username</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter your username" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="Enter your password" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {!isLogin && (
+                  <FormField
+                    control={form.control}
+                    name="confirmPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Confirm Password</FormLabel>
+                        <FormControl>
+                          <Input type="password" placeholder="Confirm your password" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+                  {form.formState.isSubmitting 
+                    ? (isLogin ? 'Signing In...' : 'Creating Account...') 
+                    : (isLogin ? 'Sign In' : 'Create Account')
+                  }
+                </Button>
+                
+                <Button 
+                  type="button"
+                  variant="ghost" 
+                  className="w-full"
+                  onClick={toggleMode}
+                >
+                  {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
+                </Button>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+      </div>
+      <Toaster />
+    </>
   );
 };
 
