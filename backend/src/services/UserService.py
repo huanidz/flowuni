@@ -63,12 +63,12 @@ class UserService(UserServiceInterface):
             # Create new user
             user = UserModel(username=username)
             user.set_password(password)
-            self.user_repo.add(user)
+            user = self.user_repo.add(user)
             logger.info(f"User registered successfully: {username}")
-            return True
+            return user
         except UserAlreadyExistsError as e:
             logger.warning(f"Registration failed - user already exists: {e.username}")
-            return False
+            raise e
         except Exception as e:
             logger.error(f"Registration error for user {username}: {e}")
             raise UserRegistrationError(
