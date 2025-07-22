@@ -5,17 +5,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 const AuthenticationPage = () => {
-  const [isLoginForm, setIsLoginForm] = useState(true);
+  const [isLogin, setIsLogin] = useState(true);
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl">
-            {isLoginForm ? 'Welcome back' : 'Create account'}
+            {isLogin ? 'Welcome back' : 'Create account'}
           </CardTitle>
           <CardDescription>
-            {isLoginForm 
+            {isLogin 
               ? 'Enter your credentials to sign in' 
               : 'Enter your details to create your account'
             }
@@ -30,15 +30,21 @@ const AuthenticationPage = () => {
             <Label htmlFor="password">Password</Label>
             <Input id="password" type="password" placeholder="Enter your password" />
           </div>
+          {!isLogin && (
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Input id="confirmPassword" type="password" placeholder="Confirm your password" />
+            </div>
+          )}
           <Button className="w-full">
-            {isLoginForm ? 'Sign In' : 'Create Account'}
+            {isLogin ? 'Sign In' : 'Create Account'}
           </Button>
           <Button 
             variant="ghost" 
             className="w-full"
-            onClick={() => setIsLoginForm(!isLoginForm)}
+            onClick={() => setIsLogin(!isLogin)}
           >
-            {isLoginForm ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
+            {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
           </Button>
         </CardContent>
       </Card>
