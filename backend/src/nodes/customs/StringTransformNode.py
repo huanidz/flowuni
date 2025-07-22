@@ -1,4 +1,4 @@
-from src.nodes.NodeBase import Node, NodeSpec, NodeInput, NodeOutput
+from src.nodes.NodeBase import Node, NodeInput, NodeOutput, NodeSpec
 
 
 class StringTransformNode(Node):
@@ -18,6 +18,9 @@ class StringTransformNode(Node):
 
     def process(self, inputs, parameters):
         input_string = inputs["input"]
+
+        if not input_string:
+            return {"output": ""}
 
         # Implement your transformation logic here
         transformed_string = input_string.upper()
