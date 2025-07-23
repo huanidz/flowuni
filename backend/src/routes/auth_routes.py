@@ -3,7 +3,6 @@ from fastapi.responses import JSONResponse
 from loguru import logger
 from src.dependencies.auth_dependency import get_auth_service
 from src.dependencies.user_dependency import get_user_service
-from src.models.alchemy.users.UserModel import UserModel
 from src.schemas.users.user_schemas import (
     LogoutRequest,
     UserLoginRequest,
@@ -12,18 +11,23 @@ from src.schemas.users.user_schemas import (
 from src.services.AuthService import AuthService
 from src.services.UserService import UserService
 
-user_router = APIRouter()
+auth_router = APIRouter(
+    prefix="/api/auth",
+    tags=["auth"],
+)
 
 
-@user_router.post("/register", response_model=UserModel)
-def register_user(
+@auth_router.post("/register")
+async def register_user(
     request: Request, user_service: UserService = Depends(get_user_service)
 ):
     """Register a new user"""
     try:
-        request_data = request.json()
+        request_data = await request.json()
 
-        user_request = UserRegisterRequest(request_data)
+        logger.info(f"Received register request: {request_data}")
+
+        user_request = UserRegisterRequest(**request_data)
 
         registered_user = user_service.register(
             user_request.username, user_request.password
@@ -32,7 +36,7 @@ def register_user(
         return JSONResponse(
             status_code=status.HTTP_201_CREATED,
             content={
-                "id": registered_user.id,
+                "user_id": registered_user.id,
                 "username": registered_user.username,
                 "created_at": registered_user.created_at.isoformat(),
             },
@@ -45,7 +49,7 @@ def register_user(
         ) from e
 
 
-@user_router.post("/login", response_model=UserModel)
+@auth_router.post("/login")
 def login_user(
     user: UserLoginRequest,
     user_service: UserService = Depends(get_user_service),
@@ -81,7 +85,7 @@ def login_user(
         ) from e
 
 
-@user_router.post("/logout")
+@auth_router.post("/logout")
 def logout_user(
     logout_request: LogoutRequest,
     auth_service: AuthService = Depends(get_auth_service),

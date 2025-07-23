@@ -9,14 +9,16 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { toast } from 'sonner';
 import { Toaster } from "@/components/ui/sonner"
 
+import { useRegister } from '@/features/auth/hooks';
+
 // Validation schemas
 const loginSchema = z.object({
   username: z.string().min(3, 'Username must be at least 3 characters'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  password: z.string().min(3, 'Password must be at least 6 characters'),
 });
 
 const registerSchema = loginSchema.extend({
-  confirmPassword: z.string().min(6, 'Password must be at least 6 characters'),
+  confirmPassword: z.string().min(3, 'Password must be at least 3 characters'),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -27,6 +29,7 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 
 const AuthenticationPage = () => {
   const [isLogin, setIsLogin] = useState(true);
+  const registerMutation = useRegister();
 
   const form = useForm<LoginFormData | RegisterFormData>({
     resolver: zodResolver(isLogin ? loginSchema : registerSchema),
@@ -35,32 +38,33 @@ const AuthenticationPage = () => {
       password: '',
       ...(isLogin ? {} : { confirmPassword: '' }),
     },
-    mode: 'onBlur', // Validate on blur for better UX
+    mode: 'onSubmit', // Validate on blur for better UX
   });
 
   const onSubmit = async (data: LoginFormData | RegisterFormData) => {
-        try {
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            if (isLogin) {
-            toast("Login Successful", {
-                description: `Welcome back, ${data.username}!`,
-            });
-            } else {
-            toast("Account Created", {
-                description: `Welcome ${data.username}! Your account has been created successfully.`,
-            });
-            }
-            
-            // Reset form after successful submission
-            form.reset();
-        } catch (error) {
-            toast("Error", {
-            description: "Something went wrong. Please try again.",
-            });
-        }
-    };
+    try {
+      if (isLogin) {
+        // TODO: Handle login once you have useLogin
+        toast("Not implemented", {
+          description: "Login flow is not wired up yet.",
+        });
+      } else {
+        // Call the register mutation
+        const { username, password } = data;
+        await registerMutation.mutateAsync({ username, password });
+
+        toast("Account Created", {
+          description: `Welcome ${username}! Your account has been created successfully.`,
+        });
+
+        form.reset();
+      }
+    } catch (error) {
+      toast("Error", {
+        description: "Something went wrong. Please try again.",
+      });
+    }
+  };
 
   const toggleMode = () => {
     setIsLogin(!isLogin);

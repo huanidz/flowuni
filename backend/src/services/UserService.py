@@ -57,7 +57,6 @@ class UserService(UserServiceInterface):
             # Check if user already exists
             existing_user = self.user_repo.get_by_username(username)
             if existing_user:
-                logger.warning(f"Registration failed - user already exists: {username}")
                 raise UserAlreadyExistsError(username)
 
             # Create new user

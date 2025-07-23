@@ -1,5 +1,6 @@
 from sqlalchemy import Boolean, Column, String
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import relationship
 from src.models.alchemy.shared.AppBaseModel import AppBaseModel
 
 
@@ -15,3 +16,4 @@ class FlowModel(AppBaseModel):
     description = Column(String, nullable=True)
     flow_definition = Column(JSONB, nullable=True)
     is_active = Column(Boolean, default=False)
+    flow_executions = relationship("FlowExecutionModel", back_populates="flow")
