@@ -4,7 +4,9 @@ from loguru import logger
 from src.dependencies.auth_dependency import get_auth_service
 from src.dependencies.user_dependency import get_user_service
 from src.schemas.users.user_schemas import (
+    LoginResponse,
     LogoutRequest,
+    RegisterResponse,
     UserLoginRequest,
     UserRegisterRequest,
 )
@@ -17,7 +19,9 @@ auth_router = APIRouter(
 )
 
 
-@auth_router.post("/register")
+@auth_router.post(
+    "/register", response_model=RegisterResponse, status_code=status.HTTP_201_CREATED
+)
 async def register_user(
     request: Request, user_service: UserService = Depends(get_user_service)
 ):
@@ -33,13 +37,10 @@ async def register_user(
             user_request.username, user_request.password
         )
 
-        return JSONResponse(
-            status_code=status.HTTP_201_CREATED,
-            content={
-                "user_id": registered_user.id,
-                "username": registered_user.username,
-                "created_at": registered_user.created_at.isoformat(),
-            },
+        return RegisterResponse(
+            user_id=registered_user.id,
+            username=registered_user.username,
+            created_at=registered_user.created_at,
         )
     except Exception as e:
         logger.error(f"Failed to register user: {e}")
@@ -49,7 +50,9 @@ async def register_user(
         ) from e
 
 
-@auth_router.post("/login")
+@auth_router.post(
+    "/login", response_model=LoginResponse, status_code=status.HTTP_200_OK
+)
 def login_user(
     user: UserLoginRequest,
     user_service: UserService = Depends(get_user_service),
@@ -67,14 +70,11 @@ def login_user(
         # Generate JWT token
         access_token, refresh_token = auth_service.generate_tokens(user.id)
 
-        return JSONResponse(
-            status_code=status.HTTP_200_OK,
-            content={
-                "user_id": user.id,
-                "username": user.username,
-                "access_token": access_token,
-                "refresh_token": refresh_token,
-            },
+        return LoginResponse(
+            user_id=user.id,
+            username=user.username,
+            access_token=access_token,
+            refresh_token=refresh_token,
         )
     except Exception as e:
         logger.error(f"Failed to login user: {e}")
