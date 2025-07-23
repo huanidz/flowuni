@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     # Database configuration
     DATABASE_URL: str
 
+    AUTH_SECRET: str
     # VERTEX_AI_SERVICE_PROJECT_ID: str
     # VERTEX_AI_SERVICE_LOCATION: str
     # VERTEX_AI_SERVICE_ACCOUNT_CREDENTIALS: str

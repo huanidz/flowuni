@@ -17,7 +17,7 @@ class AppBaseModel(Base):
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     is_deleted = Column(Boolean, default=False)
-    time_created = Column(DateTime, default=datetime.utcnow)
-    time_modified = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    modified_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     created_by = Column(String, nullable=True)
     updated_by = Column(String, nullable=True)

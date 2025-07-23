@@ -11,7 +11,7 @@ from src.exceptions.user_exceptions import TokenInvalidError
 
 class AuthServiceInterface(ABC):
     @abstractmethod
-    def generate_token(self, user_id: int) -> str:
+    def generate_tokens(self, user_id: int) -> str:
         pass
 
     @abstractmethod

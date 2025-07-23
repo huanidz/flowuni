@@ -3,11 +3,13 @@ import pkgutil
 from typing import Dict, Optional, Type
 
 import src.nodes as nodes_pkg
+from loguru import logger
 from src.nodes.NodeBase import Node, NodeSpec
 
 
 class NodeRegistry:
-    def __init__(self):
+    def __init__(self, verbose: bool = False):
+        self.verbose = verbose
         self._node_classes: Dict[str, Type[Node]] = {}
         self._load_nodes_recursively(nodes_pkg)
 
@@ -18,7 +20,8 @@ class NodeRegistry:
             try:
                 module = importlib.import_module(name)
             except Exception as e:
-                print(f"Failed to import module {name}: {e}")
+                if self.verbose:
+                    logger.debug(f"Failed to import module {name}: {e}")
                 continue
 
             for attr_name in dir(module):
@@ -31,7 +34,8 @@ class NodeRegistry:
                     try:
                         self.register(attr)
                     except ValueError as e:
-                        print(f"Skipping duplicate or invalid node: {e}")
+                        if self.verbose:
+                            logger.debug(f"Skipping duplicate or invalid node: {e}")
 
     def register(self, node_cls: Type[Node]):
         spec: NodeSpec = node_cls.spec

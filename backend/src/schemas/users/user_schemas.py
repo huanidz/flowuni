@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel
 
 
@@ -13,3 +15,15 @@ class UserLoginRequest(BaseModel):
 
 class LogoutRequest(BaseModel):
     refresh_token: str
+
+
+class RegisterResponse(BaseModel):
+    user_id: int
+    username: str
+    created_at: datetime
+
+
+class LoginResponse(BaseModel):
+    user_id: int
+    username: str
+    access_token: str

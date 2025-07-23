@@ -1,42 +1,49 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.responses import JSONResponse
 from loguru import logger
+from src.consts.auth_consts import AuthConsts
 from src.dependencies.auth_dependency import get_auth_service
 from src.dependencies.user_dependency import get_user_service
-from src.models.alchemy.users.UserModel import UserModel
 from src.schemas.users.user_schemas import (
+    LoginResponse,
     LogoutRequest,
+    RegisterResponse,
     UserLoginRequest,
     UserRegisterRequest,
 )
 from src.services.AuthService import AuthService
 from src.services.UserService import UserService
 
-user_router = APIRouter()
+auth_router = APIRouter(
+    prefix="/api/auth",
+    tags=["auth"],
+)
 
 
-@user_router.post("/register", response_model=UserModel)
-def register_user(
-    request: Request, user_service: UserService = Depends(get_user_service)
+@auth_router.post(
+    "/register", response_model=RegisterResponse, status_code=status.HTTP_201_CREATED
+)
+async def register_user(
+    register_request: UserRegisterRequest,
+    user_service: UserService = Depends(get_user_service),
 ):
     """Register a new user"""
     try:
-        request_data = request.json()
-
-        user_request = UserRegisterRequest(request_data)
-
         registered_user = user_service.register(
-            user_request.username, user_request.password
+            register_request.username, register_request.password
         )
 
-        return JSONResponse(
-            status_code=status.HTTP_201_CREATED,
-            content={
-                "id": registered_user.id,
-                "username": registered_user.username,
-                "created_at": registered_user.created_at.isoformat(),
-            },
+        return RegisterResponse(
+            user_id=registered_user.id,
+            username=registered_user.username,
+            created_at=registered_user.created_at,
         )
+    except ValueError as e:
+        logger.warning(f"Validation error during registration: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        ) from e
     except Exception as e:
         logger.error(f"Failed to register user: {e}")
         raise HTTPException(
@@ -45,34 +52,50 @@ def register_user(
         ) from e
 
 
-@user_router.post("/login", response_model=UserModel)
-def login_user(
+@auth_router.post(
+    "/login", response_model=LoginResponse, status_code=status.HTTP_200_OK
+)
+async def login_user(
     user: UserLoginRequest,
+    response: Response,
     user_service: UserService = Depends(get_user_service),
     auth_service: AuthService = Depends(get_auth_service),
 ):
     """Login a user"""
     try:
-        user = user_service.login(user.username, user.password)
+        user = user_service.login(username=user.username, password=user.password)
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid username or password.",
             )
 
-        # Generate JWT token
+        # Generate JWT tokens
         access_token, refresh_token = auth_service.generate_tokens(user.id)
 
-        return JSONResponse(
-            status_code=status.HTTP_200_OK,
-            content={
-                "id": user.id,
-                "username": user.username,
-                "access_token": access_token,
-                "refresh_token": refresh_token,
-                "created_at": user.created_at.isoformat(),
-            },
+        # Set the refresh token in a secure, HTTP-only cookie
+        response.set_cookie(
+            key=AuthConsts.REFRESH_TOKEN_COOKIE,
+            value=refresh_token,
+            httponly=True,
+            secure=True,  # Use True in production with HTTPS
+            samesite="lax",  # Adjust depending on frontend needs
+            max_age=60 * 60 * 24 * 7,  # 7 days
+            path="/api/auth/refresh-token",  # Scoped cookie
         )
+
+        return LoginResponse(
+            user_id=user.id,
+            username=user.username,
+            access_token=access_token,
+            refresh_token=None,  # Not sent in response body anymore
+        )
+    except ValueError as e:
+        logger.warning(f"Validation error during login: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        ) from e
     except Exception as e:
         logger.error(f"Failed to login user: {e}")
         raise HTTPException(
@@ -81,7 +104,7 @@ def login_user(
         ) from e
 
 
-@user_router.post("/logout")
+@auth_router.post("/logout")
 def logout_user(
     logout_request: LogoutRequest,
     auth_service: AuthService = Depends(get_auth_service),
@@ -109,6 +132,12 @@ def logout_user(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 content={"message": "Invalid or expired refresh token."},
             )
+    except ValueError as e:
+        logger.warning(f"Validation error during logout: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        ) from e
     except Exception as e:
         logger.error(f"Logout failed: {str(e)}")
         raise HTTPException(
