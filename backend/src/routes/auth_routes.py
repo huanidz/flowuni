@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 from loguru import logger
 from src.dependencies.auth_dependency import get_auth_service
@@ -23,18 +23,13 @@ auth_router = APIRouter(
     "/register", response_model=RegisterResponse, status_code=status.HTTP_201_CREATED
 )
 async def register_user(
-    request: Request, user_service: UserService = Depends(get_user_service)
+    register_request: UserRegisterRequest,
+    user_service: UserService = Depends(get_user_service),
 ):
     """Register a new user"""
     try:
-        request_data = await request.json()
-
-        logger.info(f"Received register request: {request_data}")
-
-        user_request = UserRegisterRequest(**request_data)
-
         registered_user = user_service.register(
-            user_request.username, user_request.password
+            register_request.username, register_request.password
         )
 
         return RegisterResponse(
@@ -42,6 +37,12 @@ async def register_user(
             username=registered_user.username,
             created_at=registered_user.created_at,
         )
+    except ValueError as e:
+        logger.warning(f"Validation error during registration: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        ) from e
     except Exception as e:
         logger.error(f"Failed to register user: {e}")
         raise HTTPException(
@@ -53,14 +54,14 @@ async def register_user(
 @auth_router.post(
     "/login", response_model=LoginResponse, status_code=status.HTTP_200_OK
 )
-def login_user(
+async def login_user(
     user: UserLoginRequest,
     user_service: UserService = Depends(get_user_service),
     auth_service: AuthService = Depends(get_auth_service),
 ):
     """Login a user"""
     try:
-        user = user_service.login(user.username, user.password)
+        user = user_service.login(username=user.username, password=user.password)
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -76,6 +77,12 @@ def login_user(
             access_token=access_token,
             refresh_token=refresh_token,
         )
+    except ValueError as e:
+        logger.warning(f"Validation error during login: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        ) from e
     except Exception as e:
         logger.error(f"Failed to login user: {e}")
         raise HTTPException(
@@ -112,6 +119,12 @@ def logout_user(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 content={"message": "Invalid or expired refresh token."},
             )
+    except ValueError as e:
+        logger.warning(f"Validation error during logout: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        ) from e
     except Exception as e:
         logger.error(f"Logout failed: {str(e)}")
         raise HTTPException(
