@@ -1,6 +1,7 @@
 # src/dependencies/auth_dependency.py
 from fastapi import Depends, HTTPException, Request, status
 from loguru import logger
+from src.configs.config import get_settings
 from src.dependencies.redis_dependency import get_redis_client
 from src.exceptions.user_exceptions import TokenInvalidError
 from src.services.AuthService import AuthService
@@ -10,7 +11,14 @@ def get_auth_service(redis_client=Depends(get_redis_client)):
     """
     Dependency that returns AuthService instance.
     """
-    return AuthService(redis_client=redis_client)
+
+    app_settings = get_settings()
+    auth_secret = app_settings.AUTH_SECRET
+
+    if not auth_secret:
+        raise ValueError("AUTH_SECRET is not set")
+
+    return AuthService(redis_client=redis_client, secret_key=auth_secret)
 
 
 def get_current_user(

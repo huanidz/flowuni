@@ -70,11 +70,10 @@ def login_user(
         return JSONResponse(
             status_code=status.HTTP_200_OK,
             content={
-                "id": user.id,
+                "user_id": user.id,
                 "username": user.username,
                 "access_token": access_token,
                 "refresh_token": refresh_token,
-                "created_at": user.created_at.isoformat(),
             },
         )
     except Exception as e:

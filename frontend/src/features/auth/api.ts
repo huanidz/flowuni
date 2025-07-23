@@ -3,7 +3,6 @@ import { type LoginPayload, type RegisterPayload } from "./types";
 
 export const register = async (payload: RegisterPayload) => {
   const { data } = await apiClient.post("/auth/register", payload);
-  console.log(data);
   return data;
 };
 

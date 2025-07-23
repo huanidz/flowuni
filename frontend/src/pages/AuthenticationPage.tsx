@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -9,7 +9,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { toast } from 'sonner';
 import { Toaster } from "@/components/ui/sonner"
 
-import { useRegister } from '@/features/auth/hooks';
+import { useLogin, useRegister } from '@/features/auth/hooks';
+import type { LoginResponse } from '@/features/auth/types';
 
 // Validation schemas
 const loginSchema = z.object({
@@ -30,6 +31,7 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 const AuthenticationPage = () => {
   const [isLogin, setIsLogin] = useState(true);
   const registerMutation = useRegister();
+  const loginMutation = useLogin();
 
   const form = useForm<LoginFormData | RegisterFormData>({
     resolver: zodResolver(isLogin ? loginSchema : registerSchema),
@@ -44,13 +46,16 @@ const AuthenticationPage = () => {
   const onSubmit = async (data: LoginFormData | RegisterFormData) => {
     try {
       if (isLogin) {
-        // TODO: Handle login once you have useLogin
-        toast("Not implemented", {
-          description: "Login flow is not wired up yet.",
-        });
+        const { username, password } = data as LoginFormData;
+        const { user_id, access_token, refresh_token } = await loginMutation.mutateAsync({ username, password });
+
+        console.log(user_id, access_token, refresh_token);
+
+        toast("Logged in", {
+          description: `Welcome back ${username}!`,});
       } else {
         // Call the register mutation
-        const { username, password } = data;
+        const { username, password } = data as RegisterFormData;
         await registerMutation.mutateAsync({ username, password });
 
         toast("Account Created", {

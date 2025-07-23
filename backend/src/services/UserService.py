@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Optional
 
 from loguru import logger
 from src.exceptions.user_exceptions import (
@@ -26,7 +27,7 @@ class UserServiceInterface(ABC):
         pass
 
     @abstractmethod
-    def login(self, username: str, password: str) -> bool:
+    def login(self, username: str, password: str) -> Optional[UserModel]:
         """Login a user
 
         Args:
@@ -74,7 +75,7 @@ class UserService(UserServiceInterface):
                 f"Failed to register user {username}: {e}"
             ) from e
 
-    def login(self, username: str, password: str) -> bool:
+    def login(self, username: str, password: str) -> Optional[UserModel]:
         """Login a user
 
         Args:
@@ -92,13 +93,13 @@ class UserService(UserServiceInterface):
 
             if user.check_password(password):
                 logger.info(f"User logged in successfully: {username}")
-                return True
+                return user
 
             logger.warning(f"Login failed - incorrect password for user: {username}")
             raise InvalidCredentialsError()
         except InvalidCredentialsError as e:
             logger.info(f"Login error: {e}")
-            return False
+            return None
         except Exception as e:
             logger.error(f"Unexpected login error for user {username}: {e}")
             raise UserLoginError(f"Failed to login user {username}: {e}") from e
