@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { Toaster } from "@/components/ui/sonner"
 
 import { useLogin, useRegister } from '@/features/auth/hooks';
-import type { LoginResponse } from '@/features/auth/types';
+import { useNavigate } from 'react-router-dom';
 
 // Validation schemas
 const loginSchema = z.object({
@@ -32,6 +32,7 @@ const AuthenticationPage = () => {
   const [isLogin, setIsLogin] = useState(true);
   const registerMutation = useRegister();
   const loginMutation = useLogin();
+  const navigate = useNavigate();
 
   const form = useForm<LoginFormData | RegisterFormData>({
     resolver: zodResolver(isLogin ? loginSchema : registerSchema),
@@ -52,7 +53,15 @@ const AuthenticationPage = () => {
         console.log(user_id);
 
         toast("Logged in", {
-          description: `Welcome back ${username}!`,});
+          description: `Welcome back ${username}!`,
+        });
+
+        // Add little delay
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+        form.reset();
+        navigate("/dashboard")
+
       } else {
         // Call the register mutation
         const { username, password } = data as RegisterFormData;
