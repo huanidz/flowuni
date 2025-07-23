@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.responses import JSONResponse
 from loguru import logger
 from src.dependencies.auth_dependency import get_auth_service
@@ -56,6 +56,7 @@ async def register_user(
 )
 async def login_user(
     user: UserLoginRequest,
+    response: Response,
     user_service: UserService = Depends(get_user_service),
     auth_service: AuthService = Depends(get_auth_service),
 ):
@@ -68,14 +69,25 @@ async def login_user(
                 detail="Invalid username or password.",
             )
 
-        # Generate JWT token
+        # Generate JWT tokens
         access_token, refresh_token = auth_service.generate_tokens(user.id)
+
+        # Set the refresh token in a secure, HTTP-only cookie
+        response.set_cookie(
+            key="refresh_token",
+            value=refresh_token,
+            httponly=True,
+            secure=True,  # Use True in production with HTTPS
+            samesite="lax",  # Adjust depending on frontend needs
+            max_age=60 * 60 * 24 * 7,  # 7 days
+            path="/api/auth/refresh-token",  # Scoped cookie
+        )
 
         return LoginResponse(
             user_id=user.id,
             username=user.username,
             access_token=access_token,
-            refresh_token=refresh_token,
+            refresh_token=None,  # Not sent in response body anymore
         )
     except ValueError as e:
         logger.warning(f"Validation error during login: {e}")

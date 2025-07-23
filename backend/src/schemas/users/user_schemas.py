@@ -16,13 +16,12 @@ class LogoutRequest(BaseModel):
 
 
 class RegisterResponse(BaseModel):
-    user_id: str
+    user_id: int
     username: str
     created_at: str
 
 
 class LoginResponse(BaseModel):
-    user_id: str
+    user_id: int
     username: str
     access_token: str
-    refresh_token: str
