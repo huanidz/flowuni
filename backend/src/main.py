@@ -15,10 +15,14 @@ setup_logger(app_settings.LOG_LEVEL)
 
 app = FastAPI(title="AI Service", description="AI Service API", version="0.0.1")
 
+origins = [
+    "http://localhost:5173",  # Your frontend's origin
+]
+
 # Middleware configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with specific origins
+    allow_origins=origins,  # In production, replace with specific origins
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

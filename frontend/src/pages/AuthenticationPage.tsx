@@ -36,7 +36,7 @@ const AuthenticationPage = () => {
     defaultValues: {
       username: '',
       password: '',
-      ...(isLogin ? {} : { confirmPassword: '' }),
+      confirmPassword: '', // Always include confirmPassword
     },
     mode: 'onSubmit', // Validate on blur for better UX
   });
@@ -67,8 +67,14 @@ const AuthenticationPage = () => {
   };
 
   const toggleMode = () => {
-    setIsLogin(!isLogin);
-    form.reset(); // Clear form when switching modes
+    const newIsLogin = !isLogin;
+    setIsLogin(newIsLogin);
+    form.reset({
+      username: '',
+      password: '',
+      confirmPassword: '', // Always reset confirmPassword
+    });
+    // The resolver will automatically update based on the new isLogin state
   };
 
   return (
