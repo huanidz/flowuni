@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.responses import JSONResponse
 from loguru import logger
+from src.consts.auth_consts import AuthConsts
 from src.dependencies.auth_dependency import get_auth_service
 from src.dependencies.user_dependency import get_user_service
 from src.schemas.users.user_schemas import (
@@ -74,7 +75,7 @@ async def login_user(
 
         # Set the refresh token in a secure, HTTP-only cookie
         response.set_cookie(
-            key="refresh_token",
+            key=AuthConsts.REFRESH_TOKEN_COOKIE,
             value=refresh_token,
             httponly=True,
             secure=True,  # Use True in production with HTTPS

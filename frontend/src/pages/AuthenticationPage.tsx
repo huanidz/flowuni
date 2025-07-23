@@ -47,9 +47,9 @@ const AuthenticationPage = () => {
     try {
       if (isLogin) {
         const { username, password } = data as LoginFormData;
-        const { user_id, access_token, refresh_token } = await loginMutation.mutateAsync({ username, password });
+        const { user_id } = await loginMutation.mutateAsync({ username, password });
 
-        console.log(user_id, access_token, refresh_token);
+        console.log(user_id);
 
         toast("Logged in", {
           description: `Welcome back ${username}!`,});
