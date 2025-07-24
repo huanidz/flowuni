@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
-import nodeRegistry from '@/parsers/NodeRegistry';
 import { NodeFactory } from '@/parsers/NodeFactory';
+import { useNodeRegistry } from '@/features/nodes';
+import { type NodeSpec } from '@/features/nodes';
 
 export const useNodeTypes = (
   setNodeTypes: (types: any) => void,
@@ -11,33 +12,26 @@ export const useNodeTypes = (
     value: any
   ) => void
 ) => {
+
+  const { getAllNodes, loaded } = useNodeRegistry();
+
   useEffect(() => {
-    const loadNodes = async () => {
-      try {
-        await nodeRegistry.loadCatalog();
-        const allNodes = nodeRegistry.getAllNodes();
-        const customNodeTypes: { [key: string]: React.FC<any> } = {};
+    if (!loaded) return;
 
-        allNodes.forEach(nodeSpec => {
-          const CustomNodeComponent = NodeFactory.createNodeComponent(
-            nodeSpec.name,
-            updateNodeData,
-            updateNodeParameter
-          );
-          if (CustomNodeComponent) {
-            customNodeTypes[nodeSpec.name] = CustomNodeComponent;
-          }
-        });
+    const allNodes = getAllNodes();
+    const customNodeTypes: { [key: string]: React.FC<any> } = {};
 
-        setNodeTypes(customNodeTypes);
-      } catch (error) {
-        console.error(
-          'Failed to load node catalog or create node components:',
-          error
-        );
+    allNodes.forEach((nodeSpec: NodeSpec) => {
+      const CustomNodeComponent = NodeFactory.createNodeComponent(
+        nodeSpec,
+        updateNodeData,
+        updateNodeParameter
+      );
+      if (CustomNodeComponent) {
+        customNodeTypes[nodeSpec.name] = CustomNodeComponent;
       }
-    };
+    });
 
-    loadNodes();
-  }, [setNodeTypes, updateNodeData, updateNodeParameter]);
+    setNodeTypes(customNodeTypes);
+  }, [loaded, setNodeTypes, updateNodeData, updateNodeParameter]);
 };

@@ -1,5 +1,6 @@
 import React, { useEffect, useState, forwardRef } from 'react'; // Import forwardRef
-import nodeRegistry from '@/parsers/NodeRegistry';
+import { useNodeRegistry } from '@/features/nodes';
+
 
 interface NodePaletteProps {
   onDragStart: (event: React.DragEvent, node_type: string) => void;
@@ -12,12 +13,13 @@ const NodePalette = forwardRef<HTMLDivElement, NodePaletteProps>(
       Array<{ name: string; description: string; color: string }>
     >([]);
 
+    const { nodes, getAllNodes } = useNodeRegistry();
+
     useEffect(() => {
       const loadPaletteNodes = async () => {
         try {
-          await nodeRegistry.loadCatalog(); // Ensure catalog is loaded
-          const allNodes = nodeRegistry.getAllNodes();
-          // For now, assign a default color. In a real app, you might have colors in the catalog or derive them.
+          const allNodes = getAllNodes();
+          console.log(allNodes);
           const paletteNodes = allNodes.map(node => ({
             name: node.name,
             description: node.description || '',
@@ -29,7 +31,7 @@ const NodePalette = forwardRef<HTMLDivElement, NodePaletteProps>(
         }
       };
       loadPaletteNodes();
-    }, []);
+    }, [nodes]);
 
     return (
       <div

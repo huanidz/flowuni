@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import type { Node, ReactFlowInstance } from '@xyflow/react';
 import { Position } from '@xyflow/react';
-import nodeRegistry from '@/parsers/NodeRegistry';
+import { useNodeRegistry } from '@/features/nodes';
 
 export const useDragDropHandler = (
   reactFlowInstance: ReactFlowInstance | null,
@@ -18,10 +18,12 @@ export const useDragDropHandler = (
     []
   );
 
+  const { getNode, loaded } = useNodeRegistry();
+
   const onDrop = useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
       event.preventDefault();
-      if (!reactFlowInstance) return;
+      if (!reactFlowInstance || !loaded) return;
 
       // Kiểm tra xem vị trí thả có nằm trong NodePalette hay không
       if (nodePaletteRef.current) {
@@ -47,7 +49,7 @@ export const useDragDropHandler = (
       const y = event.clientY - bounds.top;
       const position = reactFlowInstance.screenToFlowPosition({ x, y });
 
-      const nodeSpec = nodeRegistry.getNode(type);
+      const nodeSpec = getNode(type);
       if (!nodeSpec) {
         console.error(`Node type "${type}" not found in registry.`);
         return;
@@ -88,7 +90,7 @@ export const useDragDropHandler = (
       setNodes(nds => [...nds, customNode]);
       setNodeId(id => id + 1);
     },
-    [nodeId, reactFlowInstance, setNodes, setNodeId, nodePaletteRef] // Thêm nodePaletteRef vào dependencies
+    [loaded, nodeId, reactFlowInstance, setNodes, setNodeId, nodePaletteRef] // Thêm nodePaletteRef vào dependencies
   );
 
   const onDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {

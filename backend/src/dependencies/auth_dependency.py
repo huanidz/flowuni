@@ -38,6 +38,7 @@ def get_current_user(
     try:
         # Extract header
         auth_header = request.headers.get("Authorization")
+        logger.info(f"Auth header: {auth_header}")
         if not auth_header or not auth_header.startswith("Bearer "):
             raise credentials_exception
 

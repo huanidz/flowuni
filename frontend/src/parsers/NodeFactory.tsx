@@ -1,12 +1,11 @@
 // RefactoredNodeFactory.tsx
 import React from 'react';
-import nodeRegistry from './NodeRegistry';
 import type {
   NodeSpec,
   CustomNodeProps,
   UpdateNodeDataFunction,
   UpdateNodeParameterFunction,
-} from './NodeTypes';
+} from '@/features/nodes';
 import {
   NodeHeader,
   ParametersSection,
@@ -18,14 +17,15 @@ import { nodeStyles } from '@/styles/nodeStyles';
 
 class NodeFactoryClass {
   createNodeComponent(
-    node_type: string,
+    nodeSpec: NodeSpec,
     updateNodeData?: UpdateNodeDataFunction,
     updateNodeParameter?: UpdateNodeParameterFunction
   ): React.FC<CustomNodeProps> | null {
-    const nodeSpec = nodeRegistry.getNode(node_type) as NodeSpec | undefined;
+
+    console.log("NodeSpec", nodeSpec);
 
     if (!nodeSpec) {
-      console.error(`Node type "${node_type}" not found in registry`);
+      console.error(`Node type "${nodeSpec}" not found in registry`);
       return null;
     }
 

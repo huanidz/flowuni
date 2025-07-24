@@ -1,4 +1,3 @@
-// NodeTypes.ts
 import { type Node as RFNode, type NodeProps } from '@xyflow/react';
 
 export interface NodeParameterSpec {

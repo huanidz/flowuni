@@ -8,6 +8,7 @@ from src.routes.common_routes import common_router
 from src.routes.flow_routes import flow_router
 from src.routes.flow_runner_routes import flow_execution_router
 from src.routes.node_routes import node_router
+from src.utils.launch_utils import check_db_connection, check_redis_connection
 
 # Get application settings and set up logging
 app_settings = get_settings()
@@ -18,6 +19,13 @@ app = FastAPI(title="AI Service", description="AI Service API", version="0.0.1")
 origins = [
     "http://localhost:5173",  # Your frontend's origin
 ]
+
+# Check external service connections
+if not check_db_connection():
+    raise ValueError("Database connection failed.")
+
+if not check_redis_connection():
+    raise ValueError("Redis connection failed.")
 
 # Middleware configuration
 app.add_middleware(
