@@ -1,0 +1,1 @@
+export const GET_FLOWS_ENDPOINT = '/flows';
