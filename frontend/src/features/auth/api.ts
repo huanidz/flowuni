@@ -20,6 +20,16 @@ export const login = async (payload: LoginPayload) => {
   return data;
 };
 
+export const refreshToken = async () => {
+  const { data } = await apiClient.post('/auth/refresh-token', {}, {
+    withCredentials: true, // 🔒 send/receive cookies (refresh token)
+  });
+
+  sessionStorage.setItem('flowuni-access-token', data.access_token);
+
+  return data;
+};
+
 export const logout = async () => {
   try {
     // Call logout endpoint to invalidate server-side session

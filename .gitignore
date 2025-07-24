@@ -24,6 +24,7 @@ dist-ssr
 *.sw
 *.md
 **repomix
+repomix**
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

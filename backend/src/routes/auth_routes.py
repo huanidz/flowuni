@@ -4,9 +4,10 @@ from loguru import logger
 from src.consts.auth_consts import AuthConsts
 from src.dependencies.auth_dependency import get_auth_service
 from src.dependencies.user_dependency import get_user_service
-from src.exceptions.user_exceptions import InvalidCredentialsError
+from src.exceptions.user_exceptions import InvalidCredentialsError, TokenInvalidError
 from src.schemas.users.user_schemas import (
     LoginResponse,
+    RefreshTokenResponse,
     RegisterResponse,
     UserLoginRequest,
     UserRegisterRequest,
@@ -131,6 +132,12 @@ async def validate_token(
 
         user_id = auth_service.verify_token(access_token=token)
         return ValidateTokenResponse(user_id=user_id)
+    except TokenInvalidError as e:
+        logger.warning(f"Invalid token during token validation: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e),
+        )
     except ValueError as e:
         logger.warning(f"Validation error during token validation: {e}")
         raise HTTPException(
@@ -142,6 +149,62 @@ async def validate_token(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to validate token.",
+        ) from e
+
+
+@auth_router.post("/refresh-token", response_model=RefreshTokenResponse)
+async def refresh_access_token(
+    response: Response,
+    refresh_token: str = Cookie(None),
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    """
+    Refresh access token using the refresh token stored in an HTTP-only cookie.
+    Issues new access and refresh tokens.
+    """
+    if not refresh_token:
+        logger.warning("Missing refresh token cookie.")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token missing.",
+        )
+
+    try:
+        # Verify the refresh token and extract user ID
+        user_id = auth_service.verify_refresh_token(refresh_token=refresh_token)
+
+        # Generate new tokens
+        new_access_token, new_refresh_token = auth_service.generate_tokens(user_id)
+
+        # Set new refresh token in secure cookie
+        response.set_cookie(
+            key=AuthConsts.REFRESH_TOKEN_COOKIE,
+            value=new_refresh_token,
+            httponly=True,
+            secure=True,
+            samesite="lax",
+            max_age=60 * 60 * 24 * 7,  # 7 days
+            path="/api/auth/refresh-token",
+        )
+
+        # Return new access token only (refresh token is in cookie)
+        return RefreshTokenResponse(
+            user_id=user_id,
+            username="",  # Optionally fetch username if needed
+            access_token=new_access_token,
+        )
+
+    except TokenInvalidError as e:
+        logger.warning(f"Invalid or expired refresh token: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token.",
+        ) from e
+    except Exception as e:
+        logger.error(f"Failed to refresh token: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to refresh token.",
         ) from e
 
 

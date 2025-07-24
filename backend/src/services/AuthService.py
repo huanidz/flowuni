@@ -103,6 +103,26 @@ class AuthService(AuthServiceInterface):
             logger.error(f"Token verification failed: {str(e)}")
             raise TokenInvalidError("Invalid or expired token") from e
 
+    def verify_refresh_token(self, refresh_token: str) -> int:
+        """Verify JWT refresh token and return user ID
+        Returns user ID if valid, raises TokenInvalidError otherwise
+        """
+        try:
+            payload = jwt.decode(
+                refresh_token,
+                self.secret_key,
+                algorithms=[self.algorithm],
+                options={"verify_signature": False},  # Only check local blacklist
+            )
+            user_id = int(payload.get("sub"))
+            if not user_id:
+                logger.warning("Token missing subject claim")
+                raise TokenInvalidError("Invalid token structure")
+            return user_id
+        except JWTError as e:
+            logger.error(f"Token verification failed: {str(e)}")
+            raise TokenInvalidError("Invalid or expired token") from e
+
     def blacklist_token(self, token: str) -> bool:
         try:
             payload = jwt.decode(
