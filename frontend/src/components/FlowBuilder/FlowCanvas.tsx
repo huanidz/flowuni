@@ -24,7 +24,8 @@ const initialEdges: Edge[] = [];
 const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const nodePaletteRef = useRef<HTMLDivElement>(null); // Thêm ref cho NodePalette
-  const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
+  const [reactFlowInstance, setReactFlowInstance] =
+    useState<ReactFlowInstance | null>(null);
 
   const {
     nodes,
@@ -42,39 +43,45 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
   const [nodeTypes, setNodeTypes] = useState({});
 
   // Enhanced node data update function
-  const updateNodeData = useCallback((nodeId: string, newData: any) => {
-    setNodes((nds) =>
-      nds.map((node) =>
-        node.id === nodeId
-          ? { ...node, data: { ...node.data, ...newData } }
-          : node
-      )
-    );
-  }, [setNodes]);
+  const updateNodeData = useCallback(
+    (nodeId: string, newData: any) => {
+      setNodes(nds =>
+        nds.map(node =>
+          node.id === nodeId
+            ? { ...node, data: { ...node.data, ...newData } }
+            : node
+        )
+      );
+    },
+    [setNodes]
+  );
 
   // Enhanced node parameter update function
-  const updateNodeParameter = useCallback((nodeId: string, parameterName: string, value: any) => {
-    setNodes((nds) =>
-      nds.map((node) =>
-        node.id === nodeId
-          ? {
-              ...node,
-              data: {
-                ...node.data,
-                parameters: {
-                  ...(node.data.parameters || {}), // Ensure parameters is an object
-                  [parameterName]: value
-                }
+  const updateNodeParameter = useCallback(
+    (nodeId: string, parameterName: string, value: any) => {
+      setNodes(nds =>
+        nds.map(node =>
+          node.id === nodeId
+            ? {
+                ...node,
+                data: {
+                  ...node.data,
+                  parameters: {
+                    ...(node.data.parameters || {}), // Ensure parameters is an object
+                    [parameterName]: value,
+                  },
+                },
               }
-            }
-          : node
-      )
-    );
-  }, [setNodes]);
+            : node
+        )
+      );
+    },
+    [setNodes]
+  );
 
   // Create node types with update functions
   useNodeTypes(setNodeTypes, updateNodeData, updateNodeParameter);
-  
+
   const { onDragStart, onDrop, onDragOver } = useDragDropHandler(
     reactFlowInstance,
     nodeId,
@@ -82,7 +89,13 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
     setNodeId,
     nodePaletteRef // Truyền nodePaletteRef vào useDragDropHandler
   );
-  const { onCompileFlow, onRunFlow, onClearFlow, onDeleteSelectedElements, onKeyDown } = useFlowActions(
+  const {
+    onCompileFlow,
+    onRunFlow,
+    onClearFlow,
+    onDeleteSelectedElements,
+    onKeyDown,
+  } = useFlowActions(
     nodes,
     edges,
     setNodes,
@@ -93,14 +106,13 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
   );
 
   const onConnect = useCallback(
-    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
+    (params: Connection) => setEdges(eds => addEdge(params, eds)),
     [setEdges]
   );
 
   const onInit = useCallback((instance: ReactFlowInstance) => {
     setReactFlowInstance(instance);
   }, []);
-
 
   return (
     <div className="w-full h-screen bg-gray-100">
@@ -113,7 +125,11 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
         tabIndex={1} // Make the div focusable to capture keyboard events
       >
         <NodePalette onDragStart={onDragStart} ref={nodePaletteRef} />
-        <FlowToolbar onCompile={onCompileFlow} onRun={onRunFlow} onClear={onClearFlow} />
+        <FlowToolbar
+          onCompile={onCompileFlow}
+          onRun={onRunFlow}
+          onClear={onClearFlow}
+        />
 
         <ReactFlow
           nodes={nodes}

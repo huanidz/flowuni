@@ -43,7 +43,7 @@ export const ParametersSection: React.FC<ParametersSectionProps> = ({
   parameters,
   parameterValues,
   nodeId,
-  onParameterChange
+  onParameterChange,
 }) => {
   if (Object.keys(parameters).length === 0) return null;
 
@@ -52,7 +52,7 @@ export const ParametersSection: React.FC<ParametersSectionProps> = ({
       <div style={nodeStyles.sectionTitle}>Parameters</div>
       {Object.entries(parameters).map(([paramName, paramSpec]) => {
         const InputComponent = HandleComponentRegistry[NodeInputType.TextField];
-        
+
         return (
           <div key={paramName} style={nodeStyles.parameterItem}>
             {InputComponent && (
@@ -60,7 +60,9 @@ export const ParametersSection: React.FC<ParametersSectionProps> = ({
                 label={paramSpec.name}
                 description={paramSpec.description}
                 value={parameterValues[paramName] || paramSpec.default}
-                onChange={(value: string) => onParameterChange(paramName, value)}
+                onChange={(value: string) =>
+                  onParameterChange(paramName, value)
+                }
                 nodeId={nodeId}
                 parameterName={paramName}
               />
@@ -84,7 +86,7 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
   inputs,
   input_values,
   nodeId,
-  onInputValueChange
+  onInputValueChange,
 }) => {
   if (inputs.length === 0) return null;
 
@@ -106,7 +108,10 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
             <div style={nodeStyles.inputInfo}>
               <strong>{input.name}</strong>
               {input.description && (
-                <span style={nodeStyles.description}> - {input.description}</span>
+                <span style={nodeStyles.description}>
+                  {' '}
+                  - {input.description}
+                </span>
               )}
               {input.required && <span style={nodeStyles.required}> *</span>}
             </div>
@@ -115,8 +120,10 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
               <div style={nodeStyles.inputComponent}>
                 <InputComponent
                   label=""
-                  value={input_values[input.name] || input.default || ""}
-                  onChange={(value: string) => onInputValueChange(input.name, value)}
+                  value={input_values[input.name] || input.default || ''}
+                  onChange={(value: string) =>
+                    onInputValueChange(input.name, value)
+                  }
                   nodeId={nodeId}
                 />
               </div>
@@ -150,7 +157,10 @@ export const OutputsSection: React.FC<OutputsSectionProps> = ({ outputs }) => {
           <span style={nodeStyles.outputLabel}>
             <strong>{output.name}</strong>
             {output.description && (
-              <span style={nodeStyles.description}> - {output.description}</span>
+              <span style={nodeStyles.description}>
+                {' '}
+                - {output.description}
+              </span>
             )}
           </span>
         </div>
@@ -165,9 +175,16 @@ interface NodeHeaderProps {
   description?: string;
 }
 
-export const NodeHeader: React.FC<NodeHeaderProps> = ({ label, description }) => (
+export const NodeHeader: React.FC<NodeHeaderProps> = ({
+  label,
+  description,
+}) => (
   <div style={nodeStyles.header}>
     <div>{label}</div>
-    {description && <div style={{ fontSize: '0.65em', color: '#666', fontWeight: 'normal' }}>{description}</div>}
+    {description && (
+      <div style={{ fontSize: '0.65em', color: '#666', fontWeight: 'normal' }}>
+        {description}
+      </div>
+    )}
   </div>
 );

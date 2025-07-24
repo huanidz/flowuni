@@ -5,7 +5,6 @@ import FlowDashboardPage from './pages/FlowDashboardPage';
 import AuthenticationPage from './pages/AuthenticationPage';
 
 function App() {
-
   return (
     <Router>
       <Routes>
@@ -17,4 +16,4 @@ function App() {
   );
 }
 
-export default App
+export default App;

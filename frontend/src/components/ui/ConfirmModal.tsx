@@ -7,7 +7,12 @@ interface ConfirmModalProps {
   message: string;
 }
 
-const ConfirmModal: React.FC<ConfirmModalProps> = ({ isOpen, onClose, onConfirm, message }) => {
+const ConfirmModal: React.FC<ConfirmModalProps> = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  message,
+}) => {
   if (!isOpen) return null;
 
   return (

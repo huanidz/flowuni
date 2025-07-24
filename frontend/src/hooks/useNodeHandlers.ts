@@ -1,6 +1,9 @@
 // useNodeHandlers.ts
 import { useCallback } from 'react';
-import type { UpdateNodeDataFunction, UpdateNodeParameterFunction } from '@/parsers/NodeTypes';
+import type {
+  UpdateNodeDataFunction,
+  UpdateNodeParameterFunction,
+} from '@/parsers/NodeTypes';
 
 export const useNodeHandlers = (
   nodeId: string,
@@ -8,27 +11,37 @@ export const useNodeHandlers = (
   updateNodeData?: UpdateNodeDataFunction,
   updateNodeParameter?: UpdateNodeParameterFunction
 ) => {
-  const handleParameterChange = useCallback((paramName: string, value: any) => {
-    console.log(`Parameter changed: ${paramName} = ${value} for node ${nodeId}`);
-    if (updateNodeParameter) {
-      updateNodeParameter(nodeId, paramName, value);
-    }
-  }, [nodeId, updateNodeParameter]);
+  const handleParameterChange = useCallback(
+    (paramName: string, value: any) => {
+      console.log(
+        `Parameter changed: ${paramName} = ${value} for node ${nodeId}`
+      );
+      if (updateNodeParameter) {
+        updateNodeParameter(nodeId, paramName, value);
+      }
+    },
+    [nodeId, updateNodeParameter]
+  );
 
-  const handleInputValueChange = useCallback((inputName: string, value: any) => {
-    console.log(`Input value changed: ${inputName} = ${value} for node ${nodeId}`);
-    if (updateNodeData) {
-      updateNodeData(nodeId, {
-        input_values: {
-          ...input_values,
-          [inputName]: value
-        }
-      });
-    }
-  }, [nodeId, input_values, updateNodeData]);
+  const handleInputValueChange = useCallback(
+    (inputName: string, value: any) => {
+      console.log(
+        `Input value changed: ${inputName} = ${value} for node ${nodeId}`
+      );
+      if (updateNodeData) {
+        updateNodeData(nodeId, {
+          input_values: {
+            ...input_values,
+            [inputName]: value,
+          },
+        });
+      }
+    },
+    [nodeId, input_values, updateNodeData]
+  );
 
   return {
     handleParameterChange,
-    handleInputValueChange
+    handleInputValueChange,
   };
 };

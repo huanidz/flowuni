@@ -3,9 +3,18 @@ import type { Node, Edge } from '@xyflow/react';
 import axios from 'axios';
 
 const getFlowGraphData = (nodes: Node[], edges: Edge[]) => ({
-  nodes: nodes.map(({ id, type, position, data }) => ({ id, type, position, data })),
+  nodes: nodes.map(({ id, type, position, data }) => ({
+    id,
+    type,
+    position,
+    data,
+  })),
   edges: edges.map(({ id, source, target, sourceHandle, targetHandle }) => ({
-    id, source, target, sourceHandle, targetHandle,
+    id,
+    source,
+    target,
+    sourceHandle,
+    targetHandle,
   })),
 });
 
@@ -65,7 +74,6 @@ export const useFlowActions = (
   selectedNodeIds: string[],
   selectedEdgeIds: string[]
 ) => {
-
   const onCompileFlow = useCallback(() => {
     return handleFlowRequest(
       nodes,
@@ -91,19 +99,28 @@ export const useFlowActions = (
   }, [setNodes, setEdges, setNodeId]);
 
   const onDeleteSelectedElements = useCallback(() => {
-    setNodes(nodes.filter((node) => !selectedNodeIds.includes(node.id)));
-    setEdges(edges.filter((edge) => !selectedEdgeIds.includes(edge.id)));
-    }, [nodes, edges, selectedNodeIds, selectedEdgeIds, setNodes, setEdges]);
+    setNodes(nodes.filter(node => !selectedNodeIds.includes(node.id)));
+    setEdges(edges.filter(edge => !selectedEdgeIds.includes(edge.id)));
+  }, [nodes, edges, selectedNodeIds, selectedEdgeIds, setNodes, setEdges]);
 
-  const onKeyDown = useCallback((event: React.KeyboardEvent) => {
-    switch (event.key) {
-      case 'Delete':
-        onDeleteSelectedElements();
-        break;
-      default:
-        break;
-    }
-  }, [onDeleteSelectedElements]);
+  const onKeyDown = useCallback(
+    (event: React.KeyboardEvent) => {
+      switch (event.key) {
+        case 'Delete':
+          onDeleteSelectedElements();
+          break;
+        default:
+          break;
+      }
+    },
+    [onDeleteSelectedElements]
+  );
 
-  return { onCompileFlow, onRunFlow, onClearFlow, onDeleteSelectedElements, onKeyDown };
+  return {
+    onCompileFlow,
+    onRunFlow,
+    onClearFlow,
+    onDeleteSelectedElements,
+    onKeyDown,
+  };
 };

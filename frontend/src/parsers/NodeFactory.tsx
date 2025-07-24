@@ -1,15 +1,20 @@
 // RefactoredNodeFactory.tsx
-import React from "react";
-import nodeRegistry from "./NodeRegistry";
-import type { 
-  NodeSpec, 
-  CustomNodeProps, 
-  UpdateNodeDataFunction, 
-  UpdateNodeParameterFunction 
-} from "./NodeTypes";
-import { NodeHeader, ParametersSection, InputsSection, OutputsSection } from "./NodeSections";
-import { useNodeHandlers } from "@/hooks/useNodeHandlers";
-import { nodeStyles } from "@/styles/nodeStyles";
+import React from 'react';
+import nodeRegistry from './NodeRegistry';
+import type {
+  NodeSpec,
+  CustomNodeProps,
+  UpdateNodeDataFunction,
+  UpdateNodeParameterFunction,
+} from './NodeTypes';
+import {
+  NodeHeader,
+  ParametersSection,
+  InputsSection,
+  OutputsSection,
+} from './NodeSections';
+import { useNodeHandlers } from '@/hooks/useNodeHandlers';
+import { nodeStyles } from '@/styles/nodeStyles';
 
 class NodeFactoryClass {
   createNodeComponent(
@@ -25,9 +30,9 @@ class NodeFactoryClass {
     }
 
     const CustomNode: React.FC<CustomNodeProps> = ({ data, id }) => {
-      const { 
-        label = nodeSpec.name, 
-        description = nodeSpec.description, 
+      const {
+        label = nodeSpec.name,
+        description = nodeSpec.description,
         parameters = {},
         input_values = {},
       } = data;
@@ -42,21 +47,21 @@ class NodeFactoryClass {
       return (
         <div style={nodeStyles.container}>
           <NodeHeader label={label} description={description} />
-          
+
           <ParametersSection
             parameters={nodeSpec.parameters}
             parameterValues={parameters}
             nodeId={id}
             onParameterChange={handleParameterChange}
           />
-          
+
           <InputsSection
             inputs={nodeSpec.inputs}
             input_values={input_values}
             nodeId={id}
             onInputValueChange={handleInputValueChange}
           />
-          
+
           <OutputsSection outputs={nodeSpec.outputs} />
         </div>
       );

@@ -13,8 +13,8 @@ export const useFlowSelection = (
   const [selectedEdgeIds, setSelectedEdgeIds] = useState<string[]>([]);
 
   useEffect(() => {
-    setNodes((nds) =>
-      nds.map((node) => ({
+    setNodes(nds =>
+      nds.map(node => ({
         ...node,
         selected: selectedNodeIds.includes(node.id),
       }))
@@ -22,8 +22,8 @@ export const useFlowSelection = (
   }, [selectedNodeIds, setNodes]);
 
   useEffect(() => {
-    setEdges((eds) =>
-      eds.map((edge) => ({
+    setEdges(eds =>
+      eds.map(edge => ({
         ...edge,
         selected: selectedEdgeIds.includes(edge.id),
       }))
@@ -31,7 +31,13 @@ export const useFlowSelection = (
   }, [selectedEdgeIds, setEdges]);
 
   const onSelectionChange = useCallback(
-    ({ nodes: selectedNodes, edges: selectedEdges }: { nodes: Node[]; edges: Edge[] }) => {
+    ({
+      nodes: selectedNodes,
+      edges: selectedEdges,
+    }: {
+      nodes: Node[];
+      edges: Edge[];
+    }) => {
       setSelectedNodeIds(selectedNodes.map((node: Node) => node.id));
       setSelectedEdgeIds(selectedEdges.map((edge: Edge) => edge.id));
     },

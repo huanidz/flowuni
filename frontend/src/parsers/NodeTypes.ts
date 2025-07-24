@@ -1,5 +1,5 @@
 // NodeTypes.ts
-import { type Node as RFNode, type NodeProps } from "@xyflow/react";
+import { type Node as RFNode, type NodeProps } from '@xyflow/react';
 
 export interface NodeParameterSpec {
   name: string;
@@ -46,4 +46,8 @@ export interface NodeData {
 export type CustomNodeProps = NodeProps<RFNode<NodeData>>;
 
 export type UpdateNodeDataFunction = (nodeId: string, newData: any) => void;
-export type UpdateNodeParameterFunction = (nodeId: string, parameterName: string, value: any) => void;
+export type UpdateNodeParameterFunction = (
+  nodeId: string,
+  parameterName: string,
+  value: any
+) => void;

@@ -9,7 +9,7 @@ export interface AuthState {
   stateLogout: () => void;
 }
 
-const useAuthStore = create<AuthState>((set) => ({
+const useAuthStore = create<AuthState>(set => ({
   isAuthenticated: false,
   user_id: null,
   username: null,
@@ -20,19 +20,19 @@ const useAuthStore = create<AuthState>((set) => ({
       console.warn('Invalid login credentials');
       return;
     }
-    
-    set({ 
-      isAuthenticated: true, 
-      user_id, 
-      username 
+
+    set({
+      isAuthenticated: true,
+      user_id,
+      username,
     });
   },
-  
+
   stateLogout: () => {
-    set({ 
-      isAuthenticated: false, 
-      user_id: null, 
-      username: null 
+    set({
+      isAuthenticated: false,
+      user_id: null,
+      username: null,
     });
   },
 }));

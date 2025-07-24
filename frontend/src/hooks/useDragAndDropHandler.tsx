@@ -10,10 +10,13 @@ export const useDragDropHandler = (
   setNodeId: (updater: (id: number) => number) => void,
   nodePaletteRef: React.RefObject<HTMLDivElement | null> // Cập nhật kiểu của nodePaletteRef
 ) => {
-  const onDragStart = useCallback((event: React.DragEvent, node_type: string) => {
-    event.dataTransfer.setData('application/reactflow', node_type);
-    event.dataTransfer.effectAllowed = 'move';
-  }, []);
+  const onDragStart = useCallback(
+    (event: React.DragEvent, node_type: string) => {
+      event.dataTransfer.setData('application/reactflow', node_type);
+      event.dataTransfer.effectAllowed = 'move';
+    },
+    []
+  );
 
   const onDrop = useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
@@ -29,7 +32,7 @@ export const useDragDropHandler = (
           event.clientY >= paletteRect.top &&
           event.clientY <= paletteRect.bottom
         ) {
-          console.log("Drop avoided: Dropped on NodePalette.");
+          console.log('Drop avoided: Dropped on NodePalette.');
           return; // Không cho phép thả vào NodePalette
         }
       }
@@ -37,7 +40,9 @@ export const useDragDropHandler = (
       const type = event.dataTransfer.getData('application/reactflow');
       if (!type) return;
 
-      const bounds = (event.currentTarget as HTMLDivElement).getBoundingClientRect();
+      const bounds = (
+        event.currentTarget as HTMLDivElement
+      ).getBoundingClientRect();
       const x = event.clientX - bounds.left;
       const y = event.clientY - bounds.top;
       const position = reactFlowInstance.screenToFlowPosition({ x, y });
@@ -52,7 +57,7 @@ export const useDragDropHandler = (
       const initialParameters = Object.fromEntries(
         Object.entries(nodeSpec.parameters).map(([key, paramSpec]) => [
           key,
-          (paramSpec as any).default || ""
+          (paramSpec as any).default || '',
         ])
       );
 
@@ -60,7 +65,7 @@ export const useDragDropHandler = (
       const initialInputValues = Object.fromEntries(
         Object.entries(nodeSpec.inputs).map(([key, value]) => [
           key,
-          value || "" // Giả sử giá trị mặc định là chuỗi rỗng nếu không có
+          value || '', // Giả sử giá trị mặc định là chuỗi rỗng nếu không có
         ])
       );
 
@@ -80,8 +85,8 @@ export const useDragDropHandler = (
         targetPosition: Position.Left,
       };
 
-      setNodes((nds) => [...nds, customNode]);
-      setNodeId((id) => id + 1);
+      setNodes(nds => [...nds, customNode]);
+      setNodeId(id => id + 1);
     },
     [nodeId, reactFlowInstance, setNodes, setNodeId, nodePaletteRef] // Thêm nodePaletteRef vào dependencies
   );

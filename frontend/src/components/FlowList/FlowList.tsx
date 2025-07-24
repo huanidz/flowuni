@@ -40,7 +40,7 @@ const FlowList: React.FC<FlowListProps> = ({ flows }) => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {flows.map((flow) => (
+          {flows.map(flow => (
             <TableRow key={flow.id}>
               <TableCell className="font-medium">
                 <div className="flex items-center space-x-3">
@@ -49,13 +49,24 @@ const FlowList: React.FC<FlowListProps> = ({ flows }) => {
                   </div>
                   <div>
                     <div className="font-semibold">{flow.name}</div>
-                    <div className="text-sm text-gray-500">{flow.description}</div>
+                    <div className="text-sm text-gray-500">
+                      {flow.description}
+                    </div>
                   </div>
                 </div>
               </TableCell>
               <TableCell>
-                <Badge variant={flow.status === 'active' ? 'default' : 'secondary'} className={flow.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}>
-                  <span className={`h-2 w-2 rounded-full ${flow.status === 'active' ? 'bg-green-500' : 'bg-gray-500'} mr-1`}></span>
+                <Badge
+                  variant={flow.status === 'active' ? 'default' : 'secondary'}
+                  className={
+                    flow.status === 'active'
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-gray-100 text-gray-700'
+                  }
+                >
+                  <span
+                    className={`h-2 w-2 rounded-full ${flow.status === 'active' ? 'bg-green-500' : 'bg-gray-500'} mr-1`}
+                  ></span>
                   {flow.status === 'active' ? 'Đang hoạt động' : 'Tạm dừng'}
                 </Badge>
               </TableCell>

@@ -12,14 +12,14 @@ const apiClient = axios.create({
 
 // Request interceptor (e.g. attach token)
 apiClient.interceptors.request.use(
-  (config) => {
+  config => {
     const token = localStorage.getItem('flowuni-auth-token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  error => Promise.reject(error)
 );
 
 export default apiClient;

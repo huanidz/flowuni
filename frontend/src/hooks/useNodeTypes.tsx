@@ -5,7 +5,11 @@ import { NodeFactory } from '@/parsers/NodeFactory';
 export const useNodeTypes = (
   setNodeTypes: (types: any) => void,
   updateNodeData: (nodeId: string, newData: any) => void,
-  updateNodeParameter: (nodeId: string, parameterName: string, value: any) => void
+  updateNodeParameter: (
+    nodeId: string,
+    parameterName: string,
+    value: any
+  ) => void
 ) => {
   useEffect(() => {
     const loadNodes = async () => {
@@ -27,7 +31,10 @@ export const useNodeTypes = (
 
         setNodeTypes(customNodeTypes);
       } catch (error) {
-        console.error("Failed to load node catalog or create node components:", error);
+        console.error(
+          'Failed to load node catalog or create node components:',
+          error
+        );
       }
     };
 

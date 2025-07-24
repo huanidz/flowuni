@@ -8,7 +8,11 @@ interface FlowToolbarProps {
 }
 
 // Toolbar component
-const FlowToolbar: React.FC<FlowToolbarProps> = ({ onRun, onClear, onCompile }) => {
+const FlowToolbar: React.FC<FlowToolbarProps> = ({
+  onRun,
+  onClear,
+  onCompile,
+}) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleClearClick = () => {

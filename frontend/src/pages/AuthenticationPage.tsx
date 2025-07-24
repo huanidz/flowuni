@@ -2,12 +2,25 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { toast } from 'sonner';
-import { Toaster } from "@/components/ui/sonner"
+import { Toaster } from '@/components/ui/sonner';
 
 import { useLogin, useRegister } from '@/features/auth/hooks';
 import { useNavigate } from 'react-router-dom';
@@ -19,12 +32,16 @@ const loginSchema = z.object({
   password: z.string().min(3, 'Password must be at least 6 characters'),
 });
 
-const registerSchema = loginSchema.extend({
-  confirmPassword: z.string().min(3, 'Password must be at least 3 characters'),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-});
+const registerSchema = loginSchema
+  .extend({
+    confirmPassword: z
+      .string()
+      .min(3, 'Password must be at least 3 characters'),
+  })
+  .refine(data => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ['confirmPassword'],
+  });
 
 type LoginFormData = z.infer<typeof loginSchema>;
 type RegisterFormData = z.infer<typeof registerSchema>;
@@ -50,36 +67,38 @@ const AuthenticationPage = () => {
     try {
       if (isLogin) {
         const { username, password } = data as LoginFormData;
-        const { user_id } = await loginMutation.mutateAsync({ username, password });
+        const { user_id } = await loginMutation.mutateAsync({
+          username,
+          password,
+        });
 
         console.log(user_id);
 
         authStore.stateLogin(user_id, username);
 
-        toast("Logged in", {
+        toast('Logged in', {
           description: `Welcome back ${username}!`,
         });
 
         // Add little delay
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         form.reset();
-        navigate("/dashboard")
-
+        navigate('/dashboard');
       } else {
         // Call the register mutation
         const { username, password } = data as RegisterFormData;
         await registerMutation.mutateAsync({ username, password });
 
-        toast("Account Created", {
+        toast('Account Created', {
           description: `Welcome ${username}! Your account has been created successfully.`,
         });
 
         form.reset();
       }
     } catch (error) {
-      toast("Error", {
-        description: "Something went wrong. Please try again.",
+      toast('Error', {
+        description: 'Something went wrong. Please try again.',
       });
     }
   };
@@ -104,15 +123,17 @@ const AuthenticationPage = () => {
               {isLogin ? 'Welcome back' : 'Create account'}
             </CardTitle>
             <CardDescription>
-              {isLogin 
-                ? 'Enter your credentials to sign in' 
-                : 'Enter your details to create your account'
-              }
+              {isLogin
+                ? 'Enter your credentials to sign in'
+                : 'Enter your details to create your account'}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-4"
+              >
                 <FormField
                   control={form.control}
                   name="username"
@@ -126,7 +147,7 @@ const AuthenticationPage = () => {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="password"
@@ -134,7 +155,11 @@ const AuthenticationPage = () => {
                     <FormItem>
                       <FormLabel>Password</FormLabel>
                       <FormControl>
-                        <Input type="password" placeholder="Enter your password" {...field} />
+                        <Input
+                          type="password"
+                          placeholder="Enter your password"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -149,7 +174,11 @@ const AuthenticationPage = () => {
                       <FormItem>
                         <FormLabel>Confirm Password</FormLabel>
                         <FormControl>
-                          <Input type="password" placeholder="Confirm your password" {...field} />
+                          <Input
+                            type="password"
+                            placeholder="Confirm your password"
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -157,20 +186,29 @@ const AuthenticationPage = () => {
                   />
                 )}
 
-                <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-                  {form.formState.isSubmitting 
-                    ? (isLogin ? 'Signing In...' : 'Creating Account...') 
-                    : (isLogin ? 'Sign In' : 'Create Account')
-                  }
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={form.formState.isSubmitting}
+                >
+                  {form.formState.isSubmitting
+                    ? isLogin
+                      ? 'Signing In...'
+                      : 'Creating Account...'
+                    : isLogin
+                      ? 'Sign In'
+                      : 'Create Account'}
                 </Button>
-                
-                <Button 
+
+                <Button
                   type="button"
-                  variant="ghost" 
+                  variant="ghost"
                   className="w-full"
                   onClick={toggleMode}
                 >
-                  {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
+                  {isLogin
+                    ? "Don't have an account? Sign up"
+                    : 'Already have an account? Sign in'}
                 </Button>
               </form>
             </Form>
