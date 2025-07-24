@@ -95,6 +95,7 @@ const AuthenticationPage = () => {
         });
 
         form.reset();
+        setIsLogin(true);
       }
     } catch (error) {
       toast('Error', {
