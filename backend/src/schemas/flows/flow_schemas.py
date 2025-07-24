@@ -16,5 +16,13 @@ class GetFlowResponseItem(BaseModel):
     is_active: str = Field("active", description="Flow status")
 
 
+class Pagination(BaseModel):
+    page: int = Field(..., description="Page number")
+    page_size: int = Field(..., description="Number of items per page")
+    total_pages: int = Field(..., description="Total number of pages")
+    total_items: int = Field(..., description="Total number of items")
+
+
 class GetFlowResponse(BaseModel):
     data: List[GetFlowResponseItem] = Field(..., description="List of flows")
+    pagination: Pagination = Field(..., description="Pagination")

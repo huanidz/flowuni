@@ -8,3 +8,4 @@
 # Typescript coding standard
 
 1. Prefer using shadcn/ui
+2. ReactQuery is v5 so some callbacks is deprecated

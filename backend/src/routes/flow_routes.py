@@ -1,3 +1,4 @@
+import math
 import traceback
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -8,7 +9,7 @@ from src.exceptions.auth_exceptions import UNAUTHORIZED_EXCEPTION
 from src.models.alchemy.flows.FlowModel import FlowModel
 from src.repositories.FlowRepositories import FlowRepository
 from src.schemas.flowbuilder.flow_crud_schemas import EmptyFlowCreateResponse
-from src.schemas.flows.flow_schemas import GetFlowResponse
+from src.schemas.flows.flow_schemas import GetFlowResponse, Pagination
 from src.services.FlowService import FlowService
 
 flow_router = APIRouter(
@@ -65,10 +66,19 @@ async def get_by_user_id(
             )
             raise UNAUTHORIZED_EXCEPTION
 
-        flows = flow_service.get_by_user_id_paged(
+        flows, total_items = flow_service.get_by_user_id_paged(
             user_id=q_user_id, page=q_page, per_page=q_per_page
         )
-        return flows
+
+        # Interpolate total pages
+        total_pages = math.ceil(total_items / q_per_page) if q_per_page else 0
+
+        response = GetFlowResponse(
+            data=flows,
+            pagination=Pagination(q_page, q_per_page, total_pages, total_items),
+        )
+
+        return response
     except Exception as e:
         logger.error(f"Error retrieving flows by user ID {q_user_id}: {e}")
         raise HTTPException(

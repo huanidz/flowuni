@@ -1,9 +1,8 @@
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Tuple
 
-from src.models.alchemy.flows.FlowModel import FlowModel
 from src.repositories.FlowRepositories import FlowRepository
-from src.schemas.flows.flow_schemas import GetFlowResponse, GetFlowResponseItem
+from src.schemas.flows.flow_schemas import GetFlowResponseItem
 
 
 class FlowServiceInterface(ABC):
@@ -29,12 +28,12 @@ class FlowService(FlowServiceInterface):
 
     def get_by_user_id_paged(
         self, user_id: int, page: int = 1, per_page: int = 10
-    ) -> GetFlowResponse:
+    ) -> Tuple:
         """
         Get flows by user id
         """
 
-        flows: List[FlowModel] = self.flow_repository.get_by_user_id_paged(
+        flows, total_items = self.flow_repository.get_by_user_id_paged(
             user_id=user_id, page=page, per_page=per_page
         )
 
@@ -49,4 +48,4 @@ class FlowService(FlowServiceInterface):
             for flow in flows
         ]
 
-        return GetFlowResponse(data=mapped_flows)
+        return mapped_flows, total_items

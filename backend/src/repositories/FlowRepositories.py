@@ -1,8 +1,10 @@
+import math
 import re
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from uuid import uuid4
 
 from loguru import logger
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlalchemy.orm import Session
 from src.models.alchemy.flows.FlowModel import FlowModel
@@ -69,11 +71,19 @@ class FlowRepository(BaseRepository):
 
     def get_by_user_id_paged(
         self, user_id: int, page: int = 1, per_page: int = 10
-    ) -> List[FlowModel]:
+    ) -> Tuple[List[FlowModel], int]:
         """
-        Get flows by user id
+        Returns a tuple of (flows on this page, total matching flows)
         """
         try:
+            # 1) total count
+            total_items = (
+                self.db_session.query(func.count(FlowModel.flow_id))
+                .filter_by(user_id=user_id)
+                .scalar()
+            )
+
+            # 2) paged items
             flows = (
                 self.db_session.query(FlowModel)
                 .filter_by(user_id=user_id)
@@ -81,14 +91,20 @@ class FlowRepository(BaseRepository):
                 .limit(per_page)
                 .all()
             )
+
+            total_pages = math.ceil(total_items / per_page) if per_page else 0
+
             logger.info(
-                f"Retrieved {len(flows)} flows for user ID: {user_id}, page {page}, per_page {per_page}."
+                f"User {user_id} – page {page}/{total_pages}: "
+                f"returned {len(flows)} of {total_items} total flows."
             )
-            return flows
+            # return both page of flows and metadata
+            return flows, total_items
+
         except Exception as e:
             logger.error(f"Error retrieving flows by user ID {user_id}: {e}")
             self.db_session.rollback()
-            raise e
+            raise
 
     def create_empty_flow(self) -> FlowModel:
         """
