@@ -4,6 +4,7 @@ from loguru import logger
 from src.consts.auth_consts import AuthConsts
 from src.dependencies.auth_dependency import get_auth_service
 from src.dependencies.user_dependency import get_user_service
+from src.exceptions.user_exceptions import InvalidCredentialsError
 from src.schemas.users.user_schemas import (
     LoginResponse,
     LogoutRequest,
@@ -90,6 +91,12 @@ async def login_user(
             access_token=access_token,
             refresh_token=None,  # Not sent in response body anymore
         )
+    except InvalidCredentialsError as e:
+        logger.warning(f"Invalid credentials during login: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e),
+        ) from e
     except ValueError as e:
         logger.warning(f"Validation error during login: {e}")
         raise HTTPException(
