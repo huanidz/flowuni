@@ -54,6 +54,42 @@ class FlowRepository(BaseRepository):
             self.db_session.rollback()
             raise e
 
+    def get_by_user_id(self, user_id: int) -> List[FlowModel]:
+        """
+        Get flows by user id
+        """
+        try:
+            flows = self.db_session.query(FlowModel).filter_by(user_id=user_id).all()
+            logger.info(f"Retrieved {len(flows)} flows for user ID: {user_id}.")
+            return flows
+        except Exception as e:
+            logger.error(f"Error retrieving flows by user ID {user_id}: {e}")
+            self.db_session.rollback()
+            raise e
+
+    def get_by_user_id_paged(
+        self, user_id: int, page: int = 1, per_page: int = 10
+    ) -> List[FlowModel]:
+        """
+        Get flows by user id
+        """
+        try:
+            flows = (
+                self.db_session.query(FlowModel)
+                .filter_by(user_id=user_id)
+                .offset((page - 1) * per_page)
+                .limit(per_page)
+                .all()
+            )
+            logger.info(
+                f"Retrieved {len(flows)} flows for user ID: {user_id}, page {page}, per_page {per_page}."
+            )
+            return flows
+        except Exception as e:
+            logger.error(f"Error retrieving flows by user ID {user_id}: {e}")
+            self.db_session.rollback()
+            raise e
+
     def create_empty_flow(self) -> FlowModel:
         """
         Create a new flow with auto-incremented like 'New Flow', 'New Flow (1)', etc.
