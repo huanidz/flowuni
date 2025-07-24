@@ -42,17 +42,31 @@ const useAuthStore = create<AuthState>()(
       },
 
       checkAuth: async () => {
-        const { user_id, username, stateLogin, stateLogout } = get();
+        const token = localStorage.getItem('auth_token');
 
-        // Simulate token check / auth check
-        if (user_id && username) {
-          stateLogin(user_id, username); // restore session if data exists
-        } else {
-          stateLogout(); // clear invalid session
+        if (!token) {
+          get().stateLogout();
+          return;
         }
 
-        // In a real app, you'd likely check a token or call an API here.
-      },
+        try {
+          const response = await fetch('/api/auth/validate-token', {
+            method: 'GET',
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (!response.ok) throw new Error('Token invalid or expired');
+
+          const user = await response.json(); // e.g., { user_id, username }
+
+          get().stateLogin(user.user_id, user.username);
+        } catch (error) {
+          console.error('Auth validation failed:', error);
+          get().stateLogout();
+        }
+      }
     }),
     {
       name: 'auth-storage', // persisted key in localStorage
