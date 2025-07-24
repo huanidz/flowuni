@@ -26,8 +26,6 @@ export const getNodesWithCache = async (): Promise<NodeSpec[]> => {
       validateStatus: status => status === 200 || status === 304,
     });
 
-    console.log('Response:', response);
-
     if (response.status === 304) {
       console.log('Catalog not modified — using cached version');
       const cachedData = localStorage.getItem(NODE_CATALOG_DATA_KEY);
