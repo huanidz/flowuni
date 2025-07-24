@@ -3,7 +3,12 @@ import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/ui/Logo';
 import FlowList from '@/components/FlowList/FlowList';
 
+import { useLogout } from '@/features/auth/hooks';
+
 const FlowDashboardPage: React.FC = () => {
+
+  const logout = useLogout();
+
   const dummyFlows = [
     {
       id: '1',

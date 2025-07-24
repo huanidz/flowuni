@@ -74,7 +74,7 @@ const AuthenticationPage = () => {
 
         console.log(user_id);
 
-        authStore.stateLogin(user_id, username);
+        authStore.stateLogin(user_id);
 
         toast('Logged in', {
           description: `Welcome back ${username}!`,

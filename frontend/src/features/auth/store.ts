@@ -6,8 +6,7 @@ import apiClient from '@/api/client';
 export interface AuthState {
   isAuthenticated: boolean;
   user_id: string | null;
-  username: string | null;
-  stateLogin: (user_id: string, username: string) => boolean;
+  stateLogin: (user_id: string) => boolean;
   stateLogout: () => void;
   checkAuth: () => Promise<void>;
 }
@@ -19,10 +18,9 @@ const useAuthStore = create<AuthState>()(
     (set, get) => ({
       isAuthenticated: false,
       user_id: null,
-      username: null,
 
-      stateLogin: (user_id: string, username: string) => {
-        if (!user_id || !username) {
+      stateLogin: (user_id: string) => {
+        if (!user_id) {
           console.warn('Invalid login credentials');
           return false;
         }
@@ -30,7 +28,6 @@ const useAuthStore = create<AuthState>()(
         set({
           isAuthenticated: true,
           user_id,
-          username,
         });
 
         return true;
@@ -43,7 +40,6 @@ const useAuthStore = create<AuthState>()(
         set({
           isAuthenticated: false,
           user_id: null,
-          username: null,
         });
       },
 
@@ -66,11 +62,11 @@ const useAuthStore = create<AuthState>()(
           });
           
           // Validate that we received the expected user data
-          if (!data.user_id || !data.username) {
+          if (!data.user_id) {
             throw new Error('Invalid user data received');
           }
 
-          get().stateLogin(data.user_id, data.username);
+          get().stateLogin(data.user_id);
         } catch (error) {
           console.error('Auth validation failed:', error);
           // Clear invalid token and logout user
@@ -85,7 +81,6 @@ const useAuthStore = create<AuthState>()(
       partialize: (state) => ({
         isAuthenticated: state.isAuthenticated,
         user_id: state.user_id,
-        username: state.username,
       }),
     }
   )
