@@ -5,9 +5,9 @@ import apiClient from '@/api/client';
 
 export interface AuthState {
   isAuthenticated: boolean;
-  user_id: string | null;
+  user_id: number | null;
   isValidating: boolean; // Add loading state
-  stateLogin: (user_id: string) => boolean;
+  stateLogin: (user_id: number) => boolean;
   stateLogout: () => void;
   checkAuth: () => Promise<void>;
 }
@@ -25,7 +25,7 @@ const useAuthStore = create<AuthState>()(
       user_id: null,
       isValidating: false,
 
-      stateLogin: (user_id: string) => {
+      stateLogin: (user_id: number) => {
         if (!user_id) {
           console.warn('Invalid login credentials');
           return false;

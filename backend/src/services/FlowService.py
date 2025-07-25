@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Tuple
+from typing import Tuple
 
 from src.repositories.FlowRepositories import FlowRepository
 from src.schemas.flows.flow_schemas import GetFlowResponseItem
@@ -11,7 +11,7 @@ class FlowServiceInterface(ABC):
     """
 
     @abstractmethod
-    def get_by_user_id(self, user_id: int) -> List[str]:
+    def get_by_user_id_paged(self, user_id: int) -> Tuple:
         """
         Get flows by user id
         """

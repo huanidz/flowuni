@@ -3,7 +3,7 @@ import { GET_FLOWS_ENDPOINT } from "./consts";
 import { type GetFlowsResponse } from "./types";
 
 interface GetFlowsParams {
-  userId: string;
+  userId: number;
   page?: number;
   pageSize?: number;
 }

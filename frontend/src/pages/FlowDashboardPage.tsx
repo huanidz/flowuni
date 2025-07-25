@@ -5,43 +5,22 @@ import FlowList from '@/components/FlowList/FlowList';
 
 import { useLogout } from '@/features/auth/hooks';
 import { useNavigate } from 'react-router-dom';
+import { useFlows } from '@/features/flows/hooks';
+import useAuthStore from '@/features/auth/store';
 
 const FlowDashboardPage: React.FC = () => {
-
   const logout = useLogout();
   const navigate = useNavigate();
-
-  const dummyFlows = [
-    {
-      id: '1',
-      name: 'Quy trình đăng ký khách hàng',
-      description: 'Tự động hóa quy trình đăng ký và xác thực khách hàng mới',
-      status: 'active' as 'active',
-      lastRun: '2024-07-20 14:30',
-      runCount: 1250,
-      successRate: 98.5,
-    },
-    {
-      id: '2',
-      name: 'Xử lý đơn hàng',
-      description: 'Workflow xử lý đơn hàng từ nhận order đến giao hàng',
-      status: 'paused' as 'paused',
-      lastRun: '2024-07-19 09:15',
-      runCount: 856,
-      successRate: 97.2,
-    },
-  ];
+  const { user_id } = useAuthStore();
+  const { data: flows, isLoading, isError } = useFlows({ userId: user_id as number });
 
   const handleLogout = async () => {
-    
     try {
       await logout.mutateAsync();
-
       navigate('/auth');
     } catch (error) {
       console.error('Logout failed:', error);
     }
-  
   };
 
   return (
@@ -51,7 +30,7 @@ const FlowDashboardPage: React.FC = () => {
         <div className="p-4">
           <Button className="w-full">Flow</Button>
         </div>
-      <Button className="w-full mt-auto" onClick={handleLogout}>Logout</Button>
+        <Button className="w-full mt-auto" onClick={handleLogout}>Logout</Button>
       </div>
       <div className="flex-1 p-8">
         <h1 className="text-2xl font-bold">Flow Dashboard Page</h1>
@@ -71,7 +50,15 @@ const FlowDashboardPage: React.FC = () => {
             + Tạo Flow mới
           </Button>
         </div>
-        <FlowList flows={dummyFlows} />
+
+        {/* Display loading, error, or the flow list */}
+        {isLoading ? (
+          <p>Loading flows...</p>
+        ) : isError ? (
+          <p>Error loading flows. Please try again.</p>
+        ) : (
+          <FlowList flows={flows?.data || []} />
+        )}
       </div>
     </div>
   );

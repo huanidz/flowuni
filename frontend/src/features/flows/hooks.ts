@@ -3,7 +3,7 @@ import { getFlows } from './api';
 import { type GetFlowsResponse } from './types';
 
 interface UseFlowsParams {
-  userId: string;
+  userId: number;
   page?: number;
   pageSize?: number;
 }
@@ -13,5 +13,6 @@ export const useFlows = ({ userId, page = 1, pageSize = 10 }: UseFlowsParams) =>
     queryKey: ['flows', userId, page, pageSize],
     queryFn: () => getFlows({ userId, page, pageSize }),
     placeholderData: keepPreviousData,
+    enabled: !!userId,
   });
 };
