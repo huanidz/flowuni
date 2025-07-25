@@ -106,21 +106,24 @@ class FlowRepository(BaseRepository):
             self.db_session.rollback()
             raise
 
-    def create_empty_flow(self) -> FlowModel:
+    def create_empty_flow(self, user_id: int) -> FlowModel:
         """
-        Create a new flow with auto-incremented like 'New Flow', 'New Flow (1)', etc.
+        Create a new flow with auto-incremented name like 'New Flow', 'New Flow (1)', etc.,
+        scoped to the given user_id.
         """
         try:
             base_name = "New Flow"
 
-            # Fetch all existing names that start with 'New Flow'
+            # Fetch all existing names for this user that start with 'New Flow'
             existing_names = (
                 self.db_session.query(FlowModel.name)
-                .filter(FlowModel.name.ilike(f"{base_name}%"))
+                .filter(
+                    FlowModel.user_id == user_id, FlowModel.name.ilike(f"{base_name}%")
+                )
                 .all()
             )
 
-            # Extract just the name strings from the result
+            # Extract just the name strings
             existing_names = [name[0] for name in existing_names]
 
             # Find the next available number
@@ -146,21 +149,30 @@ class FlowRepository(BaseRepository):
 
             # Create the flow
             flow_id = str(uuid4())
-            flow = FlowModel(flow_id=flow_id, name=name, description="")
+            flow = FlowModel(
+                flow_id=flow_id,
+                name=name,
+                description="",
+                user_id=user_id,  # Assign user_id
+            )
             self.db_session.add(flow)
             self.db_session.commit()
             self.db_session.refresh(flow)
 
-            logger.info(f"Created new flow with name: '{name}' and ID: {flow.flow_id}")
+            logger.info(
+                f"Created new flow with name: '{name}', ID: {flow.flow_id}, for user ID: {user_id}"
+            )
             return flow
 
         except IntegrityError as e:
             self.db_session.rollback()
-            logger.error(f"Integrity error when creating flow: {e}")
-            raise ValueError("Flow already exists.") from e
+            logger.error(f"Integrity error when creating flow for user {user_id}: {e}")
+            raise ValueError(
+                "Failed to create flow due to database integrity error."
+            ) from e
         except Exception as e:
             self.db_session.rollback()
-            logger.error(f"Error creating flow: {e}")
+            logger.error(f"Error creating flow for user {user_id}: {e}")
             raise e
 
     def add_flow(self, flow: FlowModel) -> FlowModel:

@@ -7,6 +7,9 @@ import { useLogout } from '@/features/auth/hooks';
 import { useNavigate } from 'react-router-dom';
 import { useFlows } from '@/features/flows/hooks';
 import useAuthStore from '@/features/auth/store';
+import { useCreateEmptyFlow } from '@/features/flows/hooks';
+import { toast } from 'sonner';
+import { Toaster } from '@/components/ui/sonner';
 
 const FlowDashboardPage: React.FC = () => {
   const logout = useLogout();
@@ -14,12 +17,30 @@ const FlowDashboardPage: React.FC = () => {
   const { user_id } = useAuthStore();
   const { data: flows, isLoading, isError } = useFlows({ userId: user_id as number });
 
+  const createFlowMutation = useCreateEmptyFlow();
+
+  // Handle logout
   const handleLogout = async () => {
     try {
       await logout.mutateAsync();
       navigate('/auth');
     } catch (error) {
       console.error('Logout failed:', error);
+    }
+  };
+
+  const handleCreateFlow = async () => {
+    try {
+      console.log('Create flow');
+      const { flow_id } = await createFlowMutation.mutateAsync();
+      toast('Flow Created', {
+        description: `Flow flow_id:${flow_id} created successfully.`,
+      });
+    } catch (error) {
+      console.error('Create flow failed:', error);
+      toast('Error', {
+        description: 'An error occurred while creating flow.',
+      });
     }
   };
 
@@ -46,7 +67,7 @@ const FlowDashboardPage: React.FC = () => {
               />
             </div>
           </div>
-          <Button className="bg-gradient-to-r from-purple-500 to-blue-500 text-white">
+          <Button onClick={handleCreateFlow} className="bg-gradient-to-r from-purple-500 to-blue-500 text-white">
             + Tạo Flow mới
           </Button>
         </div>
@@ -60,6 +81,7 @@ const FlowDashboardPage: React.FC = () => {
           <FlowList flows={flows?.data || []} />
         )}
       </div>
+      <Toaster />
     </div>
   );
 };

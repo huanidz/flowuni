@@ -13,7 +13,7 @@ class GetFlowResponseItem(BaseModel):
     flow_id: str = Field(..., description="Flow ID")
     name: str = Field(..., description="Flow name")
     description: str = Field("", description="Flow description")
-    is_active: str = Field("active", description="Flow status")
+    is_active: bool = Field(..., description="Flow status")
 
 
 class Pagination(BaseModel):

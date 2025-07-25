@@ -1,1 +1,1 @@
-export const GET_FLOWS_ENDPOINT = '/flows';
+export const FLOWS_ENDPOINT = '/flows';

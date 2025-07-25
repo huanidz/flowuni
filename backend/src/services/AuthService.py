@@ -15,7 +15,7 @@ class AuthServiceInterface(ABC):
         pass
 
     @abstractmethod
-    def verify_token(self, token: str) -> bool:
+    def verify_token(self, token: str) -> int:
         pass
 
 
@@ -86,7 +86,7 @@ class AuthService(AuthServiceInterface):
             logger.error(f"Token generation failed: {str(e)}")
             raise TokenInvalidError("Failed to generate token") from e
 
-    def verify_token(self, access_token: str) -> bool:
+    def verify_token(self, access_token: str) -> int:
         """Verify JWT token and return user ID
         Returns user ID if valid, raises TokenInvalidError otherwise
         """
@@ -98,7 +98,7 @@ class AuthService(AuthServiceInterface):
             if not user_id:
                 logger.warning("Token missing subject claim")
                 raise TokenInvalidError("Invalid token structure")
-            return True
+            return user_id
         except JWTError as e:
             logger.error(f"Token verification failed: {str(e)}")
             raise TokenInvalidError("Invalid or expired token") from e

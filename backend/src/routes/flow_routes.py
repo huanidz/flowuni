@@ -1,13 +1,11 @@
 import math
 import traceback
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query
 from loguru import logger
 from src.dependencies.auth_dependency import get_current_user
-from src.dependencies.flow_dep import get_flow_repository, get_flow_service
+from src.dependencies.flow_dep import get_flow_service
 from src.exceptions.auth_exceptions import UNAUTHORIZED_EXCEPTION
-from src.models.alchemy.flows.FlowModel import FlowModel
-from src.repositories.FlowRepositories import FlowRepository
 from src.schemas.flowbuilder.flow_crud_schemas import EmptyFlowCreateResponse
 from src.schemas.flows.flow_schemas import GetFlowResponse, Pagination
 from src.services.FlowService import FlowService
@@ -20,8 +18,6 @@ flow_router = APIRouter(
 
 @flow_router.post("/", response_model=EmptyFlowCreateResponse)
 async def create_empty_flow(
-    request: Request,
-    flow_repository: FlowRepository = Depends(get_flow_repository),
     flow_service: FlowService = Depends(get_flow_service),
     auth_user_id: int = Depends(get_current_user),
 ):
@@ -29,11 +25,8 @@ async def create_empty_flow(
     Receives, validates, and queues a flow graph compilation task.
     """
     try:
-        flow: FlowModel = flow_repository.create_empty_flow()
-
-        response = EmptyFlowCreateResponse(
-            flow_id=flow.flow_id, message="new empty flow created successfully"
-        )
+        flow_id = flow_service.create_empty_flow(user_id=auth_user_id)
+        response = EmptyFlowCreateResponse(flow_id=flow_id)
 
         return response
 

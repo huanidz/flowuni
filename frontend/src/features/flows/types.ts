@@ -16,3 +16,7 @@ export interface GetFlowsResponse {
   data: Flow[];
   pagination: Pagination;
 }
+
+export interface CreateFlowResponse {
+  flow_id: string;
+}

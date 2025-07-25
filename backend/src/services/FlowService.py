@@ -49,3 +49,7 @@ class FlowService(FlowServiceInterface):
         ]
 
         return mapped_flows, total_items
+
+    def create_empty_flow(self, user_id: int) -> str:
+        flow = self.flow_repository.create_empty_flow(user_id=user_id)
+        return flow.flow_id

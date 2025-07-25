@@ -1,6 +1,7 @@
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { getFlows } from './api';
-import { type GetFlowsResponse } from './types';
+import { useMutation } from '@tanstack/react-query';
+import { getFlows, createEmtpyFlow } from './api';
+import { type GetFlowsResponse, type CreateFlowResponse } from './types';
 
 interface UseFlowsParams {
   userId: number;
@@ -14,5 +15,11 @@ export const useFlows = ({ userId, page = 1, pageSize = 10 }: UseFlowsParams) =>
     queryFn: () => getFlows({ userId, page, pageSize }),
     placeholderData: keepPreviousData,
     enabled: !!userId,
+  });
+};
+
+export const useCreateEmptyFlow = () => {
+  return useMutation<CreateFlowResponse, Error>({
+    mutationFn: createEmtpyFlow,
   });
 };
