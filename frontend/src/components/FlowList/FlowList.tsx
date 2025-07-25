@@ -10,12 +10,20 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { Flow } from '@/features/flows/types';
+import { useNavigate } from 'react-router-dom';
 
 interface FlowListProps {
   flows: Flow[];
 }
 
 const FlowList: React.FC<FlowListProps> = ({ flows }) => {
+
+  const navigate = useNavigate();
+
+  const handleFlowClick = (flow: Flow) => {
+    navigate(`/flow/${flow.flow_id}`);
+  };
+
   return (
     <div className="mt-8">
       <Table>
@@ -58,14 +66,17 @@ const FlowList: React.FC<FlowListProps> = ({ flows }) => {
                 </Badge>
               </TableCell>
               <TableCell className="text-right">
-                <Button variant="ghost" size="icon" className="mr-2">
+                {/* <Button variant="ghost" size="icon" className="mr-2">
                   {flow.is_active === 'true' ? '⏸️' : '▶️'}
-                </Button>
-                <Button variant="ghost" size="icon" className="mr-2">
+                </Button> */}
+                {/* <Button variant="ghost" size="icon" className="mr-2">
                   ✏️
                 </Button>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" className="mr-2">
                   🗑️
+                </Button> */}
+                <Button onClick={() => handleFlowClick(flow)} variant="ghost" size="icon" >
+                  Go to Flow
                 </Button>
               </TableCell>
             </TableRow>

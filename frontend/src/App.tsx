@@ -15,6 +15,8 @@ function App() {
         {/* Protected routes grouped under ProtectedLayout */}
         <Route element={<ProtectedLayout />}>
           <Route path="/flow" element={<FlowBuilderPage />} />
+          <Route path="/flow/:flow_id" element={<FlowBuilderPage />} />
+
           <Route path="/dashboard" element={<FlowDashboardPage />} />
         </Route>
 
