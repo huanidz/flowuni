@@ -14,7 +14,7 @@ export const getFlows = async ({
   pageSize = 10,
 }: GetFlowsParams): Promise<GetFlowsResponse> => {
   const { data } = await apiClient.get(GET_FLOWS_ENDPOINT, {
-    params: { userId, page, pageSize },
+    params: { user_id: userId, page, per_page: pageSize },
   });
   return data;
 };
