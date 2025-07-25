@@ -45,7 +45,11 @@ class FlowRepository(BaseRepository):
         Get flow by id
         """
         try:
-            flow = self.db_session.query(FlowModel).filter_by(flow_id=flow_id).first()
+            flow = (
+                self.db_session.query(FlowModel)
+                .filter_by(flow_id=flow_id)
+                .one_or_none()
+            )
             if flow:
                 logger.info(f"Retrieved flow with ID: {flow_id}")
             else:

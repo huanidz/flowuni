@@ -26,3 +26,11 @@ class Pagination(BaseModel):
 class GetFlowResponse(BaseModel):
     data: List[GetFlowResponseItem] = Field(..., description="List of flows")
     pagination: Pagination = Field(..., description="Pagination")
+
+
+class GetFlowDetailResponse(BaseModel):
+    flow_id: str = Field(..., description="Flow ID")
+    name: str = Field(..., description="Flow name")
+    description: str = Field("", description="Flow description")
+    is_active: bool = Field(..., description="Flow status")
+    flow_definition: str = Field("", description="Flow definition")

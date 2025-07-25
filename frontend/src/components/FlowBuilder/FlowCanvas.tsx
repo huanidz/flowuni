@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import FlowToolbar from './FlowToolBar';
 import NodePalette from './FlowNodePallete';
 import {
@@ -11,17 +11,21 @@ import {
 } from '@xyflow/react';
 import type { Edge, Node, Connection, ReactFlowInstance } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import type { FlowBuilderContentProps } from '@/types/FlowBuilderType';
 
 import { useNodeTypes } from '@/hooks/useNodeTypes';
 import { useDragDropHandler } from '@/hooks/useDragAndDropHandler';
 import { useFlowActions } from '@/hooks/useFlowActions';
 import { useFlowSelection } from '@/hooks/useFlowSelection';
+import { useParams, useNavigate } from 'react-router-dom';
 
 const initialNodes: Node[] = [];
 const initialEdges: Edge[] = [];
 
-const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
+interface FlowBuilderContentProps {
+  flow_id: string;
+}
+
+const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const nodePaletteRef = useRef<HTMLDivElement>(null); // Thêm ref cho NodePalette
   const [reactFlowInstance, setReactFlowInstance] =
@@ -152,10 +156,40 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
   );
 };
 
-export default function FlowBuilder() {
+export interface FlowCanvasProps {
+  flow_id: string;
+}
+
+export default function FlowCanvas() {
+  const { flow_id } = useParams();
+  const navigate = useNavigate();
+
+  // Use useEffect to handle navigation side-effects, which is safer.
+  useEffect(() => {
+    // If flow_id is not present in the URL, redirect to the dashboard.
+    if (flow_id === undefined) {
+      console.log('Flow ID is missing, redirecting to dashboard...');
+      navigate('/dashboard'); 
+    }
+  }, [flow_id, navigate]); // Effect runs when flow_id or navigate changes
+
+  console.log('FlowCanvas flow_id:', flow_id);
+
+  if (flow_id === undefined) {
+    return (
+      <div className="w-full h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-center p-8 bg-white rounded-lg shadow-md">
+            <h1 className="text-2xl font-bold text-gray-700">Redirecting...</h1>
+            <p className="text-gray-500 mt-2">Flow ID is missing. You would be redirected to the dashboard.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If flow_id is present, render the main flow builder.
   return (
     <ReactFlowProvider>
-      <FlowBuilderContent flow_id="template" />
+      <FlowBuilderContent flow_id={flow_id} />
     </ReactFlowProvider>
   );
 }

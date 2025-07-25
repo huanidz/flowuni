@@ -6,8 +6,13 @@ from loguru import logger
 from src.dependencies.auth_dependency import get_current_user
 from src.dependencies.flow_dep import get_flow_service
 from src.exceptions.auth_exceptions import UNAUTHORIZED_EXCEPTION
+from src.exceptions.shared_exceptions import NOT_FOUND_EXCEPTION
 from src.schemas.flowbuilder.flow_crud_schemas import EmptyFlowCreateResponse
-from src.schemas.flows.flow_schemas import GetFlowResponse, Pagination
+from src.schemas.flows.flow_schemas import (
+    GetFlowDetailResponse,
+    GetFlowResponse,
+    Pagination,
+)
 from src.services.FlowService import FlowService
 
 flow_router = APIRouter(
@@ -84,4 +89,47 @@ async def get_by_user_id(
         raise HTTPException(
             status_code=500,
             detail="An error occurred while retrieving flows by user ID.",
+        )
+
+
+@flow_router.get("/{flow_id}", response_model=GetFlowDetailResponse)
+async def get_flow_by_id(
+    flow_id: str,
+    flow_service: FlowService = Depends(get_flow_service),
+    auth_user_id: int = Depends(get_current_user),
+):
+    """
+    Get flow by id
+    """
+    try:
+        flow = flow_service.get_flow_detail_by_id(flow_id=flow_id)
+
+        if not flow:
+            logger.warning(f"Flow with ID {flow_id} not found.")
+            raise NOT_FOUND_EXCEPTION
+
+        if auth_user_id != flow.user_id:
+            logger.warning(
+                f"User ID mismatch: flow owner is {flow.user_id}, \
+                but requester is {auth_user_id}"
+            )
+            raise UNAUTHORIZED_EXCEPTION
+
+        response = GetFlowDetailResponse(
+            flow_id=flow.flow_id,
+            name=flow.name,
+            description=flow.description,
+            is_active=flow.is_active,
+            flow_definition=flow.flow_definition,
+        )
+
+        return response
+
+    except Exception as e:
+        logger.error(
+            f"Error retrieving flow by ID {flow_id}: {e}. Traceback: {traceback.format_exc()}"
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="An error occurred while retrieving flow by ID.",
         )
