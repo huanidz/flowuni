@@ -1,4 +1,12 @@
-from fastapi import APIRouter, Cookie, Depends, Header, HTTPException, Response, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    Header,
+    HTTPException,
+    Request,
+    Response,
+    status,
+)
 from fastapi.responses import JSONResponse
 from loguru import logger
 from src.consts.auth_consts import AuthConsts
@@ -80,10 +88,10 @@ async def login_user(
             key=AuthConsts.REFRESH_TOKEN_COOKIE,
             value=refresh_token,
             httponly=True,
-            secure=True,  # Use True in production with HTTPS
+            secure=False,  # TODO: Use True in production with HTTPS
             samesite="lax",  # Adjust depending on frontend needs
             max_age=60 * 60 * 24 * 7,  # 7 days
-            path="/api/auth/refresh-token",  # Scoped cookie
+            path="/api/auth",  # Scoped cookie
         )
 
         return LoginResponse(
@@ -155,13 +163,16 @@ async def validate_token(
 @auth_router.post("/refresh-token", response_model=RefreshTokenResponse)
 async def refresh_access_token(
     response: Response,
-    refresh_token: str = Cookie(None),
+    request: Request,
     auth_service: AuthService = Depends(get_auth_service),
 ):
     """
     Refresh access token using the refresh token stored in an HTTP-only cookie.
     Issues new access and refresh tokens.
     """
+
+    refresh_token = request.cookies.get(AuthConsts.REFRESH_TOKEN_COOKIE)
+
     if not refresh_token:
         logger.warning("Missing refresh token cookie.")
         raise HTTPException(
@@ -209,19 +220,25 @@ async def refresh_access_token(
 
 
 @auth_router.post("/logout")
-def logout_user(
-    refresh_token: str = Cookie(AuthConsts.REFRESH_TOKEN_COOKIE),
+async def logout_user(
+    request: Request,
     auth_service: AuthService = Depends(get_auth_service),
 ):
     """
     Logout user by blacklisting the refresh token stored in the HTTP-only cookie.
     """
+
+    refresh_token = request.cookies.get(AuthConsts.REFRESH_TOKEN_COOKIE)
+    logger.info(f"Refresh token: {refresh_token}")
+
     try:
         if not refresh_token:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Missing refresh token cookie.",
             )
+
+        logger.info(f"Refresh token blacklisted: {refresh_token}")
 
         success = auth_service.blacklist_token(refresh_token)
 

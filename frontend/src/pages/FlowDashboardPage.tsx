@@ -4,10 +4,12 @@ import { Logo } from '@/components/ui/Logo';
 import FlowList from '@/components/FlowList/FlowList';
 
 import { useLogout } from '@/features/auth/hooks';
+import { useNavigate } from 'react-router-dom';
 
 const FlowDashboardPage: React.FC = () => {
 
   const logout = useLogout();
+  const navigate = useNavigate();
 
   const dummyFlows = [
     {
@@ -29,13 +31,27 @@ const FlowDashboardPage: React.FC = () => {
       successRate: 97.2,
     },
   ];
+
+  const handleLogout = async () => {
+    
+    try {
+      await logout.mutateAsync();
+
+      navigate('/auth');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  
+  };
+
   return (
     <div className="flex h-screen">
-      <div className="w-64 border-r bg-gray-50">
+      <div className="w-64 border-r bg-gray-50 flex flex-col h-full">
         <Logo />
         <div className="p-4">
           <Button className="w-full">Flow</Button>
         </div>
+      <Button className="w-full mt-auto" onClick={handleLogout}>Logout</Button>
       </div>
       <div className="flex-1 p-8">
         <h1 className="text-2xl font-bold">Flow Dashboard Page</h1>
