@@ -10,13 +10,14 @@ import useAuthStore from '@/features/auth/store';
 import { useCreateEmptyFlow } from '@/features/flows/hooks';
 import { toast } from 'sonner';
 import { Toaster } from '@/components/ui/sonner';
+import { useQueryClient } from '@tanstack/react-query';
 
 const FlowDashboardPage: React.FC = () => {
   const logout = useLogout();
   const navigate = useNavigate();
   const { user_id } = useAuthStore();
   const { data: flows, isLoading, isError } = useFlows({ userId: user_id as number });
-
+  const queryClient = useQueryClient();
   const createFlowMutation = useCreateEmptyFlow();
 
   // Handle logout
@@ -36,6 +37,9 @@ const FlowDashboardPage: React.FC = () => {
       toast('Flow Created', {
         description: `Flow flow_id:${flow_id} created successfully.`,
       });
+
+      // Invalidate flows query to get fresh data
+      queryClient.invalidateQueries({ queryKey: ['flows', user_id] });
     } catch (error) {
       console.error('Create flow failed:', error);
       toast('Error', {
@@ -67,7 +71,9 @@ const FlowDashboardPage: React.FC = () => {
               />
             </div>
           </div>
-          <Button onClick={handleCreateFlow} className="bg-gradient-to-r from-purple-500 to-blue-500 text-white">
+          <Button 
+            onClick={handleCreateFlow} 
+            className="bg-gradient-to-r from-purple-500 to-blue-500 text-white active:scale-95 transform transition-transform duration-150">
             + Tạo Flow mới
           </Button>
         </div>

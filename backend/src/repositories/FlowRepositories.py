@@ -70,7 +70,11 @@ class FlowRepository(BaseRepository):
             raise e
 
     def get_by_user_id_paged(
-        self, user_id: int, page: int = 1, per_page: int = 10
+        self,
+        user_id: int,
+        page: int = 1,
+        per_page: int = 10,
+        sort_by_time_created: bool = True,
     ) -> Tuple[List[FlowModel], int]:
         """
         Returns a tuple of (flows on this page, total matching flows)
@@ -91,6 +95,10 @@ class FlowRepository(BaseRepository):
                 .limit(per_page)
                 .all()
             )
+
+            # 3) sort by time created
+            if sort_by_time_created:
+                flows = sorted(flows, key=lambda x: x.created_at, reverse=True)
 
             total_pages = math.ceil(total_items / per_page) if per_page else 0
 
