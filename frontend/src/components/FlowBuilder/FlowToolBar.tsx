@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import ConfirmModal from '../ui/ConfirmModal';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { toast } from 'sonner';
 
 interface FlowToolbarProps {
   onRun: () => void;
@@ -14,20 +20,29 @@ const FlowToolbar: React.FC<FlowToolbarProps> = ({
   onCompile,
   onSave,
 }) => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const handleClearClick = () => {
-    setIsModalOpen(true);
-  };
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const handleConfirmClear = () => {
     onClear();
-    setIsModalOpen(false);
+    toast.success('Flow cleared successfully.', {
+      description: 'Flow has been cleared successfully.',
+    });
+    setIsDropdownOpen(false);
   };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
+  const handleCancelClear = () => {
+    setIsDropdownOpen(false);
   };
+
+  // Auto-dismiss after 3000ms
+  useEffect(() => {
+    if (isDropdownOpen) {
+      const timer = setTimeout(() => {
+        setIsDropdownOpen(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [isDropdownOpen]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -45,39 +60,68 @@ const FlowToolbar: React.FC<FlowToolbarProps> = ({
   }, [onSave]);
 
   return (
-    <div className="absolute top-4 right-4 z-10 bg-white rounded-lg shadow-lg p-2 border">
-      <div className="flex gap-2">
-        <button
-          onClick={onRun}
-          className="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600"
-        >
-          Run Flow
-        </button>
-        <button
-          onClick={onCompile}
-          className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
-        >
-          Compile Flow
-        </button>
-        <button
-          onClick={onSave}
-          className="px-3 py-1 bg-yellow-500 text-white rounded text-sm hover:bg-yellow-600"
-        >
-          Save Flow
-        </button>
-        <button
-          onClick={handleClearClick}
-          className="px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600"
-        >
-          Clear
-        </button>
+    <div className="absolute top-4 right-4 z-10">
+      <div className="bg-white rounded-lg shadow-lg p-2 border">
+        <div className="flex gap-2">
+          <Button
+            onClick={onRun}
+            size="sm"
+            className="bg-green-500 hover:bg-green-600"
+          >
+            Run Flow
+          </Button>
+          
+          <Button
+            onClick={onCompile}
+            size="sm"
+            className="bg-blue-500 hover:bg-blue-600"
+          >
+            Compile Flow
+          </Button>
+          
+          <Button
+            onClick={onSave}
+            size="sm"
+            className="bg-yellow-500 hover:bg-yellow-600"
+          >
+            Save Flow
+          </Button>
+
+          <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
+            <DropdownMenuTrigger asChild>
+              <Button
+                size="sm"
+                variant="destructive"
+              >
+                Clear
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-48" align="end">
+              <div className="p-2">
+                <p className="text-sm text-muted-foreground mb-3">Clear the flow?</p>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleConfirmClear}
+                    size="sm"
+                    variant="destructive"
+                    className="flex-1"
+                  >
+                    Yes
+                  </Button>
+                  <Button
+                    onClick={handleCancelClear}
+                    size="sm"
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    No
+                  </Button>
+                </div>
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
-      <ConfirmModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        onConfirm={handleConfirmClear}
-        message="Are you sure you want to clear the flow?"
-      />
     </div>
   );
 };

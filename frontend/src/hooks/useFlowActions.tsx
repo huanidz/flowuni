@@ -69,7 +69,6 @@ export const useFlowActions = (
 
     toast.success('Flow saved successfully.', {
       description: 'Flow has been saved successfully.',
-      visibleToasts: 1,
     });
   }, [nodes, edges]);
 
