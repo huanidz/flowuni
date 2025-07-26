@@ -13,12 +13,9 @@ const FlowBuilderPage: React.FC = () => {
   useEffect(() => {
     // If flow_id is not present in the URL, redirect to the dashboard.
     if (flow_id === undefined) {
-      console.log('Flow ID is missing, redirecting to dashboard...');
       navigate('/dashboard'); 
     }
   }, [flow_id, navigate]); // Effect runs when flow_id or navigate changes
-
-  console.log('FlowCanvas flow_id:', flow_id);
 
   if (flow_id === undefined) {
     return (

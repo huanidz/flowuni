@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -33,4 +33,4 @@ class GetFlowDetailResponse(BaseModel):
     name: str = Field(..., description="Flow name")
     description: str = Field("", description="Flow description")
     is_active: bool = Field(..., description="Flow status")
-    flow_definition: str = Field("", description="Flow definition")
+    flow_definition: Optional[str] = Field({}, description="Flow definition")

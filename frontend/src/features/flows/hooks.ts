@@ -1,7 +1,8 @@
+// features/flows/hooks.ts
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { useMutation } from '@tanstack/react-query';
-import { getFlows, createEmtpyFlow } from './api';
-import { type GetFlowsResponse, type CreateFlowResponse } from './types';
+import { getFlows, createEmtpyFlow, getFlowDetail } from './api';
+import { type GetFlowsResponse, type CreateFlowResponse, type GetFlowDetailResponse } from './types';
 
 interface UseFlowsParams {
   userId: number;
@@ -21,5 +22,19 @@ export const useFlows = ({ userId, page = 1, pageSize = 10 }: UseFlowsParams) =>
 export const useCreateEmptyFlow = () => {
   return useMutation<CreateFlowResponse, Error>({
     mutationFn: createEmtpyFlow,
+  });
+};
+
+interface UseGetFlowDetailParams {
+  flowId: string;
+  enabled?: boolean;
+}
+
+export const useGetFlowDetail = ({ flowId, enabled = true }: UseGetFlowDetailParams) => {
+  return useQuery<GetFlowDetailResponse, Error>({
+    queryKey: ['flowDetail', flowId],
+    queryFn: () => getFlowDetail({ flowId: flowId }), 
+    placeholderData: keepPreviousData,
+    enabled: enabled && !!flowId,
   });
 };

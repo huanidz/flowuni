@@ -1,12 +1,12 @@
 import apiClient from "@/api/client";
 import { FLOWS_ENDPOINT } from "./consts";
-import type { GetFlowsResponse, CreateFlowResponse } from "./types";
+import type {
+  GetFlowsParams, 
+  GetFlowsResponse, 
+  CreateFlowResponse,
+  GetFlowDetailParams, 
+  GetFlowDetailResponse } from "./types";
 
-interface GetFlowsParams {
-  userId: number;
-  page?: number;
-  pageSize?: number;
-}
 
 export const getFlows = async ({
   userId,
@@ -22,5 +22,12 @@ export const getFlows = async ({
 export const createEmtpyFlow = async (): Promise<CreateFlowResponse> => {
   const { data } = await apiClient.post(FLOWS_ENDPOINT);
 
+  return data;
+};
+
+export const getFlowDetail = async ({
+  flowId,
+}: GetFlowDetailParams): Promise<GetFlowDetailResponse> => {
+  const { data } = await apiClient.get(`${FLOWS_ENDPOINT}/${flowId}`);
   return data;
 };

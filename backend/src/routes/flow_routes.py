@@ -102,6 +102,7 @@ async def get_flow_by_id(
     Get flow by id
     """
     try:
+        logger.info(f"Get flow by id: {flow_id}")
         flow = flow_service.get_flow_detail_by_id(flow_id=flow_id)
 
         if not flow:
