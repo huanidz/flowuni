@@ -1,5 +1,6 @@
 import bcrypt
 from sqlalchemy import Column, String
+from sqlalchemy.orm import relationship
 from src.models.alchemy.shared.AppBaseModel import AppBaseModel
 
 
@@ -8,6 +9,9 @@ class UserModel(AppBaseModel):
 
     username = Column(String(50), unique=True, index=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
+
+    # Flow owns
+    flows = relationship("FlowModel", back_populates="user")
 
     def set_password(self, password):
         """Hash and set password"""

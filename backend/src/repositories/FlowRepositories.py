@@ -1,8 +1,11 @@
+import math
 import re
-from typing import List, Optional
+from datetime import datetime
+from typing import List, Optional, Tuple
 from uuid import uuid4
 
 from loguru import logger
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlalchemy.orm import Session
 from src.models.alchemy.flows.FlowModel import FlowModel
@@ -17,6 +20,26 @@ class FlowRepository(BaseRepository):
     def __init__(self, db_session: Session):
         super().__init__(db_session=db_session)
         logger.info("FlowRepository initialized.")
+
+    def save_flow_definition(self, flow: FlowModel) -> FlowModel:
+        """
+        Save flow definition, either by adding a new flow or updating an existing one.
+        """
+        try:
+            return self.update_flow(flow)
+        except NoResultFound as e:
+            self.db_session.rollback()
+            logger.error(
+                f"NoResultFound error when saving \
+                flow definition for flow with ID {flow.flow_id}: {e}"
+            )
+            raise e
+        except Exception as e:
+            self.db_session.rollback()
+            logger.error(
+                f"Error saving flow definition for flow with ID {flow.flow_id}: {e}"
+            )
+            raise e
 
     def get_all_paged(self, page: int = 1, per_page: int = 10) -> List[FlowModel]:
         """
@@ -43,7 +66,11 @@ class FlowRepository(BaseRepository):
         Get flow by id
         """
         try:
-            flow = self.db_session.query(FlowModel).filter_by(flow_id=flow_id).first()
+            flow = (
+                self.db_session.query(FlowModel)
+                .filter_by(flow_id=flow_id)
+                .one_or_none()
+            )
             if flow:
                 logger.info(f"Retrieved flow with ID: {flow_id}")
             else:
@@ -54,21 +81,82 @@ class FlowRepository(BaseRepository):
             self.db_session.rollback()
             raise e
 
-    def create_empty_flow(self) -> FlowModel:
+    def get_by_user_id(self, user_id: int) -> List[FlowModel]:
         """
-        Create a new flow with auto-incremented like 'New Flow', 'New Flow (1)', etc.
+        Get flows by user id
+        """
+        try:
+            flows = self.db_session.query(FlowModel).filter_by(user_id=user_id).all()
+            logger.info(f"Retrieved {len(flows)} flows for user ID: {user_id}.")
+            return flows
+        except Exception as e:
+            logger.error(f"Error retrieving flows by user ID {user_id}: {e}")
+            self.db_session.rollback()
+            raise e
+
+    def get_by_user_id_paged(
+        self,
+        user_id: int,
+        page: int = 1,
+        per_page: int = 10,
+        sort_by_time_created: bool = True,
+    ) -> Tuple[List[FlowModel], int]:
+        """
+        Returns a tuple of (flows on this page, total matching flows)
+        """
+        try:
+            # 1) total count
+            total_items = (
+                self.db_session.query(func.count(FlowModel.flow_id))
+                .filter_by(user_id=user_id)
+                .scalar()
+            )
+
+            # 2) paged items
+            flows = (
+                self.db_session.query(FlowModel)
+                .filter_by(user_id=user_id)
+                .offset((page - 1) * per_page)
+                .limit(per_page)
+                .all()
+            )
+
+            # 3) sort by time created
+            if sort_by_time_created:
+                flows = sorted(flows, key=lambda x: x.created_at, reverse=True)
+
+            total_pages = math.ceil(total_items / per_page) if per_page else 0
+
+            logger.info(
+                f"User {user_id} – page {page}/{total_pages}: "
+                f"returned {len(flows)} of {total_items} total flows."
+            )
+            # return both page of flows and metadata
+            return flows, total_items
+
+        except Exception as e:
+            logger.error(f"Error retrieving flows by user ID {user_id}: {e}")
+            self.db_session.rollback()
+            raise
+
+    def create_empty_flow(self, user_id: int) -> FlowModel:
+        """
+        Create a new flow with auto-incremented name like 'New Flow', 'New Flow (1)', etc.,
+        scoped to the given user_id.
         """
         try:
             base_name = "New Flow"
 
-            # Fetch all existing names that start with 'New Flow'
+            # Fetch all existing names for this user that start with 'New Flow'
             existing_names = (
                 self.db_session.query(FlowModel.name)
-                .filter(FlowModel.name.ilike(f"{base_name}%"))
+                .filter(
+                    FlowModel.user_id == user_id, FlowModel.name.ilike(f"{base_name}%")
+                )
                 .all()
             )
 
-            # Extract just the name strings from the result
+            # Extract just the name strings
             existing_names = [name[0] for name in existing_names]
 
             # Find the next available number
@@ -94,21 +182,30 @@ class FlowRepository(BaseRepository):
 
             # Create the flow
             flow_id = str(uuid4())
-            flow = FlowModel(flow_id=flow_id, name=name, description="")
+            flow = FlowModel(
+                flow_id=flow_id,
+                name=name,
+                description="",
+                user_id=user_id,  # Assign user_id
+            )
             self.db_session.add(flow)
             self.db_session.commit()
             self.db_session.refresh(flow)
 
-            logger.info(f"Created new flow with name: '{name}' and ID: {flow.flow_id}")
+            logger.info(
+                f"Created new flow with name: '{name}', ID: {flow.flow_id}, for user ID: {user_id}"
+            )
             return flow
 
         except IntegrityError as e:
             self.db_session.rollback()
-            logger.error(f"Integrity error when creating flow: {e}")
-            raise ValueError("Flow already exists.") from e
+            logger.error(f"Integrity error when creating flow for user {user_id}: {e}")
+            raise ValueError(
+                "Failed to create flow due to database integrity error."
+            ) from e
         except Exception as e:
             self.db_session.rollback()
-            logger.error(f"Error creating flow: {e}")
+            logger.error(f"Error creating flow for user {user_id}: {e}")
             raise e
 
     def add_flow(self, flow: FlowModel) -> FlowModel:
@@ -136,8 +233,8 @@ class FlowRepository(BaseRepository):
         """
         Update flow
         """
+        logger.info(f"Update flow with ID: {flow.flow_id}")
         try:
-            # Check if the flow exists before merging
             existing_flow = (
                 self.db_session.query(FlowModel).filter_by(flow_id=flow.flow_id).first()
             )
@@ -147,11 +244,26 @@ class FlowRepository(BaseRepository):
                 )
                 raise NoResultFound(f"Flow with ID {flow.flow_id} not found.")
 
-            self.db_session.merge(flow)
+            # Update the existing flow's attributes with the new values
+            for attr, value in flow.__dict__.items():
+                if not attr.startswith("_") and hasattr(existing_flow, attr):
+                    # Skip the primary key and foreign keys if they shouldn't change
+                    if attr not in [
+                        "id",
+                        "created_at",
+                    ]:  # Add other fields to skip as needed
+                        setattr(existing_flow, attr, value)
+
+            # Update the modified timestamp
+            existing_flow.modified_at = (
+                datetime.utcnow()
+            )  # or however you handle timestamps
+
             self.db_session.commit()
-            self.db_session.refresh(flow)
-            logger.info(f"Updated flow with ID: {flow.flow_id}")
-            return flow
+            self.db_session.refresh(existing_flow)
+            logger.info(f"Updated flow with ID: {existing_flow.flow_id}")
+            return existing_flow
+
         except NoResultFound as e:
             self.db_session.rollback()
             logger.error(

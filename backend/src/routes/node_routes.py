@@ -1,14 +1,13 @@
-from fastapi import APIRouter, HTTPException, Request, Response
-from fastapi.responses import JSONResponse
-from typing import List
 from datetime import datetime
+from typing import List
 
-from src.nodes.NodeBase import NodeSpec
-
-from src.scripts.generate_node_catalog import generate_node_catalog
-from src.core.cache import generate_catalog_etag
-
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi.responses import JSONResponse
 from loguru import logger
+from src.core.cache import generate_catalog_etag
+from src.dependencies.auth_dependency import get_current_user
+from src.nodes.NodeBase import NodeSpec
+from src.scripts.generate_node_catalog import generate_node_catalog
 
 node_router = APIRouter(
     prefix="/api/node",
@@ -17,7 +16,7 @@ node_router = APIRouter(
 
 
 @node_router.get("/catalog", response_model=List[NodeSpec])
-def get_catalog(request: Request):
+def get_catalog(request: Request, user_id: int = Depends(get_current_user)):
     try:
         catalog = generate_node_catalog()
         etag = generate_catalog_etag(catalog)

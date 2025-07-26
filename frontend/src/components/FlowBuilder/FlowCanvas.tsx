@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import FlowToolbar from './FlowToolBar';
 import NodePalette from './FlowNodePallete';
 import {
@@ -9,23 +9,53 @@ import {
   BackgroundVariant,
   ReactFlowProvider,
 } from '@xyflow/react';
-import type { Edge, Node, Connection, ReactFlowInstance } from '@xyflow/react';
+import type { Connection, ReactFlowInstance } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import type { FlowBuilderContentProps } from '@/types/FlowBuilderType';
 
 import { useNodeTypes } from '@/hooks/useNodeTypes';
 import { useDragDropHandler } from '@/hooks/useDragAndDropHandler';
 import { useFlowActions } from '@/hooks/useFlowActions';
 import { useFlowSelection } from '@/hooks/useFlowSelection';
+import { useGetFlowDetail } from '@/features/flows/hooks';
+import { useNodeRegistry } from '@/features/nodes';
+import { parseFlowDefinition } from '@/features/flows/utils';
+import useFlowStore from '@/features/flows/stores';
 
-const initialNodes: Node[] = [];
-const initialEdges: Edge[] = [];
+interface FlowBuilderContentProps {
+  flow_id: string;
+}
 
-const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
+const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const nodePaletteRef = useRef<HTMLDivElement>(null); // Thêm ref cho NodePalette
+  const nodePaletteRef = useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] =
     useState<ReactFlowInstance | null>(null);
+
+  // Get flow detail from backend
+  const { isLoading: isLoadingFlow, error: flowError } = 
+    useGetFlowDetail({ 
+      flowId: flow_id, 
+      enabled: !!flow_id 
+    });
+
+  const { current_flow } = useFlowStore();
+
+  // Get node registry status
+  const { loaded: nodeRegistryLoaded } = useNodeRegistry();
+
+  // Parse flow definition when data is available
+  const { initialNodes, initialEdges } = useMemo(() => {
+    if (!current_flow?.flow_definition || !nodeRegistryLoaded) {
+      return { initialNodes: [], initialEdges: [] };
+    }
+
+    const parsed = parseFlowDefinition(current_flow.flow_definition);
+    
+    return {
+      initialNodes: parsed.nodes,
+      initialEdges: parsed.edges,
+    };
+  }, [current_flow?.flow_definition, nodeRegistryLoaded]);
 
   const {
     nodes,
@@ -41,6 +71,19 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
 
   const [nodeId, setNodeId] = useState(1);
   const [nodeTypes, setNodeTypes] = useState({});
+
+  // Update nodeId counter based on existing nodes
+  useEffect(() => {
+    if (nodes.length > 0) {
+      const maxId = Math.max(
+        ...nodes.map(node => {
+          const match = node.id.match(/nodeId_.*_(\d+)$/);
+          return match ? parseInt(match[1], 10) : 0;
+        })
+      );
+      setNodeId(maxId + 1);
+    }
+  }, [nodes]);
 
   // Enhanced node data update function
   const updateNodeData = useCallback(
@@ -67,7 +110,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
                 data: {
                   ...node.data,
                   parameters: {
-                    ...(node.data.parameters || {}), // Ensure parameters is an object
+                    ...(node.data.parameters || {}),
                     [parameterName]: value,
                   },
                 },
@@ -87,14 +130,15 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
     nodeId,
     setNodes,
     setNodeId,
-    nodePaletteRef // Truyền nodePaletteRef vào useDragDropHandler
+    nodePaletteRef
   );
+
   const {
     onCompileFlow,
     onRunFlow,
     onClearFlow,
-    onDeleteSelectedElements,
     onKeyDown,
+    onSaveFlow
   } = useFlowActions(
     nodes,
     edges,
@@ -114,6 +158,45 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
     setReactFlowInstance(instance);
   }, []);
 
+  // Handle loading states
+  if (isLoadingFlow) {
+    return (
+      <div className="w-full h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full border-4 border-blue-500 border-t-transparent w-12 h-12 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading flow...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle error states
+  if (flowError) {
+    return (
+      <div className="w-full h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 text-xl mb-4">⚠️</div>
+          <p className="text-red-600 mb-2">Error loading flow</p>
+          <p className="text-gray-500 text-sm">
+            {flowError instanceof Error ? flowError.message : 'Unknown error occurred'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle case where node registry is not loaded yet
+  if (!nodeRegistryLoaded) {
+    return (
+      <div className="w-full h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-pulse rounded-full bg-blue-500 w-4 h-4 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading node registry...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full h-screen bg-gray-100">
       <div
@@ -122,13 +205,14 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
         onDrop={onDrop}
         onDragOver={onDragOver}
         onKeyDown={onKeyDown}
-        tabIndex={1} // Make the div focusable to capture keyboard events
+        tabIndex={1}
       >
         <NodePalette onDragStart={onDragStart} ref={nodePaletteRef} />
         <FlowToolbar
           onCompile={onCompileFlow}
           onRun={onRunFlow}
           onClear={onClearFlow}
+          onSave={onSaveFlow}
         />
 
         <ReactFlow
@@ -152,10 +236,17 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = () => {
   );
 };
 
-export default function FlowBuilder() {
+export interface FlowCanvasProps {
+  flow_id: string;
+}
+
+export default function FlowCanvas({ flow_id }: FlowCanvasProps) {
+
+  useGetFlowDetail({ flowId: flow_id, enabled: !!flow_id });
+
   return (
     <ReactFlowProvider>
-      <FlowBuilderContent flow_id="template" />
+      <FlowBuilderContent flow_id={flow_id} />
     </ReactFlowProvider>
   );
 }

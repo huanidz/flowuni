@@ -27,3 +27,12 @@ class LoginResponse(BaseModel):
     user_id: int
     username: str
     access_token: str
+
+
+class ValidateTokenResponse(BaseModel):
+    user_id: int
+
+
+class RefreshTokenResponse(BaseModel):
+    user_id: int
+    access_token: str

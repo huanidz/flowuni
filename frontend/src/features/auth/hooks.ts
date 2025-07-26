@@ -1,5 +1,6 @@
+
 import { useMutation } from '@tanstack/react-query';
-import { register, login } from './api';
+import { register, login, logout } from './api';
 import type {
   RegisterPayload,
   RegisterResponse,
@@ -21,6 +22,15 @@ export const useLogin = () => {
     mutationFn: login,
     onSuccess: data => {
       console.log(data);
+    },
+  });
+};
+
+export const useLogout = () => {
+  return useMutation<void, Error, void>({
+    mutationFn: logout,
+    onSuccess: () => {
+      console.log('logout success');
     },
   });
 };

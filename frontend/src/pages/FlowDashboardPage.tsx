@@ -3,34 +3,59 @@ import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/ui/Logo';
 import FlowList from '@/components/FlowList/FlowList';
 
+import { useLogout } from '@/features/auth/hooks';
+import { useNavigate } from 'react-router-dom';
+import { useFlows } from '@/features/flows/hooks';
+import useAuthStore from '@/features/auth/store';
+import { useCreateEmptyFlow } from '@/features/flows/hooks';
+import { toast } from 'sonner';
+import { Toaster } from '@/components/ui/sonner';
+import { useQueryClient } from '@tanstack/react-query';
+
 const FlowDashboardPage: React.FC = () => {
-  const dummyFlows = [
-    {
-      id: '1',
-      name: 'Quy trình đăng ký khách hàng',
-      description: 'Tự động hóa quy trình đăng ký và xác thực khách hàng mới',
-      status: 'active' as 'active',
-      lastRun: '2024-07-20 14:30',
-      runCount: 1250,
-      successRate: 98.5,
-    },
-    {
-      id: '2',
-      name: 'Xử lý đơn hàng',
-      description: 'Workflow xử lý đơn hàng từ nhận order đến giao hàng',
-      status: 'paused' as 'paused',
-      lastRun: '2024-07-19 09:15',
-      runCount: 856,
-      successRate: 97.2,
-    },
-  ];
+  const logout = useLogout();
+  const navigate = useNavigate();
+  const { user_id } = useAuthStore();
+  const { data: flows, isLoading, isError } = useFlows({ userId: user_id as number });
+  const queryClient = useQueryClient();
+  const createFlowMutation = useCreateEmptyFlow();
+
+  // Handle logout
+  const handleLogout = async () => {
+    try {
+      await logout.mutateAsync();
+      navigate('/auth');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
+  const handleCreateFlow = async () => {
+    try {
+      console.log('Create flow');
+      const { flow_id } = await createFlowMutation.mutateAsync();
+      toast('Flow Created', {
+        description: `Flow flow_id:${flow_id} created successfully.`,
+      });
+
+      // Invalidate flows query to get fresh data
+      queryClient.invalidateQueries({ queryKey: ['flows', user_id] });
+    } catch (error) {
+      console.error('Create flow failed:', error);
+      toast('Error', {
+        description: 'An error occurred while creating flow.',
+      });
+    }
+  };
+
   return (
     <div className="flex h-screen">
-      <div className="w-64 border-r bg-gray-50">
+      <div className="w-64 border-r bg-gray-50 flex flex-col h-full">
         <Logo />
         <div className="p-4">
           <Button className="w-full">Flow</Button>
         </div>
+        <Button className="w-full mt-auto" onClick={handleLogout}>Logout</Button>
       </div>
       <div className="flex-1 p-8">
         <h1 className="text-2xl font-bold">Flow Dashboard Page</h1>
@@ -46,12 +71,23 @@ const FlowDashboardPage: React.FC = () => {
               />
             </div>
           </div>
-          <Button className="bg-gradient-to-r from-purple-500 to-blue-500 text-white">
+          <Button 
+            onClick={handleCreateFlow} 
+            className="bg-gradient-to-r from-purple-500 to-blue-500 text-white active:scale-95 transform transition-transform duration-150">
             + Tạo Flow mới
           </Button>
         </div>
-        <FlowList flows={dummyFlows} />
+
+        {/* Display loading, error, or the flow list */}
+        {isLoading ? (
+          <p>Loading flows...</p>
+        ) : isError ? (
+          <p>Error loading flows. Please try again.</p>
+        ) : (
+          <FlowList flows={flows?.data || []} />
+        )}
       </div>
+      <Toaster />
     </div>
   );
 };

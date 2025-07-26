@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import axios from 'axios';
 import {
   Card,
   CardContent,
@@ -72,9 +73,7 @@ const AuthenticationPage = () => {
           password,
         });
 
-        console.log(user_id);
-
-        authStore.stateLogin(user_id, username);
+        authStore.stateLogin(user_id);
 
         toast('Logged in', {
           description: `Welcome back ${username}!`,
@@ -86,7 +85,6 @@ const AuthenticationPage = () => {
         form.reset();
         navigate('/dashboard');
       } else {
-        // Call the register mutation
         const { username, password } = data as RegisterFormData;
         await registerMutation.mutateAsync({ username, password });
 
@@ -98,9 +96,28 @@ const AuthenticationPage = () => {
         setIsLogin(true);
       }
     } catch (error) {
-      toast('Error', {
-        description: 'Something went wrong. Please try again.',
-      });
+      // Handle Axios errors specifically
+      if (axios.isAxiosError(error)) {
+        const errorMessage =
+          error.response?.data?.detail ||
+          error.response?.data?.message ||
+          'An unexpected error occurred.';
+        toast('Error', {
+          description: errorMessage,
+        });
+      } else if (error instanceof Error) {
+        // Handle generic JS errors
+        toast('Error', {
+          description: error.message || 'Something went wrong. Please try again.',
+        });
+      } else {
+        // Handle unexpected non-error throws (e.g., strings)
+        toast('Error', {
+          description: 'An unknown error occurred.',
+        });
+      }
+
+      console.error('Auth error:', error); // Helpful for debugging
     }
   };
 

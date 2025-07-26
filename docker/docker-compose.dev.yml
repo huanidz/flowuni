@@ -14,7 +14,7 @@ services:
     depends_on:
       db_service:
         condition: service_healthy
-      redis-broker:
+      redis-service:
         condition: service_healthy
 
   celery-worker:
@@ -33,7 +33,7 @@ services:
     depends_on:
       db_service:
         condition: service_healthy
-      redis-broker:
+      redis-service:
         condition: service_healthy
     command: >
       sh -c "
@@ -52,7 +52,7 @@ services:
   #   ports:
   #     - "5555:5555"
   #   depends_on:
-  #     redis-broker:
+  #     redis-service:
   #       condition: service_healthy
   #     celery-worker:
   #       condition: service_healthy
@@ -75,7 +75,7 @@ services:
       timeout: 3s
       retries: 3
 
-  redis-broker:
+  redis-service:
     image: redis:7
     ports:
       - "6379:6379"

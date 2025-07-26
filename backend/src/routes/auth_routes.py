@@ -1,16 +1,25 @@
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    Header,
+    HTTPException,
+    Request,
+    Response,
+    status,
+)
 from fastapi.responses import JSONResponse
 from loguru import logger
 from src.consts.auth_consts import AuthConsts
 from src.dependencies.auth_dependency import get_auth_service
 from src.dependencies.user_dependency import get_user_service
-from src.exceptions.user_exceptions import InvalidCredentialsError
+from src.exceptions.user_exceptions import InvalidCredentialsError, TokenInvalidError
 from src.schemas.users.user_schemas import (
     LoginResponse,
-    LogoutRequest,
+    RefreshTokenResponse,
     RegisterResponse,
     UserLoginRequest,
     UserRegisterRequest,
+    ValidateTokenResponse,
 )
 from src.services.AuthService import AuthService
 from src.services.UserService import UserService
@@ -79,10 +88,10 @@ async def login_user(
             key=AuthConsts.REFRESH_TOKEN_COOKIE,
             value=refresh_token,
             httponly=True,
-            secure=True,  # Use True in production with HTTPS
+            secure=False,  # TODO: Use True in production with HTTPS
             samesite="lax",  # Adjust depending on frontend needs
             max_age=60 * 60 * 24 * 7,  # 7 days
-            path="/api/auth/refresh-token",  # Scoped cookie
+            path="/api/auth",  # Scoped cookie
         )
 
         return LoginResponse(
@@ -111,33 +120,145 @@ async def login_user(
         ) from e
 
 
-@auth_router.post("/logout")
-def logout_user(
-    logout_request: LogoutRequest,
+@auth_router.get(
+    "/validate-token",
+    response_model=ValidateTokenResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def validate_token(
+    authorization: str = Header(...),
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    """Validate the access token"""
+    try:
+        if not authorization.startswith("Bearer "):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authorization header format.",
+            )
+        token = authorization.removeprefix("Bearer ").strip()
+
+        user_id = auth_service.verify_token(access_token=token)
+        return ValidateTokenResponse(user_id=user_id)
+    except TokenInvalidError as e:
+        logger.warning(f"Invalid token during token validation: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e),
+        )
+    except ValueError as e:
+        logger.warning(f"Validation error during token validation: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        ) from e
+    except Exception as e:
+        logger.error(f"Failed to validate access token: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to validate token.",
+        ) from e
+
+
+@auth_router.post("/refresh-token", response_model=RefreshTokenResponse)
+async def refresh_access_token(
+    response: Response,
+    request: Request,
     auth_service: AuthService = Depends(get_auth_service),
 ):
     """
-    Logout user by blacklisting the refresh token.
-    Optionally blacklist access token too.
+    Refresh access token using the refresh token stored in an HTTP-only cookie.
+    Issues new access and refresh tokens.
     """
+
+    refresh_token = request.cookies.get(AuthConsts.REFRESH_TOKEN_COOKIE)
+
+    if not refresh_token:
+        logger.warning("Missing refresh token cookie.")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token missing.",
+        )
+
     try:
-        # Blacklist the refresh token
-        success = auth_service.blacklist_token(logout_request.refresh_token)
+        # Verify the refresh token and extract user ID
+        user_id = auth_service.verify_refresh_token(refresh_token=refresh_token)
+
+        # Generate new tokens
+        new_access_token, new_refresh_token = auth_service.generate_tokens(user_id)
+
+        # Set new refresh token in secure cookie
+        response.set_cookie(
+            key=AuthConsts.REFRESH_TOKEN_COOKIE,
+            value=new_refresh_token,
+            httponly=True,
+            secure=True,
+            samesite="lax",
+            max_age=60 * 60 * 24 * 7,  # 7 days
+            path="/api/auth/refresh-token",
+        )
+
+        # Return new access token only (refresh token is in cookie)
+        return RefreshTokenResponse(
+            user_id=user_id,
+            username="",  # Optionally fetch username if needed
+            access_token=new_access_token,
+        )
+
+    except TokenInvalidError as e:
+        logger.warning(f"Invalid or expired refresh token: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token.",
+        ) from e
+    except Exception as e:
+        logger.error(f"Failed to refresh token: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to refresh token.",
+        ) from e
+
+
+@auth_router.post("/logout")
+async def logout_user(
+    request: Request,
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    """
+    Logout user by blacklisting the refresh token stored in the HTTP-only cookie.
+    """
+
+    refresh_token = request.cookies.get(AuthConsts.REFRESH_TOKEN_COOKIE)
+    logger.info(f"Refresh token: {refresh_token}")
+
+    try:
+        if not refresh_token:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Missing refresh token cookie.",
+            )
+
+        logger.info(f"Refresh token blacklisted: {refresh_token}")
+
+        success = auth_service.blacklist_token(refresh_token)
 
         if success:
             logger.info("User logged out successfully (refresh token blacklisted)")
-            return JSONResponse(
+            response = JSONResponse(
                 status_code=status.HTTP_200_OK,
                 content={"message": "Successfully logged out."},
             )
-        else:
-            # Could be invalid token, already expired, or malformed
-            logger.warning(
-                "Logout attempted with invalid or already expired refresh token"
+            # Remove cookie by setting it to expire immediately
+            response.delete_cookie(
+                key=AuthConsts.REFRESH_TOKEN_COOKIE,
+                path="/api/auth/refresh-token",  # Must match original cookie path
             )
-            return JSONResponse(
+            return response
+        else:
+            logger.warning("Logout attempted with invalid or expired refresh token")
+            raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                content={"message": "Invalid or expired refresh token."},
+                detail="Invalid or expired refresh token.",
             )
     except ValueError as e:
         logger.warning(f"Validation error during logout: {e}")

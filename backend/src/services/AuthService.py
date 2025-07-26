@@ -15,7 +15,7 @@ class AuthServiceInterface(ABC):
         pass
 
     @abstractmethod
-    def verify_token(self, token: str) -> bool:
+    def verify_token(self, token: str) -> int:
         pass
 
 
@@ -86,17 +86,39 @@ class AuthService(AuthServiceInterface):
             logger.error(f"Token generation failed: {str(e)}")
             raise TokenInvalidError("Failed to generate token") from e
 
-    def verify_token(self, token: str) -> bool:
+    def verify_token(self, access_token: str) -> int:
         """Verify JWT token and return user ID
         Returns user ID if valid, raises TokenInvalidError otherwise
         """
         try:
-            payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm])
+            payload = jwt.decode(
+                access_token, self.secret_key, algorithms=[self.algorithm]
+            )
             user_id = int(payload.get("sub"))
             if not user_id:
                 logger.warning("Token missing subject claim")
                 raise TokenInvalidError("Invalid token structure")
-            return True
+            return user_id
+        except JWTError as e:
+            logger.error(f"Token verification failed: {str(e)}")
+            raise TokenInvalidError("Invalid or expired token") from e
+
+    def verify_refresh_token(self, refresh_token: str) -> int:
+        """Verify JWT refresh token and return user ID
+        Returns user ID if valid, raises TokenInvalidError otherwise
+        """
+        try:
+            payload = jwt.decode(
+                refresh_token,
+                self.secret_key,
+                algorithms=[self.algorithm],
+                options={"verify_signature": False},  # Only check local blacklist
+            )
+            user_id = int(payload.get("sub"))
+            if not user_id:
+                logger.warning("Token missing subject claim")
+                raise TokenInvalidError("Invalid token structure")
+            return user_id
         except JWTError as e:
             logger.error(f"Token verification failed: {str(e)}")
             raise TokenInvalidError("Invalid or expired token") from e
