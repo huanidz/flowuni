@@ -4,6 +4,9 @@ import { refreshToken } from '@/features/auth/api';
 import { logout } from '@/features/auth/api';
 import { ACCESS_TOKEN_KEY } from '@/features/auth/consts';
 
+const MAX_RETRY_ATTEMPTS = 3;
+const RETRY_DELAY_MS = 1000;
+
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5002/api',
   headers: {
@@ -51,6 +54,15 @@ apiClient.interceptors.response.use(
   async error => {
     const originalRequest = error.config;
 
+    // Handle retry limit
+    if (!originalRequest._retryCount) {
+      originalRequest._retryCount = 0;
+    }
+
+    if (originalRequest._retryCount >= MAX_RETRY_ATTEMPTS) {
+      return Promise.reject(error);
+    }
+
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
         // Wait for ongoing refresh
@@ -65,6 +77,7 @@ apiClient.interceptors.response.use(
       }
 
       originalRequest._retry = true;
+      originalRequest._retryCount++;
       isRefreshing = true;
 
       try {
@@ -84,6 +97,16 @@ apiClient.interceptors.response.use(
       } finally {
         isRefreshing = false;
       }
+    }
+
+    // Handle general retry with delay for other errors
+    if (error.response?.status !== 401) {
+      originalRequest._retryCount++;
+      
+      // Add delay before retry
+      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+      
+      return apiClient(originalRequest);
     }
 
     return Promise.reject(error);
