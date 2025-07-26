@@ -1,5 +1,5 @@
 import apiClient from "@/api/client";
-import { FLOWS_ENDPOINT } from "./consts";
+import { FLOWS_ENDPOINT, FLOW_DEFINITION_COMPILE_ENDPOINT, FLOW_DEFINITION_RUN_ENDPOINT } from "./consts";
 import type {
   GetFlowsParams, 
   GetFlowsResponse, 
@@ -9,6 +9,8 @@ import type {
   SaveFlowParams,
   SaveFlowResponse,
 } from "./types";
+import { getFlowGraphData } from "./utils";
+import type { Node, Edge } from "@xyflow/react";
 
 export const getFlows = async ({
   userId,
@@ -49,5 +51,19 @@ export const saveFlow = async ({
     flow_definition: flow_definition,
   });
 
+  return data;
+};
+
+// --- Flow Execution ---
+
+export const compileFlow = async (nodes: Node[], edges: Edge[]) => {
+  const payload = getFlowGraphData(nodes, edges);
+  const { data } = await apiClient.post(`${FLOW_DEFINITION_COMPILE_ENDPOINT}`, payload);
+  return data;
+};
+
+export const runFlow = async (nodes: Node[], edges: Edge[]) => {
+  const payload = getFlowGraphData(nodes, edges);
+  const { data } = await apiClient.post(`${FLOW_DEFINITION_RUN_ENDPOINT}`, payload);
   return data;
 };

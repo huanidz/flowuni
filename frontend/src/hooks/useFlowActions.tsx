@@ -1,25 +1,8 @@
 import React, { useCallback } from 'react';
 import type { Node, Edge } from '@xyflow/react';
-import axios from 'axios';
-import { saveFlow } from '@/features/flows/api';
-import type { Flow } from '@/features/flows/types';
 import useFlowStore from '@/features/flows/stores';
-
-const getFlowGraphData = (nodes: Node[], edges: Edge[]) => ({
-  nodes: nodes.map(({ id, type, position, data }) => ({
-    id,
-    type,
-    position,
-    data,
-  })),
-  edges: edges.map(({ id, source, target, sourceHandle, targetHandle }) => ({
-    id,
-    source,
-    target,
-    sourceHandle,
-    targetHandle,
-  })),
-});
+import { getFlowGraphData } from '@/features/flows/utils';
+import { saveFlow, compileFlow, runFlow } from '@/features/flows/api';
 
 const logNodeDetails = (nodes: Node[]) => {
   nodes.forEach((node, index) => {
@@ -36,33 +19,27 @@ const logNodeDetails = (nodes: Node[]) => {
 const handleFlowRequest = async (
   nodes: Node[],
   edges: Edge[],
-  endpoint: string,
+  requestFn: (nodes: Node[], edges: Edge[]) => Promise<any>,
   actionLabel: string
 ) => {
   console.log(`=== ${actionLabel} START ===`);
   console.log('Raw nodes:', nodes);
   console.log('Raw edges:', edges);
 
-  // Block request if there are no nodes in the graph
   if (nodes.length === 0) {
     console.warn(`Cannot ${actionLabel.toLowerCase()}: No nodes in the graph`);
-    // alert(`Cannot ${actionLabel.toLowerCase()}: Please add at least one node to the flow before proceeding.`);
     return;
   }
 
   const flowGraphData = getFlowGraphData(nodes, edges);
   console.log('Compiling flow with payload:', flowGraphData);
-
   logNodeDetails(nodes);
 
   try {
-    const response = await axios.post(endpoint, flowGraphData);
-    console.log(`${actionLabel} successful:`, response.data);
+    const response = await requestFn(nodes, edges);
+    console.log(`${actionLabel} successful:`, response);
   } catch (error) {
     console.error(`Error during ${actionLabel.toLowerCase()}:`, error);
-    if (axios.isAxiosError(error)) {
-      console.error('Server responded with:', error.response?.data);
-    }
   }
 
   console.log(`=== ${actionLabel} END ===`);
@@ -77,35 +54,22 @@ export const useFlowActions = (
   selectedNodeIds: string[],
   selectedEdgeIds: string[]
 ) => {
-
   const { current_flow } = useFlowStore();
 
   const onCompileFlow = useCallback(() => {
-    return handleFlowRequest(
-      nodes,
-      edges,
-      'http://localhost:5002/api/flow_execution/compile',
-      'COMPILATION'
-    );
+    return handleFlowRequest(nodes, edges, compileFlow, 'COMPILATION');
   }, [nodes, edges]);
 
   const onRunFlow = useCallback(() => {
-    return handleFlowRequest(
-      nodes,
-      edges,
-      'http://localhost:5002/api/flow_execution/execute',
-      'COMPILATION & RUN FLOW'
-    );
+    return handleFlowRequest(nodes, edges, runFlow, 'COMPILATION & RUN FLOW');
   }, [nodes, edges]);
 
   const onSaveFlow = useCallback(() => {
-
     if (!current_flow) {
       console.warn('Cannot save flow: No current flow');
       return;
     }
 
-    console.log('Saving flow...', current_flow);
     return saveFlow({
       flow_id: current_flow.flow_id,
       name: current_flow.name,

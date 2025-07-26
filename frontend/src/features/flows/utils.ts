@@ -145,3 +145,20 @@ export const isValidFlowDefinition = (
 
   return false;
 };
+
+
+export const getFlowGraphData = (nodes: Node[], edges: Edge[]) => ({
+  nodes: nodes.map(({ id, type, position, data }) => ({
+    id,
+    type,
+    position,
+    data,
+  })),
+  edges: edges.map(({ id, source, target, sourceHandle, targetHandle }) => ({
+    id,
+    source,
+    target,
+    sourceHandle,
+    targetHandle,
+  })),
+});

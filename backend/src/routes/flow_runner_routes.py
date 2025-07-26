@@ -1,10 +1,11 @@
 import traceback
 from datetime import datetime
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from loguru import logger
 from src.celery_worker.tasks.flow_execution_tasks import compile_flow, run_flow
+from src.dependencies.auth_dependency import get_current_user
 from src.schemas.flowbuilder.flow_graph_schemas import FlowGraphRequest
 
 flow_execution_router = APIRouter(
@@ -14,7 +15,10 @@ flow_execution_router = APIRouter(
 
 
 @flow_execution_router.post("/compile")
-async def compile_flow_endpoint(request: Request):
+async def compile_flow_endpoint(
+    request: Request,
+    auth_user_id: int = Depends(get_current_user),
+):
     """
     Receives, validates, and queues a flow graph compilation task.
     """
@@ -50,7 +54,9 @@ async def compile_flow_endpoint(request: Request):
 
 
 @flow_execution_router.post("/execute")
-async def execute_flow_endpoint(request: Request):
+async def execute_flow_endpoint(
+    request: Request, auth_user_id: int = Depends(get_current_user)
+):
     """
     Receives, validates, and queues a flow graph execution task.
     """
