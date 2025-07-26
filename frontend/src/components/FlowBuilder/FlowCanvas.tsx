@@ -19,6 +19,7 @@ import { useFlowSelection } from '@/hooks/useFlowSelection';
 import { useGetFlowDetail } from '@/features/flows/hooks';
 import { useNodeRegistry } from '@/features/nodes';
 import { parseFlowDefinition } from '@/features/flows/utils';
+import type { Flow } from '@/features/flows/types';
 
 interface FlowBuilderContentProps {
   flow_id: string;
@@ -47,7 +48,6 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
     }
 
     const parsed = parseFlowDefinition(flowDetailResponse.data.flow_definition);
-    console.log('Parsed flow definition:', parsed);
     
     return {
       initialNodes: parsed.nodes,
@@ -138,7 +138,9 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
     onClearFlow,
     onDeleteSelectedElements,
     onKeyDown,
+    onSaveFlow
   } = useFlowActions(
+    flowDetailResponse?.data as Flow,
     nodes,
     edges,
     setNodes,
@@ -211,6 +213,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
           onCompile={onCompileFlow}
           onRun={onRunFlow}
           onClear={onClearFlow}
+          onSave={onSaveFlow}
         />
 
         <ReactFlow

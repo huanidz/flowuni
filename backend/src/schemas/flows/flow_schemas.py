@@ -34,3 +34,22 @@ class GetFlowDetailResponse(BaseModel):
     description: str = Field("", description="Flow description")
     is_active: bool = Field(..., description="Flow status")
     flow_definition: Optional[str] = Field({}, description="Flow definition")
+
+
+# --- Patching ---
+
+
+class FlowPatchRequest(BaseModel):
+    flow_id: str = Field(..., description="Flow ID")
+    name: str = Field("", description="Flow name")
+    description: str = Field("", description="Flow description")
+    is_active: bool = Field(..., description="Flow status")
+    flow_definition: Optional[str] = Field({}, description="Flow definition")
+
+
+class FlowPatchResponse(BaseModel):
+    flow_id: str = Field(..., description="Flow ID")
+    name: str = Field(..., description="Flow name")
+    description: str = Field("", description="Flow description")
+    is_active: bool = Field(..., description="Flow status")
+    flow_definition: Optional[str] = Field({}, description="Flow definition")

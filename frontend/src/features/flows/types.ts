@@ -2,7 +2,7 @@ export interface Flow {
   flow_id: string;
   name: string;
   description: string;
-  is_active: string;
+  is_active: boolean;
   flow_definition?: string | null;
 }
 
@@ -36,4 +36,22 @@ export interface GetFlowDetailParams {
 
 export interface GetFlowDetailResponse {
   data: Flow;
+}
+
+// --- Save Flow ---
+
+export interface SaveFlowParams {
+  flow_id: string;
+  name: string;
+  description: string;
+  is_active: boolean;
+  flow_definition: any;
+}
+
+export interface SaveFlowResponse {
+  flow_id: string;
+  name: string;
+  description: string;
+  is_active: boolean;
+  flow_definition: any;
 }

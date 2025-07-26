@@ -5,8 +5,10 @@ import type {
   GetFlowsResponse, 
   CreateFlowResponse,
   GetFlowDetailParams, 
-  GetFlowDetailResponse } from "./types";
-
+  GetFlowDetailResponse,
+  SaveFlowParams,
+  SaveFlowResponse,
+} from "./types";
 
 export const getFlows = async ({
   userId,
@@ -29,5 +31,23 @@ export const getFlowDetail = async ({
   flowId,
 }: GetFlowDetailParams): Promise<GetFlowDetailResponse> => {
   const { data } = await apiClient.get(`${FLOWS_ENDPOINT}/${flowId}`);
+  return data;
+};
+
+export const saveFlow = async ({
+  flow_id,
+  name,
+  description,
+  is_active,
+  flow_definition,
+}: SaveFlowParams): Promise<SaveFlowResponse> => {
+  const { data } = await apiClient.patch(`${FLOWS_ENDPOINT}/${flow_id}`, {
+    flow_id,
+    name,
+    description,
+    is_active: is_active,
+    flow_definition: flow_definition,
+  });
+
   return data;
 };

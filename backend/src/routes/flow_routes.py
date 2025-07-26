@@ -9,6 +9,8 @@ from src.exceptions.auth_exceptions import UNAUTHORIZED_EXCEPTION
 from src.exceptions.shared_exceptions import NOT_FOUND_EXCEPTION
 from src.schemas.flowbuilder.flow_crud_schemas import EmptyFlowCreateResponse
 from src.schemas.flows.flow_schemas import (
+    FlowPatchRequest,
+    FlowPatchResponse,
     GetFlowDetailResponse,
     GetFlowResponse,
     Pagination,
@@ -133,4 +135,41 @@ async def get_flow_by_id(
         raise HTTPException(
             status_code=500,
             detail="An error occurred while retrieving flow by ID.",
+        )
+
+
+@flow_router.patch("/{flow_id}", response_model=FlowPatchResponse)
+async def update_flow_by_id(
+    request: FlowPatchRequest,
+    flow_service: FlowService = Depends(get_flow_service),
+    auth_user_id: int = Depends(get_current_user),
+):
+    """
+    Update flow by id
+    """
+    try:
+        logger.info(f"Update flow by id: {request.flow_id}")
+        flow = flow_service.save_flow_detail(flow_request=request, user_id=auth_user_id)
+
+        if not flow:
+            logger.warning(f"Flow with ID {request.flow_id} not found.")
+            raise NOT_FOUND_EXCEPTION
+
+        response = FlowPatchResponse(
+            flow_id=flow.flow_id,
+            name=flow.name,
+            description=flow.description,
+            is_active=flow.is_active,
+            flow_definition=flow.flow_definition,
+        )
+
+        return response
+
+    except Exception as e:
+        logger.error(
+            f"Error updating flow by ID {request.flow_id}: {e}. Traceback: {traceback.format_exc()}"
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="An error occurred while updating flow by ID.",
         )

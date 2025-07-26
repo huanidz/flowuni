@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import Tuple
+from typing import Optional, Tuple
 
+from src.exceptions.shared_exceptions import MISMATCH_EXCEPTION, NOT_FOUND_EXCEPTION
 from src.models.alchemy.flows.FlowModel import FlowModel
 from src.repositories.FlowRepositories import FlowRepository
-from src.schemas.flows.flow_schemas import GetFlowResponseItem
+from src.schemas.flows.flow_schemas import FlowPatchRequest, GetFlowResponseItem
 
 
 class FlowServiceInterface(ABC):
@@ -58,3 +59,30 @@ class FlowService(FlowServiceInterface):
     def get_flow_detail_by_id(self, flow_id: str) -> FlowModel:
         flow = self.flow_repository.get_by_id(flow_id=flow_id)
         return flow
+
+    def save_flow_detail(
+        self, flow_request: FlowPatchRequest, user_id: int
+    ) -> Optional[FlowModel]:
+        # Map to FlowModel
+        flow_model = FlowModel(
+            flow_id=flow_request.flow_id,
+            name=flow_request.name,
+            description=flow_request.description,
+            is_active=flow_request.is_active,
+            flow_definition=flow_request.flow_definition,
+        )
+
+        # Try get flow by flow_id
+        existing_flow = self.flow_repository.get_by_id(flow_id=flow_model.flow_id)
+
+        if existing_flow:
+            # If it exists, check if its flow_id is the same of owner
+            if existing_flow.user_id != user_id:
+                raise MISMATCH_EXCEPTION
+            else:
+                # If it exists, update it
+                flow_model.user_id = user_id
+                return self.flow_repository.save_flow_definition(flow=flow_model)
+        else:
+            # If it doesn't exist, create it
+            raise NOT_FOUND_EXCEPTION

@@ -1,4 +1,4 @@
-from typing import Generic, TypeVar, Union
+from typing import Any, Dict, Generic, TypeVar, Union
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
@@ -31,3 +31,19 @@ class BaseRepository(Generic[ModelType]):
         """Delete an entity"""
         self.db_session.delete(entity)
         self.db_session.commit()
+
+    def partial_update(
+        self, id: int, update_data: Dict[str, Any]
+    ) -> Union[ModelType, None]:
+        """Partially update an entity with provided fields"""
+        entity = self.get(id)
+        if not entity:
+            return None
+
+        for key, value in update_data.items():
+            if hasattr(entity, key):
+                setattr(entity, key, value)
+
+        self.db_session.commit()
+        self.db_session.refresh(entity)
+        return entity

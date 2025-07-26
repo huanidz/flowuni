@@ -20,6 +20,30 @@ class FlowRepository(BaseRepository):
         super().__init__(db_session=db_session)
         logger.info("FlowRepository initialized.")
 
+    def save_flow_definition(self, flow: FlowModel) -> FlowModel:
+        """
+        Save flow definition
+        """
+        try:
+            self.db_session.merge(flow)
+            self.db_session.commit()
+            self.db_session.refresh(flow)
+            logger.info(f"Saved flow definition for flow with ID: {flow.flow_id}")
+            return flow
+        except NoResultFound as e:
+            self.db_session.rollback()
+            logger.error(
+                f"NoResultFound error when saving \
+                flow definition for flow with ID {flow.flow_id}: {e}"
+            )
+            raise e
+        except Exception as e:
+            self.db_session.rollback()
+            logger.error(
+                f"Error saving flow definition for flow with ID {flow.flow_id}: {e}"
+            )
+            raise e
+
     def get_all_paged(self, page: int = 1, per_page: int = 10) -> List[FlowModel]:
         """
         Get all flows

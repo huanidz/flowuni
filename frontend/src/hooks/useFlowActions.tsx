@@ -1,6 +1,8 @@
 import React, { useCallback } from 'react';
 import type { Node, Edge } from '@xyflow/react';
 import axios from 'axios';
+import { saveFlow } from '@/features/flows/api';
+import type { Flow } from '@/features/flows/types';
 
 const getFlowGraphData = (nodes: Node[], edges: Edge[]) => ({
   nodes: nodes.map(({ id, type, position, data }) => ({
@@ -66,6 +68,7 @@ const handleFlowRequest = async (
 };
 
 export const useFlowActions = (
+  flow: Flow,
   nodes: Node[],
   edges: Edge[],
   setNodes: (nodes: Node[]) => void,
@@ -90,6 +93,17 @@ export const useFlowActions = (
       'http://localhost:5002/api/flow_execution/execute',
       'COMPILATION & RUN FLOW'
     );
+  }, [nodes, edges]);
+
+  const onSaveFlow = useCallback(() => {
+    console.log('Saving flow...', flow);
+    return saveFlow({
+      flow_id: flow.flow_id,
+      name: flow.name,
+      description: flow.description,
+      is_active: flow.is_active,
+      flow_definition: getFlowGraphData(nodes, edges),
+    });
   }, [nodes, edges]);
 
   const onClearFlow = useCallback(() => {
@@ -122,5 +136,6 @@ export const useFlowActions = (
     onClearFlow,
     onDeleteSelectedElements,
     onKeyDown,
+    onSaveFlow,
   };
 };
