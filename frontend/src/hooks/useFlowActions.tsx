@@ -3,6 +3,7 @@ import type { Node, Edge } from '@xyflow/react';
 import axios from 'axios';
 import { saveFlow } from '@/features/flows/api';
 import type { Flow } from '@/features/flows/types';
+import useFlowStore from '@/features/flows/stores';
 
 const getFlowGraphData = (nodes: Node[], edges: Edge[]) => ({
   nodes: nodes.map(({ id, type, position, data }) => ({
@@ -68,7 +69,6 @@ const handleFlowRequest = async (
 };
 
 export const useFlowActions = (
-  flow: Flow,
   nodes: Node[],
   edges: Edge[],
   setNodes: (nodes: Node[]) => void,
@@ -77,6 +77,9 @@ export const useFlowActions = (
   selectedNodeIds: string[],
   selectedEdgeIds: string[]
 ) => {
+
+  const { current_flow } = useFlowStore();
+
   const onCompileFlow = useCallback(() => {
     return handleFlowRequest(
       nodes,
@@ -96,12 +99,18 @@ export const useFlowActions = (
   }, [nodes, edges]);
 
   const onSaveFlow = useCallback(() => {
-    console.log('Saving flow...', flow);
+
+    if (!current_flow) {
+      console.warn('Cannot save flow: No current flow');
+      return;
+    }
+
+    console.log('Saving flow...', current_flow);
     return saveFlow({
-      flow_id: flow.flow_id,
-      name: flow.name,
-      description: flow.description,
-      is_active: flow.is_active,
+      flow_id: current_flow.flow_id,
+      name: current_flow.name,
+      description: current_flow.description,
+      is_active: current_flow.is_active,
       flow_definition: getFlowGraphData(nodes, edges),
     });
   }, [nodes, edges]);

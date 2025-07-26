@@ -34,8 +34,7 @@ export interface GetFlowDetailParams {
   flowId: string;
 }
 
-export interface GetFlowDetailResponse {
-  data: Flow;
+export interface GetFlowDetailResponse extends Flow {
 }
 
 // --- Save Flow ---

@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -33,7 +33,7 @@ class GetFlowDetailResponse(BaseModel):
     name: str = Field(..., description="Flow name")
     description: str = Field("", description="Flow description")
     is_active: bool = Field(..., description="Flow status")
-    flow_definition: Optional[str] = Field({}, description="Flow definition")
+    flow_definition: Optional[Dict] = Field({}, description="Flow definition")
 
 
 # --- Patching ---
@@ -44,7 +44,7 @@ class FlowPatchRequest(BaseModel):
     name: str = Field("", description="Flow name")
     description: str = Field("", description="Flow description")
     is_active: bool = Field(..., description="Flow status")
-    flow_definition: Optional[str] = Field({}, description="Flow definition")
+    flow_definition: Optional[Dict] = Field({}, description="Flow definition")
 
 
 class FlowPatchResponse(BaseModel):
@@ -52,4 +52,4 @@ class FlowPatchResponse(BaseModel):
     name: str = Field(..., description="Flow name")
     description: str = Field("", description="Flow description")
     is_active: bool = Field(..., description="Flow status")
-    flow_definition: Optional[str] = Field({}, description="Flow definition")
+    flow_definition: Optional[Dict] = Field({}, description="Flow definition")

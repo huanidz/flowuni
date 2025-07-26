@@ -1,5 +1,6 @@
 import math
 import re
+from datetime import datetime
 from typing import List, Optional, Tuple
 from uuid import uuid4
 
@@ -22,14 +23,10 @@ class FlowRepository(BaseRepository):
 
     def save_flow_definition(self, flow: FlowModel) -> FlowModel:
         """
-        Save flow definition
+        Save flow definition, either by adding a new flow or updating an existing one.
         """
         try:
-            self.db_session.merge(flow)
-            self.db_session.commit()
-            self.db_session.refresh(flow)
-            logger.info(f"Saved flow definition for flow with ID: {flow.flow_id}")
-            return flow
+            return self.update_flow(flow)
         except NoResultFound as e:
             self.db_session.rollback()
             logger.error(
@@ -236,8 +233,8 @@ class FlowRepository(BaseRepository):
         """
         Update flow
         """
+        logger.info(f"Update flow with ID: {flow.flow_id}")
         try:
-            # Check if the flow exists before merging
             existing_flow = (
                 self.db_session.query(FlowModel).filter_by(flow_id=flow.flow_id).first()
             )
@@ -247,11 +244,26 @@ class FlowRepository(BaseRepository):
                 )
                 raise NoResultFound(f"Flow with ID {flow.flow_id} not found.")
 
-            self.db_session.merge(flow)
+            # Update the existing flow's attributes with the new values
+            for attr, value in flow.__dict__.items():
+                if not attr.startswith("_") and hasattr(existing_flow, attr):
+                    # Skip the primary key and foreign keys if they shouldn't change
+                    if attr not in [
+                        "id",
+                        "created_at",
+                    ]:  # Add other fields to skip as needed
+                        setattr(existing_flow, attr, value)
+
+            # Update the modified timestamp
+            existing_flow.modified_at = (
+                datetime.utcnow()
+            )  # or however you handle timestamps
+
             self.db_session.commit()
-            self.db_session.refresh(flow)
-            logger.info(f"Updated flow with ID: {flow.flow_id}")
-            return flow
+            self.db_session.refresh(existing_flow)
+            logger.info(f"Updated flow with ID: {existing_flow.flow_id}")
+            return existing_flow
+
         except NoResultFound as e:
             self.db_session.rollback()
             logger.error(

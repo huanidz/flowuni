@@ -95,7 +95,7 @@ async def get_by_user_id(
 
 
 @flow_router.get("/{flow_id}", response_model=GetFlowDetailResponse)
-async def get_flow_by_id(
+async def get_flow_detail_by_id(
     flow_id: str,
     flow_service: FlowService = Depends(get_flow_service),
     auth_user_id: int = Depends(get_current_user),
@@ -104,7 +104,6 @@ async def get_flow_by_id(
     Get flow by id
     """
     try:
-        logger.info(f"Get flow by id: {flow_id}")
         flow = flow_service.get_flow_detail_by_id(flow_id=flow_id)
 
         if not flow:
@@ -125,7 +124,6 @@ async def get_flow_by_id(
             is_active=flow.is_active,
             flow_definition=flow.flow_definition,
         )
-
         return response
 
     except Exception as e:
@@ -148,7 +146,7 @@ async def update_flow_by_id(
     Update flow by id
     """
     try:
-        logger.info(f"Update flow by id: {request.flow_id}")
+        logger.info(f"Update flow by id: {request}")
         flow = flow_service.save_flow_detail(flow_request=request, user_id=auth_user_id)
 
         if not flow:

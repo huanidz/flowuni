@@ -19,3 +19,6 @@ class FlowModel(AppBaseModel):
     is_active = Column(Boolean, default=False)
     flow_executions = relationship("FlowExecutionModel", back_populates="flow")
     user = relationship("UserModel", back_populates="flows")
+
+    def __repr__(self):
+        return f"<FlowModel(flow_id={self.flow_id}, name={self.name}, description={self.description}, is_active={self.is_active})>"

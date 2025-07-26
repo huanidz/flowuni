@@ -1,6 +1,6 @@
 // utils/parseFlowDefinition.ts
 import type { Node, Edge } from '@xyflow/react';
-
+import { Position } from '@xyflow/react';
 export interface ParsedFlowData {
   nodes: Node[];
   edges: Edge[];
@@ -29,12 +29,12 @@ export interface FlowDefinitionData {
 }
 
 /**
- * Parses flow_definition JSON string back to nodes and edges
- * @param flowDefinition - JSON string from backend
+ * Parses flow_definition object or JSON string back to nodes and edges
+ * @param flowDefinition - Object or JSON string from backend
  * @returns ParsedFlowData with nodes and edges arrays
  */
 export const parseFlowDefinition = (
-  flowDefinition: string | null | undefined
+  flowDefinition: FlowDefinitionData | string | null | undefined
 ): ParsedFlowData => {
   // Default empty state
   const defaultResult: ParsedFlowData = {
@@ -42,14 +42,26 @@ export const parseFlowDefinition = (
     edges: [],
   };
 
-  // Handle null/undefined/empty cases
-  if (!flowDefinition || flowDefinition.trim() === '') {
+  // Handle null/undefined cases
+  if (!flowDefinition) {
     console.log('Flow definition is empty, returning default empty state');
     return defaultResult;
   }
 
+  let parsedData: FlowDefinitionData;
+
   try {
-    const parsedData: FlowDefinitionData = JSON.parse(flowDefinition);
+    // If it's a string, parse it as JSON
+    if (typeof flowDefinition === 'string') {
+      if (flowDefinition.trim() === '') {
+        console.log('Flow definition string is empty, returning default empty state');
+        return defaultResult;
+      }
+      parsedData = JSON.parse(flowDefinition);
+    } else {
+      // If it's already an object, use it directly
+      parsedData = flowDefinition;
+    }
     
     // Validate parsed data structure
     if (!parsedData || typeof parsedData !== 'object') {
@@ -70,8 +82,8 @@ export const parseFlowDefinition = (
         output_values: nodeData.data?.output_values || {},
       },
       style: { background: '#fff', color: '#000' },
-      sourcePosition: 'right' as const,
-      targetPosition: 'left' as const,
+      sourcePosition: Position.Right,
+      targetPosition: Position.Left,
     }));
 
     // Parse edges
@@ -96,21 +108,40 @@ export const parseFlowDefinition = (
 };
 
 /**
- * Validates if a flow definition string is valid JSON
- * @param flowDefinition - JSON string to validate
- * @returns boolean indicating if the JSON is valid
+ * Validates if a flow definition is valid
+ * @param flowDefinition - Object or JSON string to validate
+ * @returns boolean indicating if the flow definition is valid
  */
 export const isValidFlowDefinition = (
-  flowDefinition: string | null | undefined
+  flowDefinition: FlowDefinitionData | string | null | undefined
 ): boolean => {
-  if (!flowDefinition || flowDefinition.trim() === '') {
+  if (!flowDefinition) {
     return true; // Empty is considered valid (will result in empty flow)
   }
 
-  try {
-    const parsed = JSON.parse(flowDefinition);
-    return parsed && typeof parsed === 'object';
-  } catch {
-    return false;
+  // If it's already an object, validate its structure
+  if (typeof flowDefinition === 'object') {
+    return flowDefinition && 
+           Array.isArray(flowDefinition.nodes) && 
+           Array.isArray(flowDefinition.edges);
   }
+
+  // If it's a string, try to parse it
+  if (typeof flowDefinition === 'string') {
+    if (flowDefinition.trim() === '') {
+      return true; // Empty string is considered valid
+    }
+    
+    try {
+      const parsed = JSON.parse(flowDefinition);
+      return parsed && 
+             typeof parsed === 'object' &&
+             Array.isArray(parsed.nodes) && 
+             Array.isArray(parsed.edges);
+    } catch {
+      return false;
+    }
+  }
+
+  return false;
 };

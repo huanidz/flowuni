@@ -19,7 +19,7 @@ import { useFlowSelection } from '@/hooks/useFlowSelection';
 import { useGetFlowDetail } from '@/features/flows/hooks';
 import { useNodeRegistry } from '@/features/nodes';
 import { parseFlowDefinition } from '@/features/flows/utils';
-import type { Flow } from '@/features/flows/types';
+import useFlowStore from '@/features/flows/stores';
 
 interface FlowBuilderContentProps {
   flow_id: string;
@@ -32,28 +32,30 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
     useState<ReactFlowInstance | null>(null);
 
   // Get flow detail from backend
-  const { data: flowDetailResponse, isLoading: isLoadingFlow, error: flowError } = 
+  const { isLoading: isLoadingFlow, error: flowError } = 
     useGetFlowDetail({ 
       flowId: flow_id, 
       enabled: !!flow_id 
     });
+
+  const { current_flow } = useFlowStore();
 
   // Get node registry status
   const { loaded: nodeRegistryLoaded } = useNodeRegistry();
 
   // Parse flow definition when data is available
   const { initialNodes, initialEdges } = useMemo(() => {
-    if (!flowDetailResponse?.data?.flow_definition || !nodeRegistryLoaded) {
+    if (!current_flow?.flow_definition || !nodeRegistryLoaded) {
       return { initialNodes: [], initialEdges: [] };
     }
 
-    const parsed = parseFlowDefinition(flowDetailResponse.data.flow_definition);
+    const parsed = parseFlowDefinition(current_flow.flow_definition);
     
     return {
       initialNodes: parsed.nodes,
       initialEdges: parsed.edges,
     };
-  }, [flowDetailResponse?.data?.flow_definition, nodeRegistryLoaded]);
+  }, [current_flow?.flow_definition, nodeRegistryLoaded]);
 
   const {
     nodes,
@@ -65,7 +67,6 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
     onSelectionChange,
     selectedNodeIds,
     selectedEdgeIds,
-    reinitializeFlow,
   } = useFlowSelection(initialNodes, initialEdges);
 
   const [nodeId, setNodeId] = useState(1);
@@ -136,11 +137,9 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
     onCompileFlow,
     onRunFlow,
     onClearFlow,
-    onDeleteSelectedElements,
     onKeyDown,
     onSaveFlow
   } = useFlowActions(
-    flowDetailResponse?.data as Flow,
     nodes,
     edges,
     setNodes,
@@ -242,6 +241,8 @@ export interface FlowCanvasProps {
 }
 
 export default function FlowCanvas({ flow_id }: FlowCanvasProps) {
+
+  useGetFlowDetail({ flowId: flow_id, enabled: !!flow_id });
 
   return (
     <ReactFlowProvider>
