@@ -17,7 +17,7 @@ flow_execution_router = APIRouter(
 @flow_execution_router.post("/compile")
 async def compile_flow_endpoint(
     request: Request,
-    auth_user_id: int = Depends(get_current_user),
+    _auth_user_id: int = Depends(get_current_user),
 ):
     """
     Receives, validates, and queues a flow graph compilation task.
@@ -29,7 +29,9 @@ async def compile_flow_endpoint(
         # Submit compile task to Celery
         task = compile_flow.delay("flow-compile", flow_graph_request.model_dump())
 
-        logger.info("Compilation task submitted to Celery.")
+        logger.info(
+            f"Compilation task submitted to Celery. (submitted_by u_id: {_auth_user_id})"
+        )
 
         return JSONResponse(
             status_code=202,
@@ -55,7 +57,7 @@ async def compile_flow_endpoint(
 
 @flow_execution_router.post("/execute")
 async def execute_flow_endpoint(
-    request: Request, auth_user_id: int = Depends(get_current_user)
+    request: Request, _auth_user_id: int = Depends(get_current_user)
 ):
     """
     Receives, validates, and queues a flow graph execution task.
@@ -67,7 +69,9 @@ async def execute_flow_endpoint(
         # Submit run task to Celery
         task = run_flow.delay("flow-execute", flow_graph_request.model_dump())
 
-        logger.info("Execution task submitted to Celery.")
+        logger.info(
+            f"Execution task submitted to Celery. (submitted_by u_id: {_auth_user_id})"
+        )
 
         return JSONResponse(
             status_code=202,

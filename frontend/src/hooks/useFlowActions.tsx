@@ -1,20 +1,9 @@
 import React, { useCallback } from 'react';
 import type { Node, Edge } from '@xyflow/react';
 import useFlowStore from '@/features/flows/stores';
-import { getFlowGraphData } from '@/features/flows/utils';
+import { getFlowGraphData, logNodeDetails } from '@/features/flows/utils';
 import { saveFlow, compileFlow, runFlow } from '@/features/flows/api';
-
-const logNodeDetails = (nodes: Node[]) => {
-  nodes.forEach((node, index) => {
-    console.log(`Node ${index} (${node.id}):`, {
-      type: node.type,
-      parameters: node.data.parameters,
-      input_values: node.data.input_values,
-      output_values: node.data.output_values,
-      fullData: node.data,
-    });
-  });
-};
+import { toast } from 'sonner';
 
 const handleFlowRequest = async (
   nodes: Node[],
@@ -52,7 +41,7 @@ export const useFlowActions = (
   setEdges: (edges: Edge[]) => void,
   setNodeId: (id: number) => void,
   selectedNodeIds: string[],
-  selectedEdgeIds: string[]
+  selectedEdgeIds: string[],
 ) => {
   const { current_flow } = useFlowStore();
 
@@ -64,18 +53,23 @@ export const useFlowActions = (
     return handleFlowRequest(nodes, edges, runFlow, 'COMPILATION & RUN FLOW');
   }, [nodes, edges]);
 
-  const onSaveFlow = useCallback(() => {
+  const onSaveFlow = useCallback(async () => {
     if (!current_flow) {
       console.warn('Cannot save flow: No current flow');
       return;
     }
 
-    return saveFlow({
+    await saveFlow({
       flow_id: current_flow.flow_id,
       name: current_flow.name,
       description: current_flow.description,
       is_active: current_flow.is_active,
       flow_definition: getFlowGraphData(nodes, edges),
+    });
+
+    toast.success('Flow saved successfully.', {
+      description: 'Flow has been saved successfully.',
+      visibleToasts: 1,
     });
   }, [nodes, edges]);
 

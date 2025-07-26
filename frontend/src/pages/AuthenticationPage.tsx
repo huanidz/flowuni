@@ -21,7 +21,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { toast } from 'sonner';
-import { Toaster } from '@/components/ui/sonner';
 
 import { useLogin, useRegister } from '@/features/auth/hooks';
 import { useNavigate } from 'react-router-dom';
@@ -233,7 +232,6 @@ const AuthenticationPage = () => {
           </CardContent>
         </Card>
       </div>
-      <Toaster />
     </>
   );
 };

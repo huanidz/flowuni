@@ -9,7 +9,6 @@ import { useFlows } from '@/features/flows/hooks';
 import useAuthStore from '@/features/auth/store';
 import { useCreateEmptyFlow } from '@/features/flows/hooks';
 import { toast } from 'sonner';
-import { Toaster } from '@/components/ui/sonner';
 import { useQueryClient } from '@tanstack/react-query';
 
 const FlowDashboardPage: React.FC = () => {
@@ -87,7 +86,6 @@ const FlowDashboardPage: React.FC = () => {
           <FlowList flows={flows?.data || []} />
         )}
       </div>
-      <Toaster />
     </div>
   );
 };

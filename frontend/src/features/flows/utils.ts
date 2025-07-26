@@ -162,3 +162,15 @@ export const getFlowGraphData = (nodes: Node[], edges: Edge[]) => ({
     targetHandle,
   })),
 });
+
+export const logNodeDetails = (nodes: Node[]) => {
+  nodes.forEach((node, index) => {
+    console.log(`Node ${index} (${node.id}):`, {
+      type: node.type,
+      parameters: node.data.parameters,
+      input_values: node.data.input_values,
+      output_values: node.data.output_values,
+      fullData: node.data,
+    });
+  });
+};

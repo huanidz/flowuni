@@ -146,7 +146,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
     setEdges,
     setNodeId,
     selectedNodeIds,
-    selectedEdgeIds
+    selectedEdgeIds,
   );
 
   const onConnect = useCallback(
