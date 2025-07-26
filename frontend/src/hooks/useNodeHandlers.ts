@@ -1,9 +1,6 @@
 // useNodeHandlers.ts
 import { useCallback } from 'react';
-import type {
-  UpdateNodeDataFunction,
-  UpdateNodeParameterFunction,
-} from '@/parsers/NodeTypes';
+import type { UpdateNodeDataFunction, UpdateNodeParameterFunction } from '@/features/nodes';
 
 export const useNodeHandlers = (
   nodeId: string,
@@ -25,9 +22,9 @@ export const useNodeHandlers = (
 
   const handleInputValueChange = useCallback(
     (inputName: string, value: any) => {
-      console.log(
-        `Input value changed: ${inputName} = ${value} for node ${nodeId}`
-      );
+      // console.log(
+      //   `Input value changed: ${inputName} = ${value} for node ${nodeId}`
+      // );
       if (updateNodeData) {
         updateNodeData(nodeId, {
           input_values: {
