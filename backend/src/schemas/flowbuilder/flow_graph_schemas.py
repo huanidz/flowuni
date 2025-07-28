@@ -1,5 +1,6 @@
+from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
 
 
 class Position(BaseModel):
@@ -13,7 +14,7 @@ class NodeData(BaseModel):
     """Represents metadata and parameters associated with a node."""
 
     label: Optional[str] = None
-    node_type: str  # corresponds to 'node_type' in JSON
+    node_type: Optional[str] = None  # corresponds to 'node_type' in JSON
     input_values: Optional[Dict[str, Any]] = None
     output_values: Optional[Dict[str, Any]] = None
     parameters: Optional[Dict[str, Any]] = (

@@ -1,13 +1,12 @@
-import asyncio
 import copy
 import threading
 import time
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
-from contextlib import asynccontextmanager
 from typing import Any, Dict, List, Optional
 
 import networkx as nx
 from loguru import logger
+from pydantic import BaseModel
 from src.nodes.NodeBase import Node, NodeSpec
 from src.nodes.NodeRegistry import NodeRegistry
 from src.schemas.flowbuilder.flow_graph_schemas import NodeData
@@ -19,22 +18,14 @@ class GraphExecutorError(Exception):
     pass
 
 
-class NodeExecutionResult:
+class NodeExecutionResult(BaseModel):
     """Container for node execution results."""
 
-    def __init__(
-        self,
-        node_id: str,
-        success: bool,
-        data: Optional[NodeData] = None,
-        error: Optional[Exception] = None,
-        execution_time: float = 0.0,
-    ):
-        self.node_id = node_id
-        self.success = success
-        self.data = data
-        self.error = error
-        self.execution_time = execution_time
+    node_id: str
+    success: bool
+    data: Optional[NodeData] = None
+    error: Optional[str] = None
+    execution_time: float = 0.0
 
 
 class GraphExecutor:
@@ -57,93 +48,62 @@ class GraphExecutor:
         Args:
             graph: The directed graph containing node specifications and data
             execution_plan: List of layers, where each layer contains nodes that can execute in parallel
-            max_workers: Maximum number of threads for parallel execution (defaults to min(32, (cpu_count or 1) + 4))
+            max_workers: Maximum number of threads for parallel execution
         """
         self.graph: nx.DiGraph = graph
         self.execution_plan: List[List[str]] = execution_plan
         self.max_workers = max_workers
 
-        # Thread safety
+        # Thread safety for updating graph
         self._update_lock = threading.Lock()
+
+        # Create node registry instance
         self._node_registry = NodeRegistry()
 
-        # Execution state
-        self._is_executing = False
-        self._cancelled = False
-
-        # Statistics
-        self._execution_stats = {
-            "total_nodes": sum(len(layer) for layer in execution_plan),
-            "total_layers": len(execution_plan),
-            "completed_nodes": 0,
-            "failed_nodes": 0,
-            "start_time": None,
-            "end_time": None,
-        }
-
         logger.info(
-            f"Initialized GraphExecutor with {self._execution_stats['total_nodes']} nodes "
-            f"across {self._execution_stats['total_layers']} layers"
+            f"Initialized GraphExecutor with {sum(len(layer) for layer in execution_plan)} nodes "
+            f"across {len(execution_plan)} layers"
         )
 
-    async def execute(self) -> Dict[str, Any]:
+    def execute(self) -> Dict[str, Any]:
         """
-        Execute the graph asynchronously with parallel processing within layers.
+        Execute the graph with parallel processing within layers.
 
-        Returns:
-            Dictionary containing execution statistics and results
-
-        Raises:
-            GraphExecutorError: If execution fails
+        This is the synchronous version that matches your old working code structure.
         """
-        if self._is_executing:
-            raise GraphExecutorError("Executor is already running")
+        logger.info(f"Starting graph execution with {len(self.execution_plan)} layers")
 
-        self._is_executing = True
-        self._cancelled = False
-        self._execution_stats["start_time"] = time.time()
+        start_time = time.time()
+        total_nodes = sum(len(layer) for layer in self.execution_plan)
+        completed_nodes = 0
 
         try:
-            logger.info(
-                f"Starting parallel graph execution with {len(self.execution_plan)} layers"
-            )
-
-            async with self._create_thread_pool() as executor:
+            # Use ThreadPoolExecutor for parallel execution within layers
+            with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
                 for layer_index, layer_nodes in enumerate(self.execution_plan, 1):
-                    if self._cancelled:
-                        raise GraphExecutorError("Execution was cancelled")
-
                     logger.info(
-                        f"Executing layer {layer_index}/{len(self.execution_plan)} with {len(layer_nodes)} nodes: {layer_nodes}"
+                        f"Executing layer {layer_index}/{len(self.execution_plan)} "
+                        f"with {len(layer_nodes)} nodes: {layer_nodes}"
                     )
 
                     layer_start_time = time.time()
 
-                    # Execute all nodes in this layer concurrently
-                    layer_results = await self._execute_layer(
+                    # Execute all nodes in this layer in parallel
+                    layer_results = self._execute_layer_parallel(
                         executor, layer_nodes, layer_index
                     )
 
                     layer_execution_time = time.time() - layer_start_time
 
-                    # Process results and update statistics
-                    successful_results = []
-                    failed_results = []
+                    # Check for failures
+                    failed_nodes = [r for r in layer_results if not r.success]
+                    successful_nodes = [r for r in layer_results if r.success]
 
-                    for result in layer_results:
-                        if result.success:
-                            successful_results.append(result)
-                            self._execution_stats["completed_nodes"] += 1
-                        else:
-                            failed_results.append(result)
-                            self._execution_stats["failed_nodes"] += 1
-
-                    if failed_results:
-                        error_msg = f"Layer {layer_index} execution failed. Failed nodes: {[r.node_id for r in failed_results]}"
+                    if failed_nodes:
+                        error_msg = f"Layer {layer_index} execution failed. Failed nodes: {[r.node_id for r in failed_nodes]}"
                         logger.error(error_msg)
 
-                        # Log individual node errors
-                        for result in failed_results:
+                        for result in failed_nodes:
                             logger.error(
                                 f"Node {result.node_id} failed: {result.error}"
                             )
@@ -152,55 +112,62 @@ class GraphExecutor:
 
                     logger.success(
                         f"Layer {layer_index} completed successfully in {layer_execution_time:.3f}s. "
-                        f"Processed {len(successful_results)} nodes."
+                        f"Processed {len(successful_nodes)} nodes."
                     )
 
-                    # Update successor nodes with results
-                    await self._update_all_successors(successful_results)
+                    completed_nodes += len(successful_nodes)
 
-            self._execution_stats["end_time"] = time.time()
-            total_time = (
-                self._execution_stats["end_time"] - self._execution_stats["start_time"]
-            )
+                    # Update successors for all successful nodes
+                    self._update_all_successors(successful_nodes)
+
+            total_time = time.time() - start_time
 
             logger.success(
                 f"Graph execution completed successfully in {total_time:.3f}s. "
-                f"Processed {self._execution_stats['completed_nodes']} nodes across "
-                f"{self._execution_stats['total_layers']} layers."
+                f"Processed {completed_nodes} nodes across {len(self.execution_plan)} layers."
             )
 
-            return self._get_execution_summary()
+            # Log final results summary
+            logger.info("=== FINAL EXECUTION RESULTS ===")
+            for node_id in self.graph.nodes():
+                node_data = self.graph.nodes[node_id].get("data")
+                if (
+                    node_data
+                    and hasattr(node_data, "output_values")
+                    and node_data.output_values
+                ):
+                    for key, value in node_data.output_values.items():
+                        value_preview = (
+                            str(value)[:100] + "..."
+                            if len(str(value)) > 100
+                            else str(value)
+                        )
+                        logger.info(f"  {node_id}.{key}: {value_preview}")
+                else:
+                    logger.info(f"  {node_id}: no final outputs")
+
+            return {
+                "success": True,
+                "total_nodes": total_nodes,
+                "completed_nodes": completed_nodes,
+                "total_layers": len(self.execution_plan),
+                "execution_time": total_time,
+            }
 
         except Exception as e:
-            self._execution_stats["end_time"] = time.time()
             logger.error(f"Graph execution failed: {str(e)}")
             raise GraphExecutorError(f"Execution failed: {str(e)}") from e
-        finally:
-            self._is_executing = False
 
-    @asynccontextmanager
-    async def _create_thread_pool(self):
-        """Create and manage thread pool lifecycle."""
-        executor = ThreadPoolExecutor(max_workers=self.max_workers)
-        try:
-            logger.debug(
-                f"Created thread pool with max_workers={executor._max_workers}"
-            )
-            yield executor
-        finally:
-            logger.debug("Shutting down thread pool")
-            executor.shutdown(wait=True)
-
-    async def _execute_layer(
+    def _execute_layer_parallel(
         self, executor: ThreadPoolExecutor, layer_nodes: List[str], layer_index: int
     ) -> List[NodeExecutionResult]:
         """
-        Execute all nodes in a layer concurrently.
+        Execute all nodes in a layer in parallel.
 
         Args:
             executor: Thread pool executor
             layer_nodes: List of node IDs to execute
-            layer_index: Current layer index for logging
+            layer_index: Current layer index
 
         Returns:
             List of execution results for all nodes in the layer
@@ -209,58 +176,66 @@ class GraphExecutor:
             logger.warning(f"Layer {layer_index} is empty")
             return []
 
-        # Submit all node executions to the thread pool
-        loop = asyncio.get_event_loop()
+        # For single node layers, execute directly (like old version)
+        if len(layer_nodes) == 1:
+            node_id = layer_nodes[0]
+            logger.info(f"Executing single node in layer {layer_index}: {node_id}")
+            return [self._execute_single_node_sync(node_id, layer_index)]
+
+        # For multiple nodes, execute in parallel
+        logger.info(
+            f"Executing {len(layer_nodes)} nodes in parallel for layer {layer_index}"
+        )
+
+        # Submit all nodes to thread pool
         futures: Dict[Future, str] = {}
 
         for node_id in layer_nodes:
             try:
-                # Prepare node data with deep copy for thread safety
-                prepared_data = self._prepare_node_data(node_id)
+                # Get a deep copy of node data for thread safety
+                node_data = self._get_node_data_copy(node_id)
 
-                # Submit node execution to thread pool
+                # Submit to thread pool
                 future = executor.submit(
-                    self._execute_single_node, node_id, prepared_data, layer_index
+                    self._execute_single_node_thread, node_id, node_data, layer_index
                 )
                 futures[future] = node_id
 
-                logger.debug(
-                    f"Submitted node {node_id} for execution in layer {layer_index}"
-                )
+                logger.debug(f"Submitted node {node_id} for parallel execution")
 
             except Exception as e:
-                logger.error(f"Failed to submit node {node_id} for execution: {str(e)}")
-                # Return failed result immediately
-                return [NodeExecutionResult(node_id, False, error=e)]
+                logger.error(f"Failed to submit node {node_id}: {str(e)}")
+                return [
+                    NodeExecutionResult(node_id=node_id, success=False, error=str(e))
+                ]
 
-        # Wait for all futures to complete
+        # Collect results as they complete
         results = []
-        completed_count = 0
 
         try:
-            # Use as_completed to get results as they finish
             for future in as_completed(futures.keys()):
                 node_id = futures[future]
-                completed_count += 1
-
                 try:
                     result = future.result()
                     results.append(result)
 
                     if result.success:
                         logger.debug(
-                            f"Node {node_id} completed successfully ({completed_count}/{len(layer_nodes)}) "
-                            f"in {result.execution_time:.3f}s"
+                            f"Node {node_id} completed successfully in {result.execution_time:.3f}s"
                         )
                     else:
-                        logger.error(f"Node {node_id} execution failed: {result.error}")
+                        logger.error(f"Node {node_id} failed: {result.error}")
 
                 except Exception as e:
                     logger.error(f"Failed to get result for node {node_id}: {str(e)}")
-                    results.append(NodeExecutionResult(node_id, False, error=e))
+                    results.append(
+                        NodeExecutionResult(
+                            node_id=node_id, success=False, error=str(e)
+                        )
+                    )
 
         except Exception as e:
-            logger.error(f"Error waiting for layer {layer_index} completion: {str(e)}")
+            logger.error(f"Error collecting results for layer {layer_index}: {str(e)}")
             # Cancel remaining futures
             for future in futures.keys():
                 future.cancel()
@@ -268,125 +243,149 @@ class GraphExecutor:
 
         return results
 
-    def _execute_single_node(
-        self, node_id: str, node_data: NodeData, layer_index: int
+    def _execute_single_node_sync(
+        self, node_id: str, layer_index: int
     ) -> NodeExecutionResult:
         """
-        Execute a single node in a thread.
-
-        Args:
-            node_id: ID of the node to execute
-            node_data: Node data for execution
-            layer_index: Current layer index
-
-        Returns:
-            NodeExecutionResult containing execution outcome
+        Execute a single node synchronously (like the old version).
         """
         start_time = time.time()
 
         try:
-            with logger.contextualize(node=node_id, layer=layer_index):
-                logger.debug(f"Starting execution of node {node_id}")
-
-                # Get node specification
-                graph_node = self.graph.nodes[node_id]
-                node_spec: NodeSpec = graph_node.get("spec")
+            with logger.contextualize(node=node_id):
+                # Get node configuration (same as old version)
+                g_node = self.graph.nodes[node_id]
+                node_spec: NodeSpec = g_node.get("spec")
+                node_data: NodeData = g_node.get("data", NodeData())
 
                 if not node_spec:
                     raise GraphExecutorError(f"Node {node_id} missing specification")
 
-                logger.debug(f"Node {node_id} spec: {node_spec.name}")
-
-                # Create node instance
+                # Create node instance (same as old version)
                 node_instance: Optional[Node] = (
                     self._node_registry.create_node_instance(node_spec.name)
                 )
 
                 if not node_instance:
                     raise GraphExecutorError(
-                        f"Failed to create node instance for: {node_spec.name}"
+                        f"Failed to create node instance: {node_spec.name}"
                     )
 
-                # Execute the node
-                logger.info(f"Executing node {node_id} ({node_spec.name})")
+                logger.info(f"Executing node [{layer_index}]: {node_spec.name}")
 
-                try:
-                    executed_data: NodeData = node_instance.run(node_data)
-                    execution_time = time.time() - start_time
+                # Execute the node (same as old version)
+                executed_data: NodeData = node_instance.run(node_data)
 
-                    logger.info(
-                        f"Node {node_id} executed successfully in {execution_time:.3f}s. "
-                        f"Output keys: {list(executed_data.output_values.keys()) if executed_data.output_values else 'None'}"
+                execution_time = time.time() - start_time
+
+                # Log execution results
+                if executed_data and executed_data.output_values:
+                    output_keys = list(executed_data.output_values.keys())
+                    logger.success(
+                        f"Node {node_id} completed in {execution_time:.3f}s, outputs: {output_keys}"
+                    )
+                else:
+                    logger.success(
+                        f"Node {node_id} completed in {execution_time:.3f}s, no outputs"
                     )
 
-                    return NodeExecutionResult(
-                        node_id, True, executed_data, execution_time=execution_time
-                    )
-
-                except Exception as node_error:
-                    execution_time = time.time() - start_time
-                    logger.error(
-                        f"Node {node_id} execution failed after {execution_time:.3f}s: {str(node_error)}"
-                    )
-                    return NodeExecutionResult(
-                        node_id, False, error=node_error, execution_time=execution_time
-                    )
+                return NodeExecutionResult(
+                    node_id=node_id,
+                    success=True,
+                    data=executed_data,
+                    execution_time=execution_time,
+                )
 
         except Exception as e:
             execution_time = time.time() - start_time
-            logger.error(f"Critical error executing node {node_id}: {str(e)}")
+            logger.error(f"Node {node_id} execution failed: {str(e)}")
             return NodeExecutionResult(
-                node_id, False, error=e, execution_time=execution_time
+                node_id=node_id,
+                success=False,
+                error=str(e),
+                execution_time=execution_time,
             )
 
-    def _prepare_node_data(self, node_id: str) -> NodeData:
+    def _execute_single_node_thread(
+        self, node_id: str, node_data: NodeData, layer_index: int
+    ) -> NodeExecutionResult:
         """
-        Prepare node data for execution with deep copy for thread safety.
-
-        Args:
-            node_id: ID of the node
-
-        Returns:
-            Deep copy of node data
-
-        Raises:
-            GraphExecutorError: If node data is invalid
+        Execute a single node in a thread (for parallel execution).
         """
+        start_time = time.time()
+
         try:
-            if node_id not in self.graph.nodes:
-                raise GraphExecutorError(f"Node {node_id} not found in graph")
+            # Get node specification
+            g_node = self.graph.nodes[node_id]
+            node_spec: NodeSpec = g_node.get("spec")
 
-            graph_node = self.graph.nodes[node_id]
-            node_data = graph_node.get("data")
+            if not node_spec:
+                raise GraphExecutorError(f"Node {node_id} missing specification")
 
-            if node_data is None:
-                logger.warning(f"Node {node_id} has no data, creating empty NodeData")
-                return NodeData()
-
-            # Deep copy to prevent race conditions
-            copied_data = copy.deepcopy(node_data)
-            logger.debug(
-                f"Prepared data for node {node_id} with input keys: {list(copied_data.input_values.keys()) if copied_data.input_values else 'None'}"
+            # Create node instance
+            node_instance: Optional[Node] = self._node_registry.create_node_instance(
+                node_spec.name
             )
 
-            return copied_data
+            if not node_instance:
+                raise GraphExecutorError(
+                    f"Failed to create node instance: {node_spec.name}"
+                )
+
+            logger.info(f"Executing node [{layer_index}]: {node_spec.name} (parallel)")
+
+            # Execute the node
+            executed_data: NodeData = node_instance.run(node_data)
+
+            execution_time = time.time() - start_time
+
+            # Log execution results
+            if executed_data and executed_data.output_values:
+                output_keys = list(executed_data.output_values.keys())
+                logger.success(
+                    f"Node {node_id} completed in {execution_time:.3f}s (parallel), outputs: {output_keys}"
+                )
+            else:
+                logger.success(
+                    f"Node {node_id} completed in {execution_time:.3f}s (parallel), no outputs"
+                )
+
+            return NodeExecutionResult(
+                node_id=node_id,
+                success=True,
+                data=executed_data,
+                execution_time=execution_time,
+            )
 
         except Exception as e:
-            raise GraphExecutorError(
-                f"Failed to prepare data for node {node_id}: {str(e)}"
-            ) from e
+            execution_time = time.time() - start_time
+            logger.error(f"Node {node_id} execution failed (parallel): {str(e)}")
+            return NodeExecutionResult(
+                node_id=node_id,
+                success=False,
+                error=str(e),
+                execution_time=execution_time,
+            )
 
-    async def _update_all_successors(
-        self, successful_results: List[NodeExecutionResult]
-    ):
+    def _get_node_data_copy(self, node_id: str) -> NodeData:
         """
-        Update all successor nodes with execution results in a thread-safe manner.
-
-        Args:
-            successful_results: List of successful node execution results
+        Get a deep copy of node data for thread safety.
         """
-        update_count = 0
+        try:
+            g_node = self.graph.nodes[node_id]
+            node_data = g_node.get("data", NodeData())
 
+            # Return deep copy for thread safety
+            return copy.deepcopy(node_data)
+
+        except Exception as e:
+            logger.error(f"Failed to get data for node {node_id}: {str(e)}")
+            return NodeData()
+
+    def _update_all_successors(self, successful_results: List[NodeExecutionResult]):
+        """
+        Update all successor nodes with execution results.
+        """
         for result in successful_results:
             try:
                 successors = list(self.graph.successors(result.node_id))
@@ -394,50 +393,39 @@ class GraphExecutor:
                     logger.debug(
                         f"Updating {len(successors)} successors for node {result.node_id}"
                     )
-                    self._update_successors_thread_safe(
-                        result.node_id, successors, result.data
-                    )
-                    update_count += len(successors)
-
+                    self._update_successors(result.node_id, successors, result.data)
             except Exception as e:
                 logger.error(
                     f"Failed to update successors for node {result.node_id}: {str(e)}"
                 )
-                # Continue with other nodes rather than failing completely
 
-        if update_count > 0:
-            logger.debug(f"Updated {update_count} successor node inputs")
-
-    def _update_successors_thread_safe(
-        self, node_id: str, successors: List[str], executed_data: NodeData
+    def _update_successors(
+        self, node_name: str, successors: List[str], executed_data: NodeData
     ):
         """
-        Update successor nodes with output data in a thread-safe manner.
+        Update successor nodes with output data from current node.
 
-        Args:
-            node_id: ID of the source node
-            successors: List of successor node IDs
-            executed_data: Execution result data from source node
+        This method keeps the exact same logic as your working old version.
         """
         if not executed_data or not executed_data.output_values:
-            logger.warning(f"Node {node_id} has no output data to propagate")
+            logger.warning(f"Node {node_name} has no output data to propagate")
             return
 
+        # Use lock for thread safety when updating graph
         with self._update_lock:
-            for successor_id in successors:
+            for successor_name in successors:
                 try:
-                    # Get edge data
-                    edge_data = self.graph.get_edge_data(node_id, successor_id)
+                    edge_data = self.graph.get_edge_data(node_name, successor_name)
                     if not edge_data:
                         logger.warning(
-                            f"No edge data found between {node_id} and {successor_id}"
+                            f"No edge data between {node_name} and {successor_name}"
                         )
                         continue
 
                     source_handle = edge_data.get("source_handle", "")
                     target_handle = edge_data.get("target_handle", "")
 
-                    # Handle splitting logic with validation
+                    # Handle the -index splitting (same as old version)
                     if source_handle and "-index" in source_handle:
                         source_handle = source_handle.split("-index")[0]
                     if target_handle and "-index" in target_handle:
@@ -445,84 +433,54 @@ class GraphExecutor:
 
                     if not source_handle or not target_handle:
                         logger.warning(
-                            f"Invalid handles between {node_id} and {successor_id}: source='{source_handle}', target='{target_handle}'"
+                            f"Invalid handles: source='{source_handle}', target='{target_handle}'"
                         )
                         continue
 
-                    # Get source output value
-                    if source_handle not in executed_data.output_values:
+                    # Get successor node data (same as old version)
+                    successor_node_data: NodeData = self.graph.nodes[
+                        successor_name
+                    ].get("data")
+
+                    if successor_node_data is None:
+                        successor_node_data = NodeData()
+
+                    # Ensure input_values exists
+                    if successor_node_data.input_values is None:
+                        successor_node_data.input_values = {}
+
+                    # Update successor input with current node output (same as old version)
+                    if source_handle in executed_data.output_values:
+                        successor_node_data.input_values[target_handle] = copy.deepcopy(
+                            executed_data.output_values[source_handle]
+                        )
+
+                        # Update the graph (same as old version)
+                        self.graph.nodes[successor_name]["data"] = successor_node_data
+
+                        # Log data transfer
+                        value_info = f"{type(executed_data.output_values[source_handle]).__name__}"
+                        if hasattr(
+                            executed_data.output_values[source_handle], "__len__"
+                        ) and not isinstance(
+                            executed_data.output_values[source_handle], str
+                        ):
+                            value_info += f"(len={len(executed_data.output_values[source_handle])})"
+
+                        logger.debug(
+                            f"Data flow: {node_name}.{source_handle} -> {successor_name}.{target_handle} ({value_info})"
+                        )
+                    else:
                         logger.warning(
-                            f"Source handle '{source_handle}' not found in {node_id} outputs: {list(executed_data.output_values.keys())}"
+                            f"Source handle '{source_handle}' not found in {node_name} outputs"
                         )
-                        continue
-
-                    output_value = executed_data.output_values[source_handle]
-
-                    # Update successor node data
-                    successor_node = self.graph.nodes[successor_id]
-                    successor_data: NodeData = successor_node.get("data")
-
-                    if successor_data is None:
-                        successor_data = NodeData()
-                        self.graph.nodes[successor_id]["data"] = successor_data
-
-                    # Ensure input_values dict exists
-                    if successor_data.input_values is None:
-                        successor_data.input_values = {}
-
-                    # Update the target input
-                    successor_data.input_values[target_handle] = copy.deepcopy(
-                        output_value
-                    )
-
-                    logger.debug(
-                        f"Updated {successor_id}.{target_handle} with data from {node_id}.{source_handle}"
-                    )
 
                 except Exception as e:
-                    logger.error(
-                        f"Failed to update successor {successor_id} from {node_id}: {str(e)}"
+                    logger.warning(
+                        f"Failed to update successor {successor_name}: {str(e)}"
                     )
-                    # Continue with other successors
-
-    def cancel_execution(self):
-        """Cancel the current execution."""
-        self._cancelled = True
-        logger.warning("Execution cancellation requested")
-
-    def _get_execution_summary(self) -> Dict[str, Any]:
-        """Get comprehensive execution statistics."""
-        total_time = (self._execution_stats["end_time"] or time.time()) - (
-            self._execution_stats["start_time"] or time.time()
-        )
-
-        return {
-            "success": True,
-            "total_nodes": self._execution_stats["total_nodes"],
-            "completed_nodes": self._execution_stats["completed_nodes"],
-            "failed_nodes": self._execution_stats["failed_nodes"],
-            "total_layers": self._execution_stats["total_layers"],
-            "execution_time": total_time,
-            "nodes_per_second": self._execution_stats["completed_nodes"] / total_time
-            if total_time > 0
-            else 0,
-            "start_time": self._execution_stats["start_time"],
-            "end_time": self._execution_stats["end_time"],
-        }
-
-    @property
-    def is_executing(self) -> bool:
-        """Check if executor is currently running."""
-        return self._is_executing
-
-    @property
-    def execution_stats(self) -> Dict[str, Any]:
-        """Get current execution statistics."""
-        return self._execution_stats.copy()
 
     def prepare(self):
-        """Prepare method for backward compatibility - currently no-op."""
-        logger.debug(
-            "Prepare method called - no preparation needed for parallel executor"
-        )
+        """Prepare method for backward compatibility."""
+        logger.debug("GraphExecutor prepare() called - no preparation needed")
         pass

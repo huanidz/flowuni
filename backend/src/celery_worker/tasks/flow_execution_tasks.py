@@ -1,4 +1,3 @@
-import asyncio
 from typing import Dict
 
 from loguru import logger
@@ -23,10 +22,9 @@ def compile_flow(flow_id: str, flow_graph_request_dict: Dict):
 @celery_app.task
 def run_flow(flow_id: str, flow_graph_request_dict: Dict, need_compile: bool = True):
     """
-    Synchronous Celery task that runs async graph execution.
+    Synchronous Celery task that runs graph execution.
 
     Args:
-        self: Celery task instance (when bind=True)
         flow_id: Unique identifier for the flow
         flow_graph_request_dict: Serialized flow graph request
         need_compile: Whether to compile the graph
@@ -55,52 +53,19 @@ def run_flow(flow_id: str, flow_graph_request_dict: Dict, need_compile: bool = T
         logger.info(f"Creating executor with {len(execution_plan)} layers")
         executor = GraphExecutor(graph=G, execution_plan=execution_plan)
 
-        # Run the async execution in a new event loop
+        # Run the SYNCHRONOUS execution - NO asyncio needed
         logger.info("Starting graph execution")
 
-        # Create a new event loop for this thread
-        try:
-            # Try to get the current loop (will fail in worker thread)
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                # If loop is already running, we need to use a different approach
-                loop = None
-        except RuntimeError:
-            loop = None
+        # Since executor.execute() is now synchronous, call it directly
+        execution_result = executor.execute()
 
-        if loop is None or loop.is_running():
-            # Create a new event loop for the worker thread
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
+        logger.success(f"Flow execution completed successfully for flow_id: {flow_id}")
 
-            try:
-                # Run the async execution
-                execution_result = loop.run_until_complete(executor.execute())
-                logger.success(
-                    f"Flow execution completed successfully for flow_id: {flow_id}"
-                )
-
-                return {
-                    "status": "executed",
-                    "flow_id": flow_id,
-                    "execution_stats": execution_result,
-                }
-
-            finally:
-                # Clean up the event loop
-                loop.close()
-        else:
-            # Use the existing loop
-            execution_result = loop.run_until_complete(executor.execute())
-            logger.success(
-                f"Flow execution completed successfully for flow_id: {flow_id}"
-            )
-
-            return {
-                "status": "executed",
-                "flow_id": flow_id,
-                "execution_stats": execution_result,
-            }
+        return {
+            "status": "executed",
+            "flow_id": flow_id,
+            "execution_stats": execution_result,
+        }
 
     except Exception as e:
         logger.error(f"Flow execution failed for flow_id {flow_id}: {str(e)}")
