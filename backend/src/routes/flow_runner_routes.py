@@ -91,3 +91,11 @@ async def execute_flow_endpoint(
             status_code=500,
             detail="An error occurred while queuing the execution task.",
         )
+
+
+@flow_execution_router.post("/debug")
+async def debug_execution(
+    request: Request, _auth_user_id: int = Depends(get_current_user)
+):
+    """ """
+    pass

@@ -1,7 +1,6 @@
 from typing import Any, Dict, List
 
 import networkx as nx
-from loguru import logger
 from src.nodes.NodeRegistry import NodeRegistry
 from src.schemas.flowbuilder.flow_graph_schemas import FlowGraphRequest, FlowNode
 
@@ -13,30 +12,17 @@ class GraphLoader:
         Load a flow graph from FlowGraphRequest and return a NetworkX DiGraph.
         Each node is enriched with spec and runtime class (if available).
         """
-        logger.debug("Loading flow graph from request")
         G = nx.DiGraph()
 
         nodeRegistry = NodeRegistry()
 
         # Load nodes
         list_of_nodes: List[FlowNode] = flow.nodes
-        logger.debug(f"Found {len(list_of_nodes)} nodes in the flow request")
 
         for idx, node in enumerate(list_of_nodes):
-            logger.debug(
-                f"Processing node {idx + 1}/{len(list_of_nodes)} with ID: {node.id}, type: {node.type}"
-            )
             node_spec = nodeRegistry.get_node(node.type)
             if not node_spec:
-                logger.debug(f"Unknown node type encountered: {node.type}")
                 raise ValueError(f"Unknown node type: {node.type}")
-
-            # Optionally: create node instance (runtime execution)
-            NodeClass = nodeRegistry.create_node_class(node.type)
-            node_instance = NodeClass() if NodeClass else None
-            logger.debug(
-                f"Instantiated node {node.id} with class: {NodeClass.__name__ if NodeClass else 'None'}"
-            )
 
             G.add_node(
                 node.id,
@@ -47,19 +33,14 @@ class GraphLoader:
             )
 
         # Load edges
-        logger.debug("Adding edges to the graph")
         for idx, edge in enumerate(flow.edges):
-            logger.debug(
-                f"Adding edge {idx + 1}/{len(flow.edges)}: {edge.source} -> {edge.target}"
-            )
             G.add_edge(
-                edge.source,
-                edge.target,
+                u_of_edge=edge.source,
+                v_of_edge=edge.target,
                 source_handle=edge.sourceHandle,
                 target_handle=edge.targetHandle,
             )
 
-        logger.debug("Flow graph successfully constructed")
         return G
 
     @staticmethod
@@ -68,11 +49,9 @@ class GraphLoader:
         Convert the graph to a fully serializable dict (for API response or frontend).
         Removes any non-serializable Python objects (e.g., Node classes).
         """
-        logger.debug("Converting graph to serializable dictionary")
 
         nodes = []
         for node_id, data in G.nodes(data=True):
-            logger.trace(f"Serializing node: {node_id}")
             nodes.append(
                 {
                     "id": node_id,
@@ -90,7 +69,6 @@ class GraphLoader:
 
         edges = []
         for source, target, data in G.edges(data=True):
-            logger.trace(f"Serializing edge: {source} -> {target}")
             edges.append(
                 {
                     "source": source,
@@ -100,5 +78,4 @@ class GraphLoader:
                 }
             )
 
-        logger.success("Graph successfully converted to serializable format")
         return {"nodes": nodes, "edges": edges}

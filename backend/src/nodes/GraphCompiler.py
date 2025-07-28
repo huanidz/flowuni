@@ -1,9 +1,9 @@
 # src/engine/GraphCompiler.py
 
-from typing import Dict, List, Any, Optional
 from collections import deque
-import networkx as nx
+from typing import Any, Dict, List, Optional
 
+import networkx as nx
 from loguru import logger
 
 
@@ -21,12 +21,14 @@ class GraphCompiler:
     executed in parallel, respecting the dependencies defined by the graph edges.
     """
 
-    def __init__(self, graph: nx.DiGraph):
+    def __init__(self, graph: nx.DiGraph, remove_standalone: bool = True):
         """
         Initialize the GraphCompiler.
 
         Args:
             graph: A directed graph representing the execution flow
+            remove_standalone: If True, remove nodes with no connections before compile.
+                             If False, standalone nodes are placed in the first layer.
 
         Raises:
             GraphCompilerError: If the graph is not a DAG
@@ -34,9 +36,38 @@ class GraphCompiler:
         if not isinstance(graph, nx.DiGraph):
             raise GraphCompilerError("Graph must be a NetworkX DiGraph")
 
-        self._validate_graph(graph)
-        self.graph = graph
+        self.remove_standalone = remove_standalone
+        self._original_graph = graph.copy()
+
+        # Process the graph based on standalone node handling
+        self.graph = self._process_graph(graph)
+
+        self._validate_graph(self.graph)
         self._execution_plan: Optional[List[List[str]]] = None
+
+    def _process_graph(self, graph: nx.DiGraph) -> nx.DiGraph:
+        """
+        Process the graph based on standalone node handling preference.
+
+        Args:
+            graph: The original graph
+
+        Returns:
+            Processed graph
+        """
+        if self.remove_standalone:
+            # Remove standalone nodes (nodes with no edges)
+            standalone_nodes = [node for node in graph.nodes if graph.degree(node) == 0]
+
+            if standalone_nodes:
+                logger.info(
+                    f"Removing {len(standalone_nodes)} standalone nodes: {standalone_nodes}"
+                )
+                processed_graph = graph.copy()
+                processed_graph.remove_nodes_from(standalone_nodes)
+                return processed_graph
+
+        return graph.copy()
 
     def _validate_graph(self, graph: nx.DiGraph) -> None:
         """
@@ -48,13 +79,13 @@ class GraphCompiler:
         Raises:
             GraphCompilerError: If the graph is not a DAG
         """
+        if len(graph.nodes) == 0:
+            raise GraphCompilerError("Graph cannot be empty after processing")
+
         if not nx.is_directed_acyclic_graph(graph):
             raise GraphCompilerError(
                 "The flow graph must be a directed acyclic graph (DAG)"
             )
-
-        if len(graph.nodes) == 0:
-            raise GraphCompilerError("Graph cannot be empty")
 
     def compile(self) -> List[List[str]]:
         """
@@ -70,8 +101,24 @@ class GraphCompiler:
             f"Compiling graph with {len(self.graph.nodes)} nodes and {len(self.graph.edges)} edges"
         )
 
+        # Handle standalone nodes if not removing them
+        standalone_nodes = []
+        if not self.remove_standalone:
+            standalone_nodes = [
+                node for node in self.graph.nodes if self.graph.degree(node) == 0
+            ]
+
         # Use Kahn's algorithm for topological sorting with layers
         execution_plan = self._kahn_topological_sort()
+
+        # If we have standalone nodes and aren't removing them, add them to the first layer
+        if standalone_nodes:
+            if execution_plan:
+                # Add standalone nodes to the first layer
+                execution_plan[0] = standalone_nodes + execution_plan[0]
+            else:
+                # If no other nodes, create a layer with just standalone nodes
+                execution_plan = [standalone_nodes]
 
         # Validate the result
         self._validate_execution_plan(execution_plan)
@@ -87,8 +134,21 @@ class GraphCompiler:
         Returns:
             List of execution layers
         """
-        # Create a copy of in-degrees to avoid modifying the original graph
-        in_degrees = dict(self.graph.in_degree())
+        # Filter out standalone nodes for the algorithm if we're keeping them
+        nodes_to_process = [
+            node
+            for node in self.graph.nodes
+            if not (not self.remove_standalone and self.graph.degree(node) == 0)
+        ]
+
+        if not nodes_to_process:
+            return []
+
+        # Create a subgraph without standalone nodes for processing
+        processing_graph = self.graph.subgraph(nodes_to_process).copy()
+
+        # Create a copy of in-degrees for the processing graph
+        in_degrees = dict(processing_graph.in_degree())
 
         # Use deque for efficient queue operations
         current_layer_queue = deque(
@@ -113,14 +173,14 @@ class GraphCompiler:
                 processed_nodes.add(node_id)
 
                 # Update in-degrees for successor nodes
-                for successor in self.graph.successors(node_id):
+                for successor in processing_graph.successors(node_id):
                     in_degrees[successor] -= 1
                     if in_degrees[successor] == 0:
                         current_layer_queue.append(successor)
 
         # Check if all nodes were processed
-        if len(processed_nodes) != len(self.graph.nodes):
-            unprocessed = set(self.graph.nodes) - processed_nodes
+        if len(processed_nodes) != len(processing_graph.nodes):
+            unprocessed = set(processing_graph.nodes) - processed_nodes
             raise GraphCompilerError(
                 f"Failed to process all nodes. Unprocessed nodes: {unprocessed}. "
                 "This may indicate cycles or disconnected components."
@@ -201,6 +261,7 @@ class GraphCompiler:
             if layer_sizes
             else 0,
             "layer_sizes": layer_sizes,
+            "remove_standalone": self.remove_standalone,
         }
 
     def debug_print_plan(self) -> None:
@@ -216,43 +277,7 @@ class GraphCompiler:
         stats = self.get_execution_stats()
         logger.info(f"  Total layers: {stats['execution_layers']}")
         logger.info(f"  Max parallelism: {stats['max_parallelism']}")
-
-    def get_node_spec(self, node_id: str) -> Dict[str, Any]:
-        """
-        Get the specification for a specific node.
-
-        Args:
-            node_id: The ID of the node
-
-        Returns:
-            The node specification dictionary
-
-        Raises:
-            GraphCompilerError: If the node doesn't exist
-        """
-        if node_id not in self.graph.nodes:
-            raise GraphCompilerError(f"Node '{node_id}' not found in graph")
-
-        return self.graph.nodes[node_id].get("spec", {})
-
-    def get_layer_for_node(self, node_id: str) -> Optional[int]:
-        """
-        Get the execution layer index for a specific node.
-
-        Args:
-            node_id: The ID of the node
-
-        Returns:
-            The layer index (0-based), or None if not found or not compiled
-        """
-        if not self.is_compiled:
-            return None
-
-        for layer_idx, layer in enumerate(self.execution_plan):
-            if node_id in layer:
-                return layer_idx
-
-        return None
+        logger.info(f"  Remove standalone: {stats['remove_standalone']}")
 
     def get_dependencies(self, node_id: str) -> List[str]:
         """
@@ -286,7 +311,7 @@ class GraphCompiler:
 
     @property
     def graph(self) -> nx.DiGraph:
-        """Get the underlying graph (read-only access recommended)."""
+        """Get the underlying processed graph (read-only access recommended)."""
         return self._graph
 
     @graph.setter
