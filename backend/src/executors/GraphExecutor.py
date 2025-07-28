@@ -49,7 +49,7 @@ class GraphExecutor:
             graph: The directed graph containing node specifications and data
             execution_plan: List of layers, where each layer contains nodes that can execute in parallel
             max_workers: Maximum number of threads for parallel execution
-        """
+        """  # noqa: E501
         self.graph: nx.DiGraph = graph
         self.execution_plan: List[List[str]] = execution_plan
         self.max_workers = max_workers
@@ -61,7 +61,7 @@ class GraphExecutor:
         self._node_registry = NodeRegistry()
 
         logger.info(
-            f"Initialized GraphExecutor with {sum(len(layer) for layer in execution_plan)} nodes "
+            f"Initialized GraphExecutor with {sum(len(layer) for layer in execution_plan)} nodes "  # noqa: E501
             f"across {len(execution_plan)} layers"
         )
 
@@ -100,7 +100,7 @@ class GraphExecutor:
                     successful_nodes = [r for r in layer_results if r.success]
 
                     if failed_nodes:
-                        error_msg = f"Layer {layer_index} execution failed. Failed nodes: {[r.node_id for r in failed_nodes]}"
+                        error_msg = f"Layer {layer_index} execution failed. Failed nodes: {[r.node_id for r in failed_nodes]}"  # noqa: E501
                         logger.error(error_msg)
 
                         for result in failed_nodes:
@@ -111,7 +111,7 @@ class GraphExecutor:
                         raise GraphExecutorError(error_msg)
 
                     logger.success(
-                        f"Layer {layer_index} completed successfully in {layer_execution_time:.3f}s. "
+                        f"Layer {layer_index} completed successfully in {layer_execution_time:.3f}s. "  # noqa: E501
                         f"Processed {len(successful_nodes)} nodes."
                     )
 
@@ -124,7 +124,7 @@ class GraphExecutor:
 
             logger.success(
                 f"Graph execution completed successfully in {total_time:.3f}s. "
-                f"Processed {completed_nodes} nodes across {len(self.execution_plan)} layers."
+                f"Processed {completed_nodes} nodes across {len(self.execution_plan)} layers."  # noqa: E501
             )
 
             # Log final results summary
@@ -221,7 +221,7 @@ class GraphExecutor:
 
                     if result.success:
                         logger.debug(
-                            f"Node {node_id} completed successfully in {result.execution_time:.3f}s"
+                            f"Node {node_id} completed successfully in {result.execution_time:.3f}s"  # noqa: E501
                         )
                     else:
                         logger.error(f"Node {node_id} failed: {result.error}")
@@ -282,7 +282,7 @@ class GraphExecutor:
                 if executed_data and executed_data.output_values:
                     output_keys = list(executed_data.output_values.keys())
                     logger.success(
-                        f"Node {node_id} completed in {execution_time:.3f}s, outputs: {output_keys}"
+                        f"Node {node_id} completed in {execution_time:.3f}s, outputs: {output_keys}"  # noqa: E501
                     )
                 else:
                     logger.success(
@@ -343,11 +343,11 @@ class GraphExecutor:
             if executed_data and executed_data.output_values:
                 output_keys = list(executed_data.output_values.keys())
                 logger.success(
-                    f"Node {node_id} completed in {execution_time:.3f}s (parallel), outputs: {output_keys}"
+                    f"Node {node_id} completed in {execution_time:.3f}s (parallel), outputs: {output_keys}"  # noqa: E501
                 )
             else:
                 logger.success(
-                    f"Node {node_id} completed in {execution_time:.3f}s (parallel), no outputs"
+                    f"Node {node_id} completed in {execution_time:.3f}s (parallel), no outputs"  # noqa: E501
                 )
 
             return NodeExecutionResult(
@@ -391,7 +391,7 @@ class GraphExecutor:
                 successors = list(self.graph.successors(result.node_id))
                 if successors:
                     logger.debug(
-                        f"Updating {len(successors)} successors for node {result.node_id}"
+                        f"Updating {len(successors)} successors for node {result.node_id}"  # noqa: E501
                     )
                     self._update_successors(result.node_id, successors, result.data)
             except Exception as e:
@@ -399,7 +399,7 @@ class GraphExecutor:
                     f"Failed to update successors for node {result.node_id}: {str(e)}"
                 )
 
-    def _update_successors(
+    def _update_successors(  # noqa: C901
         self, node_name: str, successors: List[str], executed_data: NodeData
     ):
         """
@@ -433,7 +433,7 @@ class GraphExecutor:
 
                     if not source_handle or not target_handle:
                         logger.warning(
-                            f"Invalid handles: source='{source_handle}', target='{target_handle}'"
+                            f"Invalid handles: source='{source_handle}', target='{target_handle}'"  # noqa: E501
                         )
                         continue
 
@@ -449,7 +449,7 @@ class GraphExecutor:
                     if successor_node_data.input_values is None:
                         successor_node_data.input_values = {}
 
-                    # Update successor input with current node output (same as old version)
+                    # Update successor input with current node output
                     if source_handle in executed_data.output_values:
                         successor_node_data.input_values[target_handle] = copy.deepcopy(
                             executed_data.output_values[source_handle]
@@ -459,20 +459,20 @@ class GraphExecutor:
                         self.graph.nodes[successor_name]["data"] = successor_node_data
 
                         # Log data transfer
-                        value_info = f"{type(executed_data.output_values[source_handle]).__name__}"
+                        value_info = f"{type(executed_data.output_values[source_handle]).__name__}"  # noqa: E501
                         if hasattr(
                             executed_data.output_values[source_handle], "__len__"
                         ) and not isinstance(
                             executed_data.output_values[source_handle], str
                         ):
-                            value_info += f"(len={len(executed_data.output_values[source_handle])})"
+                            value_info += f"(len={len(executed_data.output_values[source_handle])})"  # noqa: E501
 
                         logger.debug(
-                            f"Data flow: {node_name}.{source_handle} -> {successor_name}.{target_handle} ({value_info})"
+                            f"Data flow: {node_name}.{source_handle} -> {successor_name}.{target_handle} ({value_info})"  # noqa: E501
                         )
                     else:
                         logger.warning(
-                            f"Source handle '{source_handle}' not found in {node_name} outputs"
+                            f"Source handle '{source_handle}' not found in {node_name} outputs"  # noqa: E501
                         )
 
                 except Exception as e:
