@@ -1,11 +1,14 @@
+import asyncio
 import traceback
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from loguru import logger
+from redis import Redis
 from src.celery_worker.tasks.flow_execution_tasks import compile_flow, run_flow
 from src.dependencies.auth_dependency import get_current_user
+from src.dependencies.redis_dependency import get_redis_client
 from src.schemas.flowbuilder.flow_graph_schemas import FlowGraphRequest
 
 flow_execution_router = APIRouter(
@@ -70,7 +73,7 @@ async def execute_flow_endpoint(
         task = run_flow.delay("flow-execute", flow_graph_request.model_dump())
 
         logger.info(
-            f"Execution task submitted to Celery. (submitted_by u_id: {_auth_user_id})"
+            f"Execution task submitted to Celery. (submitted_by u_id: {_auth_user_id}). Task ID: {task.id}"  # noqa: E501
         )
 
         return JSONResponse(
@@ -93,9 +96,33 @@ async def execute_flow_endpoint(
         )
 
 
-@flow_execution_router.post("/debug")
-async def debug_execution(
-    request: Request, _auth_user_id: int = Depends(get_current_user)
+@flow_execution_router.post("/stream/{task_id}")
+async def stream_execution(
+    task_id: str,
+    request: Request,
+    _auth_user_id: int = Depends(get_current_user),
+    redis_client: Redis = Depends(get_redis_client),
 ):
-    """ """
-    pass
+    """
+    Receives, validates, and queues a flow graph execution task.
+    """
+
+    loop = asyncio.get_event_loop()
+    queue_name = task_id
+
+    async def event_generator():
+        while True:
+            if await request.is_disconnected():
+                break
+
+            result = await loop.run_in_executor(None, redis_client.blpop, queue_name, 5)
+            if result:
+                _, data = result
+                if isinstance(data, bytes):
+                    data = data.decode("utf-8")
+                yield f"data: {data}\n\n"
+                if data == "DONE":
+                    redis_client.delete(task_id)
+                    break
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")

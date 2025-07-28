@@ -1,7 +1,10 @@
 from typing import Dict
 
 from loguru import logger
+from redis import Redis
 from src.celery_worker.celery_worker import celery_app
+from src.configs.config import get_settings
+from src.executors.ExecutionContext import ExecutionContext
 from src.executors.GraphExecutor import GraphExecutor
 from src.nodes.GraphCompiler import GraphCompiler
 from src.nodes.GraphLoader import GraphLoader
@@ -19,20 +22,23 @@ def compile_flow(flow_id: str, flow_graph_request_dict: Dict):
     return {"status": "compiled", "flow_id": flow_id}
 
 
-@celery_app.task
-def run_flow(flow_id: str, flow_graph_request_dict: Dict, need_compile: bool = True):
+@celery_app.task(bind=True)
+def run_flow(
+    self, flow_id: str, flow_graph_request_dict: Dict, enable_debug: bool = True
+):
     """
     Synchronous Celery task that runs graph execution.
 
     Args:
         flow_id: Unique identifier for the flow
         flow_graph_request_dict: Serialized flow graph request
-        need_compile: Whether to compile the graph
 
     Returns:
         Dictionary with execution results
     """
     try:
+        app_settings = get_settings()
+
         logger.info(f"Starting flow execution task for flow_id: {flow_id}")
 
         # Parse the request
@@ -50,8 +56,23 @@ def run_flow(flow_id: str, flow_graph_request_dict: Dict, need_compile: bool = T
         execution_plan = compiler.compile()
 
         # Create executor
+        redis_client = Redis(
+            host=app_settings.REDIS_HOST,
+            port=app_settings.REDIS_PORT,
+            db=app_settings.REDIS_DB,
+            decode_responses=True,
+        )
+        exe_context = ExecutionContext(
+            task_id=self.request.id,
+            redis_client=redis_client,
+        )
         logger.info(f"Creating executor with {len(execution_plan)} layers")
-        executor = GraphExecutor(graph=G, execution_plan=execution_plan)
+        executor = GraphExecutor(
+            graph=G,
+            execution_plan=execution_plan,
+            execution_context=exe_context,
+            enable_debug=enable_debug,
+        )
 
         # Run the SYNCHRONOUS execution - NO asyncio needed
         logger.info("Starting graph execution")

@@ -2,7 +2,7 @@ from redis import Redis
 from src.configs.config import get_settings
 
 
-def get_redis_client():
+def get_redis_client() -> Redis:
     app_settings = get_settings()
 
     return Redis(

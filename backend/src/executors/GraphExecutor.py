@@ -7,6 +7,8 @@ from typing import Any, Dict, List, Optional
 import networkx as nx
 from loguru import logger
 from pydantic import BaseModel
+from src.executors.ExecutionContext import ExecutionContext
+from src.executors.NodeExecution import NodeExecutionEvent
 from src.nodes.NodeBase import Node, NodeSpec
 from src.nodes.NodeRegistry import NodeRegistry
 from src.schemas.flowbuilder.flow_graph_schemas import NodeData
@@ -41,6 +43,8 @@ class GraphExecutor:
         graph: nx.DiGraph,
         execution_plan: List[List[str]],
         max_workers: Optional[int] = None,
+        enable_debug: bool = True,
+        execution_context: Optional[ExecutionContext] = None,
     ):
         """
         Initialize the GraphExecutor.
@@ -54,6 +58,10 @@ class GraphExecutor:
         self.execution_plan: List[List[str]] = execution_plan
         self.max_workers = max_workers
 
+        # Flag and class for execution context
+        self.enable_debug = enable_debug
+        self.execution_context = execution_context
+
         # Thread safety for updating graph
         self._update_lock = threading.Lock()
 
@@ -64,6 +72,13 @@ class GraphExecutor:
             f"Initialized GraphExecutor with {sum(len(layer) for layer in execution_plan)} nodes "  # noqa: E501
             f"across {len(execution_plan)} layers"
         )
+
+    def push_event(self, node_id: str, event: str, data: Any = {}):
+        # Publish node event to Redis
+        if self.execution_context and self.enable_debug:
+            self.execution_context.publish_node_event(
+                node_id=node_id, event=event, data=data
+            )
 
     def execute(self) -> Dict[str, Any]:
         """
@@ -252,53 +267,63 @@ class GraphExecutor:
         start_time = time.time()
 
         try:
-            with logger.contextualize(node=node_id):
-                # Get node configuration (same as old version)
-                g_node = self.graph.nodes[node_id]
-                node_spec: NodeSpec = g_node.get("spec")
-                node_data: NodeData = g_node.get("data", NodeData())
+            self.push_event(node_id=node_id, event=NodeExecutionEvent.RUNNING, data={})
+            # Get node configuration (same as old version)
+            g_node = self.graph.nodes[node_id]
+            node_spec: NodeSpec = g_node.get("spec")
+            node_data: NodeData = g_node.get("data", NodeData())
 
-                if not node_spec:
-                    raise GraphExecutorError(f"Node {node_id} missing specification")
+            if not node_spec:
+                raise GraphExecutorError(f"Node {node_id} missing specification")
 
-                # Create node instance (same as old version)
-                node_instance: Optional[Node] = (
-                    self._node_registry.create_node_instance(node_spec.name)
+            # Create node instance (same as old version)
+            node_instance: Optional[Node] = self._node_registry.create_node_instance(
+                node_spec.name
+            )
+
+            if not node_instance:
+                raise GraphExecutorError(
+                    f"Failed to create node instance: {node_spec.name}"
                 )
 
-                if not node_instance:
-                    raise GraphExecutorError(
-                        f"Failed to create node instance: {node_spec.name}"
-                    )
+            logger.info(f"Executing node [{layer_index}]: {node_spec.name}")
 
-                logger.info(f"Executing node [{layer_index}]: {node_spec.name}")
+            # Execute the node (same as old version)
+            executed_data: NodeData = node_instance.run(node_data)
+            self.push_event(
+                node_id=node_id,
+                event=NodeExecutionEvent.SUCCESS,
+                data=executed_data.model_dump(),
+            )
 
-                # Execute the node (same as old version)
-                executed_data: NodeData = node_instance.run(node_data)
+            execution_time = time.time() - start_time
 
-                execution_time = time.time() - start_time
-
-                # Log execution results
-                if executed_data and executed_data.output_values:
-                    output_keys = list(executed_data.output_values.keys())
-                    logger.success(
-                        f"Node {node_id} completed in {execution_time:.3f}s, outputs: {output_keys}"  # noqa: E501
-                    )
-                else:
-                    logger.success(
-                        f"Node {node_id} completed in {execution_time:.3f}s, no outputs"
-                    )
-
-                return NodeExecutionResult(
-                    node_id=node_id,
-                    success=True,
-                    data=executed_data,
-                    execution_time=execution_time,
+            # Log execution results
+            if executed_data and executed_data.output_values:
+                output_keys = list(executed_data.output_values.keys())
+                logger.success(
+                    f"Node {node_id} completed in {execution_time:.3f}s, outputs: {output_keys}"  # noqa: E501
                 )
+            else:
+                logger.success(
+                    f"Node {node_id} completed in {execution_time:.3f}s, no outputs"
+                )
+
+            return NodeExecutionResult(
+                node_id=node_id,
+                success=True,
+                data=executed_data,
+                execution_time=execution_time,
+            )
 
         except Exception as e:
             execution_time = time.time() - start_time
             logger.error(f"Node {node_id} execution failed: {str(e)}")
+            self.push_event(
+                node_id=node_id,
+                event=NodeExecutionEvent.FAILED,
+                data={},
+            )
             return NodeExecutionResult(
                 node_id=node_id,
                 success=False,
@@ -315,6 +340,8 @@ class GraphExecutor:
         start_time = time.time()
 
         try:
+            self.push_event(node_id=node_id, event=NodeExecutionEvent.RUNNING, data={})
+
             # Get node specification
             g_node = self.graph.nodes[node_id]
             node_spec: NodeSpec = g_node.get("spec")
@@ -336,7 +363,11 @@ class GraphExecutor:
 
             # Execute the node
             executed_data: NodeData = node_instance.run(node_data)
-
+            self.push_event(
+                node_id=node_id,
+                event=NodeExecutionEvent.SUCCESS,
+                data=executed_data.model_dump(),
+            )
             execution_time = time.time() - start_time
 
             # Log execution results
@@ -360,6 +391,11 @@ class GraphExecutor:
         except Exception as e:
             execution_time = time.time() - start_time
             logger.error(f"Node {node_id} execution failed (parallel): {str(e)}")
+            self.push_event(
+                node_id=node_id,
+                event=NodeExecutionEvent.FAILED,
+                data={},
+            )
             return NodeExecutionResult(
                 node_id=node_id,
                 success=False,
