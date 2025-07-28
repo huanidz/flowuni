@@ -21,6 +21,46 @@ def get_auth_service(redis_client=Depends(get_redis_client)):
     return AuthService(redis_client=redis_client, secret_key=auth_secret)
 
 
+def auth_through_url_param(
+    request: Request, auth_service: AuthService = Depends(get_auth_service)
+) -> int:
+    """
+    Dependency that extracts and validates JWT from URL parameter.
+    Returns user_id if valid and not blacklisted.
+    Raises 401 otherwise.
+    """
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    try:
+        # Extract header
+        token = request.query_params.get("token")
+        if not token:
+            raise credentials_exception
+
+        # Verify token (this raises if invalid/expired)
+        user_id = auth_service.verify_token(token)
+
+        # Check if blacklisted
+        if auth_service.is_token_blacklisted(token):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has been revoked (logged out)",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        return user_id  # Can be used in route
+
+    except TokenInvalidError:
+        raise credentials_exception
+    except Exception as e:
+        logger.error(f"Unexpected error during auth: {e}")
+        raise credentials_exception
+
+
 def get_current_user(
     request: Request, auth_service: AuthService = Depends(get_auth_service)
 ) -> int:

@@ -1,5 +1,10 @@
 import apiClient from "@/api/client";
-import { FLOWS_ENDPOINT, FLOW_DEFINITION_COMPILE_ENDPOINT, FLOW_DEFINITION_RUN_ENDPOINT } from "./consts";
+import { 
+  FLOWS_ENDPOINT, 
+  FLOW_DEFINITION_COMPILE_ENDPOINT, 
+  FLOW_DEFINITION_RUN_ENDPOINT,
+  FLOW_EXECUTION_STREAM_ENDPOINT
+} from "./consts";
 import type {
   GetFlowsParams, 
   GetFlowsResponse, 
@@ -66,4 +71,24 @@ export const runFlow = async (nodes: Node[], edges: Edge[]) => {
   const payload = getFlowGraphData(nodes, edges);
   const { data } = await apiClient.post(`${FLOW_DEFINITION_RUN_ENDPOINT}`, payload);
   return data;
+};
+
+export const watchFlowExecution = (taskId: string, onMessage: (msg: string) => void, onDone?: () => void) => {
+  const eventSource = new EventSource(`${FLOW_EXECUTION_STREAM_ENDPOINT}/${taskId}`);
+
+  eventSource.onmessage = (event) => {
+    if (event.data === "DONE") {
+      eventSource.close();
+      onDone?.();
+    } else {
+      onMessage(event.data);
+    }
+  };
+
+  eventSource.onerror = (err) => {
+    console.error("SSE error:", err);
+    eventSource.close();
+  };
+
+  return eventSource; // so caller can manually close if needed
 };

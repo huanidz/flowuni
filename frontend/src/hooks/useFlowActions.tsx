@@ -3,6 +3,7 @@ import type { Node, Edge } from '@xyflow/react';
 import useFlowStore from '@/features/flows/stores';
 import { getFlowGraphData, logNodeDetails } from '@/features/flows/utils';
 import { saveFlow, compileFlow, runFlow } from '@/features/flows/api';
+import { watchFlowExecution } from '@/api/sse';
 import { toast } from 'sonner';
 
 const handleFlowRequest = async (
@@ -49,8 +50,28 @@ export const useFlowActions = (
     return handleFlowRequest(nodes, edges, compileFlow, 'COMPILATION');
   }, [nodes, edges]);
 
-  const onRunFlow = useCallback(() => {
-    return handleFlowRequest(nodes, edges, runFlow, 'COMPILATION & RUN FLOW');
+  // const onRunFlow = useCallback(() => {
+  //   return handleFlowRequest(nodes, edges, runFlow, 'COMPILATION & RUN FLOW');
+  // }, [nodes, edges]);
+
+  const onRunFlow = useCallback(async () => {
+    if (!current_flow) {
+      console.warn('Cannot run flow: No current flow');
+      return;
+    }
+
+    const response = await runFlow(nodes, edges);
+    const { task_id } = response;
+    console.log('Flow run response:', task_id);
+
+    // Start watching the execution
+    const eventSource = watchFlowExecution(task_id, (msg) => {
+      console.log('Flow execution event:', msg);
+    });
+
+    toast.success('Flow run successfully.', {
+      description: 'Flow has been run successfully.',
+    });
   }, [nodes, edges]);
 
   const onSaveFlow = useCallback(async () => {

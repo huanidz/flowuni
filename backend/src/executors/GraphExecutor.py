@@ -80,6 +80,11 @@ class GraphExecutor:
                 node_id=node_id, event=event, data=data
             )
 
+    def end_event(self):
+        # Publish DONE event to Redis
+        if self.execution_context and self.enable_debug:
+            self.execution_context.end()
+
     def execute(self) -> Dict[str, Any]:
         """
         Execute the graph with parallel processing within layers.
@@ -160,6 +165,8 @@ class GraphExecutor:
                         logger.info(f"  {node_id}.{key}: {value_preview}")
                 else:
                     logger.info(f"  {node_id}: no final outputs")
+
+            self.end_event()
 
             return {
                 "success": True,

@@ -2,12 +2,12 @@ import asyncio
 import traceback
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 from loguru import logger
 from redis import Redis
 from src.celery_worker.tasks.flow_execution_tasks import compile_flow, run_flow
-from src.dependencies.auth_dependency import get_current_user
+from src.dependencies.auth_dependency import auth_through_url_param, get_current_user
 from src.dependencies.redis_dependency import get_redis_client
 from src.schemas.flowbuilder.flow_graph_schemas import FlowGraphRequest
 
@@ -96,33 +96,41 @@ async def execute_flow_endpoint(
         )
 
 
-@flow_execution_router.post("/stream/{task_id}")
+@flow_execution_router.get("/stream/{task_id}")
 async def stream_execution(
     task_id: str,
     request: Request,
-    _auth_user_id: int = Depends(get_current_user),
+    _auth_user_id: int = Depends(auth_through_url_param),
     redis_client: Redis = Depends(get_redis_client),
+    token: str = Query(None),
 ):
     """
-    Receives, validates, and queues a flow graph execution task.
+    Streams events for a specific task_id using Redis List (BLPOP).
+    SSE format is used for real-time updates.
     """
 
-    loop = asyncio.get_event_loop()
-    queue_name = task_id
+    if not token:
+        raise HTTPException(status_code=403, detail="Missing access token")
+
+    queue_name = task_id  # Optionally: f"task:{task_id}"
 
     async def event_generator():
-        while True:
-            if await request.is_disconnected():
-                break
+        while not await request.is_disconnected():
+            # Wait (blocking) for the next message from Redis
+            result = await asyncio.to_thread(redis_client.blpop, queue_name, timeout=5)
 
-            result = await loop.run_in_executor(None, redis_client.blpop, queue_name, 5)
             if result:
-                _, data = result
-                if isinstance(data, bytes):
-                    data = data.decode("utf-8")
-                yield f"data: {data}\n\n"
-                if data == "DONE":
-                    redis_client.delete(task_id)
+                _, raw_data = result
+                message = (
+                    raw_data.decode("utf-8")
+                    if isinstance(raw_data, bytes)
+                    else raw_data
+                )
+                yield f"data: {message}\n\n"
+                if message == "DONE":
                     break
+
+        # Optional: Clean up the Redis list
+        redis_client.delete(queue_name)
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
