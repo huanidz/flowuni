@@ -20,6 +20,7 @@ import { useGetFlowDetail } from '@/features/flows/hooks';
 import { useNodeRegistry } from '@/features/nodes';
 import { parseFlowDefinition } from '@/features/flows/utils';
 import useFlowStore from '@/features/flows/stores';
+import { toast } from 'sonner';
 
 interface FlowBuilderContentProps {
   flow_id: string;
@@ -138,7 +139,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
     onRunFlow,
     onClearFlow,
     onKeyDown,
-    onSaveFlow
+    onSaveFlow,
   } = useFlowActions(
     nodes,
     edges,
@@ -149,9 +150,22 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
     selectedEdgeIds,
   );
 
-  const onConnect = useCallback(
-    (params: Connection) => setEdges(eds => addEdge(params, eds)),
-    [setEdges]
+  const onConnect = useCallback((connection: Connection) => {
+      const { source, target } = connection;
+
+      if (!source || !target) return;
+
+      // Kiểm tra xem target đã có incoming edge nào chưa
+      const hasIncomingEdge = edges.some((edge) => edge.target === target);
+
+      if (hasIncomingEdge) {
+        return; // Chặn kết nối
+      }
+
+      // Nếu không có incoming edge, cho phép kết nối
+      setEdges((eds) => addEdge(connection, eds));
+    },
+    [edges, setEdges]
   );
 
   const onInit = useCallback((instance: ReactFlowInstance) => {

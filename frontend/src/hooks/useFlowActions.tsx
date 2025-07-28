@@ -79,8 +79,20 @@ export const useFlowActions = (
   }, [setNodes, setEdges, setNodeId]);
 
   const onDeleteSelectedElements = useCallback(() => {
-    setNodes(nodes.filter(node => !selectedNodeIds.includes(node.id)));
-    setEdges(edges.filter(edge => !selectedEdgeIds.includes(edge.id)));
+    // Filter out selected nodes
+    const remainingNodes = nodes.filter(node => !selectedNodeIds.includes(node.id));
+    
+    // Filter out edges that are either:
+    // 1. Explicitly selected (selectedEdgeIds)
+    // 2. Connected to any deleted node (source or target is in selectedNodeIds)
+    const remainingEdges = edges.filter(edge => 
+      !selectedEdgeIds.includes(edge.id) && 
+      !selectedNodeIds.includes(edge.source) && 
+      !selectedNodeIds.includes(edge.target)
+    );
+    
+    setNodes(remainingNodes);
+    setEdges(remainingEdges);
   }, [nodes, edges, selectedNodeIds, selectedEdgeIds, setNodes, setEdges]);
 
   const onKeyDown = useCallback(
