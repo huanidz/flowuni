@@ -1,5 +1,5 @@
 // NodeSections.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { NodeInputType } from '@/types/NodeIOHandleType';
 import { HandleComponentRegistry } from '@/components/handles/HandleComponentRegistry';
@@ -196,12 +196,38 @@ interface NodeExecutionResultProps {
 }
 
 export const NodeExecutionResult: React.FC<NodeExecutionResultProps> = ({ result }) => {
+  const [isExpanded, setIsExpanded] = useState(true);
+
   if (!result) return null;
 
   return (
     <div style={nodeStyles.executionResultSection}>
-      <div style={nodeStyles.sectionTitle}>Execution Result</div>
-      <div style={nodeStyles.executionResultContent}>{result}</div>
+      <div 
+        style={{
+          ...nodeStyles.sectionTitle,
+          display: 'flex',
+          alignItems: 'center',
+          cursor: 'pointer',
+          userSelect: 'none'
+        }}
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <span style={{ marginRight: '6px' }}>
+          {isExpanded ? '▼' : '▶'}
+        </span>
+        Execution Result
+      </div>
+      
+      {isExpanded && (
+        <div style={{
+          ...nodeStyles.executionResultContent,
+          maxHeight: '200px',
+          overflowY: 'auto',
+          overflowX: 'hidden'
+        }}>
+          {result}
+        </div>
+      )}
     </div>
   );
 };

@@ -112,6 +112,7 @@ export const nodeStyles = {
     color: '#666',
   },
 
+  // Updated styles for execution result
   executionResultSection: {
     padding: '8px',
     borderTop: '1px solid #ccc',
@@ -125,5 +126,6 @@ export const nodeStyles = {
     padding: '6px 10px',
     borderRadius: '4px',
     whiteSpace: 'pre-wrap',
+    // New styles for scrolling will be applied inline
   },
 };

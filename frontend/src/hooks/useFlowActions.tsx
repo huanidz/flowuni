@@ -6,6 +6,9 @@ import { saveFlow, compileFlow, runFlow } from '@/features/flows/api';
 import { watchFlowExecution } from '@/api/sse';
 import { toast } from 'sonner';
 
+type SetNodesType = React.Dispatch<React.SetStateAction<Node[]>>;
+type SetEdgesType = React.Dispatch<React.SetStateAction<Edge[]>>;
+
 const handleFlowRequest = async (
   nodes: Node[],
   edges: Edge[],
@@ -38,8 +41,8 @@ const handleFlowRequest = async (
 export const useFlowActions = (
   nodes: Node[],
   edges: Edge[],
-  setNodes: any,
-  setEdges: any,
+  setNodes: SetNodesType,
+  setEdges: SetEdgesType,
   setNodeId: (id: number) => void,
   selectedNodeIds: string[],
   selectedEdgeIds: string[],
@@ -113,8 +116,6 @@ export const useFlowActions = (
         const { input_values } = data;
         console.log('[SSE] Updating node:', node_id, 'with input_values:', input_values);
 
-        let found = false;
-
         setNodes((prevNodes: Node[]) =>
           prevNodes.map((node) =>
             node.id === node_id
@@ -122,16 +123,12 @@ export const useFlowActions = (
                   ...node,
                   data: {
                     ...node.data,
-                    execution_result: JSON.stringify(input_values, null, 2),
+                    execution_result: JSON.stringify(parsed, null, 2),
                   },
                 }
               : node
           )
         );
-
-        if (!found) {
-          console.warn('[SSE] No node matched node_id:', node_id);
-        }
       });
 
     } catch (err) {
