@@ -1,6 +1,5 @@
 import React, { useCallback } from 'react';
 import type { Node, Edge } from '@xyflow/react';
-import type { NodeData } from '@/features/nodes/types';
 import useFlowStore from '@/features/flows/stores';
 import { getFlowGraphData, logNodeDetails } from '@/features/flows/utils';
 import { saveFlow, compileFlow, runFlow } from '@/features/flows/api';
@@ -39,8 +38,8 @@ const handleFlowRequest = async (
 export const useFlowActions = (
   nodes: Node[],
   edges: Edge[],
-  setNodes: (nodes: Node[]) => void,
-  setEdges: (edges: Edge[]) => void,
+  setNodes: any,
+  setEdges: any,
   setNodeId: (id: number) => void,
   selectedNodeIds: string[],
   selectedEdgeIds: string[],
@@ -116,21 +115,18 @@ export const useFlowActions = (
 
         let found = false;
 
-        setNodes(prevNodes =>
-          prevNodes.map(node => {
-            if (node.id === node_id) {
-              found = true;
-              console.log('[SSE] Match found for node:', node_id);
-              return {
-                ...node,
-                data: {
-                  ...node.data,
-                  execution_result: JSON.stringify(input_values, null, 2),
-                },
-              };
-            }
-            return node;
-          })
+        setNodes((prevNodes: Node[]) =>
+          prevNodes.map((node) =>
+            node.id === node_id
+              ? {
+                  ...node,
+                  data: {
+                    ...node.data,
+                    execution_result: JSON.stringify(input_values, null, 2),
+                  },
+                }
+              : node
+          )
         );
 
         if (!found) {
