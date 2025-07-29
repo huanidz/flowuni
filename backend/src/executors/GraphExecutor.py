@@ -68,10 +68,10 @@ class GraphExecutor:
         # Create node registry instance
         self._node_registry = NodeRegistry()
 
-        logger.info(
-            f"Initialized GraphExecutor with {sum(len(layer) for layer in execution_plan)} nodes "  # noqa: E501
-            f"across {len(execution_plan)} layers"
-        )
+        # logger.info(
+        #     f"Initialized GraphExecutor with {sum(len(layer) for layer in execution_plan)} nodes "  # noqa: E501
+        #     f"across {len(execution_plan)} layers"
+        # )
 
     def push_event(self, node_id: str, event: str, data: Any = {}):
         # Publish node event to Redis
@@ -91,7 +91,7 @@ class GraphExecutor:
 
         This is the synchronous version that matches your old working code structure.
         """
-        logger.info(f"Starting graph execution with {len(self.execution_plan)} layers")
+        # logger.info(f"Starting graph execution with {len(self.execution_plan)} layers")
 
         start_time = time.time()
         total_nodes = sum(len(layer) for layer in self.execution_plan)
@@ -101,10 +101,10 @@ class GraphExecutor:
             # Use ThreadPoolExecutor for parallel execution within layers
             with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
                 for layer_index, layer_nodes in enumerate(self.execution_plan, 1):
-                    logger.info(
-                        f"Executing layer {layer_index}/{len(self.execution_plan)} "
-                        f"with {len(layer_nodes)} nodes: {layer_nodes}"
-                    )
+                    # logger.info(
+                    #     f"Executing layer {layer_index}/{len(self.execution_plan)} "
+                    #     f"with {len(layer_nodes)} nodes: {layer_nodes}"
+                    # )
 
                     layer_start_time = time.time()
 
@@ -148,23 +148,23 @@ class GraphExecutor:
             )
 
             # Log final results summary
-            logger.info("=== FINAL EXECUTION RESULTS ===")
-            for node_id in self.graph.nodes():
-                node_data = self.graph.nodes[node_id].get("data")
-                if (
-                    node_data
-                    and hasattr(node_data, "output_values")
-                    and node_data.output_values
-                ):
-                    for key, value in node_data.output_values.items():
-                        value_preview = (
-                            str(value)[:100] + "..."
-                            if len(str(value)) > 100
-                            else str(value)
-                        )
-                        logger.info(f"  {node_id}.{key}: {value_preview}")
-                else:
-                    logger.info(f"  {node_id}: no final outputs")
+            # logger.info("=== FINAL EXECUTION RESULTS ===")
+            # for node_id in self.graph.nodes():
+            #     node_data = self.graph.nodes[node_id].get("data")
+            #     if (
+            #         node_data
+            #         and hasattr(node_data, "output_values")
+            #         and node_data.output_values
+            #     ):
+            #         for key, value in node_data.output_values.items():
+            #             value_preview = (
+            #                 str(value)[:100] + "..."
+            #                 if len(str(value)) > 100
+            #                 else str(value)
+            #             )
+            #             logger.info(f"  {node_id}.{key}: {value_preview}")
+            #     else:
+            #         logger.info(f"  {node_id}: no final outputs")
 
             self.end_event()
 

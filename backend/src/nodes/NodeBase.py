@@ -1,7 +1,7 @@
 # node_base.py
 import json
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Type
+from typing import Any, Dict, Type, Union
 
 from pydantic import BaseModel
 from src.exceptions.node_exceptions import NodeValidationError
@@ -184,11 +184,26 @@ class Node(ABC):
         - parameters (param → {type name, default, description})
         """
 
-        def _serialize_type(t: Type) -> Any:
-            # If it's a Pydantic model, embed its JSON schema:
+        def _serialize_type(t: Union[Type, BaseModel]) -> Any:
+            """
+            If t is a Pydantic _instance_, we want both its schema AND
+            any non‑None field values the user pre‑set.  Otherwise,
+            if it's a Pydantic _class_, we only embed its schema.
+            """
+            # instance of a BaseModel → include schema  configured defaults
+            if isinstance(t, BaseModel):
+                schema = t.model_json_schema()
+                # only include fields that have been explicitly set
+                defaults = {k: v for k, v in t.dict().items() if v is not None}
+                return {
+                    "type": t.__class__.__name__,
+                    "schema": schema,
+                    "defaults": defaults,
+                }
+            # class‐only case → just schema
             if isinstance(t, type) and issubclass(t, BaseModel):
                 return {"type": t.__name__, "schema": t.model_json_schema()}
-            # Otherwise just return the class name:
+            # fallback
             return getattr(t, "__name__", str(t))
 
         raw = self.spec.model_dump()  # gives you a dict with raw types still in it
