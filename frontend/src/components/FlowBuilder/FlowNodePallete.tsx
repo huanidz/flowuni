@@ -19,7 +19,7 @@ const NodePalette = forwardRef<HTMLDivElement, NodePaletteProps>(
       const loadPaletteNodes = async () => {
         try {
           const allNodes = getAllNodes();
-          console.log(allNodes);
+          console.log("All nodes:",  allNodes);
           const paletteNodes = allNodes.map(node => ({
             name: node.name,
             description: node.description || '',

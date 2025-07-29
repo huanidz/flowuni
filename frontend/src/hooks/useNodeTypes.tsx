@@ -1,10 +1,17 @@
+// useNodeTypes.ts
 import { useEffect } from 'react';
 import { NodeFactory } from '@/parsers/NodeFactory';
-import { useNodeRegistry } from '@/features/nodes';
-import { type NodeSpec } from '@/features/nodes';
+import { useNodeRegistry, type NodeSpec } from '@/features/nodes';
 
+/**
+ * Hook to register all available node types as React components.
+ *
+ * @param setNodeTypes - Callback to store the registered node components.
+ * @param updateNodeData - Callback for updating a node's input data.
+ * @param updateNodeParameter - Callback for updating a node's parameter.
+ */
 export const useNodeTypes = (
-  setNodeTypes: (types: any) => void,
+  setNodeTypes: (types: Record<string, React.FC<any>>) => void,
   updateNodeData: (nodeId: string, newData: any) => void,
   updateNodeParameter: (
     nodeId: string,
@@ -12,26 +19,33 @@ export const useNodeTypes = (
     value: any
   ) => void
 ) => {
-
   const { getAllNodes, loaded } = useNodeRegistry();
 
   useEffect(() => {
+    // Wait until the node registry is fully loaded
     if (!loaded) return;
 
-    const allNodes = getAllNodes();
-    const customNodeTypes: { [key: string]: React.FC<any> } = {};
+    // Fetch all node specifications from the registry
+    const allNodeSpecs = getAllNodes();
 
-    allNodes.forEach((nodeSpec: NodeSpec) => {
+    // Create an object to hold the generated React components for each node
+    const nodeTypeMap: Record<string, React.FC<any>> = {};
+
+    allNodeSpecs.forEach((nodeSpec: NodeSpec) => {
+      // Use the factory to create a component for each node type
       const CustomNodeComponent = NodeFactory.createNodeComponent(
         nodeSpec,
         updateNodeData,
         updateNodeParameter
       );
+
+      // Only add if component was successfully created
       if (CustomNodeComponent) {
-        customNodeTypes[nodeSpec.name] = CustomNodeComponent;
+        nodeTypeMap[nodeSpec.name] = CustomNodeComponent;
       }
     });
 
-    setNodeTypes(customNodeTypes);
+    // Store the complete set of node components
+    setNodeTypes(nodeTypeMap);
   }, [loaded, setNodeTypes, updateNodeData, updateNodeParameter]);
 };
