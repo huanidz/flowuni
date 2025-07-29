@@ -188,3 +188,20 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
     )}
   </div>
 );
+
+
+// Execution Result Section Component
+interface NodeExecutionResultProps {
+  result?: string | null;
+}
+
+export const NodeExecutionResult: React.FC<NodeExecutionResultProps> = ({ result }) => {
+  if (!result) return null;
+
+  return (
+    <div style={nodeStyles.executionResultSection}>
+      <div style={nodeStyles.sectionTitle}>Execution Result</div>
+      <div style={nodeStyles.executionResultContent}>{result}</div>
+    </div>
+  );
+};

@@ -39,6 +39,8 @@ export interface NodeData {
   node_type: string;
   parameters: Record<string, any>;
   input_values?: Record<string, any>;
+  output_values?: Record<string, any>;
+  execution_result?: string;
   [key: string]: any;
 }
 

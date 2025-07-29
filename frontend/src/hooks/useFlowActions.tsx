@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
 import type { Node, Edge } from '@xyflow/react';
+import type { NodeData } from '@/features/nodes/types';
 import useFlowStore from '@/features/flows/stores';
 import { getFlowGraphData, logNodeDetails } from '@/features/flows/utils';
 import { saveFlow, compileFlow, runFlow } from '@/features/flows/api';
@@ -50,29 +51,97 @@ export const useFlowActions = (
     return handleFlowRequest(nodes, edges, compileFlow, 'COMPILATION');
   }, [nodes, edges]);
 
-  // const onRunFlow = useCallback(() => {
-  //   return handleFlowRequest(nodes, edges, runFlow, 'COMPILATION & RUN FLOW');
-  // }, [nodes, edges]);
-
   const onRunFlow = useCallback(async () => {
     if (!current_flow) {
       console.warn('Cannot run flow: No current flow');
       return;
     }
 
-    const response = await runFlow(nodes, edges);
-    const { task_id } = response;
-    console.log('Flow run response:', task_id);
+    console.log('[onRunFlow] Running flow...');
 
-    // Start watching the execution
-    const eventSource = watchFlowExecution(task_id, (msg) => {
-      console.log('Flow execution event:', msg);
-    });
+    try {
+      const response = await runFlow(nodes, edges);
+      const { task_id } = response;
 
-    toast.success('Flow run successfully.', {
-      description: 'Flow has been run successfully.',
-    });
-  }, [nodes, edges]);
+      console.log('[onRunFlow] Flow run response:', response);
+      console.log('[onRunFlow] Watching execution with task_id:', task_id);
+
+      const eventSource = watchFlowExecution(task_id, (msg) => {
+        console.log('[SSE] Raw message received:', msg);
+
+        let parsed;
+        /*
+        {
+          "node_id": "nodeId_One-in-One-out Node_3",
+          "event": "success",
+          "data": {
+              "label": "One-in-One-out Node",
+              "node_type": "One-in-One-out Node",
+              "input_values": {
+                  "0": {
+                      "name": "message_in",
+                      "type": "TextFieldInputHandle",
+                      "value": null,
+                      "default": null,
+                      "required": false,
+                      "description": "The message to be sent."
+                  },
+                  "message_in": "zxc"
+              },
+              "output_values": {
+                  "message_out": "zxc"
+              },
+              "parameters": {}
+          },
+          "timestamp": "2025-07-29T07:04:43.285104"
+        }
+        */
+        try {
+          parsed = JSON.parse(msg);
+          console.log("[SSE] Parsed message:", parsed);
+        } catch (e) {
+          console.error('[SSE] Failed to parse message:', e);
+          return;
+        }
+
+        const data = parsed?.data;
+        if (!data) {
+          console.warn('[SSE] No data field in parsed message:', parsed);
+          return;
+        }
+
+        const node_id = parsed?.node_id;
+        const { input_values } = data;
+        console.log('[SSE] Updating node:', node_id, 'with input_values:', input_values);
+
+        let found = false;
+
+        setNodes(prevNodes =>
+          prevNodes.map(node => {
+            if (node.id === node_id) {
+              found = true;
+              console.log('[SSE] Match found for node:', node_id);
+              return {
+                ...node,
+                data: {
+                  ...node.data,
+                  execution_result: JSON.stringify(input_values, null, 2),
+                },
+              };
+            }
+            return node;
+          })
+        );
+
+        if (!found) {
+          console.warn('[SSE] No node matched node_id:', node_id);
+        }
+      });
+
+    } catch (err) {
+      console.error('[onRunFlow] Flow run failed:', err);
+    }
+  }, [nodes, edges, current_flow, setNodes]);
 
   const onSaveFlow = useCallback(async () => {
     if (!current_flow) {

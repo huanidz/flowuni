@@ -111,4 +111,19 @@ export const nodeStyles = {
   description: {
     color: '#666',
   },
+
+  executionResultSection: {
+    padding: '8px',
+    borderTop: '1px solid #ccc',
+    marginTop: '8px',
+  },
+
+  executionResultContent: {
+    fontSize: '0.85em',
+    color: '#333',
+    backgroundColor: '#f9f9f9',
+    padding: '6px 10px',
+    borderRadius: '4px',
+    whiteSpace: 'pre-wrap',
+  },
 };

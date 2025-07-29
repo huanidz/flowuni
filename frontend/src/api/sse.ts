@@ -20,7 +20,12 @@ export const watchFlowExecution = (
   const eventSource = new EventSource(url.toString());
 
   eventSource.onmessage = (event) => {
-    if (event.data === 'DONE') {
+
+    // Parse to JSON
+    const data = JSON.parse(event.data);
+
+    if (data.event === 'DONE') {
+
       onDone?.();
       eventSource.close();
     } else {

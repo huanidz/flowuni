@@ -11,6 +11,7 @@ import {
   ParametersSection,
   InputsSection,
   OutputsSection,
+  NodeExecutionResult
 } from './NodeSections';
 import { useNodeHandlers } from '@/hooks/useNodeHandlers';
 import { nodeStyles } from '@/styles/nodeStyles';
@@ -33,6 +34,7 @@ class NodeFactoryClass {
         description = nodeSpec.description,
         parameters = {},
         input_values = {},
+        output_values = {},
       } = data;
 
       const { handleParameterChange, handleInputValueChange } = useNodeHandlers(
@@ -61,6 +63,8 @@ class NodeFactoryClass {
           />
 
           <OutputsSection outputs={nodeSpec.outputs} />
+
+          <NodeExecutionResult result={data.execution_result} />
         </div>
       );
     };
