@@ -1,59 +1,12 @@
 # node_base.py
 import json
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Type, Optional, List
+from typing import Any, Dict, Type
 
-from pydantic import BaseModel, Field
-
-from src.schemas.flowbuilder.flow_graph_schemas import NodeData
-
+from pydantic import BaseModel
 from src.exceptions.node_exceptions import NodeValidationError
-
-
-class ParameterSpec(BaseModel):
-    """Specification for a node parameter with type, default value, and description."""
-
-    name: str = Field(..., description="Parameter name")
-    type: Type = Field(..., description="Expected parameter type")
-    value: Any = Field(..., description="Current parameter value")
-    default: Any = Field(..., description="Default parameter value")
-    description: str = Field(default="", description="Parameter description")
-
-
-class NodeInput(BaseModel):
-    """Specification for a node input with validation and metadata."""
-
-    name: str = Field(..., description="Input name")
-    type: Type = Field(..., description="Expected input type")
-    value: Optional[Any] = Field(default=None, description="Current input value")
-    default: Optional[Any] = Field(default=None, description="Default input value")
-    description: str = Field(default="", description="Input description")
-    required: bool = Field(default=False, description="Whether input is required")
-
-
-class NodeOutput(BaseModel):
-    """Specification for a node output with type information and metadata."""
-
-    name: str = Field(..., description="Output name")
-    type: Type = Field(..., description="Expected output type")
-    value: Optional[Any] = Field(default=None, description="Current output value")
-    default: Optional[Any] = Field(default=None, description="Default output value")
-    description: str = Field(default="", description="Output description")
-
-
-class NodeSpec(BaseModel):
-    """Complete specification for a node including inputs, outputs, and parameters."""
-
-    name: str = Field(..., description="Node name")
-    description: str = Field(..., description="Node description")
-    inputs: List[NodeInput] = Field(default_factory=list, description="Node inputs")
-    outputs: List[NodeOutput] = Field(default_factory=list, description="Node outputs")
-    parameters: Dict[str, ParameterSpec] = Field(
-        default_factory=dict, description="Node parameters"
-    )
-    can_be_tool: bool = Field(
-        default=False, description="Whether node can be used as a tool"
-    )
+from src.nodes.core.NodeSpec import NodeSpec
+from src.schemas.flowbuilder.flow_graph_schemas import NodeData
 
 
 class Node(ABC):
@@ -220,7 +173,7 @@ class Node(ABC):
         return self.execute(node_data)
 
     @abstractmethod
-    def process(self, inputs: Dict[str, Any], parameters: Dict[str, Any]) -> Any: ...
+    def process(self, inputs: Dict[str, Any], parameters: Dict[str, Any]) -> Any: ...  # noqa
 
     def get_spec_json(self) -> Dict[str, Any]:
         """

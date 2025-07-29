@@ -1,5 +1,7 @@
+from src.nodes.core.NodeInput import NodeInput
+from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.HandleType import DropdownInputHandle, TextFieldInputHandle
-from src.nodes.NodeBase import Node, NodeInput, NodeOutput, NodeSpec
+from src.nodes.NodeBase import Node, NodeSpec
 
 
 class OneInOneOutNode(Node):

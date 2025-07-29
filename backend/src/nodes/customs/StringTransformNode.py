@@ -1,4 +1,6 @@
-from src.nodes.NodeBase import Node, NodeInput, NodeOutput, NodeSpec
+from src.nodes.core.NodeInput import NodeInput
+from src.nodes.core.NodeOutput import NodeOutput
+from src.nodes.NodeBase import Node, NodeSpec
 
 
 class StringTransformNode(Node):
