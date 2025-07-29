@@ -40,7 +40,10 @@ export interface NodeData {
   parameters: Record<string, any>;
   input_values?: Record<string, any>;
   output_values?: Record<string, any>;
+
+  // Execution-related fields
   execution_result?: string;
+  execution_status?: string;
   [key: string]: any;
 }
 

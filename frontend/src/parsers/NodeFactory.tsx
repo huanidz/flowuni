@@ -64,7 +64,7 @@ class NodeFactoryClass {
 
           <OutputsSection outputs={nodeSpec.outputs} />
 
-          <NodeExecutionResult result={data.execution_result} />
+          <NodeExecutionResult result={data.execution_result} status={data.execution_status} />
         </div>
       );
     };

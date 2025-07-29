@@ -73,7 +73,7 @@ export const useFlowActions = (
 
         let parsed;
         /*
-        {
+        parsed = {
           "node_id": "nodeId_One-in-One-out Node_3",
           "event": "success",
           "data": {
@@ -113,6 +113,7 @@ export const useFlowActions = (
         }
 
         const node_id = parsed?.node_id;
+        const event_status = parsed?.event;
         const { input_values } = data;
         console.log('[SSE] Updating node:', node_id, 'with input_values:', input_values);
 
@@ -124,6 +125,7 @@ export const useFlowActions = (
                   data: {
                     ...node.data,
                     execution_result: JSON.stringify(parsed, null, 2),
+                    execution_status: event_status,
                   },
                 }
               : node

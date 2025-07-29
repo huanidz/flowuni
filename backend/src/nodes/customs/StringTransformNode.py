@@ -19,6 +19,10 @@ class StringTransformNode(Node):
     def process(self, inputs, parameters):
         input_string = inputs["input"]
 
+        import time
+
+        time.sleep(3)
+
         if not input_string:
             return {"output": ""}
 

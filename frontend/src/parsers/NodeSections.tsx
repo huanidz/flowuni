@@ -193,15 +193,79 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
 // Execution Result Section Component
 interface NodeExecutionResultProps {
   result?: string | null;
+  status?: string;
 }
 
-export const NodeExecutionResult: React.FC<NodeExecutionResultProps> = ({ result }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
+export const NodeExecutionResult: React.FC<NodeExecutionResultProps> = ({ 
+  result, 
+  status = 'success' 
+}) => {
+  const [isExpanded, setIsExpanded] = useState(false);
 
-  if (!result) return null;
+  // Don't show if no result and not running
+  if (!result && status !== 'running') return null;
+
+  // Status-based styling and content
+  const getStatusConfig = () => {
+    switch (status) {
+      case 'running':
+        return {
+          title: 'Executing...',
+          icon: (
+            <span style={{
+              display: 'inline-block',
+              width: '12px',
+              height: '12px',
+              border: '2px solid #f3f3f3',
+              borderTop: '2px solid #3498db',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+              marginRight: '6px'
+            }}>
+            </span>
+          ),
+          contentStyle: {
+            color: '#666',
+            backgroundColor: '#f0f8ff',
+            border: '1px solid #3498db'
+          }
+        };
+      case 'failed':
+        return {
+          title: 'Execution Failed',
+          icon: <span style={{ marginRight: '6px', color: '#e74c3c' }}>❌</span>,
+          contentStyle: {
+            color: '#721c24',
+            backgroundColor: '#f8d7da',
+            border: '1px solid #f5c6cb'
+          }
+        };
+      default: // 'success'
+        return {
+          title: 'Execution Result',
+          icon: <span style={{ marginRight: '6px', color: '#27ae60' }}>✅</span>,
+          contentStyle: {
+            color: '#333',
+            backgroundColor: '#f9f9f9',
+            border: 'none'
+          }
+        };
+    }
+  };
+
+  const statusConfig = getStatusConfig();
 
   return (
     <div style={nodeStyles.executionResultSection}>
+      <style>
+        {`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}
+      </style>
+      
       <div 
         style={{
           ...nodeStyles.sectionTitle,
@@ -212,20 +276,22 @@ export const NodeExecutionResult: React.FC<NodeExecutionResultProps> = ({ result
         }}
         onClick={() => setIsExpanded(!isExpanded)}
       >
+        {statusConfig.icon}
         <span style={{ marginRight: '6px' }}>
           {isExpanded ? '▼' : '▶'}
         </span>
-        Execution Result
+        {statusConfig.title}
       </div>
       
       {isExpanded && (
         <div style={{
           ...nodeStyles.executionResultContent,
+          ...statusConfig.contentStyle,
           maxHeight: '200px',
           overflowY: 'auto',
           overflowX: 'hidden'
         }}>
-          {result}
+          {status === 'running' ? 'Execution in progress...' : (result || 'No output')}
         </div>
       )}
     </div>
