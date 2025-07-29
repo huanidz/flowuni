@@ -1,5 +1,5 @@
-from src.nodes.NodeBase import Node, NodeSpec, NodeInput, NodeOutput
-from src.nodes.HandleType import TextFieldInputHandle
+from src.nodes.HandleType import DropdownInputHandle, TextFieldInputHandle
+from src.nodes.NodeBase import Node, NodeInput, NodeOutput, NodeSpec
 
 
 class OneInOneOutNode(Node):
@@ -11,7 +11,12 @@ class OneInOneOutNode(Node):
                 name="message_in",
                 type=TextFieldInputHandle,
                 description="The message to be sent.",
-            )
+            ),
+            NodeInput(
+                name="message_in2",
+                type=DropdownInputHandle,
+                description="The message to be sent.",
+            ),
         ],
         outputs=[
             NodeOutput(
