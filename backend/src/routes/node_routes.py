@@ -22,17 +22,50 @@ def get_catalog(
     user_id: int = Depends(get_current_user),
     node_service: NodeService = Depends(get_node_service),
 ):
+    """
+    Retrieves the complete node catalog for the authenticated user.
+
+    This endpoint returns a list of all available nodes with their specifications.
+    It leverages HTTP caching (ETag, Last-Modified) to optimize performance and reduce
+    unnecessary data transfer.
+
+    Args:
+        request: The incoming HTTP request object containing headers like If-None-Match
+        user_id: Authenticated user ID extracted from JWT token via dependency
+        node_service: Dependency injection for NodeService that handles catalog generation
+
+    Returns:
+        JSONResponse: A response containing the node catalog with appropriate cache headers.
+                      Returns 304 Not Modified if client has up-to-date content.
+
+    Raises:
+        HTTPException(500): If there's an internal error during catalog generation
+    """  # noqa
     try:
-        # Call the service method with the request object
-        return node_service.get_catalog(request)
+        # Call service method to generate and return catalog with proper caching
+        response = node_service.get_catalog(request)
+
+        # Log successful operation with user context
+        logger.info(f"Successfully generated node catalog for user {user_id}")
+
+        return response
+
+    except HTTPException:
+        # Re-raise known exceptions (e.g., 500 from service) without additional logging
+        raise
+
     except Exception as e:
+        # Log unexpected errors with full traceback and context
         logger.error(
-            f"Error generating node catalog for user {user_id}: {str(e)}", exc_info=True
+            f"Unexpected error generating node catalog for user {user_id}: {str(e)}",
+            exc_info=True,
         )
+
+        # Raise generic 500 error to prevent exposing internal details
         raise HTTPException(
             status_code=500,
             detail="Internal server error while generating node catalog",
-        )
+        ) from e
 
 
 @node_router.post("/resolve")
@@ -53,7 +86,7 @@ def resolve_dynamic_input(
     Raises:
         HTTPException(400): If node not found, input handle missing, or not dynamically resolvable.
         HTTPException(500): On unexpected internal errors.
-    """
+    """  # noqa
     try:
         # Validate required fields
         if not req.node_name:
