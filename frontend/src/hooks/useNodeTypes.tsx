@@ -28,6 +28,8 @@ export const useNodeTypes = (
     // Fetch all node specifications from the registry
     const allNodeSpecs = getAllNodes();
 
+    console.log("All node specs:", allNodeSpecs);
+
     // Create an object to hold the generated React components for each node
     const nodeTypeMap: Record<string, React.FC<any>> = {};
 
@@ -46,6 +48,7 @@ export const useNodeTypes = (
     });
 
     // Store the complete set of node components
+    console.log("Node type map:", nodeTypeMap);
     setNodeTypes(nodeTypeMap);
   }, [loaded, setNodeTypes, updateNodeData, updateNodeParameter]);
 };
