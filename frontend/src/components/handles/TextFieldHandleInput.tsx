@@ -7,6 +7,11 @@ interface TextFieldHandleInputProps {
   onChange?: (value: string) => void;
   nodeId?: string;
   parameterName?: string;
+
+  // Config (NEW)
+  placeholder?: string;
+  multiline?: boolean;
+  maxLength?: number;
 }
 
 export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
@@ -16,12 +21,34 @@ export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
   onChange,
   nodeId,
   parameterName,
+  placeholder,
+  multiline = false,
+  maxLength,
 }) => {
   const handleChange = (newValue: string) => {
-    // console.log(`Input changed: ${newValue} for node ${nodeId} param ${parameterName}`);
     if (onChange) {
       onChange(newValue);
     }
+  };
+
+  const commonStyles: React.CSSProperties = {
+    padding: '6px 8px',
+    fontSize: '12px',
+    border: '1px solid #ccc',
+    borderRadius: '4px',
+    width: '100%',
+    boxSizing: 'border-box',
+    outline: 'none',
+    transition: 'border-color 0.2s',
+    resize: 'vertical',
+  };
+
+  const handleFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    e.target.style.borderColor = '#007bff';
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    e.target.style.borderColor = '#ccc';
   };
 
   return (
@@ -45,28 +72,30 @@ export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
           {description}
         </span>
       )}
-      <input
-        type="text"
-        value={value || ''}
-        onChange={e => handleChange(e.target.value)}
-        className="nodrag"
-        style={{
-          padding: '6px 8px',
-          fontSize: '12px',
-          border: '1px solid #ccc',
-          borderRadius: '4px',
-          width: '100%',
-          boxSizing: 'border-box',
-          outline: 'none',
-          transition: 'border-color 0.2s',
-        }}
-        onFocus={e => {
-          e.target.style.borderColor = '#007bff';
-        }}
-        onBlur={e => {
-          e.target.style.borderColor = '#ccc';
-        }}
-      />
+      {multiline ? (
+        <textarea
+          value={value || ''}
+          onChange={e => handleChange(e.target.value)}
+          placeholder={placeholder}
+          maxLength={maxLength}
+          className="nodrag"
+          style={{ ...commonStyles, minHeight: '60px' }}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+        />
+      ) : (
+        <input
+          type="text"
+          value={value || ''}
+          onChange={e => handleChange(e.target.value)}
+          placeholder={placeholder}
+          maxLength={maxLength}
+          className="nodrag"
+          style={commonStyles}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+        />
+      )}
     </div>
   );
 };

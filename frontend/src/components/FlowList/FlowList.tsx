@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import DeleteFlowButton from '@/components/FlowList/DeleteFlowButton';
 import type { Flow } from '@/features/flows/types';
 import { useNavigate } from 'react-router-dom';
 
@@ -52,32 +53,22 @@ const FlowList: React.FC<FlowListProps> = ({ flows }) => {
               </TableCell>
               <TableCell>
                 <Badge
-                  variant={flow.is_active === 'true' ? 'default' : 'secondary'}
+                  variant={flow.is_active ? 'default' : 'secondary'}
                   className={
-                    flow.is_active === 'true'
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-gray-100 text-gray-700'
+                    flow.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
                   }
                 >
                   <span
-                    className={`h-2 w-2 rounded-full ${flow.is_active === 'true' ? 'bg-green-500' : 'bg-gray-500'} mr-1`}
+                    className={`h-2 w-2 rounded-full ${flow.is_active ? 'bg-green-500' : 'bg-gray-500'} mr-1`}
                   ></span>
-                  {flow.is_active === 'true' ? 'Đang hoạt động' : 'Tạm dừng'}
+                  {flow.is_active ? 'Đang hoạt động' : 'Tạm dừng'}
                 </Badge>
               </TableCell>
               <TableCell className="text-right">
-                {/* <Button variant="ghost" size="icon" className="mr-2">
-                  {flow.is_active === 'true' ? '⏸️' : '▶️'}
-                </Button> */}
-                {/* <Button variant="ghost" size="icon" className="mr-2">
-                  ✏️
-                </Button>
-                <Button variant="ghost" size="icon" className="mr-2">
-                  🗑️
-                </Button> */}
-                <Button onClick={() => handleFlowClick(flow)} variant="ghost" size="icon" >
+                <Button onClick={() => handleFlowClick(flow)} variant="ghost" size="icon" className="mr-2">
                   Go to Flow
                 </Button>
+                <DeleteFlowButton flowId={flow.flow_id} flowName={flow.name} />
               </TableCell>
             </TableRow>
           ))}

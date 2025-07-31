@@ -171,3 +171,41 @@ async def update_flow_by_id(
             status_code=500,
             detail="An error occurred while updating flow by ID.",
         )
+
+
+@flow_router.delete("/{flow_id}", status_code=204)
+async def delete_flow_by_id(
+    flow_id: str,
+    flow_service: FlowService = Depends(get_flow_service),
+    auth_user_id: int = Depends(get_current_user),
+):
+    """
+    Delete flow by id
+    """
+    try:
+        flow = flow_service.get_flow_detail_by_id(flow_id=flow_id)
+
+        if not flow:
+            logger.warning(f"Flow with ID {flow_id} not found.")
+            raise NOT_FOUND_EXCEPTION
+
+        if auth_user_id != flow.user_id:
+            logger.warning(
+                f"User ID mismatch: flow owner is {flow.user_id}, \
+                but requester is {auth_user_id}"
+            )
+            raise UNAUTHORIZED_EXCEPTION
+
+        flow_service.delete_flow(flow_id=flow_id)
+
+        # No response body for 204 No Content
+        return
+
+    except Exception as e:
+        logger.error(
+            f"Error deleting flow by ID {flow_id}: {e}. Traceback: {traceback.format_exc()}"
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="An error occurred while deleting flow by ID.",
+        )

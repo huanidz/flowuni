@@ -60,6 +60,9 @@ class FlowService(FlowServiceInterface):
         flow = self.flow_repository.get_by_id(flow_id=flow_id)
         return flow
 
+    def delete_flow(self, flow_id: str):
+        self.flow_repository.delete_flow(flow_id=flow_id)
+
     def save_flow_detail(
         self, flow_request: FlowPatchRequest, user_id: int
     ) -> Optional[FlowModel]:
