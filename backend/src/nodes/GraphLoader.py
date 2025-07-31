@@ -20,7 +20,7 @@ class GraphLoader:
         list_of_nodes: List[FlowNode] = flow.nodes
 
         for idx, node in enumerate(list_of_nodes):
-            node_spec = nodeRegistry.get_node(node.type)
+            node_spec = nodeRegistry.get_node_spec_by_name(node.type)
             if not node_spec:
                 raise ValueError(f"Unknown node type: {node.type}")
 

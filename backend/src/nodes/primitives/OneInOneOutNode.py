@@ -18,8 +18,8 @@ class OneInOneOutNode(Node):
                 description="The message to be sent.",
             ),
             NodeInput(
-                name="message_in2",
-                type=DropdownInputHandle,
+                name="departments",
+                type=DropdownInputHandle(),
                 description="The message to be sent.",
             ),
         ],

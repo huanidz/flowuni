@@ -19,3 +19,19 @@ class NodeSpec(BaseModel):
     can_be_tool: bool = Field(
         default=False, description="Whether node can be used as a tool"
     )
+
+    # TODO: Disable validation for now, this will need to be enable to ensure the fetching methods is properly implemented
+
+    # @model_validator(mode="before")
+    # def validate_resolvers_exist(cls, values):
+    #     node_inputs = values.get("inputs", [])
+    #     node_class = values.get("node_class")  # optional: attach during node init
+
+    #     for inp in node_inputs:
+    #         handle = inp.type
+    #         if handle.dynamic and handle.resolver:
+    #             if not hasattr(node_class, handle.resolver):
+    #                 raise ValueError(
+    #                     f"Resolver '{handle.resolver}' not found in {node_class}"
+    #                 )
+    #     return values
