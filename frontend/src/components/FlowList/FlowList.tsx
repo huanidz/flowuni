@@ -66,7 +66,7 @@ const FlowList: React.FC<FlowListProps> = ({ flows }) => {
               </TableCell>
               <TableCell className="text-right">
                 <Button onClick={() => handleFlowClick(flow)} variant="ghost" size="icon" className="mr-2">
-                  Go to Flow
+                  🚀
                 </Button>
                 <DeleteFlowButton flowId={flow.flow_id} flowName={flow.name} />
               </TableCell>
