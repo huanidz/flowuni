@@ -1,11 +1,13 @@
 # node_base.py
 import json
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Type, Union
+from typing import Any, Dict, Optional, Type, Union
 
 from pydantic import BaseModel
 from src.exceptions.node_exceptions import NodeValidationError
+from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeSpec import NodeSpec
+from src.nodes.handles.HandleBase import HandleTypeBase
 from src.schemas.flowbuilder.flow_graph_schemas import NodeData
 
 
@@ -40,6 +42,13 @@ class Node(ABC):
             raise NodeValidationError(
                 f"{cls.__name__} marked as tool but has no inputs or parameters"
             )
+
+    def get_input_handle(self, input_name: str) -> Optional[Type[HandleTypeBase]]:
+        input: NodeInput
+        for input in self.spec.inputs:
+            if input.name == input_name:
+                return input.type
+        return None
 
     def _extract_input_values(self, node_data: "NodeData") -> Dict[str, Any]:
         """Extract and validate input values from node data."""

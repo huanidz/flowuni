@@ -5,7 +5,7 @@ from loguru import logger
 from src.dependencies.auth_dependency import get_current_user
 from src.dependencies.node_dep import get_node_registry, get_node_service
 from src.nodes.handles.HandleBase import HandleTypeBase
-from src.nodes.NodeBase import NodeSpec
+from src.nodes.NodeBase import Node, NodeSpec
 from src.nodes.NodeRegistry import NodeRegistry
 from src.schemas.nodes.node_schemas import ResolveRequest
 from src.services.NodeService import NodeService
@@ -39,7 +39,7 @@ def get_catalog(
 def resolve_dynamic_input(
     req: ResolveRequest, node_registry: NodeRegistry = Depends(get_node_registry)
 ):
-    node_cls = node_registry.get_node_class_by_name(req.node_type)
+    node_cls: Node = node_registry.get_node_class_by_name(req.node_type)
     node_instance = node_cls()
 
     input_handle = node_cls.get_input_handle(req.input_name)
