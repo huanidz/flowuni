@@ -11,8 +11,8 @@ class HandleTypeBase(BaseModel, ABC):
     dynamic: bool = False
     resolver: Optional[str] = None
     depends_on: List[str] = Field(default_factory=list)
-    load_on_init: bool = True
-    reload_on_change: bool = True
+    load_on_init: bool = False
+    reload_on_change: bool = False
 
     class Config:
         arbitrary_types_allowed = True

@@ -1,5 +1,6 @@
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
+from src.nodes.handles.basics.TextFieldInputHandle import TextFieldInputHandle
 from src.nodes.NodeBase import Node, NodeSpec
 
 
@@ -9,7 +10,9 @@ class StringTransformNode(Node):
         description="A node that transforms a string.",
         inputs=[
             NodeInput(
-                name="input", type=str, description="The string to be transformed."
+                name="input",
+                type=TextFieldInputHandle(),
+                description="The string to be transformed.",
             )
         ],
         outputs=[

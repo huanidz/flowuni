@@ -9,6 +9,11 @@ from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeSpec import NodeSpec
 from src.nodes.handles.HandleBase import HandleTypeBase
 from src.schemas.flowbuilder.flow_graph_schemas import NodeData
+from src.schemas.nodes.node_schemas import (
+    NodeInputSchema,
+    NodeOutputSchema,
+    NodeParameterSchema,
+)
 
 
 class Node(ABC):
@@ -193,17 +198,17 @@ class Node(ABC):
         - parameters (param → {type name, default, description})
         """
 
-        def _serialize_type(t: Union[Type, BaseModel]) -> Any:
+        def _serialize_type(t: Union[Type, BaseModel]) -> Dict[str, Any]:
             """
             If t is a Pydantic _instance_, we want both its schema AND
             any non‑None field values the user pre‑set.  Otherwise,
             if it's a Pydantic _class_, we only embed its schema.
             """
-            # instance of a BaseModel → include schema  configured defaults
+            # instance of a BaseModel → include schema and configured defaults
             if isinstance(t, BaseModel):
                 schema = t.model_json_schema()
                 # only include fields that have been explicitly set
-                defaults = {k: v for k, v in t.dict().items() if v is not None}
+                defaults = {k: v for k, v in t.model_dump().items() if v is not None}
                 return {
                     "type": t.__class__.__name__,
                     "schema": schema,
@@ -213,49 +218,49 @@ class Node(ABC):
             if isinstance(t, type) and issubclass(t, BaseModel):
                 return {"type": t.__name__, "schema": t.model_json_schema()}
             # fallback
-            return getattr(t, "__name__", str(t))
+            return {"type": getattr(t, "__name__", str(t)), "schema": {}}
 
         raw = self.spec.model_dump()  # gives you a dict with raw types still in it
 
-        # Serialize inputs (now a list of NodeInput objects)
+        # Serialize inputs using NodeInputSchema
         serialized_inputs = []
         for input_spec in self.spec.inputs:
             serialized_inputs.append(
-                {
-                    "name": input_spec.name,
-                    "type": _serialize_type(input_spec.type),
-                    "value": input_spec.value,
-                    "default": input_spec.default,
-                    "description": input_spec.description,
-                    "required": input_spec.required,
-                }
+                NodeInputSchema(
+                    name=input_spec.name,
+                    type_detail=_serialize_type(input_spec.type),
+                    value=input_spec.value,
+                    default=input_spec.default,
+                    description=input_spec.description,
+                    required=input_spec.required,
+                ).model_dump()
             )
         raw["inputs"] = serialized_inputs
 
-        # Serialize outputs (now a list of NodeOutput objects)
+        # Serialize outputs using NodeOutputSchema
         serialized_outputs = []
         for output_spec in self.spec.outputs:
             serialized_outputs.append(
-                {
-                    "name": output_spec.name,
-                    "type": _serialize_type(output_spec.type),
-                    "value": output_spec.value,
-                    "default": output_spec.default,
-                    "description": output_spec.description,
-                }
+                NodeOutputSchema(
+                    name=output_spec.name,
+                    type_detail=_serialize_type(output_spec.type),
+                    value=output_spec.value,
+                    default=output_spec.default,
+                    description=output_spec.description,
+                ).model_dump()
             )
         raw["outputs"] = serialized_outputs
 
-        # Rebuild parameters into a JSON‑safe form (unchanged from before)
+        # Rebuild parameters into a JSON‑safe form using NodeParameterSchema
         params = {}
         for name, p in self.spec.parameters.items():
-            params[name] = {
-                "name": p.name,
-                "type": _serialize_type(p.type),
-                "value": input_spec.value,
-                "default": p.default,
-                "description": p.description,
-            }
+            params[name] = NodeParameterSchema(
+                name=p.name,
+                type_detail=_serialize_type(p.type),
+                value=p.value,
+                default=p.default,
+                description=p.description,
+            ).model_dump()
         raw["parameters"] = params
 
         return raw

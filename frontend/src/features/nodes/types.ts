@@ -4,26 +4,37 @@ export interface NodeParameterSpec {
   name: string;
   value: string;
   default: any;
-  type?: string;
+  type_detail?: string;
   description?: string;
   [key: string]: any;
 }
 
+export interface TypeDetail {
+  type: string;
+  schema: {
+    description: string;
+    properties: Record<string, any>;
+    title: string;
+    type: string;
+  };
+  defaults: Record<string, any>;
+}
+
 export interface NodeInput {
   name: string;
-  type: string;
-  value?: string;
-  default?: any;
-  description?: string;
-  required?: boolean;
+  type_detail: TypeDetail;
+  value: any;
+  default: any;
+  description: string;
+  required: boolean;
 }
 
 export interface NodeOutput {
   name: string;
-  type: string;
-  value?: string;
-  default?: any;
-  description?: string;
+  type_detail: TypeDetail;
+  value: any;
+  default: any;
+  description: string;
 }
 
 export interface NodeSpec {

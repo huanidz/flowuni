@@ -90,11 +90,18 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
 }) => {
   if (inputs.length === 0) return null;
 
+  console.log("Inputs XXX:", inputs);
+
+  console.log("input_values XXX:", input_values);
+
   return (
     <div style={nodeStyles.inputsSection}>
       <div style={nodeStyles.sectionTitle}>Inputs</div>
       {inputs.map((input, index) => {
         const InputComponent = HandleComponentRegistry[input.type];
+
+        // console.log("InputT:", input.type);
+        // console.log("InputComponent:", InputComponent);
 
         return (
           <div key={`input-${index}`} style={nodeStyles.inputItem}>
