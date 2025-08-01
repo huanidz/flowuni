@@ -4,32 +4,8 @@ import { Handle, Position } from '@xyflow/react';
 import { NodeInputType } from '@/types/NodeIOHandleType';
 import { HandleComponentRegistry } from '@/components/handles/HandleComponentRegistry';
 import { nodeStyles } from '@/styles/nodeStyles';
+import type { NodeParameterSpec, NodeInput, NodeOutput } from '@/features/nodes/types';
 
-interface NodeParameterSpec {
-  name: string;
-  value: string;
-  default: any;
-  type?: string;
-  description?: string;
-  [key: string]: any;
-}
-
-interface NodeInput {
-  name: string;
-  type: string;
-  value?: string;
-  default?: any;
-  description?: string;
-  required?: boolean;
-}
-
-interface NodeOutput {
-  name: string;
-  type: string;
-  value?: string;
-  default?: any;
-  description?: string;
-}
 
 // Parameters Section Component
 interface ParametersSectionProps {
@@ -98,7 +74,7 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
     <div style={nodeStyles.inputsSection}>
       <div style={nodeStyles.sectionTitle}>Inputs</div>
       {inputs.map((input, index) => {
-        const InputComponent = HandleComponentRegistry[input.type];
+        const InputComponent = HandleComponentRegistry[input.type_detail.type];
 
         // console.log("InputT:", input.type);
         // console.log("InputComponent:", InputComponent);
