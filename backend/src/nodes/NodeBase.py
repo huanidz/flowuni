@@ -95,7 +95,8 @@ class Node(ABC):
         output_name = self.spec.outputs[0].name
 
         if isinstance(result, dict):
-            # If result is a dict, try to extract by output name, fallback to the dict itself
+            # If result is a dict, try to extract by output name,
+            # fallback to the dict itself
             return {output_name: result.get(output_name, result)}
 
         # For non-dict results, use the value directly
@@ -135,7 +136,8 @@ class Node(ABC):
             parameters: Dictionary of parameter values
 
         Returns:
-            Processing result (single value for single output, dict for multiple outputs)
+            Processing result
+            (single value for single output, dict for multiple outputs)
         """
         pass
 
@@ -189,7 +191,7 @@ class Node(ABC):
     @abstractmethod
     def process(self, inputs: Dict[str, Any], parameters: Dict[str, Any]) -> Any: ...  # noqa
 
-    def get_spec_json(self) -> Dict[str, Any]:
+    def get_spec_json(self) -> Dict[str, Any]:  # noqa
         """
         Return a JSON‑serializable dict describing:
         - name, description
@@ -197,6 +199,40 @@ class Node(ABC):
         - outputs (list of NodeOutput objects)
         - parameters (param → {type name, default, description})
         """
+
+        def _resolve_refs(
+            schema: Dict[str, Any], defs: Dict[str, Any]
+        ) -> Dict[str, Any]:
+            """
+            Recursively resolve $ref pointers in the schema by inlining the definition.
+            """
+            if not isinstance(schema, dict):
+                return schema
+
+            # Base case: resolve $ref
+            if "$ref" in schema:
+                ref_path = schema["$ref"]
+                if ref_path.startswith("#/$defs/"):
+                    def_name = ref_path.split("/")[-1]
+                    if def_name in defs:
+                        # Recursively resolve refs in the resolved definition
+                        return _resolve_refs(defs[def_name], defs)
+                # If we can't resolve, return schema as-is
+                return schema
+
+            # Recursively process all values in the dictionary
+            result = {}
+            for k, v in schema.items():
+                if k == "$defs":
+                    # Skip defs since we're inlining them
+                    continue
+                if isinstance(v, dict):
+                    result[k] = _resolve_refs(v, defs)
+                elif isinstance(v, list):
+                    result[k] = [_resolve_refs(item, defs) for item in v]
+                else:
+                    result[k] = v
+            return result
 
         def _serialize_type(t: Union[Type, BaseModel]) -> Dict[str, Any]:
             """
@@ -209,13 +245,23 @@ class Node(ABC):
                 schema = t.model_json_schema()
                 # only include fields that have been explicitly set
                 defaults = {k: v for k, v in t.model_dump().items() if v is not None}
+
+                # Extract defs if they exist
+                defs = schema.pop("$defs", {})
+                # Resolve any refs and inline the definitions
+                resolved_schema = _resolve_refs(schema, defs)
+
                 return {
                     "type": t.__class__.__name__,
-                    "schema": schema,
+                    "schema": resolved_schema,
+                    "defaults": defaults or {},
                 }
             # class‐only case → just schema
             if isinstance(t, type) and issubclass(t, BaseModel):
-                return {"type": t.__name__, "schema": t.model_json_schema()}
+                schema = t.model_json_schema()
+                defs = schema.pop("$defs", {})
+                resolved_schema = _resolve_refs(schema, defs)
+                return {"type": t.__name__, "schema": resolved_schema}
             # fallback
             return {"type": getattr(t, "__name__", str(t)), "schema": {}}
 

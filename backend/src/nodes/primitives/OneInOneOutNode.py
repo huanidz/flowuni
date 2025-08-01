@@ -1,6 +1,9 @@
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
-from src.nodes.handles.basics.DropdownInputHandle import DropdownInputHandle
+from src.nodes.handles.basics.DropdownInputHandle import (
+    DropdownInputHandle,
+    DropdownOption,
+)
 from src.nodes.handles.basics.TextFieldInputHandle import TextFieldInputHandle
 from src.nodes.NodeBase import Node, NodeSpec
 
@@ -19,7 +22,14 @@ class OneInOneOutNode(Node):
             ),
             NodeInput(
                 name="departments",
-                type=DropdownInputHandle(),
+                type=DropdownInputHandle(
+                    options=[
+                        DropdownOption(label="IT", value="IT"),
+                        DropdownOption(label="Finance", value="Finance"),
+                        DropdownOption(label="Marketing", value="Marketing"),
+                        DropdownOption(label="Sales", value="Sales"),
+                    ]
+                ),
                 description="The message to be sent.",
             ),
         ],
@@ -33,3 +43,6 @@ class OneInOneOutNode(Node):
 
     def process(self, inputs, parameters):
         return {"message_out": inputs["message_in"]}
+
+    def _fetch_departments(self):
+        return ["IT", "Finance", "Marketing", "Sales"]

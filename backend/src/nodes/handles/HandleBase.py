@@ -9,7 +9,10 @@ class HandleTypeBase(BaseModel, ABC):
 
     # === Dynamic resolution support ===
     dynamic: bool = False
-    resolver: Optional[str] = None
+    resolver: Optional[str] = None  # Server resolver
+    client_resolver: Optional[str] = (
+        None  # Client resolver (Code will be run at client)
+    )
     depends_on: List[str] = Field(default_factory=list)
     load_on_init: bool = False
     reload_on_change: bool = False

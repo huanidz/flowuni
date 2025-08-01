@@ -1,13 +1,23 @@
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 
-from pydantic import Field
+from pydantic import BaseModel, Field
 from src.nodes.handles.HandleBase import HandleTypeBase
+
+
+class DropdownOption(BaseModel):
+    """Represents a single option in a dropdown."""
+
+    label: str = Field(..., description="Display label for the option")
+    value: str = Field(..., description="Value of the option")
+    default: Optional[bool] = Field(
+        default=None, description="Whether this option is selected by default"
+    )
 
 
 class DropdownInputHandle(HandleTypeBase):
     """Handle for dropdown/select inputs"""
 
-    options: List[Dict[str, Any]] = Field(default_factory=list)
+    options: List[DropdownOption] = Field(default_factory=list)
     multiple: bool = False
     searchable: bool = False
 
@@ -15,7 +25,7 @@ class DropdownInputHandle(HandleTypeBase):
         return "dropdown"
 
     def validate_value(self, value: Any) -> bool:
-        valid_values = [opt["value"] for opt in self.options]
+        valid_values = [opt.value for opt in self.options]
 
         if self.multiple:
             if not isinstance(value, list):
@@ -30,15 +40,15 @@ class DropdownInputHandle(HandleTypeBase):
 
         # Find first option marked as default, or use first option
         default_option = next(
-            (opt for opt in self.options if opt.get("default", False)), self.options[0]
+            (opt for opt in self.options if opt.default), self.options[0]
         )
 
-        return [default_option["value"]] if self.multiple else default_option["value"]
+        return [default_option.value] if self.multiple else default_option.value
 
     def to_json_schema(self) -> Dict[str, Any]:
         return {
             "type": "dropdown",
-            "options": self.options,
+            "options": [opt.model_dump() for opt in self.options],
             "multiple": self.multiple,
             "searchable": self.searchable,
         }
