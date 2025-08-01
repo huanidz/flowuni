@@ -5,8 +5,6 @@ interface TextFieldHandleInputProps {
   description?: string;
   value: any;
   onChange?: (value: string) => void;
-  nodeId?: string;
-  parameterName?: string;
 
   // Config (NEW)
   placeholder?: string;
@@ -19,8 +17,6 @@ export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
   description,
   value,
   onChange,
-  nodeId,
-  parameterName,
   placeholder,
   multiline = false,
   maxLength,

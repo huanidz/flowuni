@@ -212,7 +212,6 @@ class Node(ABC):
                 return {
                     "type": t.__class__.__name__,
                     "schema": schema,
-                    "defaults": defaults,
                 }
             # class‐only case → just schema
             if isinstance(t, type) and issubclass(t, BaseModel):
