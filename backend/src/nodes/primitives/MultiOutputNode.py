@@ -1,5 +1,6 @@
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
+from src.nodes.HandleType import TextFieldInputHandle
 from src.nodes.NodeBase import Node, NodeSpec
 
 
@@ -8,8 +9,16 @@ class MultiOutputNode(Node):
         name="Multiple Outputs Node",
         description="A node that accepts user input and returns a message.",
         inputs=[
-            NodeInput(name="string_in", type=str, description="The first input."),
-            NodeInput(name="int_in", type=int, description="The second input."),
+            NodeInput(
+                name="string_in",
+                type=TextFieldInputHandle,
+                description="The first input.",
+            ),
+            NodeInput(
+                name="int_in",
+                type=TextFieldInputHandle,
+                description="The second input.",
+            ),
         ],
         outputs=[
             NodeOutput(name="message_out_1", type=str, description="The output."),

@@ -1,5 +1,6 @@
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
+from src.nodes.handles.basics.TextFieldInputHandle import TextFieldInputHandle
 from src.nodes.HandleType import TextFieldInputHandle
 from src.nodes.NodeBase import Node, NodeSpec
 
@@ -14,7 +15,11 @@ class MultiInputNode(Node):
                 type=TextFieldInputHandle,
                 description="The first input.",
             ),
-            NodeInput(name="int_in", type=int, description="The second input."),
+            NodeInput(
+                name="int_in",
+                type=TextFieldInputHandle,
+                description="The second input.",
+            ),
         ],
         outputs=[NodeOutput(name="message_out", type=str, description="The output.")],
         parameters={},
