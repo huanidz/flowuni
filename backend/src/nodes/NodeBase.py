@@ -21,6 +21,10 @@ class Node(ABC):
 
     spec: NodeSpec
 
+    # ============================================================================
+    # CLASS SETUP AND VALIDATION
+    # ============================================================================
+
     def __init_subclass__(cls, **kwargs):
         """Validate node specification when subclass is created."""
         super().__init_subclass__(**kwargs)
@@ -48,7 +52,12 @@ class Node(ABC):
                 f"{cls.__name__} marked as tool but has no inputs or parameters"
             )
 
+    # ============================================================================
+    # INPUT/OUTPUT HANDLING
+    # ============================================================================
+
     def get_input_handle(self, input_name: str) -> Optional[Type[HandleTypeBase]]:
+        """Get the handle type for a specific input."""
         input: NodeInput
         for input in self.spec.inputs:
             if input.name == input_name:
@@ -79,6 +88,10 @@ class Node(ABC):
             name: param_values.get(name, spec.default)
             for name, spec in self.spec.parameters.items()
         }
+
+    # ============================================================================
+    # OUTPUT MAPPING AND VALIDATION
+    # ============================================================================
 
     def _build_output_mapping(self, result: Any) -> Dict[str, Any]:
         """Convert processing result into properly mapped output values."""
@@ -126,6 +139,10 @@ class Node(ABC):
         if extra:
             raise NodeValidationError(f"Unexpected output keys: {sorted(extra)}")
 
+    # ============================================================================
+    # CORE EXECUTION
+    # ============================================================================
+
     @abstractmethod
     def process(self, inputs: Dict[str, Any], parameters: Dict[str, Any]) -> Any:
         """
@@ -171,7 +188,146 @@ class Node(ABC):
             parameters=original.parameters,
         )
 
-    # Deprecated methods for backwards compatibility
+    # ============================================================================
+    # SPEC SERIALIZATION
+    # ============================================================================
+
+    def get_spec_json(self) -> Dict[str, Any]:
+        """
+        Return a JSON‑serializable dict describing:
+        - name, description
+        - inputs  (list of NodeInput objects)
+        - outputs (list of NodeOutput objects)
+        - parameters (param → {type name, default, description})
+        """
+        raw = self.spec.model_dump()
+
+        # Serialize inputs, outputs, and parameters
+        raw["inputs"] = self._serialize_inputs()
+        raw["outputs"] = self._serialize_outputs()
+        raw["parameters"] = self._serialize_parameters()
+
+        return raw
+
+    def _serialize_inputs(self) -> list:
+        """Serialize input specifications."""
+        serialized_inputs = []
+        for input_spec in self.spec.inputs:
+            serialized_inputs.append(
+                NodeInputSchema(
+                    name=input_spec.name,
+                    type_detail=self._serialize_type(input_spec.type),
+                    value=input_spec.value,
+                    default=input_spec.default,
+                    description=input_spec.description,
+                    required=input_spec.required,
+                ).model_dump()
+            )
+        return serialized_inputs
+
+    def _serialize_outputs(self) -> list:
+        """Serialize output specifications."""
+        serialized_outputs = []
+        for output_spec in self.spec.outputs:
+            serialized_outputs.append(
+                NodeOutputSchema(
+                    name=output_spec.name,
+                    type_detail=self._serialize_type(output_spec.type),
+                    value=output_spec.value,
+                    default=output_spec.default,
+                    description=output_spec.description,
+                ).model_dump()
+            )
+        return serialized_outputs
+
+    def _serialize_parameters(self) -> Dict[str, Any]:
+        """Serialize parameter specifications."""
+        params = {}
+        for name, p in self.spec.parameters.items():
+            params[name] = NodeParameterSchema(
+                name=p.name,
+                type_detail=self._serialize_type(p.type),
+                value=p.value,
+                default=p.default,
+                description=p.description,
+            ).model_dump()
+        return params
+
+    def _serialize_type(self, t: Union[Type, BaseModel]) -> Dict[str, Any]:
+        """
+        Serialize type information for JSON output.
+
+        If t is a Pydantic _instance_, we want both its schema AND
+        any non‑None field values the user pre‑set.  Otherwise,
+        if it's a Pydantic _class_, we only embed its schema.
+        """
+        # instance of a BaseModel → include schema and configured defaults
+        if isinstance(t, BaseModel):
+            schema = t.model_json_schema()
+            # only include fields that have been explicitly set
+            defaults = {k: v for k, v in t.model_dump().items() if v is not None}
+
+            # Extract defs if they exist
+            defs = schema.pop("$defs", {})
+            # Resolve any refs and inline the definitions
+            resolved_schema = self._resolve_refs(schema, defs)
+
+            return {
+                "type": t.__class__.__name__,
+                "schema": resolved_schema,
+                "defaults": defaults or {},
+            }
+        # class‐only case → just schema
+        if isinstance(t, type) and issubclass(t, BaseModel):
+            schema = t.model_json_schema()
+            defs = schema.pop("$defs", {})
+            resolved_schema = self._resolve_refs(schema, defs)
+            return {"type": t.__name__, "schema": resolved_schema}
+        # fallback
+        return {"type": getattr(t, "__name__", str(t)), "schema": {}}
+
+    def _resolve_refs(
+        self, schema: Dict[str, Any], defs: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Recursively resolve $ref pointers in the schema by inlining the definition.
+        """
+        if not isinstance(schema, dict):
+            return schema
+
+        # Base case: resolve $ref
+        if "$ref" in schema:
+            ref_path = schema["$ref"]
+            if ref_path.startswith("#/$defs/"):
+                def_name = ref_path.split("/")[-1]
+                if def_name in defs:
+                    # Recursively resolve refs in the resolved definition
+                    return self._resolve_refs(defs[def_name], defs)
+            # If we can't resolve, return schema as-is
+            return schema
+
+        # Recursively process all values in the dictionary
+        result = {}
+        for k, v in schema.items():
+            if k == "$defs":
+                # Skip defs since we're inlining them
+                continue
+            if isinstance(v, dict):
+                result[k] = self._resolve_refs(v, defs)
+            elif isinstance(v, list):
+                result[k] = [self._resolve_refs(item, defs) for item in v]
+            else:
+                result[k] = v
+        return result
+
+    def get_spec_json_str(self) -> str:
+        """Pretty‑print the spec dict as JSON."""
+        return json.dumps(self.get_spec_json(), indent=2)
+
+    # ============================================================================
+    # DEPRECATED METHODS (for backwards compatibility)
+    # ============================================================================
+
     def get_input_map(self, node_data: "NodeData") -> Dict[str, Any]:
         """Deprecated: Use _extract_input_values instead."""
         return self._extract_input_values(node_data)
@@ -187,129 +343,3 @@ class Node(ABC):
     def run(self, node_data: "NodeData") -> "NodeData":
         """Deprecated: Use execute instead."""
         return self.execute(node_data)
-
-    @abstractmethod
-    def process(self, inputs: Dict[str, Any], parameters: Dict[str, Any]) -> Any: ...  # noqa
-
-    def get_spec_json(self) -> Dict[str, Any]:  # noqa
-        """
-        Return a JSON‑serializable dict describing:
-        - name, description
-        - inputs  (list of NodeInput objects)
-        - outputs (list of NodeOutput objects)
-        - parameters (param → {type name, default, description})
-        """
-
-        def _resolve_refs(
-            schema: Dict[str, Any], defs: Dict[str, Any]
-        ) -> Dict[str, Any]:
-            """
-            Recursively resolve $ref pointers in the schema by inlining the definition.
-            """
-            if not isinstance(schema, dict):
-                return schema
-
-            # Base case: resolve $ref
-            if "$ref" in schema:
-                ref_path = schema["$ref"]
-                if ref_path.startswith("#/$defs/"):
-                    def_name = ref_path.split("/")[-1]
-                    if def_name in defs:
-                        # Recursively resolve refs in the resolved definition
-                        return _resolve_refs(defs[def_name], defs)
-                # If we can't resolve, return schema as-is
-                return schema
-
-            # Recursively process all values in the dictionary
-            result = {}
-            for k, v in schema.items():
-                if k == "$defs":
-                    # Skip defs since we're inlining them
-                    continue
-                if isinstance(v, dict):
-                    result[k] = _resolve_refs(v, defs)
-                elif isinstance(v, list):
-                    result[k] = [_resolve_refs(item, defs) for item in v]
-                else:
-                    result[k] = v
-            return result
-
-        def _serialize_type(t: Union[Type, BaseModel]) -> Dict[str, Any]:
-            """
-            If t is a Pydantic _instance_, we want both its schema AND
-            any non‑None field values the user pre‑set.  Otherwise,
-            if it's a Pydantic _class_, we only embed its schema.
-            """
-            # instance of a BaseModel → include schema and configured defaults
-            if isinstance(t, BaseModel):
-                schema = t.model_json_schema()
-                # only include fields that have been explicitly set
-                defaults = {k: v for k, v in t.model_dump().items() if v is not None}
-
-                # Extract defs if they exist
-                defs = schema.pop("$defs", {})
-                # Resolve any refs and inline the definitions
-                resolved_schema = _resolve_refs(schema, defs)
-
-                return {
-                    "type": t.__class__.__name__,
-                    "schema": resolved_schema,
-                    "defaults": defaults or {},
-                }
-            # class‐only case → just schema
-            if isinstance(t, type) and issubclass(t, BaseModel):
-                schema = t.model_json_schema()
-                defs = schema.pop("$defs", {})
-                resolved_schema = _resolve_refs(schema, defs)
-                return {"type": t.__name__, "schema": resolved_schema}
-            # fallback
-            return {"type": getattr(t, "__name__", str(t)), "schema": {}}
-
-        raw = self.spec.model_dump()  # gives you a dict with raw types still in it
-
-        # Serialize inputs using NodeInputSchema
-        serialized_inputs = []
-        for input_spec in self.spec.inputs:
-            serialized_inputs.append(
-                NodeInputSchema(
-                    name=input_spec.name,
-                    type_detail=_serialize_type(input_spec.type),
-                    value=input_spec.value,
-                    default=input_spec.default,
-                    description=input_spec.description,
-                    required=input_spec.required,
-                ).model_dump()
-            )
-        raw["inputs"] = serialized_inputs
-
-        # Serialize outputs using NodeOutputSchema
-        serialized_outputs = []
-        for output_spec in self.spec.outputs:
-            serialized_outputs.append(
-                NodeOutputSchema(
-                    name=output_spec.name,
-                    type_detail=_serialize_type(output_spec.type),
-                    value=output_spec.value,
-                    default=output_spec.default,
-                    description=output_spec.description,
-                ).model_dump()
-            )
-        raw["outputs"] = serialized_outputs
-
-        # Rebuild parameters into a JSON‑safe form using NodeParameterSchema
-        params = {}
-        for name, p in self.spec.parameters.items():
-            params[name] = NodeParameterSchema(
-                name=p.name,
-                type_detail=_serialize_type(p.type),
-                value=p.value,
-                default=p.default,
-                description=p.description,
-            ).model_dump()
-        raw["parameters"] = params
-
-        return raw
-
-    def get_spec_json_str(self) -> str:
-        """Pretty‑print the above dict as JSON."""
-        return json.dumps(self.get_spec_json(), indent=2)
