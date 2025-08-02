@@ -1,5 +1,5 @@
 // useAllNodeTypesConstructor.ts
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { NodeFactory } from '@/features/flows/utils/NodeFactory';
 import { useNodeRegistry, type NodeSpec } from '@/features/nodes';
 
@@ -11,15 +11,24 @@ import { useNodeRegistry, type NodeSpec } from '@/features/nodes';
  * @param updateNodeParameter - Callback for updating a node's parameter.
  */
 export const useAllNodeTypesConstructor = (
+  setNodes: (updater: (nodes: Node[]) => Node[]) => void,
   setNodeTypes: (types: Record<string, React.FC<any>>) => void,
-  updateNodeData: (nodeId: string, newData: any) => void,
-  updateNodeParameter: (
-    nodeId: string,
-    parameterName: string,
-    value: any
-  ) => void
 ) => {
   const { getAllNodes, loaded } = useNodeRegistry();
+
+  const updateNodeInputDataHandler = useCallback(
+    (nodeId: string, newData: any) => {
+      // TODO: Implement
+    },
+    [setNodes]
+  );
+
+  // Enhanced node parameter update function
+  // Not doing anything now.
+  const updateNodeParameterDataHandler = useCallback(
+    () => {},
+    []
+  );
 
   useEffect(() => {
     // Wait until the node registry is fully loaded
@@ -37,8 +46,8 @@ export const useAllNodeTypesConstructor = (
       // Use the factory to create a component for each node type
       const CustomNodeComponent = NodeFactory.createNodeComponent(
         nodeSpec,
-        updateNodeData,
-        updateNodeParameter
+        updateNodeInputDataHandler,
+        updateNodeParameterDataHandler
       );
 
       // Only add if component was successfully created
@@ -50,5 +59,6 @@ export const useAllNodeTypesConstructor = (
     // Store the complete set of node components
     console.log("Node type map:", nodeTypeMap);
     setNodeTypes(nodeTypeMap);
-  }, [loaded, setNodeTypes, updateNodeData, updateNodeParameter]);
+    
+  }, [loaded, setNodeTypes, updateNodeInputDataHandler, updateNodeParameterDataHandler]);
 };

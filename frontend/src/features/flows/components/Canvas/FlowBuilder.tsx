@@ -53,13 +53,11 @@ const FlowBuilder: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
 
   // Create node types with update functions
   const { 
-    updateNodeInputDataHandler, 
-    updateNodeParameterDataHandler, 
     onConnect, 
     onKeyDown,
   } = useNodeOperations(nodes, edges, setNodes, setEdges, [], []);
 
-  useAllNodeTypesConstructor(setNodeTypes, updateNodeInputDataHandler, updateNodeParameterDataHandler);
+  useAllNodeTypesConstructor(setNodes, setNodeTypes);
 
   const { 
     onDragStart, 

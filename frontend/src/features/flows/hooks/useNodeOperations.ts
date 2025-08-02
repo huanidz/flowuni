@@ -19,20 +19,6 @@ export const useNodeOperations = (
   selectedNodeIds: string[],
   selectedEdgeIds: string[]
 ) => {
-  // Enhanced node data update function for list-based parameters and inputs
-  const updateNodeInputDataHandler = useCallback(
-    (nodeId: string, newData: any) => {
-      // TODO: Implement
-    },
-    [setNodes]
-  );
-
-  // Enhanced node parameter update function
-  // Not doing anything now.
-  const updateNodeParameterDataHandler = useCallback(
-    () => {},
-    []
-  );
 
   // Handle connections between nodes
   const onConnect = useCallback((connection: Connection) => {
@@ -67,8 +53,6 @@ export const useNodeOperations = (
   );
 
   return {
-    updateNodeInputDataHandler,
-    updateNodeParameterDataHandler,
     onConnect,
     onKeyDown
   };
