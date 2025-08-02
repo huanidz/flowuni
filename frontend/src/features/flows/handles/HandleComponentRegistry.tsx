@@ -1,6 +1,6 @@
 import React from 'react';
-import { TextFieldHandleInput } from './TextFieldHandleInput';
-import { DropdownHandleInput } from './DropdownHandleInput';
+import { TextFieldHandleInput } from './basics/TextFieldHandleInput';
+import { DropdownHandleInput } from './basics/DropdownHandleInput';
 
 export type NodeInputType =
   | 'TextFieldInputHandle'

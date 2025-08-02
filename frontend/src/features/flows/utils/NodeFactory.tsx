@@ -23,7 +23,7 @@ import {
 import { useNodeHandlers } from '@/features/flows/hooks/useNodeHandlers';
 
 // Styles
-import { nodeStyles } from '@/styles/nodeStyles';
+import { nodeStyles } from '@/features/flows/styles/nodeStyles';
 
 /**
  * Factory class to create custom React components for different node types.

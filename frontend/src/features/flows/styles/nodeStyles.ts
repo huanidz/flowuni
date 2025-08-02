@@ -1,5 +1,3 @@
-import { Background } from '@xyflow/react';
-
 export const nodeStyles = {
   container: {
     border: '1px solid #777',

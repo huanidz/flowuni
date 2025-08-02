@@ -20,7 +20,6 @@ import { useGetFlowDetail } from '@/features/flows/hooks';
 import { useNodeRegistry } from '@/features/nodes';
 import { parseFlowDefinition } from '@/features/flows/utils';
 import useFlowStore from '@/features/flows/stores';
-import { toast } from 'sonner';
 
 interface FlowBuilderContentProps {
   flow_id: string;
