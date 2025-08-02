@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import dropdownHandleStyles from '../../styles/handleStyles';
 
 interface DropdownHandleInputProps {
   label: string;
@@ -53,18 +54,6 @@ export const DropdownHandleInput: React.FC<DropdownHandleInputProps> = ({
       : ''
     : (options || []).find(opt => opt.value === value)?.label || value || '';
 
-  const commonStyles: React.CSSProperties = {
-    padding: '6px 8px',
-    fontSize: '12px',
-    border: '1px solid #ccc',
-    borderRadius: '4px',
-    width: '100%',
-    boxSizing: 'border-box',
-    outline: 'none',
-    transition: 'border-color 0.2s',
-    position: 'relative',
-  };
-
   const handleFocus = (e: React.FocusEvent<HTMLDivElement>) => {
     e.target.style.borderColor = '#007bff';
   };
@@ -74,28 +63,19 @@ export const DropdownHandleInput: React.FC<DropdownHandleInputProps> = ({
   };
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        fontSize: '12px',
-        width: '100%',
-      }}
-    >
+    <div style={dropdownHandleStyles.container}>
       {label && (
-        <label
-          style={{ marginBottom: '4px', fontWeight: 'bold', color: '#333' }}
-        >
+        <label style={dropdownHandleStyles.label}>
           {label}
         </label>
       )}
       {description && (
-        <span style={{ marginBottom: '4px', color: '#666', fontSize: '11px' }}>
+        <span style={dropdownHandleStyles.description}>
           {description}
         </span>
       )}
       <div
-        style={commonStyles}
+        style={dropdownHandleStyles.common}
         tabIndex={0}
         onFocus={handleFocus}
         onBlur={handleBlur}
@@ -109,44 +89,27 @@ export const DropdownHandleInput: React.FC<DropdownHandleInputProps> = ({
           }
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={dropdownHandleStyles.flexRow}>
           <span>{displayValue || 'Select...'}</span>
           <span>{isOpen ? '▲' : '▼'}</span>
         </div>
         
         {isOpen && (
-          <div style={{
-            position: 'absolute',
-            top: '100%',
-            left: 0,
-            right: 0,
-            backgroundColor: 'white',
-            border: '1px solid #ccc',
-            borderRadius: '4px',
-            maxHeight: '200px',
-            overflowY: 'auto',
-            zIndex: 1000,
-            marginTop: '2px',
-          }}>
+          <div style={dropdownHandleStyles.dropdown}>
             {searchable && (
-              <div style={{ padding: '8px', borderBottom: '1px solid #eee' }}>
+              <div style={dropdownHandleStyles.searchContainer}>
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
                   onClick={e => e.stopPropagation()}
                   placeholder="Search..."
-                  style={{
-                    width: '100%',
-                    padding: '4px',
-                    border: '1px solid #ccc',
-                    borderRadius: '4px',
-                  }}
+                  style={dropdownHandleStyles.searchInput}
                 />
               </div>
             )}
             {filteredOptions.length === 0 ? (
-              <div style={{ padding: '8px', color: '#666', fontStyle: 'italic' }}>
+              <div style={dropdownHandleStyles.noOptions}>
                 No options found
               </div>
             ) : (
@@ -154,13 +117,10 @@ export const DropdownHandleInput: React.FC<DropdownHandleInputProps> = ({
                 <div
                   key={option.value}
                   style={{
-                    padding: '8px',
-                    cursor: 'pointer',
-                    backgroundColor: multiple && Array.isArray(value) && value.includes(option.value)
-                      ? '#e6f3ff'
-                      : 'white',
-                    display: 'flex',
-                    alignItems: 'center',
+                    ...dropdownHandleStyles.option,
+                    ...(multiple && Array.isArray(value) && value.includes(option.value)
+                      ? dropdownHandleStyles.selectedOption
+                      : {}),
                   }}
                   onClick={e => {
                     e.stopPropagation();
@@ -173,7 +133,7 @@ export const DropdownHandleInput: React.FC<DropdownHandleInputProps> = ({
                       checked={Array.isArray(value) && value.includes(option.value)}
                       onChange={() => handleItemClick(option.value)}
                       onClick={e => e.stopPropagation()}
-                      style={{ marginRight: '8px' }}
+                      style={dropdownHandleStyles.checkbox}
                     />
                   )}
                   {option.label}
