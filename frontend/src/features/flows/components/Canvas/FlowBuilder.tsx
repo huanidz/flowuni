@@ -52,14 +52,27 @@ const FlowBuilder: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
   const [nodeTypes, setNodeTypes] = useState({});
 
   // Create node types with update functions
-  const { updateNodeData, updateNodeParameter } = useNodeOperations(nodes, edges, setNodes, setEdges, [], []);
+  const { 
+    updateNodeData, 
+    updateNodeParameter, 
+    onConnect, 
+    onKeyDown,
+  } = useNodeOperations(nodes, edges, setNodes, setEdges, [], []);
+
   useNodeTypes(setNodeTypes, updateNodeData, updateNodeParameter);
 
-  const { onDragStart, onDrop, onDragOver } = useDragDropHandler(reactFlowInstance, setNodes, nodePaletteRef);
+  const { 
+    onDragStart, 
+    onDrop, 
+    onDragOver 
+  } = useDragDropHandler(reactFlowInstance, setNodes, nodePaletteRef);
 
-  const { onCompileFlow, onRunFlow, onClearFlow, onSaveFlow } = useFlowActions(nodes, edges, setNodes, setEdges, [], []);
-
-  const { onConnect, onKeyDown } = useNodeOperations(nodes, edges, setNodes, setEdges, [], []);
+  const { 
+    onCompileFlow, 
+    onRunFlow, 
+    onClearFlow, 
+    onSaveFlow 
+  } = useFlowActions(nodes, edges, setNodes, setEdges, [], []);
 
   const onInit = useCallback((instance: ReactFlowInstance) => {
     setReactFlowInstance(instance);

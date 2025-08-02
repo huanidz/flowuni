@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { useNodesState, useEdgesState, type Node, type Edge } from '@xyflow/react';
-import useFlowStore from '@/features/flows/stores';
+import useFlowStore from '@/features/flows/stores/flow_stores';
 import { parseFlowDefinition } from '@/features/flows/utils';
 import { useNodeRegistry } from '@/features/nodes';
 import { useGetFlowDetail } from '@/features/flows/hooks';

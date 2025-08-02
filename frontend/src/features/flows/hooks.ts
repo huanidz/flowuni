@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useMutation } from '@tanstack/react-query';
 import { getFlows, createEmtpyFlow, getFlowDetail, deleteFlow } from './api';
 import { type GetFlowsResponse, type CreateFlowResponse, type GetFlowDetailResponse } from './types';
-import useFlowStore from './stores';
+import useFlowStore from './stores/flow_stores';
 import { useEffect } from 'react';
 import type { Flow } from './types';
 

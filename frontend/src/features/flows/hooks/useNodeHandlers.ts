@@ -4,7 +4,7 @@ import type { UpdateNodeDataFunction, UpdateNodeParameterFunction } from '@/feat
 
 export const useNodeHandlers = (
   nodeId: string,
-  input_values: Record<string, any>,
+  input_values: Array<{name: string; value: any}>,
   updateNodeData?: UpdateNodeDataFunction,
   updateNodeParameter?: UpdateNodeParameterFunction
 ) => {
@@ -27,10 +27,9 @@ export const useNodeHandlers = (
       // );
       if (updateNodeData) {
         updateNodeData(nodeId, {
-          input_values: {
-            ...input_values,
-            [inputName]: value,
-          },
+          input_values: input_values.map((input: {name: string; value: any}) =>
+            input.name === inputName ? { ...input, value } : input
+          ),
         });
       }
     },

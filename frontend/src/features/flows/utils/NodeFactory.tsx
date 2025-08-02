@@ -55,9 +55,9 @@ class NodeFactoryClass {
       const {
         label = nodeSpec.name,
         description = nodeSpec.description,
-        parameters = {},
-        input_values = {},
-        output_values = {},
+        parameter_values = [],
+        input_values = [],
+        output_values = [],
       } = data;
       console.log("Node data:", data);
 
@@ -79,22 +79,22 @@ class NodeFactoryClass {
 
           {/* Parameters Configuration */}
           <ParametersSection
-            parameters={nodeSpec.parameters}
-            parameterValues={parameters}
+            spec_parameters={Object.values(nodeSpec.parameters)}
+            parameter_values={parameter_values}
             nodeId={id}
             onParameterChange={handleParameterChange}
           />
 
           {/* Inputs Configuration */}
           <InputsSection
-            inputs={nodeSpec.inputs}
+            spec_inputs={nodeSpec.inputs}
             input_values={input_values}
             nodeId={id}
             onInputValueChange={handleInputValueChange}
           />
 
           {/* Outputs Display */}
-          <OutputsSection outputs={nodeSpec.outputs} />
+          <OutputsSection spec_outputs={nodeSpec.outputs} />
 
           {/* Node Execution Result */}
           <NodeExecutionResult

@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
 import type { Node, Edge } from '@xyflow/react';
-import useFlowStore from '@/features/flows/stores';
+import useFlowStore from '@/features/flows/stores/flow_stores';
 import { getFlowGraphData, logNodeDetails } from '@/features/flows/utils';
 import { saveFlow, compileFlow, runFlow } from '@/features/flows/api';
 import { watchFlowExecution } from '@/api/sse';
@@ -71,32 +71,7 @@ export const useFlowActions = (
         console.log('[SSE] Raw message received:', msg);
 
         let parsed;
-        /*
-        parsed = {
-          "node_id": "nodeId_One-in-One-out Node_3",
-          "event": "success",
-          "data": {
-              "label": "One-in-One-out Node",
-              "node_type": "One-in-One-out Node",
-              "input_values": {
-                  "0": {
-                      "name": "message_in",
-                      "type": "TextFieldInputHandle",
-                      "value": null,
-                      "default": null,
-                      "required": false,
-                      "description": "The message to be sent."
-                  },
-                  "message_in": "zxc"
-              },
-              "output_values": {
-                  "message_out": "zxc"
-              },
-              "parameters": {}
-          },
-          "timestamp": "2025-07-29T07:04:43.285104"
-        }
-        */
+
         try {
           parsed = JSON.parse(msg);
           console.log("[SSE] Parsed message:", parsed);

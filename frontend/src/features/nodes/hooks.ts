@@ -33,7 +33,7 @@ export const useNodesWithCache = () => {
 
 export const useNodeRegistry = () => {
   const store = useNodeStore();
-  const { data: nodes, isLoading, error } = useNodesWithCache();
+  const { isLoading, error } = useNodesWithCache();
 
   return {
     ...store,

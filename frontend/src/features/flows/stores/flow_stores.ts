@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { type Flow } from './types';
+import { type Flow } from '../types';
 
 export interface FlowStore {
   current_flow: Flow | null;

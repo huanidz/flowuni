@@ -19,41 +19,19 @@ export const useNodeOperations = (
   selectedNodeIds: string[],
   selectedEdgeIds: string[]
 ) => {
-  // Enhanced node data update function
+  // Enhanced node data update function for list-based parameters and inputs
   const updateNodeData = useCallback(
     (nodeId: string, newData: any) => {
-      setNodes(nds =>
-        nds.map(node =>
-          node.id === nodeId
-            ? { ...node, data: { ...node.data, ...newData } }
-            : node
-        )
-      );
+      // TODO: Implement
     },
     [setNodes]
   );
 
   // Enhanced node parameter update function
+  // Not doing anything now.
   const updateNodeParameter = useCallback(
-    (nodeId: string, parameterName: string, value: any) => {
-      setNodes(nds =>
-        nds.map(node =>
-          node.id === nodeId
-            ? {
-                ...node,
-                data: {
-                  ...node.data,
-                  parameters: {
-                    ...(node.data.parameters || {}),
-                    [parameterName]: value,
-                  },
-                },
-              }
-            : node
-        )
-      );
-    },
-    [setNodes]
+    () => {},
+    []
   );
 
   // Handle connections between nodes

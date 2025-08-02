@@ -9,38 +9,39 @@ import type { NodeParameterSpec, NodeInput, NodeOutput } from '@/features/nodes/
 
 // Parameters Section Component
 interface ParametersSectionProps {
-  parameters: Record<string, NodeParameterSpec>;
-  parameterValues: Record<string, any>;
+  spec_parameters: NodeParameterSpec[];
+  parameter_values: Array<{name: string; value: any; type_detail?: any}>;
   nodeId: string;
   onParameterChange: (paramName: string, value: any) => void;
 }
 
 export const ParametersSection: React.FC<ParametersSectionProps> = ({
-  parameters,
-  parameterValues,
+  spec_parameters,
+  parameter_values,
   nodeId,
   onParameterChange,
 }) => {
-  if (Object.keys(parameters).length === 0) return null;
+  if (spec_parameters.length === 0) return null;
 
   return (
     <div style={nodeStyles.parametersSection}>
       <div style={nodeStyles.sectionTitle}>Parameters</div>
-      {Object.entries(parameters).map(([paramName, paramSpec]) => {
+      {spec_parameters.map((paramSpec) => {
         const InputComponent = HandleComponentRegistry[NodeInputType.TextField];
+        const paramValue = parameter_values.find(p => p.name === paramSpec.name);
 
         return (
-          <div key={paramName} style={nodeStyles.parameterItem}>
+          <div key={paramSpec.name} style={nodeStyles.parameterItem}>
             {InputComponent && (
               <InputComponent
                 label={paramSpec.name}
                 description={paramSpec.description}
-                value={parameterValues[paramName] || paramSpec.default}
+                value={paramValue?.value || paramSpec.default}
                 onChange={(value: string) =>
-                  onParameterChange(paramName, value)
+                  onParameterChange(paramSpec.name, value)
                 }
                 nodeId={nodeId}
-                parameterName={paramName}
+                parameterName={paramSpec.name}
               />
             )}
           </div>
@@ -52,25 +53,26 @@ export const ParametersSection: React.FC<ParametersSectionProps> = ({
 
 // Inputs Section Component
 interface InputsSectionProps {
-  inputs: NodeInput[];
-  input_values: Record<string, any>;
+  spec_inputs: NodeInput[];
+  input_values: Array<{name: string; value: any}>;
   nodeId: string;
   onInputValueChange: (inputName: string, value: any) => void;
 }
 
 export const InputsSection: React.FC<InputsSectionProps> = ({
-  inputs,
+  spec_inputs,
   input_values,
   nodeId,
   onInputValueChange,
 }) => {
-  if (inputs.length === 0) return null;
+  if (spec_inputs.length === 0) return null;
 
   return (
     <div style={nodeStyles.inputsSection}>
       <div style={nodeStyles.sectionTitle}>Inputs</div>
-      {inputs.map((input, index) => {
+      {spec_inputs.map((input, index) => {
         const InputComponent = HandleComponentRegistry[input.type_detail.type];
+        const inputValue = input_values.find(i => i.name === input.name);
 
         return (
           <div key={`input-${index}`} style={nodeStyles.inputItem}>
@@ -96,7 +98,7 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
               <div style={nodeStyles.inputComponent}>
                 <InputComponent
                   label=""
-                  value={input_values[input.name] || input.default || ''}
+                  value={inputValue?.value || input.default || ''}
                   onChange={(value: string) =>
                     onInputValueChange(input.name, value)
                   }
@@ -113,16 +115,16 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
 
 // Outputs Section Component
 interface OutputsSectionProps {
-  outputs: NodeOutput[];
+  spec_outputs: NodeOutput[];
 }
 
-export const OutputsSection: React.FC<OutputsSectionProps> = ({ outputs }) => {
-  if (outputs.length === 0) return null;
+export const OutputsSection: React.FC<OutputsSectionProps> = ({ spec_outputs }) => {
+  if (spec_outputs.length === 0) return null;
 
   return (
     <div style={nodeStyles.outputsSection}>
       <div style={nodeStyles.sectionTitle}>Outputs</div>
-      {outputs.map((output, index) => (
+      {spec_outputs.map((output, index) => (
         <div key={`output-${index}`} style={nodeStyles.outputItem}>
           <Handle
             type="source"

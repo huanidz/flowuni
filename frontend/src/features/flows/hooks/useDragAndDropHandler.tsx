@@ -53,21 +53,18 @@ export const useDragDropHandler = (
         return;
       }
 
-      // Initialize parameters with default values
-      const initialParameters = Object.fromEntries(
-        Object.entries(nodeSpec.parameters).map(([key, paramSpec]) => [
-          key,
-          (paramSpec as any).default || '',
-        ])
-      );
+      // Initialize parameters with default values as a list
+      const initialParameters = Object.entries(nodeSpec.parameters).map(([key, paramSpec]) => ({
+        name: (paramSpec as any).name,
+        value: (paramSpec as any).default || '',
+        type_detail: paramSpec
+      }));
 
-      // Initialize input values with default values
-      const initialInputValues = Object.fromEntries(
-        Object.entries(nodeSpec.inputs).map(([key, value]) => [
-          key,
-          value || '', // Giả sử giá trị mặc định là chuỗi rỗng nếu không có
-        ])
-      );
+      // Initialize input values with default values as a list
+      const initialInputValues = Object.entries(nodeSpec.inputs).map(([key, inputSpec]) => ({
+        name: (inputSpec as any).name,
+        value: (inputSpec as any).default || '',
+      }));
 
       const customNode: Node = {
         id: `node_${type}_${Date.now()}`, // Using timestamp for unique ID
@@ -76,14 +73,16 @@ export const useDragDropHandler = (
         data: {
           label: nodeSpec.name,
           node_type: nodeSpec.name,
-          parameters: initialParameters,
+          parameter_values: initialParameters,
           input_values: initialInputValues,
-          output_values: {},
+          output_values: [],
         },
         style: { background: '#fff', color: '#000' },
         sourcePosition: Position.Right,
         targetPosition: Position.Left,
       };
+
+      console.log("Custom node:", customNode);
 
       setNodes(nds => [...nds, customNode]);
       // Node ID incrementing is now handled by the flow store or component state

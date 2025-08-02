@@ -14,8 +14,8 @@ export interface FlowDefinitionData {
     data: {
       label: string;
       node_type: string;
-      parameters: Record<string, any>;
-      input_values: Record<string, any>;
+      parameter_values: Array<{name: string; value: any; type_detail?: any}>;
+      input_values: Array<{name: string; value: any}>;
       output_values: Record<string, any>;
     };
   }>;
@@ -77,8 +77,8 @@ export const parseFlowDefinition = (
       data: {
         label: nodeData.data?.label || nodeData.type,
         node_type: nodeData.data?.node_type || nodeData.type,
-        parameters: nodeData.data?.parameters || {},
-        input_values: nodeData.data?.input_values || {},
+        parameter_values: nodeData.data?.parameter_values || [],
+        input_values: nodeData.data?.input_values || [],
         output_values: nodeData.data?.output_values || {},
       },
       style: { background: '#fff', color: '#000' },
@@ -167,7 +167,7 @@ export const logNodeDetails = (nodes: Node[]) => {
   nodes.forEach((node, index) => {
     console.log(`Node ${index} (${node.id}):`, {
       type: node.type,
-      parameters: node.data.parameters,
+      parameter_values: node.data.parameter_values,
       input_values: node.data.input_values,
       output_values: node.data.output_values,
       fullData: node.data,

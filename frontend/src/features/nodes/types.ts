@@ -42,13 +42,16 @@ export interface NodeSpec {
   description?: string;
   inputs: NodeInput[];
   outputs: NodeOutput[];
-  parameters: Record<string, NodeParameterSpec>;
+  parameters: NodeParameterSpec[];
 }
+
+// --- Node Data ---
+// This is where client pass data back to the backend
 
 export interface NodeData {
   label: string;
   node_type: string;
-  parameters: Record<string, any>;
+  parameter_values: Record<string, any>;
   input_values?: Record<string, any>;
   output_values?: Record<string, any>;
 
