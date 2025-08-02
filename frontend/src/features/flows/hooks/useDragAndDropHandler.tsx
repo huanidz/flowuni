@@ -5,10 +5,8 @@ import { useNodeRegistry } from '@/features/nodes';
 
 export const useDragDropHandler = (
   reactFlowInstance: ReactFlowInstance | null,
-  nodeId: number,
   setNodes: (updater: (nodes: Node[]) => Node[]) => void,
-  setNodeId: (updater: (id: number) => number) => void,
-  nodePaletteRef: React.RefObject<HTMLDivElement | null> // Cập nhật kiểu của nodePaletteRef
+  nodePaletteRef: React.RefObject<HTMLDivElement | null>
 ) => {
   const onDragStart = useCallback(
     (event: React.DragEvent, node_type: string) => {
@@ -72,7 +70,7 @@ export const useDragDropHandler = (
       );
 
       const customNode: Node = {
-        id: `nodeId_${type}_${nodeId}`,
+        id: `node_${type}_${Date.now()}`, // Using timestamp for unique ID
         type,
         position,
         data: {
@@ -88,9 +86,9 @@ export const useDragDropHandler = (
       };
 
       setNodes(nds => [...nds, customNode]);
-      setNodeId(id => id + 1);
+      // Node ID incrementing is now handled by the flow store or component state
     },
-    [loaded, nodeId, reactFlowInstance, setNodes, setNodeId, nodePaletteRef] // Thêm nodePaletteRef vào dependencies
+    [loaded, reactFlowInstance, setNodes, nodePaletteRef]
   );
 
   const onDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {

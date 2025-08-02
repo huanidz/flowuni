@@ -10,6 +10,7 @@ export interface FlowStore {
   setLoaded: (loaded: boolean) => void;
   getFlow: (flowId: string) => Flow | undefined;
   getAllFlows: () => Flow[];
+  getFlowNames: () => string[];
 }
 
 const useFlowStore = create<FlowStore>((set, get) => ({
@@ -37,7 +38,6 @@ const useFlowStore = create<FlowStore>((set, get) => ({
     const { flows } = get();
     return flows.map(flow => flow.flow_id);
   },
-
 }));
 
 export default useFlowStore;

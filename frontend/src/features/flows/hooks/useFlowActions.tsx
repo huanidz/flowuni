@@ -43,7 +43,6 @@ export const useFlowActions = (
   edges: Edge[],
   setNodes: SetNodesType,
   setEdges: SetEdgesType,
-  setNodeId: (id: number) => void,
   selectedNodeIds: string[],
   selectedEdgeIds: string[],
 ) => {
@@ -160,8 +159,8 @@ export const useFlowActions = (
   const onClearFlow = useCallback(() => {
     setNodes([]);
     setEdges([]);
-    setNodeId(1);
-  }, [setNodes, setEdges, setNodeId]);
+    // Node ID reset is no longer needed as we're using timestamp-based IDs
+  }, [setNodes, setEdges]);
 
   const onDeleteSelectedElements = useCallback(() => {
     // Filter out selected nodes
