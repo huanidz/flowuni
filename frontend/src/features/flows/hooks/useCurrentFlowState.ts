@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useNodesState, useEdgesState, type Node, type Edge } from '@xyflow/react';
 import useFlowStore from '@/features/flows/stores';
 import { parseFlowDefinition } from '@/features/flows/utils';
@@ -15,7 +15,7 @@ import { useGetFlowDetail } from '@/features/flows/hooks';
  * - Flow initialization and reinitialization
  * - Loading and error states
  */
-export const useFlowState = (flow_id: string) => {
+export const useCurrentFlowState = (flow_id: string) => {
   const { current_flow } = useFlowStore();
   const { loaded: nodeRegistryLoaded } = useNodeRegistry();
   

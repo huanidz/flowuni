@@ -13,7 +13,7 @@ import '@xyflow/react/dist/style.css';
 import { useNodeTypes } from '@/features/flows/hooks/useNodeTypes';
 import { useDragDropHandler } from '@/features/flows/hooks/useDragAndDropHandler';
 import { useFlowActions } from '@/features/flows/hooks/useFlowActions';
-import { useFlowState } from '@/features/flows/hooks/useFlowState';
+import { useCurrentFlowState } from '../../hooks/useCurrentFlowState';
 import { useNodeOperations } from '@/features/flows/hooks/useNodeOperations';
 
 interface FlowBuilderContentProps {
@@ -39,7 +39,7 @@ const FlowBuilder: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
     isLoading,
     flowError,
     nodeRegistryLoaded
-  } = useFlowState(flow_id);
+  } = useCurrentFlowState(flow_id);
 
   // Initialize flow when data is ready
   React.useEffect(() => {
@@ -52,44 +52,14 @@ const FlowBuilder: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
   const [nodeTypes, setNodeTypes] = useState({});
 
   // Create node types with update functions
-  const { updateNodeData, updateNodeParameter } = useNodeOperations(
-    nodes,
-    edges,
-    setNodes,
-    setEdges,
-    [],
-    []
-  );
+  const { updateNodeData, updateNodeParameter } = useNodeOperations(nodes, edges, setNodes, setEdges, [], []);
   useNodeTypes(setNodeTypes, updateNodeData, updateNodeParameter);
 
-  const { onDragStart, onDrop, onDragOver } = useDragDropHandler(
-    reactFlowInstance,
-    setNodes,
-    nodePaletteRef
-  );
+  const { onDragStart, onDrop, onDragOver } = useDragDropHandler(reactFlowInstance, setNodes, nodePaletteRef);
 
-  const {
-    onCompileFlow,
-    onRunFlow,
-    onClearFlow,
-    onSaveFlow,
-  } = useFlowActions(
-    nodes,
-    edges,
-    setNodes,
-    setEdges,
-    [],
-    []
-  );
+  const { onCompileFlow, onRunFlow, onClearFlow, onSaveFlow } = useFlowActions(nodes, edges, setNodes, setEdges, [], []);
 
-  const { onConnect, onKeyDown } = useNodeOperations(
-    nodes,
-    edges,
-    setNodes,
-    setEdges,
-    [],
-    []
-  );
+  const { onConnect, onKeyDown } = useNodeOperations(nodes, edges, setNodes, setEdges, [], []);
 
   const onInit = useCallback((instance: ReactFlowInstance) => {
     setReactFlowInstance(instance);
