@@ -21,8 +21,25 @@ export const useAllNodeTypesConstructor = (
 
   const updateNodeInputDataHandler = useCallback(
     (nodeId: string, newData: any) => {
-      // TODO: Implement
-      console.log("Updating node input data:", nodeId, newData);
+      setNodes((nodes) =>
+        nodes.map((node) => {
+          if (node.id !== nodeId) return node;
+          
+          // Convert input_values array to object if needed
+          const inputValues = newData.input_values;
+
+          // Node has schema of: RFNode (ReactFlow Node with data = NodeData)
+          // Reference: samples/RFNode_InputUpdateHandler.json
+
+          return {
+            ...node, // Spread other fields.
+            data: { // Update 'data' field.
+              ...node.data,
+              input_values: inputValues,
+            },
+          };
+        })
+      );
     },
     [setNodes]
   );

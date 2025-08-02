@@ -72,6 +72,9 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
       <div style={nodeStyles.sectionTitle}>Inputs</div>
       {spec_inputs.map((input, index) => {
         const InputComponent = HandleComponentRegistry[input.type_detail.type];
+
+        console.log("Input values:", input_values);
+
         const inputValue = input_values.find(i => i.name === input.name);
 
         return (

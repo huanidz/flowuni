@@ -78,12 +78,12 @@ class NodeFactoryClass {
           <NodeHeader label={label} description={description} />
 
           {/* Parameters Configuration */}
-          <ParametersSection
+          {/* <ParametersSection
             spec_parameters={Object.values(nodeSpec.parameters)}
             parameter_values={parameter_values}
             nodeId={id}
             onParameterChange={handleParameterChange}
-          />
+          /> */}
 
           {/* Inputs Configuration */}
           <InputsSection
