@@ -70,42 +70,41 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
   return (
     <div style={nodeStyles.inputsSection}>
       <div style={nodeStyles.sectionTitle}>Inputs</div>
-      {spec_inputs.map((input, index) => {
-        const InputComponent = HandleComponentRegistry[input.type_detail.type];
+      {spec_inputs.map((spec_input, index) => {
+        const InputComponent = HandleComponentRegistry[spec_input.type_detail.type];
 
-        console.log("Input values:", input_values);
-
-        const inputValue = input_values.find(i => i.name === input.name);
+        const inputValue = input_values.find(i => i.name === spec_input.name);
 
         return (
           <div key={`input-${index}`} style={nodeStyles.inputItem}>
             <Handle
               type="target"
               position={Position.Left}
-              id={`${input.name}-index:${index}`}
+              id={`${spec_input.name}-index:${index}`}
               style={nodeStyles.handle.input}
             />
 
             <div style={nodeStyles.inputInfo}>
-              <strong>{input.name}</strong>
-              {input.description && (
+              <strong>{spec_input.name}</strong>
+              {spec_input.description && (
                 <span style={nodeStyles.description}>
                   {' '}
-                  - {input.description}
+                  - {spec_input.description}
                 </span>
               )}
-              {input.required && <span style={nodeStyles.required}> *</span>}
+              {spec_input.required && <span style={nodeStyles.required}> *</span>}
             </div>
 
             {InputComponent && (
               <div style={nodeStyles.inputComponent}>
                 <InputComponent
                   label=""
-                  value={inputValue?.value || input.default || ''}
+                  value={inputValue?.value || spec_input.default || ''}
                   onChange={(value: string) =>
-                    onInputValueChange(input.name, value)
+                    onInputValueChange(spec_input.name, value)
                   }
                   nodeId={nodeId}
+                  type_detail={spec_input.type_detail}
                 />
               </div>
             )}

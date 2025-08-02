@@ -64,6 +64,9 @@ export const useAllNodeTypesConstructor = (
     const nodeTypeMap: Record<string, React.FC<any>> = {};
 
     allNodeSpecs.forEach((nodeSpec: NodeSpec) => {
+
+      console.log("Node spec:", nodeSpec);
+
       // Use the factory to create a component for each node type
       const CustomNodeComponent = NodeFactory.createNodeComponent(
         nodeSpec,

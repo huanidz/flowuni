@@ -8,9 +8,13 @@ interface DropdownHandleInputProps {
   onChange?: (value: string | string[]) => void;
 
   // Config (NEW)
-  options: Array<{ label: string; value: string }>;
-  multiple?: boolean;
-  searchable?: boolean;
+  type_detail: {
+    defaults?: {
+      multiple?: boolean;
+      searchable?: boolean;
+      options?: Array<{ label: string; value: string }>;
+    }
+  };
 }
 
 export const DropdownHandleInput: React.FC<DropdownHandleInputProps> = ({
@@ -18,12 +22,16 @@ export const DropdownHandleInput: React.FC<DropdownHandleInputProps> = ({
   description,
   value,
   onChange,
-  options,
-  multiple = false,
-  searchable = false,
+  type_detail
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isOpen, setIsOpen] = useState(false);
+
+  const {
+    multiple: defaultMultiple = false,
+    searchable: defaultSearchable = false,
+    options: defaultOptions = []
+  } = type_detail.defaults || {};
 
   const handleChange = (newValue: string | string[]) => {
     if (onChange) {
@@ -32,7 +40,7 @@ export const DropdownHandleInput: React.FC<DropdownHandleInputProps> = ({
   };
 
   const handleItemClick = (optionValue: string) => {
-    if (multiple) {
+    if (defaultMultiple) {
       const currentValues = Array.isArray(value) ? value : [];
       const newValues = currentValues.includes(optionValue)
         ? currentValues.filter(v => v !== optionValue)
@@ -44,15 +52,15 @@ export const DropdownHandleInput: React.FC<DropdownHandleInputProps> = ({
     }
   };
 
-  const filteredOptions = (options || []).filter(option =>
+  const filteredOptions = (defaultOptions || []).filter(option =>
     option.label.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const displayValue = multiple
+  const displayValue = defaultMultiple
     ? Array.isArray(value)
-      ? value.map(v => (options || []).find(opt => opt.value === v)?.label || v).join(', ')
+      ? value.map(v => (defaultOptions || []).find(opt => opt.value === v)?.label || v).join(', ')
       : ''
-    : (options || []).find(opt => opt.value === value)?.label || value || '';
+    : (defaultOptions || []).find(opt => opt.value === value)?.label || value || '';
 
   const handleFocus = (e: React.FocusEvent<HTMLDivElement>) => {
     e.target.style.borderColor = '#007bff';
@@ -96,7 +104,7 @@ export const DropdownHandleInput: React.FC<DropdownHandleInputProps> = ({
         
         {isOpen && (
           <div style={dropdownHandleStyles.dropdown}>
-            {searchable && (
+            {defaultSearchable && (
               <div style={dropdownHandleStyles.searchContainer}>
                 <input
                   type="text"
@@ -118,7 +126,7 @@ export const DropdownHandleInput: React.FC<DropdownHandleInputProps> = ({
                   key={option.value}
                   style={{
                     ...dropdownHandleStyles.option,
-                    ...(multiple && Array.isArray(value) && value.includes(option.value)
+                    ...(defaultMultiple && Array.isArray(value) && value.includes(option.value)
                       ? dropdownHandleStyles.selectedOption
                       : {}),
                   }}
@@ -127,7 +135,7 @@ export const DropdownHandleInput: React.FC<DropdownHandleInputProps> = ({
                     handleItemClick(option.value);
                   }}
                 >
-                  {multiple && (
+                  {defaultMultiple && (
                     <input
                       type="checkbox"
                       checked={Array.isArray(value) && value.includes(option.value)}

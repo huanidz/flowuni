@@ -1,6 +1,6 @@
 import React from 'react';
 import { textfieldHandleStyles } from '../../styles/handleStyles';
-
+import type { TypeDetail } from '@/features/nodes/types';
 interface TextFieldHandleInputProps {
   label: string;
   description?: string;
@@ -8,9 +8,7 @@ interface TextFieldHandleInputProps {
   onChange?: (value: string) => void;
 
   // Config (NEW)
-  placeholder?: string;
-  multiline?: boolean;
-  maxLength?: number;
+  type_detail: TypeDetail;
 }
 
 export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
@@ -18,10 +16,16 @@ export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
   description,
   value,
   onChange,
-  placeholder,
-  multiline = false,
-  maxLength,
+
+  type_detail
 }) => {
+
+  const {
+    placeholder: defaultPlaceholder = "",
+    multiline: defaultMultiline = false,
+    maxLength: defaultMaxLength
+  } = type_detail.defaults;
+
   const handleChange = (newValue: string) => {
     if (onChange) {
       onChange(newValue);
@@ -48,12 +52,12 @@ export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
           {description}
         </span>
       )}
-      {multiline ? (
+      {defaultMultiline ? (
         <textarea
           value={value || ''}
           onChange={e => handleChange(e.target.value)}
-          placeholder={placeholder}
-          maxLength={maxLength}
+          placeholder={defaultPlaceholder}
+          maxLength={defaultMaxLength}
           className="nodrag"
           style={{ ...textfieldHandleStyles.common, ...textfieldHandleStyles.multiline }}
           onFocus={handleFocus}
@@ -64,8 +68,8 @@ export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
           type="text"
           value={value || ''}
           onChange={e => handleChange(e.target.value)}
-          placeholder={placeholder}
-          maxLength={maxLength}
+          placeholder={defaultPlaceholder}
+          maxLength={defaultMaxLength}
           className="nodrag"
           style={textfieldHandleStyles.common}
           onFocus={handleFocus}
