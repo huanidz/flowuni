@@ -1,6 +1,6 @@
 // useNodeTypes.ts
 import { useEffect } from 'react';
-import { NodeFactory } from '@/parsers/NodeFactory';
+import { NodeFactory } from '@/features/flows/utils/NodeFactory';
 import { useNodeRegistry, type NodeSpec } from '@/features/nodes';
 
 /**

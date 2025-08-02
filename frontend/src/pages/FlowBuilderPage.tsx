@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
-import FlowCanvas from '../components/FlowBuilder/FlowCanvas';
+import FlowCanvas from '@/features/flows/components/Canvas/FlowCanvas';
 import { useNavigate } from 'react-router-dom';
-import { CanvasHeader } from '@/components/FlowBuilder/CanvasHeader';
+import { CanvasHeader } from '@/features/flows/components/Canvas/CanvasHeader';
 import { useParams } from 'react-router-dom';
 
 const FlowBuilderPage: React.FC = () => {

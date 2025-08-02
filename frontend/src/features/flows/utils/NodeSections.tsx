@@ -1,8 +1,8 @@
 // NodeSections.tsx
 import React, { useState } from 'react';
 import { Handle, Position } from '@xyflow/react';
-import { NodeInputType } from '@/components/handles/HandleComponentRegistry';
-import { HandleComponentRegistry } from '@/components/handles/HandleComponentRegistry';
+import { NodeInputType } from '@/features/flows/handles/HandleComponentRegistry';
+import { HandleComponentRegistry } from '@/features/flows/handles/HandleComponentRegistry';
 import { nodeStyles } from '@/styles/nodeStyles';
 import type { NodeParameterSpec, NodeInput, NodeOutput } from '@/features/nodes/types';
 

@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import DeleteFlowButton from '@/components/FlowList/DeleteFlowButton';
+import DeleteFlowButton from '@/features/flows/components/FlowList/DeleteFlowButton';
 import type { Flow } from '@/features/flows/types';
 import { useNavigate } from 'react-router-dom';
 
@@ -110,7 +110,7 @@ const FlowList: React.FC<FlowListProps> = ({ flows }) => {
                             <div>
                               <span className="text-gray-500">Ngày tạo:</span>
                               <span className="ml-2 text-gray-900">
-                                {new Date(flow.created_at).toLocaleDateString('vi-VN')}
+                                {new Date(flow.created_at as string).toLocaleDateString('vi-VN')}
                               </span>
                             </div>
                             <div>

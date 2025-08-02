@@ -12,10 +12,10 @@ import {
 import type { Connection, ReactFlowInstance } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import { useNodeTypes } from '@/hooks/useNodeTypes';
-import { useDragDropHandler } from '@/hooks/useDragAndDropHandler';
-import { useFlowActions } from '@/hooks/useFlowActions';
-import { useFlowSelection } from '@/hooks/useFlowSelection';
+import { useNodeTypes } from '@/features/flows/hooks/useNodeTypes';
+import { useDragDropHandler } from '@/features/flows/hooks/useDragAndDropHandler';
+import { useFlowActions } from '@/features/flows/hooks/useFlowActions';
+import { useFlowSelection } from '@/features/flows/hooks/useFlowSelection';
 import { useGetFlowDetail } from '@/features/flows/hooks';
 import { useNodeRegistry } from '@/features/nodes';
 import { parseFlowDefinition } from '@/features/flows/utils';

@@ -20,7 +20,7 @@ import {
 } from './NodeSections';
 
 // Hooks
-import { useNodeHandlers } from '@/hooks/useNodeHandlers';
+import { useNodeHandlers } from '@/features/flows/hooks/useNodeHandlers';
 
 // Styles
 import { nodeStyles } from '@/styles/nodeStyles';
