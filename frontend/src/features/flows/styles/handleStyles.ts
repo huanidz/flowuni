@@ -76,4 +76,37 @@ export const dropdownHandleStyles = {
   } as CSSProperties,
 };
 
+export const textfieldHandleStyles = {
+  container: {
+    display: 'flex',
+    flexDirection: 'column',
+    fontSize: '12px',
+    width: '100%',
+  } as CSSProperties,
+  label: {
+    marginBottom: '4px',
+    fontWeight: 'bold',
+    color: '#333',
+  } as CSSProperties,
+  description: {
+    marginBottom: '4px',
+    color: '#666',
+    fontSize: '11px',
+  } as CSSProperties,
+  common: {
+    padding: '6px 8px',
+    fontSize: '12px',
+    border: '1px solid #ccc',
+    borderRadius: '4px',
+    width: '100%',
+    boxSizing: 'border-box',
+    outline: 'none',
+    transition: 'border-color 0.2s',
+    resize: 'vertical',
+  } as CSSProperties,
+  multiline: {
+    minHeight: '60px',
+  } as CSSProperties,
+} as const;
+
 export default dropdownHandleStyles;

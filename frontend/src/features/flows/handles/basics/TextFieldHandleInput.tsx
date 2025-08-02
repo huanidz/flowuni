@@ -1,4 +1,5 @@
 import React from 'react';
+import { textfieldHandleStyles } from '../../styles/handleStyles';
 
 interface TextFieldHandleInputProps {
   label: string;
@@ -27,18 +28,6 @@ export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
     }
   };
 
-  const commonStyles: React.CSSProperties = {
-    padding: '6px 8px',
-    fontSize: '12px',
-    border: '1px solid #ccc',
-    borderRadius: '4px',
-    width: '100%',
-    boxSizing: 'border-box',
-    outline: 'none',
-    transition: 'border-color 0.2s',
-    resize: 'vertical',
-  };
-
   const handleFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     e.target.style.borderColor = '#007bff';
   };
@@ -48,23 +37,14 @@ export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
   };
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        fontSize: '12px',
-        width: '100%',
-      }}
-    >
+    <div style={textfieldHandleStyles.container}>
       {label && (
-        <label
-          style={{ marginBottom: '4px', fontWeight: 'bold', color: '#333' }}
-        >
+        <label style={textfieldHandleStyles.label}>
           {label}
         </label>
       )}
       {description && (
-        <span style={{ marginBottom: '4px', color: '#666', fontSize: '11px' }}>
+        <span style={textfieldHandleStyles.description}>
           {description}
         </span>
       )}
@@ -75,7 +55,7 @@ export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
           placeholder={placeholder}
           maxLength={maxLength}
           className="nodrag"
-          style={{ ...commonStyles, minHeight: '60px' }}
+          style={{ ...textfieldHandleStyles.common, ...textfieldHandleStyles.multiline }}
           onFocus={handleFocus}
           onBlur={handleBlur}
         />
@@ -87,7 +67,7 @@ export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
           placeholder={placeholder}
           maxLength={maxLength}
           className="nodrag"
-          style={commonStyles}
+          style={textfieldHandleStyles.common}
           onFocus={handleFocus}
           onBlur={handleBlur}
         />
