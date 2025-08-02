@@ -1,4 +1,4 @@
-// useNodeTypes.ts
+// useAllNodeTypesConstructor.ts
 import { useEffect } from 'react';
 import { NodeFactory } from '@/features/flows/utils/NodeFactory';
 import { useNodeRegistry, type NodeSpec } from '@/features/nodes';
@@ -10,7 +10,7 @@ import { useNodeRegistry, type NodeSpec } from '@/features/nodes';
  * @param updateNodeData - Callback for updating a node's input data.
  * @param updateNodeParameter - Callback for updating a node's parameter.
  */
-export const useNodeTypes = (
+export const useAllNodeTypesConstructor = (
   setNodeTypes: (types: Record<string, React.FC<any>>) => void,
   updateNodeData: (nodeId: string, newData: any) => void,
   updateNodeParameter: (

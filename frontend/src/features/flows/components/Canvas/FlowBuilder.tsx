@@ -10,7 +10,7 @@ import {
 import type { ReactFlowInstance } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import { useNodeTypes } from '@/features/flows/hooks/useNodeTypes';
+import { useAllNodeTypesConstructor } from '../../hooks/useNodeTypes';
 import { useDragDropHandler } from '@/features/flows/hooks/useDragAndDropHandler';
 import { useFlowActions } from '@/features/flows/hooks/useFlowActions';
 import { useCurrentFlowState } from '../../hooks/useCurrentFlowState';
@@ -53,13 +53,13 @@ const FlowBuilder: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
 
   // Create node types with update functions
   const { 
-    updateNodeData, 
-    updateNodeParameter, 
+    updateNodeInputDataHandler, 
+    updateNodeParameterDataHandler, 
     onConnect, 
     onKeyDown,
   } = useNodeOperations(nodes, edges, setNodes, setEdges, [], []);
 
-  useNodeTypes(setNodeTypes, updateNodeData, updateNodeParameter);
+  useAllNodeTypesConstructor(setNodeTypes, updateNodeInputDataHandler, updateNodeParameterDataHandler);
 
   const { 
     onDragStart, 
