@@ -141,6 +141,7 @@ const FlowBuilder: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
           maxZoom={2}
           className="bg-gray-50"
           nodeTypes={nodeTypes}
+          deleteKeyCode={'Delete'}
         >
           <Controls />
           <Background variant={BackgroundVariant.Dots} gap={12} size={1} />

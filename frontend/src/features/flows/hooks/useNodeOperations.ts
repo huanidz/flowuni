@@ -53,43 +53,23 @@ export const useNodeOperations = (
     [edges, setEdges]
   );
 
-  // Delete selected elements
-  const onDeleteSelectedElements = useCallback(() => {
-    // Filter out selected nodes
-    const remainingNodes = nodes.filter(node => !selectedNodeIds.includes(node.id));
-    
-    // Filter out edges that are either:
-    // 1. Explicitly selected (selectedEdgeIds)
-    // 2. Connected to any deleted node (source or target is in selectedNodeIds)
-    const remainingEdges = edges.filter(edge => 
-      !selectedEdgeIds.includes(edge.id) && 
-      !selectedNodeIds.includes(edge.source) && 
-      !selectedNodeIds.includes(edge.target)
-    );
-    
-    setNodes(() => remainingNodes);
-    setEdges(() => remainingEdges);
-  }, [nodes, edges, selectedNodeIds, selectedEdgeIds, setNodes, setEdges]);
-
   // Handle keyboard shortcuts
   const onKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
       switch (event.key) {
         case 'Delete':
-          onDeleteSelectedElements();
           break;
         default:
           break;
       }
     },
-    [onDeleteSelectedElements]
+    []
   );
 
   return {
     updateNodeData,
     updateNodeParameter,
     onConnect,
-    onDeleteSelectedElements,
     onKeyDown
   };
 };
