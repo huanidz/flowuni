@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useRef, useState, useMemo } from 'react';
 import FlowToolbar from './FlowToolBar';
 import NodePalette from './FlowNodePallete';
 import {
@@ -36,6 +36,7 @@ const FlowBuilder: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
     onEdgesChange,
     initialNodes,
     initialEdges,
+    initializeFlow,
     isLoading,
     flowError,
     nodeRegistryLoaded
@@ -43,21 +44,22 @@ const FlowBuilder: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
 
   // Initialize flow when data is ready
   React.useEffect(() => {
-    if (initialNodes.length > 0 && initialEdges.length > 0 && nodeRegistryLoaded) {
-      setNodes(initialNodes);
-      setEdges(initialEdges);
-    }
-  }, [initialNodes, initialEdges, nodeRegistryLoaded, setNodes, setEdges]);
+    // Only require nodes and node registry loaded - edges can be empty initially
+      initializeFlow();
+}, [initialNodes, initialEdges, nodeRegistryLoaded, initializeFlow]);
 
-  const [nodeTypes, setNodeTypes] = useState({});
+  const [nodeTypes, setNodeTypes] = useState<Record<string, React.ComponentType<any>>>({});
 
   // Create node types with update functions
-  const { 
-    onConnect, 
+  const {
+    onConnect,
     onKeyDown,
   } = useFlowUtilOperations(nodes, edges, setNodes, setEdges, [], []);
 
   useAllNodeTypesConstructor(setNodes, setNodeTypes);
+
+  // Memoize nodeTypes to prevent ReactFlow warning
+  const memoizedNodeTypes = useMemo(() => nodeTypes, [nodeTypes]);
 
   const { 
     onDragStart, 
@@ -138,7 +140,7 @@ const FlowBuilder: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
           minZoom={1}
           maxZoom={2}
           className="bg-gray-50"
-          nodeTypes={nodeTypes}
+          nodeTypes={memoizedNodeTypes}
           deleteKeyCode={'Delete'}
         >
           <Controls />

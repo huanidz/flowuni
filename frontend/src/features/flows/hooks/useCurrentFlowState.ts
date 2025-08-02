@@ -25,12 +25,12 @@ export const useCurrentFlowState = (flow_id: string) => {
 
   // Parse flow definition when data is available
   const { initialNodes, initialEdges } = useMemo(() => {
+    
     if (!current_flow?.flow_definition || !nodeRegistryLoaded) {
       return { initialNodes: [], initialEdges: [] };
     }
 
-    const parsed = parseFlowDefinition(current_flow.flow_definition);
-    
+    const parsed = parseFlowDefinition(current_flow.flow_definition);    
     return {
       initialNodes: parsed.nodes,
       initialEdges: parsed.edges,
@@ -39,8 +39,10 @@ export const useCurrentFlowState = (flow_id: string) => {
 
   // Initialize flow with parsed data
   const initializeFlow = useCallback(() => {
+    
     setNodes(initialNodes);
     setEdges(initialEdges);
+    
   }, [initialNodes, initialEdges, setNodes, setEdges]);
 
   // Reinitialize flow with new nodes and edges

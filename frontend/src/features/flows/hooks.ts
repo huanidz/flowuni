@@ -59,7 +59,6 @@ export const useGetFlowDetail = ({ flowId, enabled = true }: UseGetFlowDetailPar
   });
 
   useEffect(() => {
-
     
     if (query.data) {
       
