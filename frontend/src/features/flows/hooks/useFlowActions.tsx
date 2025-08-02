@@ -91,6 +91,7 @@ export const useFlowActions = (
         const { input_values } = data;
         console.log('[SSE] Updating node:', node_id, 'with input_values:', input_values);
 
+        // TODO: Handle data update here
         setNodes((prevNodes: Node[]) =>
           prevNodes.map((node) =>
             node.id === node_id

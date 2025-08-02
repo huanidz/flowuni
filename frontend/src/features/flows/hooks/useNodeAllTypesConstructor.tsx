@@ -2,6 +2,9 @@
 import { useEffect, useCallback } from 'react';
 import { NodeFactory } from '@/features/flows/utils/NodeFactory';
 import { useNodeRegistry, type NodeSpec } from '@/features/nodes';
+import type { Node } from '@xyflow/react';
+
+type SetNodesType = React.Dispatch<React.SetStateAction<Node[]>>;
 
 /**
  * Hook to register all available node types as React components.
@@ -11,7 +14,7 @@ import { useNodeRegistry, type NodeSpec } from '@/features/nodes';
  * @param updateNodeParameter - Callback for updating a node's parameter.
  */
 export const useAllNodeTypesConstructor = (
-  setNodes: (updater: (nodes: Node[]) => Node[]) => void,
+  setNodes: SetNodesType,
   setNodeTypes: (types: Record<string, React.FC<any>>) => void,
 ) => {
   const { getAllNodes, loaded } = useNodeRegistry();
@@ -19,6 +22,7 @@ export const useAllNodeTypesConstructor = (
   const updateNodeInputDataHandler = useCallback(
     (nodeId: string, newData: any) => {
       // TODO: Implement
+      console.log("Updating node input data:", nodeId, newData);
     },
     [setNodes]
   );

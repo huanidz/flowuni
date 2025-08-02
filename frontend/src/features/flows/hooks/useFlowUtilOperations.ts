@@ -11,7 +11,7 @@ import { addEdge } from '@xyflow/react';
  * - Connection logic between nodes
  * - Node creation and deletion
  */
-export const useNodeOperations = (
+export const useFlowUtilOperations = (
   nodes: Node[],
   edges: Edge[],
   setNodes: (updater: (nodes: Node[]) => Node[]) => void,
