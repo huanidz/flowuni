@@ -16,6 +16,7 @@ services:
         condition: service_healthy
       redis-service:
         condition: service_healthy
+    restart: always
 
   celery-worker:
     build: 

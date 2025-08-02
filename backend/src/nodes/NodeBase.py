@@ -185,7 +185,7 @@ class Node(ABC):
             node_type=original.node_type,
             input_values=original.input_values,
             output_values=outputs,
-            parameters=original.parameters,
+            parameter_values=original.parameter_values,
         )
 
     # ============================================================================

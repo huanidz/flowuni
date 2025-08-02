@@ -283,6 +283,9 @@ class GraphExecutor:
             if not node_spec:
                 raise GraphExecutorError(f"Node {node_id} missing specification")
 
+            # log nodedata
+            logger.info(f"NodeData: {node_data.model_dump_json(indent=2)}")
+
             # Create node instance (same as old version)
             node_instance: Optional[Node] = self._node_registry.create_node_instance(
                 node_spec.name
@@ -304,6 +307,9 @@ class GraphExecutor:
             )
 
             execution_time = time.time() - start_time
+
+            # log exec time
+            logger.info(f"Execution time: {execution_time:.3f}s")
 
             # Log execution results
             if executed_data and executed_data.output_values:
