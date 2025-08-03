@@ -54,8 +54,9 @@ class NodeSpec(BaseModel):
         """
         inputs = values.get("inputs", [])
         seen_names = set()
+        inp: NodeInput
         for inp in inputs:
-            name = inp.get("name")
+            name = inp.name
             if name in seen_names:
                 raise ValueError(f"Duplicate input name detected: {name}")
             seen_names.add(name)
@@ -81,8 +82,9 @@ class NodeSpec(BaseModel):
         """
         outputs = values.get("outputs", [])
         seen_names = set()
+        out: NodeOutput
         for out in outputs:
-            name = out.get("name")
+            name = out.name
             if name in seen_names:
                 raise ValueError(f"Duplicate output name detected: {name}")
             seen_names.add(name)
