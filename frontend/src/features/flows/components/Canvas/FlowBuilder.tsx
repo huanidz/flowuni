@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useRef } from 'react';
 import FlowToolbar from './FlowToolBar';
 import NodePalette from './FlowNodePallete';
 import {
@@ -27,7 +27,6 @@ interface FlowBuilderContentProps {
 
 // Separate the main flow component to use ReactFlow hooks
 const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
-  const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const nodePaletteRef = useRef<HTMLDivElement>(null);
   
   // Use ReactFlow's built-in state management hooks
@@ -110,7 +109,6 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
     <div className="w-full h-screen bg-gray-100">
       <div
         className="relative w-full h-full"
-        ref={reactFlowWrapper}
         onDrop={onDrop}
         onDragOver={onDragOver}
         onKeyDown={onKeyDown}
