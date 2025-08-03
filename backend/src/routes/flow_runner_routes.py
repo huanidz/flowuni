@@ -27,6 +27,9 @@ async def compile_flow_endpoint(
     """
     try:
         request_json = await request.json()
+
+        logger.info(f"Compilation request received: {request_json}")
+
         flow_graph_request = FlowGraphRequest(**request_json)
 
         # Submit compile task to Celery

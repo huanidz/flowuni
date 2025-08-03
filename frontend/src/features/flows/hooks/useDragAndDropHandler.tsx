@@ -78,7 +78,7 @@ export const useDragDropHandler = (
           node_type: nodeSpec.name,
           parameter_values: initialParameters,
           input_values: initialInputValues,
-          output_values: [],
+          output_values: {},
         },
         style: { background: '#fff', color: '#000' },
         sourcePosition: Position.Right,

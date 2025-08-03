@@ -21,7 +21,7 @@ class GraphCompiler:
     executed in parallel, respecting the dependencies defined by the graph edges.
     """
 
-    def __init__(self, graph: nx.DiGraph, remove_standalone: bool = True):
+    def __init__(self, graph: nx.DiGraph, remove_standalone: bool = False):
         """
         Initialize the GraphCompiler.
 

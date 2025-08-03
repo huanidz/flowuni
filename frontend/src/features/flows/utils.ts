@@ -77,8 +77,8 @@ export const parseFlowDefinition = (
       data: {
         label: nodeData.data?.label || nodeData.type,
         node_type: nodeData.data?.node_type || nodeData.type,
-        parameter_values: nodeData.data?.parameter_values || [],
-        input_values: nodeData.data?.input_values || [],
+        parameter_values: nodeData.data?.parameter_values || {},
+        input_values: nodeData.data?.input_values || {},
         output_values: nodeData.data?.output_values || {},
       },
       style: { background: '#fff', color: '#000' },

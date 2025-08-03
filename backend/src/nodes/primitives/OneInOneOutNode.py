@@ -41,8 +41,8 @@ class OneInOneOutNode(Node):
         parameters={},
     )
 
-    def process(self, inputs, parameters):
-        return {"message_out": inputs["message_in"]}
+    def process(self, input_values, parameter_values):
+        return {"message_out": input_values["message_in"]}
 
     def _fetch_departments(self):
         return ["IT", "Finance", "Marketing", "Sales"]

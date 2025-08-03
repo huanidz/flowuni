@@ -83,7 +83,7 @@ class Node(ABC):
 
     def _extract_parameter_values(self, node_data: "NodeData") -> Dict[str, Any]:
         """Extract parameter values from node data with defaults."""
-        param_values = node_data.parameters or {}
+        param_values = node_data.parameter_values or {}
         return {
             name: param_values.get(name, spec.default)
             for name, spec in self.spec.parameters.items()
@@ -144,13 +144,15 @@ class Node(ABC):
     # ============================================================================
 
     @abstractmethod
-    def process(self, inputs: Dict[str, Any], parameters: Dict[str, Any]) -> Any:
+    def process(
+        self, inputs_values: Dict[str, Any], parameter_values: Dict[str, Any]
+    ) -> Any:
         """
-        Process inputs and parameters to produce outputs.
+        Process inputs_values and parameter_values to produce outputs.
 
         Args:
-            inputs: Dictionary of input values
-            parameters: Dictionary of parameter values
+            inputs_values: Dictionary of input values
+            parameter_values: Dictionary of parameter values
 
         Returns:
             Processing result
@@ -168,10 +170,10 @@ class Node(ABC):
         Returns:
             Updated node data with processing results
         """
-        inputs = self._extract_input_values(node_data)
-        parameters = self._extract_parameter_values(node_data)
+        input_values = self._extract_input_values(node_data)
+        parameter_values = self._extract_parameter_values(node_data)
 
-        result = self.process(inputs, parameters)
+        result = self.process(input_values, parameter_values)
         output_values = self._build_output_mapping(result)
 
         return self._create_result_node_data(node_data, output_values)
