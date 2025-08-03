@@ -4,6 +4,7 @@ import { Handle, Position } from '@xyflow/react';
 import { NodeInputType } from '@/features/flows/handles/HandleComponentRegistry';
 import { HandleComponentRegistry } from '@/features/flows/handles/HandleComponentRegistry';
 import { nodeStyles } from '@/features/flows/styles/nodeStyles';
+import { executionResultStyles } from '@/features/flows/styles/nodeSectionStyles';
 import type { NodeParameterSpec, NodeInput, NodeOutput } from '@/features/nodes/types';
 
 
@@ -187,78 +188,16 @@ export const NodeExecutionResult: React.FC<NodeExecutionResultProps> = ({
   // Don't show if no result and not running
   if (!result && status !== 'running') return null;
 
-  // Status-based styling and content
-  const getStatusConfig = () => {
-    switch (status) {
-      case 'running':
-        return {
-          title: 'Executing...',
-          icon: (
-            <span style={{
-              display: 'inline-block',
-              width: '12px',
-              height: '12px',
-              border: '2px solid #f3f3f3',
-              borderTop: '2px solid #3498db',
-              borderRadius: '50%',
-              animation: 'spin 1s linear infinite',
-              marginRight: '6px'
-            }}>
-            </span>
-          ),
-          contentStyle: {
-            color: '#666',
-            backgroundColor: '#f0f8ff',
-            border: '1px solid #3498db'
-          }
-        };
-      case 'failed':
-        return {
-          title: 'Execution Failed',
-          icon: <span style={{ marginRight: '6px', color: '#e74c3c' }}>❌</span>,
-          contentStyle: {
-            color: '#721c24',
-            backgroundColor: '#f8d7da',
-            border: '1px solid #f5c6cb'
-          }
-        };
-      default: // 'success'
-        return {
-          title: 'Execution Result',
-          icon: <span style={{ marginRight: '6px', color: '#27ae60' }}>✅</span>,
-          contentStyle: {
-            color: '#333',
-            backgroundColor: '#f9f9f9',
-            border: 'none'
-          }
-        };
-    }
-  };
-
-  const statusConfig = getStatusConfig();
+  // Get status configuration from external styles
+  const statusConfig = executionResultStyles.status[status as keyof typeof executionResultStyles.status] || executionResultStyles.status.success;
 
   return (
-    <div style={nodeStyles.executionResultSection}>
-      <style>
-        {`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}
-      </style>
-      
-      <div 
-        style={{
-          ...nodeStyles.sectionTitle,
-          display: 'flex',
-          alignItems: 'center',
-          cursor: 'pointer',
-          userSelect: 'none'
-        }}
+    <div style={executionResultStyles.section}>
+      <div
+        style={executionResultStyles.sectionTitle}
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        {statusConfig.icon}
+        <span style={statusConfig.iconStyle}>{statusConfig.iconText}</span>
         <span style={{ marginRight: '6px' }}>
           {isExpanded ? '▼' : '▶'}
         </span>
@@ -267,11 +206,8 @@ export const NodeExecutionResult: React.FC<NodeExecutionResultProps> = ({
       
       {isExpanded && (
         <div style={{
-          ...nodeStyles.executionResultContent,
-          ...statusConfig.contentStyle,
-          maxHeight: '200px',
-          overflowY: 'auto',
-          overflowX: 'hidden'
+          ...executionResultStyles.executionResultContent,
+          ...statusConfig.contentStyle
         }}>
           {status === 'running' ? 'Execution in progress...' : (result || 'No output')}
         </div>
