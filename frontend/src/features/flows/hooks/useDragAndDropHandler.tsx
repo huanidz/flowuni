@@ -53,18 +53,21 @@ export const useDragDropHandler = (
         return;
       }
 
-      // Initialize parameters with default values as a list
-      const initialParameters = Object.entries(nodeSpec.parameters).map(([key, paramSpec]) => ({
-        name: (paramSpec as any).name,
-        value: (paramSpec as any).default || '',
-        type_detail: paramSpec
-      }));
+      // Initialize parameters with default values as a simple key-value dictionary
+      const initialParameters = Object.fromEntries(
+        Object.entries(nodeSpec.parameters).map(([key, paramSpec]) => [
+          (paramSpec as any).name,
+          (paramSpec as any).default || ''
+        ])
+      );
 
-      // Initialize input values with default values as a list
-      const initialInputValues = Object.entries(nodeSpec.inputs).map(([key, inputSpec]) => ({
-        name: (inputSpec as any).name,
-        value: (inputSpec as any).default || '',
-      }));
+      // Initialize input values with default values as a simple key-value dictionary
+      const initialInputValues = Object.fromEntries(
+        Object.entries(nodeSpec.inputs).map(([key, inputSpec]) => [
+          (inputSpec as any).name,
+          (inputSpec as any).default || ''
+        ])
+      );
 
       const customNode: Node = {
         id: `node_${type}_${Date.now()}`, // Using timestamp for unique ID

@@ -10,7 +10,7 @@ import type { NodeParameterSpec, NodeInput, NodeOutput } from '@/features/nodes/
 // Parameters Section Component
 interface ParametersSectionProps {
   spec_parameters: NodeParameterSpec[];
-  parameter_values: Array<{name: string; value: any; type_detail?: any}>;
+  parameter_values: Record<string, any>;
   nodeId: string;
   onParameterChange: (paramName: string, value: any) => void;
 }
@@ -28,7 +28,7 @@ export const ParametersSection: React.FC<ParametersSectionProps> = ({
       <div style={nodeStyles.sectionTitle}>Parameters</div>
       {spec_parameters.map((paramSpec) => {
         const InputComponent = HandleComponentRegistry[NodeInputType.TextField];
-        const paramValue = parameter_values.find(p => p.name === paramSpec.name);
+        const paramValue = parameter_values[paramSpec.name];
 
         return (
           <div key={paramSpec.name} style={nodeStyles.parameterItem}>
@@ -36,7 +36,7 @@ export const ParametersSection: React.FC<ParametersSectionProps> = ({
               <InputComponent
                 label={paramSpec.name}
                 description={paramSpec.description}
-                value={paramValue?.value || paramSpec.default}
+                value={paramValue !== undefined ? paramValue : paramSpec.default}
                 onChange={(value: string) =>
                   onParameterChange(paramSpec.name, value)
                 }
@@ -54,7 +54,7 @@ export const ParametersSection: React.FC<ParametersSectionProps> = ({
 // Inputs Section Component
 interface InputsSectionProps {
   spec_inputs: NodeInput[];
-  input_values: Array<{name: string; value: any}>;
+  input_values: Record<string, any>;
   nodeId: string;
   onInputValueChange: (inputName: string, value: any) => void;
 }
@@ -73,7 +73,9 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
       {spec_inputs.map((spec_input, index) => {
         const InputComponent = HandleComponentRegistry[spec_input.type_detail.type];
 
-        const inputValue = input_values.find(i => i.name === spec_input.name);
+        console.log("input_values", input_values);
+
+        const inputValue = input_values[spec_input.name];
 
         return (
           <div key={`input-${index}`} style={nodeStyles.inputItem}>
@@ -99,7 +101,7 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
               <div style={nodeStyles.inputComponent}>
                 <InputComponent
                   label=""
-                  value={inputValue?.value || spec_input.default || ''}
+                  value={inputValue !== undefined ? inputValue : spec_input.default || ''}
                   onChange={(value: string) =>
                     onInputValueChange(spec_input.name, value)
                   }

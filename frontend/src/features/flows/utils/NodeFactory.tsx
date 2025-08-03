@@ -55,9 +55,9 @@ class NodeFactoryClass {
       const {
         label = nodeSpec.name,
         description = nodeSpec.description,
-        parameter_values = [],
-        input_values = [],
-        output_values = [],
+        parameter_values = {},
+        input_values = {},
+        output_values = {},
       } = data;
       console.log("Node data:", data);
 

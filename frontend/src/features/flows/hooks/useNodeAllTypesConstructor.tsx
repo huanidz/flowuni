@@ -25,7 +25,7 @@ export const useAllNodeTypesConstructor = (
         nodes.map((node) => {
           if (node.id !== nodeId) return node;
           
-          // Convert input_values array to object if needed
+          // Handle input_values as dictionary (no conversion needed)
           const inputValues = newData.input_values;
 
           // Node has schema of: RFNode (ReactFlow Node with data = NodeData)
