@@ -10,8 +10,6 @@ import {
   useEdgesState,
   useReactFlow,
   ReactFlowProvider,
-  addEdge,
-  type Connection,
   type Edge,
   type Node,
 } from '@xyflow/react';
@@ -62,15 +60,11 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
 
   const { onConnect, onKeyDown } = useFlowUtilOperations(nodes, edges, setNodes, setEdges, [], []);
 
-  const setNodesWrapper = (updater: (nodes: Node[]) => Node[]) => {
-    setNodes(updater);
-  };
-
   const {
     onDragStart,
     onDrop,
     onDragOver
-  } = useDragDropHandler(reactFlowInstance, setNodesWrapper, nodePaletteRef);
+  } = useDragDropHandler(reactFlowInstance, setNodes, nodePaletteRef);
 
   const {
     onCompileFlow,

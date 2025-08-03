@@ -2,10 +2,11 @@ import { useCallback } from 'react';
 import type { Node, ReactFlowInstance } from '@xyflow/react';
 import { Position } from '@xyflow/react';
 import { useNodeRegistry } from '@/features/nodes';
+import React from 'react';
 
 export const useDragDropHandler = (
   reactFlowInstance: ReactFlowInstance | null,
-  setNodes: (updater: (nodes: Node[]) => Node[]) => void,
+  setNodes: React.Dispatch<React.SetStateAction<Node[]>>,
   nodePaletteRef: React.RefObject<HTMLDivElement | null>
 ) => {
   const onDragStart = useCallback(
