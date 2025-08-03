@@ -43,8 +43,6 @@ export const useFlowActions = (
   edges: Edge[],
   setNodes: SetNodesType,
   setEdges: SetEdgesType,
-  selectedNodeIds: string[],
-  selectedEdgeIds: string[],
 ) => {
   const { current_flow } = useFlowStore();
 
@@ -138,42 +136,10 @@ export const useFlowActions = (
     // Node ID reset is no longer needed as we're using timestamp-based IDs
   }, [setNodes, setEdges]);
 
-  const onDeleteSelectedElements = useCallback(() => {
-    // Filter out selected nodes
-    const remainingNodes = nodes.filter(node => !selectedNodeIds.includes(node.id));
-    
-    // Filter out edges that are either:
-    // 1. Explicitly selected (selectedEdgeIds)
-    // 2. Connected to any deleted node (source or target is in selectedNodeIds)
-    const remainingEdges = edges.filter(edge => 
-      !selectedEdgeIds.includes(edge.id) && 
-      !selectedNodeIds.includes(edge.source) && 
-      !selectedNodeIds.includes(edge.target)
-    );
-    
-    setNodes(remainingNodes);
-    setEdges(remainingEdges);
-  }, [nodes, edges, selectedNodeIds, selectedEdgeIds, setNodes, setEdges]);
-
-  const onKeyDown = useCallback(
-    (event: React.KeyboardEvent) => {
-      switch (event.key) {
-        case 'Delete':
-          onDeleteSelectedElements();
-          break;
-        default:
-          break;
-      }
-    },
-    [onDeleteSelectedElements]
-  );
-
   return {
     onCompileFlow,
     onRunFlow,
     onClearFlow,
-    onDeleteSelectedElements,
-    onKeyDown,
     onSaveFlow,
   };
 };

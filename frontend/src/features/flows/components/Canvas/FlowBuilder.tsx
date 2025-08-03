@@ -60,18 +60,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
     }
   }, [initialNodes, initialEdges, nodeTypesLoaded, initializeFlow, setNodes, setEdges]);
 
-  // Use ReactFlow's built-in connection handler
-  const onConnect = useCallback(
-    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
-    [setEdges]
-  );
-
-  // Simplified key handling
-  const onKeyDown = useCallback((event: React.KeyboardEvent) => {
-    if (event.key === 'Delete') {
-      // ReactFlow will handle node/edge deletion automatically with deleteKeyCode prop
-    }
-  }, []);
+  const { onConnect, onKeyDown } = useFlowUtilOperations(nodes, edges, setNodes, setEdges, [], []);
 
   const setNodesWrapper = (updater: (nodes: Node[]) => Node[]) => {
     setNodes(updater);
@@ -93,8 +82,6 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
     edges,
     setNodes,
     setEdges,
-    [], // selectedNodeIds
-    []  // selectedEdgeIds
   );
 
   // Unified loading/error state handling
