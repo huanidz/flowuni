@@ -43,9 +43,12 @@ class NodeRegistry:
             raise ValueError(f"Duplicate node name: {spec.name}")
         self._node_classes[spec.name] = node_cls
 
-    def get_node(self, name: str) -> Optional[NodeSpec]:
+    def get_node_spec_by_name(self, name: str) -> Optional[NodeSpec]:
         cls = self._node_classes.get(name)
         return cls.spec if cls else None
+
+    def get_node_class_by_name(self, name: str) -> Optional[Type[Node]]:
+        return self._node_classes.get(name)
 
     def create_node_class(self, name: str) -> Optional[Type[Node]]:
         return self._node_classes.get(name)

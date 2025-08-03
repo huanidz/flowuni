@@ -4,26 +4,37 @@ export interface NodeParameterSpec {
   name: string;
   value: string;
   default: any;
-  type?: string;
+  type_detail?: string;
   description?: string;
   [key: string]: any;
 }
 
+export interface TypeDetail {
+  type: string;
+  schema: {
+    description: string;
+    properties: Record<string, any>;
+    title: string;
+    type: string;
+  };
+  defaults: Record<string, any>;
+}
+
 export interface NodeInput {
   name: string;
-  type: string;
-  value?: string;
-  default?: any;
-  description?: string;
-  required?: boolean;
+  type_detail: TypeDetail;
+  value: any;
+  default: any;
+  description: string;
+  required: boolean;
 }
 
 export interface NodeOutput {
   name: string;
-  type: string;
-  value?: string;
-  default?: any;
-  description?: string;
+  type_detail: TypeDetail;
+  value: any;
+  default: any;
+  description: string;
 }
 
 export interface NodeSpec {
@@ -31,13 +42,16 @@ export interface NodeSpec {
   description?: string;
   inputs: NodeInput[];
   outputs: NodeOutput[];
-  parameters: Record<string, NodeParameterSpec>;
+  parameters: NodeParameterSpec[];
 }
+
+// --- Node Data ---
+// This is where client pass data back to the backend
 
 export interface NodeData {
   label: string;
   node_type: string;
-  parameters: Record<string, any>;
+  parameter_values: Record<string, any>;
   input_values?: Record<string, any>;
   output_values?: Record<string, any>;
 

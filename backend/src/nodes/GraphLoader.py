@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import List
 
 import networkx as nx
 from src.nodes.NodeRegistry import NodeRegistry
@@ -20,7 +20,7 @@ class GraphLoader:
         list_of_nodes: List[FlowNode] = flow.nodes
 
         for idx, node in enumerate(list_of_nodes):
-            node_spec = nodeRegistry.get_node(node.type)
+            node_spec = nodeRegistry.get_node_spec_by_name(node.type)
             if not node_spec:
                 raise ValueError(f"Unknown node type: {node.type}")
 
@@ -42,40 +42,3 @@ class GraphLoader:
             )
 
         return G
-
-    @staticmethod
-    def to_serializable_dict(G: nx.DiGraph) -> Dict[str, Any]:
-        """
-        Convert the graph to a fully serializable dict (for API response or frontend).
-        Removes any non-serializable Python objects (e.g., Node classes).
-        """
-
-        nodes = []
-        for node_id, data in G.nodes(data=True):
-            nodes.append(
-                {
-                    "id": node_id,
-                    "type": data["type"],
-                    "label": data.get("label"),
-                    "position": data.get("position"),
-                    "inputs": data.get("inputs"),
-                    "outputs": data.get("outputs"),
-                    "parameters": data.get("parameters"),
-                    "spec": data["spec"].model_dump()
-                    if hasattr(data["spec"], "model_dump")
-                    else None,
-                }
-            )
-
-        edges = []
-        for source, target, data in G.edges(data=True):
-            edges.append(
-                {
-                    "source": source,
-                    "target": target,
-                    "sourceHandle": data.get("source_handle"),
-                    "targetHandle": data.get("target_handle"),
-                }
-            )
-
-        return {"nodes": nodes, "edges": edges}

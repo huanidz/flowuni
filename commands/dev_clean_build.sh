@@ -13,6 +13,7 @@ echo "🧹 Removing local data directories..."
 sudo rm -rf ./docker/redis_data/
 sudo rm -rf ./docker/postgres_data/
 sudo rm -rf ./docker/celery_postgres_data/
+sudo rm -rf ./docker/redisinsight_data/
 sudo rm -rf ./docker/logs/
 
 echo "🗑 Removing named Docker volumes..."

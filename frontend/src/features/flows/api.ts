@@ -60,6 +60,10 @@ export const saveFlow = async ({
 };
 
 // --- Flow Execution ---
+ 
+export const deleteFlow = async (flowId: string) => {
+  await apiClient.delete(`${FLOWS_ENDPOINT}/${flowId}`);
+};
 
 export const compileFlow = async (nodes: Node[], edges: Edge[]) => {
   const payload = getFlowGraphData(nodes, edges);

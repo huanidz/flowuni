@@ -1,5 +1,11 @@
-from src.nodes.HandleType import DropdownInputHandle, TextFieldInputHandle
-from src.nodes.NodeBase import Node, NodeInput, NodeOutput, NodeSpec
+from src.nodes.core.NodeInput import NodeInput
+from src.nodes.core.NodeOutput import NodeOutput
+from src.nodes.handles.basics.DropdownInputHandle import (
+    DropdownInputHandle,
+    DropdownOption,
+)
+from src.nodes.handles.basics.TextFieldInputHandle import TextFieldInputHandle
+from src.nodes.NodeBase import Node, NodeSpec
 
 
 class OneInOneOutNode(Node):
@@ -9,12 +15,21 @@ class OneInOneOutNode(Node):
         inputs=[
             NodeInput(
                 name="message_in",
-                type=TextFieldInputHandle,
+                type=TextFieldInputHandle(
+                    max_length=100, placeholder="Enter a message", multiline=True
+                ),
                 description="The message to be sent.",
             ),
             NodeInput(
-                name="message_in2",
-                type=DropdownInputHandle,
+                name="departments",
+                type=DropdownInputHandle(
+                    options=[
+                        DropdownOption(label="IT", value="IT"),
+                        DropdownOption(label="Finance", value="Finance"),
+                        DropdownOption(label="Marketing", value="Marketing"),
+                        DropdownOption(label="Sales", value="Sales"),
+                    ]
+                ),
                 description="The message to be sent.",
             ),
         ],
@@ -26,5 +41,8 @@ class OneInOneOutNode(Node):
         parameters={},
     )
 
-    def process(self, inputs, parameters):
-        return {"message_out": inputs["message_in"]}
+    def process(self, input_values, parameter_values):
+        return {"message_out": input_values["message_in"]}
+
+    def _fetch_departments(self):
+        return ["IT", "Finance", "Marketing", "Sales"]

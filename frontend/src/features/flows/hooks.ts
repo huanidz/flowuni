@@ -1,9 +1,10 @@
 // features/flows/hooks.ts
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { useMutation } from '@tanstack/react-query';
-import { getFlows, createEmtpyFlow, getFlowDetail } from './api';
+import { getFlows, createEmtpyFlow, getFlowDetail, deleteFlow } from './api';
 import { type GetFlowsResponse, type CreateFlowResponse, type GetFlowDetailResponse } from './types';
-import useFlowStore from './stores';
+import useFlowStore from './stores/flow_stores';
 import { useEffect } from 'react';
 import type { Flow } from './types';
 
@@ -28,6 +29,19 @@ export const useCreateEmptyFlow = () => {
   });
 };
 
+export const useDeleteFlow = () => {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, string>({
+    mutationFn: async (flowId: string) => {
+      await deleteFlow(flowId);
+    },
+    onSuccess: () => {
+      // Invalidate the flows query to force a refresh
+      queryClient.invalidateQueries({ queryKey: ['flows'] });
+    },
+  });
+};
+
 interface UseGetFlowDetailParams {
   flowId: string;
   enabled?: boolean;
@@ -45,7 +59,6 @@ export const useGetFlowDetail = ({ flowId, enabled = true }: UseGetFlowDetailPar
   });
 
   useEffect(() => {
-
     
     if (query.data) {
       

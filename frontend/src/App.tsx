@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-d
 import FlowBuilderPage from './pages/FlowBuilderPage';
 import FlowDashboardPage from './pages/FlowDashboardPage';
 import AuthenticationPage from './pages/AuthenticationPage';
-import ProtectedLayout from './features/auth/ProtectedLayout';
+import ProtectedLayout from './features/auth/components/ProtectedLayout';
 import { Toaster } from './components/ui/sonner';
 function App() {
   return (

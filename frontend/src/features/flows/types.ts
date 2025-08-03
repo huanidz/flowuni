@@ -4,6 +4,8 @@ export interface Flow {
   description: string;
   is_active: boolean;
   flow_definition?: string | null;
+  created_at?: string;
+  node_count?: number;
 }
 
 export interface Pagination {

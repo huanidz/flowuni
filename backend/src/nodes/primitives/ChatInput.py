@@ -1,4 +1,5 @@
-from src.nodes.NodeBase import Node, NodeSpec, NodeInput, NodeOutput
+from src.nodes.core.NodeOutput import NodeOutput
+from src.nodes.NodeBase import Node, NodeSpec
 
 
 class ChatInput(Node):

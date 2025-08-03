@@ -27,6 +27,9 @@ async def compile_flow_endpoint(
     """
     try:
         request_json = await request.json()
+
+        logger.info(f"Compilation request received: {request_json}")
+
         flow_graph_request = FlowGraphRequest(**request_json)
 
         # Submit compile task to Celery
@@ -68,6 +71,10 @@ async def execute_flow_endpoint(
     try:
         request_json = await request.json()
         flow_graph_request = FlowGraphRequest(**request_json)
+
+        logger.info(
+            f"Execution request received: {flow_graph_request.model_dump_json(indent=2)}"
+        )  # noqa: E501
 
         # Submit run task to Celery
         task = run_flow.delay("flow-execute", flow_graph_request.model_dump())

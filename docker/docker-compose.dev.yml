@@ -16,6 +16,7 @@ services:
         condition: service_healthy
       redis-service:
         condition: service_healthy
+    # restart: always
 
   celery-worker:
     build: 
@@ -39,6 +40,7 @@ services:
       sh -c "
         watchfiles 'celery -A src.celery_worker.celery_worker.celery_app worker --loglevel=info' /app/src
       "
+    # restart: always
 
   # flower:
   #   image: mher/flower:master

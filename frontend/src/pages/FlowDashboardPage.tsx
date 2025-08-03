@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/ui/Logo';
-import FlowList from '@/components/FlowList/FlowList';
+import FlowList from '@/features/flows/components/FlowList/FlowList';
 
 import { useLogout } from '@/features/auth/hooks';
 import { useNavigate } from 'react-router-dom';

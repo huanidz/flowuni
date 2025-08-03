@@ -1,4 +1,6 @@
-from src.nodes.NodeBase import Node, NodeSpec, NodeInput
+from src.nodes.core.NodeInput import NodeInput
+from src.nodes.handles.basics.TextFieldInputHandle import TextFieldInputHandle
+from src.nodes.NodeBase import Node, NodeSpec
 
 
 class ChatOutput(Node):
@@ -7,7 +9,9 @@ class ChatOutput(Node):
         description="A node that output a message.",
         inputs=[
             NodeInput(
-                name="message_in", type=str, description="The message to be output."
+                name="message_in",
+                type=TextFieldInputHandle(),
+                description="The message to be output.",
             )
         ],
         outputs=[],

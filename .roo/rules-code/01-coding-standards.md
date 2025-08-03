@@ -4,8 +4,10 @@
 2. Write proper comments
 3. Error handling must be done properly.
 4. Always assign type
+5. Must do the imports exactly before write code.
 
 # Typescript coding standard
 
 1. Prefer using shadcn/ui
 2. ReactQuery is v5 so some callbacks is deprecated
+3. Keep the styling very simple.
