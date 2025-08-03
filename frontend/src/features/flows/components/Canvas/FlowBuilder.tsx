@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState, useMemo } from 'react';
+import React, { useCallback, useRef } from 'react';
 import FlowToolbar from './FlowToolBar';
 import NodePalette from './FlowNodePallete';
 import {
@@ -6,8 +6,14 @@ import {
   Controls,
   Background,
   BackgroundVariant,
+  useNodesState,
+  useEdgesState,
+  useReactFlow,
+  ReactFlowProvider,
+  addEdge,
+  type Connection,
+  type Edge,
 } from '@xyflow/react';
-import type { ReactFlowInstance } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
 import { useAllNodeTypesConstructor } from '../../hooks/useNodeAllTypesConstructor';
@@ -20,46 +26,51 @@ interface FlowBuilderContentProps {
   flow_id: string;
 }
 
-const FlowBuilder: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
+// Separate the main flow component to use ReactFlow hooks
+const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const nodePaletteRef = useRef<HTMLDivElement>(null);
-  const [reactFlowInstance, setReactFlowInstance] =
-    useState<ReactFlowInstance | null>(null);
+  
+  // Use ReactFlow's built-in state management hooks
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  
+  // Use ReactFlow's instance hook instead of managing state manually
+  const reactFlowInstance = useReactFlow();
 
-  // Use consolidated flow state hook
+  // Node types management
+  const { nodeTypes, nodeTypesLoaded } = useAllNodeTypesConstructor(setNodes);
+
+  // Use consolidated flow state hook (simplified without duplicate state)
   const {
-    nodes,
-    setNodes,
-    onNodesChange,
-    edges,
-    setEdges,
-    onEdgesChange,
     initialNodes,
     initialEdges,
     initializeFlow,
     isLoading,
     flowError,
-    nodeRegistryLoaded
   } = useCurrentFlowState(flow_id);
 
   // Initialize flow when data is ready
   React.useEffect(() => {
-    // Only require nodes and node registry loaded - edges can be empty initially
+    if (initialNodes && nodeTypesLoaded) {
+      setNodes(initialNodes);
+      setEdges(initialEdges || []);
       initializeFlow();
-}, [initialNodes, initialEdges, nodeRegistryLoaded, initializeFlow]);
+    }
+  }, [initialNodes, initialEdges, nodeTypesLoaded, initializeFlow, setNodes, setEdges]);
 
-  const [nodeTypes, setNodeTypes] = useState<Record<string, React.ComponentType<any>>>({});
+  // Use ReactFlow's built-in connection handler
+  const onConnect = useCallback(
+    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
+    [setEdges]
+  );
 
-  // Create node types with update functions
-  const {
-    onConnect,
-    onKeyDown,
-  } = useFlowUtilOperations(nodes, edges, setNodes, setEdges, [], []);
-
-  useAllNodeTypesConstructor(setNodes, setNodeTypes);
-
-  // Memoize nodeTypes to prevent ReactFlow warning
-  const memoizedNodeTypes = useMemo(() => nodeTypes, [nodeTypes]);
+  // Simplified key handling
+  const onKeyDown = useCallback((event: React.KeyboardEvent) => {
+    if (event.key === 'Delete') {
+      // ReactFlow will handle node/edge deletion automatically with deleteKeyCode prop
+    }
+  }, []);
 
   const { 
     onDragStart, 
@@ -72,31 +83,29 @@ const FlowBuilder: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
     onRunFlow, 
     onClearFlow, 
     onSaveFlow 
-  } = useFlowActions(nodes, edges, setNodes, setEdges, [], []);
-
-  const onInit = useCallback((instance: ReactFlowInstance) => {
-    setReactFlowInstance(instance);
-  }, []);
+  } = useFlowActions(
+    nodes, 
+    edges, 
+    setNodes, 
+    setEdges, 
+    () => setNodes([]), // Clear nodes function
+    () => setEdges([])  // Clear edges function
+  );
 
   // Unified loading/error state handling
-  if (isLoading) {
-    const message = isLoading ? 'Loading flow...' : 'Loading node registry...';
+  if (isLoading || !nodeTypesLoaded) {
+    const message = isLoading ? 'Loading flow...' : 'Loading node types...';
     
     return (
       <div className="w-full h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
-          {isLoading ? (
-            <div className="animate-spin rounded-full border-4 border-blue-500 border-t-transparent w-12 h-12 mx-auto mb-4"></div>
-          ) : (
-            <div className="animate-pulse rounded-full bg-blue-500 w-4 h-4 mx-auto mb-4"></div>
-          )}
+          <div className="animate-spin rounded-full border-4 border-blue-500 border-t-transparent w-12 h-12 mx-auto mb-4"></div>
           <p className="text-gray-600">{message}</p>
         </div>
       </div>
     );
   }
 
-  // Handle error states
   if (flowError) {
     return (
       <div className="w-full h-screen bg-gray-100 flex items-center justify-center">
@@ -134,20 +143,31 @@ const FlowBuilder: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
           edges={edges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
-          onSelectionChange={() => {}}
           onConnect={onConnect}
-          onInit={onInit}
           minZoom={1}
           maxZoom={2}
           className="bg-gray-50"
-          nodeTypes={memoizedNodeTypes}
-          deleteKeyCode={'Delete'}
+          nodeTypes={nodeTypes}
+          deleteKeyCode="Delete"
+          // Additional built-in props for better UX
+          snapToGrid={true}
+          snapGrid={[15, 15]}
+          attributionPosition="top-right"
         >
           <Controls />
           <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
         </ReactFlow>
       </div>
     </div>
+  );
+};
+
+// Wrapper component with ReactFlowProvider
+const FlowBuilder: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
+  return (
+    <ReactFlowProvider>
+      <FlowBuilderContent flow_id={flow_id} />
+    </ReactFlowProvider>
   );
 };
 

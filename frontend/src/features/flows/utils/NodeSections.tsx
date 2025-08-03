@@ -7,7 +7,6 @@ import { nodeStyles } from '@/features/flows/styles/nodeStyles';
 import { executionResultStyles } from '@/features/flows/styles/nodeSectionStyles';
 import type { NodeParameterSpec, NodeInput, NodeOutput } from '@/features/nodes/types';
 
-
 // Parameters Section Component
 interface ParametersSectionProps {
   spec_parameters: NodeParameterSpec[];

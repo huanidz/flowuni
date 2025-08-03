@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { type Flow } from '../types';
 
+import { type Node, type Edge } from '@xyflow/react';
+
 export interface FlowStore {
   current_flow: Flow | null;
   flows: Flow[];
@@ -39,5 +41,14 @@ const useFlowStore = create<FlowStore>((set, get) => ({
     return flows.map(flow => flow.flow_id);
   },
 }));
+
+
+// CurrentFlowStore
+
+export interface CurrentFlowStore {
+  nodes: Node[];
+  edges: Edge[];
+}
+
 
 export default useFlowStore;
