@@ -1,6 +1,6 @@
 from typing import Dict, List
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.core.NodeParameterSpec import ParameterSpec
@@ -34,4 +34,56 @@ class NodeSpec(BaseModel):
     #                 raise ValueError(
     #                     f"Resolver '{handle.resolver}' not found in {node_class}"
     #                 )
-    #     return values
+    @model_validator(mode="before")
+    @classmethod
+    def validate_unique_input_names(cls, values):
+        """Validate that all input names are unique within the node specification.
+
+        This validator ensures that no two inputs have the same name, which would
+        cause ambiguity in the node's interface. The validation occurs during
+        model instantiation.
+
+        Args:
+            values: Dictionary of field values being validated
+
+        Returns:
+            The input values if validation passes
+
+        Raises:
+            ValueError: If duplicate input names are found
+        """
+        inputs = values.get("inputs", [])
+        seen_names = set()
+        for inp in inputs:
+            name = inp.get("name")
+            if name in seen_names:
+                raise ValueError(f"Duplicate input name detected: {name}")
+            seen_names.add(name)
+        return values
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_unique_output_names(cls, values):
+        """Validate that all output names are unique within the node specification.
+
+        This validator ensures that no two outputs have the same name, which would
+        cause ambiguity in the node's interface. The validation occurs during
+        model instantiation.
+
+        Args:
+            values: Dictionary of field values being validated
+
+        Returns:
+            The input values if validation passes
+
+        Raises:
+            ValueError: If duplicate output names are found
+        """
+        outputs = values.get("outputs", [])
+        seen_names = set()
+        for out in outputs:
+            name = out.get("name")
+            if name in seen_names:
+                raise ValueError(f"Duplicate output name detected: {name}")
+            seen_names.add(name)
+        return values
