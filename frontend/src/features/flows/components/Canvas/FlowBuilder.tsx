@@ -13,6 +13,7 @@ import {
   addEdge,
   type Connection,
   type Edge,
+  type Node,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
@@ -32,8 +33,8 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
   const nodePaletteRef = useRef<HTMLDivElement>(null);
   
   // Use ReactFlow's built-in state management hooks
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   
   // Use ReactFlow's instance hook instead of managing state manually
   const reactFlowInstance = useReactFlow();
@@ -72,24 +73,28 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
     }
   }, []);
 
-  const { 
-    onDragStart, 
-    onDrop, 
-    onDragOver 
-  } = useDragDropHandler(reactFlowInstance, setNodes, nodePaletteRef);
+  const setNodesWrapper = (updater: (nodes: Node[]) => Node[]) => {
+    setNodes(updater);
+  };
 
-  const { 
-    onCompileFlow, 
-    onRunFlow, 
-    onClearFlow, 
-    onSaveFlow 
+  const {
+    onDragStart,
+    onDrop,
+    onDragOver
+  } = useDragDropHandler(reactFlowInstance, setNodesWrapper, nodePaletteRef);
+
+  const {
+    onCompileFlow,
+    onRunFlow,
+    onClearFlow,
+    onSaveFlow
   } = useFlowActions(
-    nodes, 
-    edges, 
-    setNodes, 
-    setEdges, 
-    () => setNodes([]), // Clear nodes function
-    () => setEdges([])  // Clear edges function
+    nodes,
+    edges,
+    setNodes,
+    setEdges,
+    [], // selectedNodeIds
+    []  // selectedEdgeIds
   );
 
   // Unified loading/error state handling
