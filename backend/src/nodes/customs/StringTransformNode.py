@@ -21,8 +21,8 @@ class StringTransformNode(Node):
         parameters={},
     )
 
-    def process(self, inputs, parameters):
-        input_string = inputs["input"]
+    def process(self, input_values, parameter_values):
+        input_string = input_values["input"]
 
         import time
 
