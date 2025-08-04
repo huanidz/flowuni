@@ -59,7 +59,7 @@ class NodeFactoryClass {
         input_values = {},
         output_values = {},
       } = data;
-      console.log("Node data:", data);
+      // console.log("Node data:", data);
 
       // Hook to manage user interactions with parameters and inputs
       const {

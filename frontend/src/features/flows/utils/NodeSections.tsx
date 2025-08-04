@@ -1,11 +1,13 @@
 // NodeSections.tsx
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { NodeInputType } from '@/features/flows/handles/HandleComponentRegistry';
 import { HandleComponentRegistry } from '@/features/flows/handles/HandleComponentRegistry';
 import { nodeStyles } from '@/features/flows/styles/nodeStyles';
 import { executionResultStyles } from '@/features/flows/styles/nodeSectionStyles';
 import type { NodeParameterSpec, NodeInput, NodeOutput } from '@/features/nodes/types';
+
+import { useEdges } from '@xyflow/react';
 
 // Parameters Section Component
 interface ParametersSectionProps {
@@ -65,24 +67,36 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
   nodeId,
   onInputValueChange,
 }) => {
+  const edges = useEdges();
+
   if (spec_inputs.length === 0) return null;
+
+  // Pre-compute edge lookup for better performance
+  const targetHandleEdges = useMemo(() => {
+    const lookup = new Set<string>();
+    edges.forEach(edge => {
+      if (edge.targetHandle) {
+        lookup.add(edge.targetHandle);
+      }
+    });
+    return lookup;
+  }, [edges]);
 
   return (
     <div style={nodeStyles.inputsSection}>
       <div style={nodeStyles.sectionTitle}>Inputs</div>
       {spec_inputs.map((spec_input, index) => {
         const InputComponent = HandleComponentRegistry[spec_input.type_detail.type];
-
-        console.log("input_values", input_values);
-
         const inputValue = input_values[spec_input.name];
+        const handleId = `${spec_input.name}-index:${index}`;
+        const isExistIncomingEdge = targetHandleEdges.has(handleId);
 
         return (
           <div key={`input-${index}`} style={nodeStyles.inputItem}>
             <Handle
               type="target"
               position={Position.Left}
-              id={`${spec_input.name}-index:${index}`}
+              id={handleId}
               style={nodeStyles.handle.input}
             />
 
@@ -107,6 +121,7 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
                   }
                   nodeId={nodeId}
                   type_detail={spec_input.type_detail}
+                  disabled={isExistIncomingEdge}
                 />
               </div>
             )}

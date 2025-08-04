@@ -16,7 +16,7 @@ class OneInOneOutNode(Node):
             NodeInput(
                 name="message_in",
                 type=TextFieldInputHandle(
-                    max_length=100, placeholder="Enter a message", multiline=True
+                    max_length=100, placeholder="Enter a message", multiline=False
                 ),
                 description="The message to be sent.",
             ),

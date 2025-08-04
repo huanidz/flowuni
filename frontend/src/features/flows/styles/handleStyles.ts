@@ -102,7 +102,7 @@ export const textfieldHandleStyles = {
     boxSizing: 'border-box',
     outline: 'none',
     transition: 'border-color 0.2s',
-    resize: 'vertical',
+    resize: 'none',
   } as CSSProperties,
   multiline: {
     minHeight: '60px',
