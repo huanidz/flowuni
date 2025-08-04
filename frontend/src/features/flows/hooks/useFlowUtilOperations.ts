@@ -22,18 +22,20 @@ export const useFlowUtilOperations = (
 
   // Handle connections between nodes
   const onConnect = useCallback((connection: Connection) => {
-      const { source, target } = connection;
+      const { source, target, targetHandle } = connection;
 
       if (!source || !target) return;
 
-      // Check if target already has an incoming edge
-      const hasIncomingEdge = edges.some((edge) => edge.target === target);
+      // Check if the specific target handle already has an incoming edge
+      const hasIncomingEdgeOnHandle = edges.some((edge) => 
+        edge.target === target && edge.targetHandle === targetHandle
+      );
 
-      if (hasIncomingEdge) {
-        return; // Prevent connection
+      if (hasIncomingEdgeOnHandle) {
+        return; // Prevent connection - this specific handle already has an edge
       }
 
-      // If no incoming edge, allow connection
+      // If the specific handle has no incoming edge, allow connection
       setEdges((eds) => addEdge(connection, eds));
     },
     [edges, setEdges]
