@@ -1,6 +1,6 @@
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
-from src.nodes.HandleType import TextFieldInputHandle
+from src.nodes.handles.basics.TextFieldInputHandle import TextFieldInputHandle
 from src.nodes.NodeBase import Node, NodeSpec
 
 
@@ -11,12 +11,12 @@ class ToolNode(Node):
         inputs=[
             NodeInput(
                 name="input_message",
-                type=TextFieldInputHandle,
+                type=TextFieldInputHandle(),
                 description="The message to be processed by agent.",
             ),
             NodeInput(
                 name="system_instruction",
-                type=TextFieldInputHandle,
+                type=TextFieldInputHandle(),
                 description="Agent instruction",
             ),
         ],

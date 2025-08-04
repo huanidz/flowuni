@@ -14,6 +14,6 @@ __all__ = [
     # MultiOutputNode,
     OneInOneOutNode,
     StringTransformNode,
-    # AgentNode,
+    AgentNode,
     # ToolNode,
 ]

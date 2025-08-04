@@ -18,6 +18,7 @@ class NodeInput(BaseModel):
     @field_validator("type")
     @classmethod
     def validate_type(cls, v):
+        # Check if it's a class (type object) rather than an instance
         if isinstance(v, type):
             # List of primitive Python types to block
             primitive_types = (str, int, float, bool, list, dict, tuple, set)
@@ -30,4 +31,13 @@ class NodeInput(BaseModel):
                 raise ValueError(
                     f"Builtin type {v.__name__} is not allowed for 'type' field"
                 )
+            # New validation: reject classes, require instances
+            raise ValueError(
+                f"Class {v.__name__} is not allowed for 'type' field. "
+                f"Please provide an instance of the class instead (e.g., {v.__name__}()\
+                instead of {v.__name__})"
+            )
+
+        # If it's not a type (class), it should be an instance
+        # We can add additional validation here if needed
         return v
