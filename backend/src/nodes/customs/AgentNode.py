@@ -25,16 +25,19 @@ class AgentNode(Node):
                     ]
                 ),
                 description="LLM provider",
+                allow_incoming_edges=False,
             ),
             NodeInput(
                 name="model",
                 type=DropdownInputHandle(options=[]),
                 description="LLM model",
+                allow_incoming_edges=False,
             ),
             NodeInput(
                 name="API Key",
                 type=SecretTextInputHandle(allow_visible_toggle=True, multiline=False),
                 description="LLM API Key",
+                allow_incoming_edges=False,
             ),
             NodeInput(
                 name="input_message",
@@ -46,6 +49,7 @@ class AgentNode(Node):
                 type=TextFieldInputHandle(),
                 description="Agent instruction",
                 default="You are a helpful assistant.",
+                allow_incoming_edges=False,
             ),
         ],
         outputs=[

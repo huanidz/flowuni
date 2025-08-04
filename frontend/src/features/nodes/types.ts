@@ -27,6 +27,7 @@ export interface NodeInput {
   default: any;
   description: string;
   required: boolean;
+  allow_incoming_edges: boolean
 }
 
 export interface NodeOutput {

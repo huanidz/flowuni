@@ -6,6 +6,7 @@ from typing import Any, Dict, Optional, Type, Union
 from pydantic import BaseModel
 from src.exceptions.node_exceptions import NodeValidationError
 from src.nodes.core.NodeInput import NodeInput
+from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.core.NodeSpec import NodeSpec
 from src.nodes.handles.HandleBase import HandleTypeBase
 from src.schemas.flowbuilder.flow_graph_schemas import NodeData
@@ -214,6 +215,7 @@ class Node(ABC):
     def _serialize_inputs(self) -> list:
         """Serialize input specifications."""
         serialized_inputs = []
+        input_spec: NodeInput
         for input_spec in self.spec.inputs:
             serialized_inputs.append(
                 NodeInputSchema(
@@ -223,6 +225,7 @@ class Node(ABC):
                     default=input_spec.default,
                     description=input_spec.description,
                     required=input_spec.required,
+                    allow_incoming_edges=input_spec.allow_incoming_edges,
                 ).model_dump()
             )
         return serialized_inputs
@@ -230,6 +233,7 @@ class Node(ABC):
     def _serialize_outputs(self) -> list:
         """Serialize output specifications."""
         serialized_outputs = []
+        output_spec: NodeOutput
         for output_spec in self.spec.outputs:
             serialized_outputs.append(
                 NodeOutputSchema(
