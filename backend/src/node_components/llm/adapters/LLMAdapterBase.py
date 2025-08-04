@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Literal, Optional, TypedDict
+from typing import List, Literal, Optional, TypedDict, Union
 
 from pydantic import BaseModel
 
@@ -54,8 +54,8 @@ class LLMAdapterBase(ABC):
     @abstractmethod
     def chat_completion(
         self,
-        messages: List,
+        messages: Union[List[ChatMessage], str],
         stream: bool = False,
         generation_parameters: GenerationParams = {},
-    ) -> str:
+    ) -> ChatResponse:
         pass

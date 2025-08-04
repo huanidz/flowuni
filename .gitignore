@@ -56,6 +56,7 @@ migrations/
 postgres_data/
 redis_data/
 scripts/
+redisinsight_data/
 
 # Distribution / packaging
 .Python

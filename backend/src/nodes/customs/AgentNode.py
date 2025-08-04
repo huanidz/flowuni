@@ -79,18 +79,10 @@ class AgentNode(Node):
         model = input_values["model"]
         api_key = input_values["API Key"]
         system_prompt = input_values["system_instruction"]
+        input_message = input_values["input_message"]
 
         llm_provider = GoogleGeminiProvider(model, system_prompt, api_key)
 
-        resp = llm_provider.chat_completion(
-            messages=[
-                {
-                    "role": "user",
-                    "content": "Extract Jason is 25 years old.",
-                }
-            ],
-        )
+        chat_response = llm_provider.chat_completion(messages=input_message)
 
-        logger.info(f"LLM response: {resp.response}")
-
-        return super().process(input_values, parameter_values)
+        return {"response": chat_response["content"]}

@@ -1,6 +1,8 @@
 import instructor
 from google import genai
+from google.genai import types
 from src.node_components.llm.adapters.LLMAdapterBase import (
+    ChatResponse,
     LLMAdapterBase,
     LLMResponse,
 )
@@ -17,20 +19,45 @@ class GoogleGeminiProvider(LLMAdapterBase):
             api_key=self.api_key,
         )
 
-        return instructor.from_gemini(
+        return instructor.from_genai(
             client=model_client,
-            mode=instructor.Mode.GEMINI_JSON,
+            mode=instructor.Mode.GENAI_STRUCTURED_OUTPUTS,
         )
 
-    def chat_completion(self, messages, stream=False, generation_parameters=...):
+    def chat_completion(
+        self, messages, stream=False, generation_parameters=...
+    ) -> ChatResponse:
+        completion_messages = []
+        if isinstance(messages, str):
+            completion_messages = [
+                {
+                    "role": "user",
+                    "content": messages,
+                }
+            ]
+        else:
+            completion_messages = [
+                {
+                    "role": "user",
+                    "content": message.content,
+                }
+                for message in messages
+            ]
+
         llm_client = self.get_client()
 
         resp = llm_client.messages.create(
-            messages=[
-                {
-                    "role": "user",
-                    "content": "Extract Jason is 25 years old.",
-                }
-            ],
+            model=self.model,
+            messages=completion_messages,
             response_model=LLMResponse,
+            config=types.GenerateContentConfig(
+                thinking_config=types.ThinkingConfig(thinking_budget=0)
+            ),
         )
+
+        chat_response = ChatResponse(
+            content=resp.response,
+            usage={},
+        )
+
+        return chat_response
