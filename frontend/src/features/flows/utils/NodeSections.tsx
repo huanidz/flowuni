@@ -71,16 +71,16 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
 
   if (spec_inputs.length === 0) return null;
 
-  // Pre-compute edge lookup for better performance
+  // Pre-compute edge lookup for this specific node
   const targetHandleEdges = useMemo(() => {
     const lookup = new Set<string>();
     edges.forEach(edge => {
-      if (edge.targetHandle) {
+      if (edge.targetHandle && edge.target === nodeId) {
         lookup.add(edge.targetHandle);
       }
     });
     return lookup;
-  }, [edges]);
+  }, [edges, nodeId]);
 
   return (
     <div style={nodeStyles.inputsSection}>
