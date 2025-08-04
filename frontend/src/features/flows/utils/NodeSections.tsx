@@ -90,7 +90,6 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
         const inputValue = input_values[spec_input.name];
         const handleId = `${spec_input.name}-index:${index}`;
         const isExistIncomingEdge = targetHandleEdges.has(handleId);
-        console.log("spec_input:", spec_input);
         const allowIncomingEdges = spec_input.allow_incoming_edges;
 
         return (

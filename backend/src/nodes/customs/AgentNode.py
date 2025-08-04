@@ -1,3 +1,7 @@
+from loguru import logger
+from src.node_components.llm.adapters.providers.GoogleGeminiProvider import (
+    GoogleGeminiProvider,
+)
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.handles.basics.DropdownInputHandle import (
@@ -29,7 +33,13 @@ class AgentNode(Node):
             ),
             NodeInput(
                 name="model",
-                type=DropdownInputHandle(options=[]),
+                type=DropdownInputHandle(
+                    options=[
+                        DropdownOption(
+                            label="gemini-2.5-flash", value="gemini-2.5-flash"
+                        ),
+                    ]
+                ),
                 description="LLM model",
                 allow_incoming_edges=False,
             ),
@@ -60,5 +70,27 @@ class AgentNode(Node):
         parameters={},
     )
 
-    def process(self, inputs, parameters):
-        return super().process(inputs, parameters)
+    def process(self, input_values, parameter_values):
+        # Log every field of input_values
+        logger.info("Input values:")
+        for key, value in input_values.items():
+            logger.info(f"{key}: {value}")
+
+        model = input_values["model"]
+        api_key = input_values["API Key"]
+        system_prompt = input_values["system_instruction"]
+
+        llm_provider = GoogleGeminiProvider(model, system_prompt, api_key)
+
+        resp = llm_provider.chat_completion(
+            messages=[
+                {
+                    "role": "user",
+                    "content": "Extract Jason is 25 years old.",
+                }
+            ],
+        )
+
+        logger.info(f"LLM response: {resp.response}")
+
+        return super().process(input_values, parameter_values)
