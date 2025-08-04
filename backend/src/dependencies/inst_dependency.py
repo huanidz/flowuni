@@ -1,12 +1,13 @@
 # app/dependencies/instructor_ext.py
 from typing import Optional
-from google.oauth2.service_account import Credentials
-from vertexai import init
+
 import instructor
+from google.oauth2.service_account import Credentials
 from instructor import Instructor, Mode
-from vertexai.generative_models import GenerativeModel
-from src.utils.chat_completion_utils import get_current_time
 from src.configs.config import get_settings
+from src.utils.chat_completion_utils import get_current_time
+from vertexai import init
+from vertexai.generative_models import GenerativeModel
 
 
 class InstructorService:

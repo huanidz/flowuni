@@ -5,6 +5,7 @@ from src.nodes.handles.basics import (
     DropdownInputHandle,
     FileInputHandle,
     NumberInputHandle,
+    SecretTextInputHandle,
     TextFieldInputHandle,
 )
 from src.nodes.handles.HandleBase import HandleTypeBase
@@ -19,6 +20,7 @@ class HandleTypeRegistry:
         "number": NumberInputHandle,
         "file": FileInputHandle,
         "boolean": BooleanInputHandle,
+        "secret_text": SecretTextInputHandle,
     }
 
     @classmethod

@@ -110,3 +110,53 @@ export const textfieldHandleStyles = {
 } as const;
 
 export default dropdownHandleStyles;
+
+
+// Secret text handle styles
+export const secretTextHandleStyles = {
+  container: {
+    display: 'flex',
+    flexDirection: 'column',
+    fontSize: '12px',
+    width: '100%',
+  } as CSSProperties,
+  label: {
+    marginBottom: '4px',
+    fontWeight: 'bold',
+    color: '#333',
+  } as CSSProperties,
+  description: {
+    marginBottom: '4px',
+    color: '#666',
+    fontSize: '11px',
+  } as CSSProperties,
+  common: {
+    padding: '6px 8px',
+    fontSize: '12px',
+    border: '1px solid #ccc',
+    borderRadius: '4px',
+    width: '100%',
+    boxSizing: 'border-box',
+    outline: 'none',
+    transition: 'border-color 0.2s',
+    resize: 'none',
+  } as CSSProperties,
+  multiline: {
+    minHeight: '60px',
+  } as CSSProperties,
+  toggleButton: {
+    position: 'absolute',
+    right: '8px',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    fontSize: '14px',
+    color: '#007bff',
+  } as CSSProperties,
+  inputContainer: {
+    position: 'relative',
+    width: '100%',
+  } as CSSProperties,
+} as const;

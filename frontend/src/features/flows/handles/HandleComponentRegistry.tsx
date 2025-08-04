@@ -1,14 +1,17 @@
 import React from 'react';
 import { TextFieldHandleInput } from './basics/TextFieldHandleInput';
 import { DropdownHandleInput } from './basics/DropdownHandleInput';
+import { SecretTextHandleInput } from './basics/SecretTextHandleInput';
 
 export type NodeInputType =
   | 'TextFieldInputHandle'
-  | 'DropdownInputHandle' /* etc. */;
+  | 'DropdownInputHandle'
+  | 'SecretTextInputHandle' /* etc. */;
 
 export const NodeInputType = {
   TextField: 'TextFieldInputHandle',
   Dropdown: 'DropdownInputHandle',
+  SecretText: 'SecretTextInputHandle',
 } as const;
 
 
@@ -18,4 +21,5 @@ export const HandleComponentRegistry: {
 } = {
   [NodeInputType.TextField]: TextFieldHandleInput,
   [NodeInputType.Dropdown]: DropdownHandleInput,
+  [NodeInputType.SecretText]: SecretTextHandleInput,
 };

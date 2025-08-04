@@ -1,5 +1,10 @@
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
+from src.nodes.handles.basics.DropdownInputHandle import (
+    DropdownInputHandle,
+    DropdownOption,
+)
+from src.nodes.handles.basics.SecretTextInputHandle import SecretTextInputHandle
 
 # from src.nodes.HandleType import TextFieldInputHandle
 from src.nodes.handles.basics.TextFieldInputHandle import TextFieldInputHandle
@@ -12,6 +17,26 @@ class AgentNode(Node):
         description="Agent node that use tools to process the message.",
         inputs=[
             NodeInput(
+                name="provider",
+                type=DropdownInputHandle(
+                    options=[
+                        DropdownOption(label="OpenAI", value="OpenAI"),
+                        DropdownOption(label="Google", value="Google"),
+                    ]
+                ),
+                description="LLM provider",
+            ),
+            NodeInput(
+                name="model",
+                type=DropdownInputHandle(options=[]),
+                description="LLM model",
+            ),
+            NodeInput(
+                name="API Key",
+                type=SecretTextInputHandle(allow_visible_toggle=True, multiline=False),
+                description="LLM API Key",
+            ),
+            NodeInput(
                 name="input_message",
                 type=TextFieldInputHandle(),
                 description="The message to be processed by agent.",
@@ -20,6 +45,7 @@ class AgentNode(Node):
                 name="system_instruction",
                 type=TextFieldInputHandle(),
                 description="Agent instruction",
+                default="You are a helpful assistant.",
             ),
         ],
         outputs=[
