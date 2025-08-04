@@ -14,8 +14,8 @@ export interface FlowDefinitionData {
     data: {
       label: string;
       node_type: string;
-      parameter_values: Array<{name: string; value: any; type_detail?: any}>;
-      input_values: Array<{name: string; value: any}>;
+      parameter_values: Record<string, any>;
+      input_values: Record<string, any>;
       output_values: Record<string, any>;
     };
   }>;
