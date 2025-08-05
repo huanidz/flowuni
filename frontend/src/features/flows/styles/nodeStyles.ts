@@ -4,7 +4,7 @@ export const nodeStyles = {
     padding: '12px',
     borderRadius: '8px',
     background: 'white',
-    minWidth: '220px',
+    minWidth: '300px',
     position: 'relative' as const,
     boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
     maxWidth: '230px',
@@ -69,6 +69,7 @@ export const nodeStyles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'flex-end',
+    // gap: '8px'
   },
 
   outputLabel: {
@@ -91,7 +92,7 @@ export const nodeStyles = {
 
     output: {
       position: 'absolute' as const,
-      right: '-6px',
+      right: '-12px',
       top: '50%',
       transform: 'translateY(-50%)',
       width: 12,

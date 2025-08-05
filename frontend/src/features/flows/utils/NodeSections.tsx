@@ -142,23 +142,22 @@ export const OutputsSection: React.FC<OutputsSectionProps> = ({ spec_outputs }) 
   return (
     <div style={nodeStyles.outputsSection}>
       <div style={nodeStyles.sectionTitle}>Outputs</div>
-      {spec_outputs.map((output, index) => (
+      {spec_outputs.map((spec_output, index) => (
         <div key={`output-${index}`} style={nodeStyles.outputItem}>
-          <Handle
-            type="source"
-            position={Position.Right}
-            id={`${output.name}-index:${index}`}
-            style={nodeStyles.handle.output}
+          <HandleInfo
+            name={spec_output.name}
+            description={spec_output.description}
+            required={false}
           />
-          <span style={nodeStyles.outputLabel}>
-            <strong>{output.name}</strong>
-            {output.description && (
-              <span style={nodeStyles.description}>
-                {' '}
-                - {output.description}
-              </span>
-            )}
-          </span>
+
+          <div style={{ position: 'relative', width: '12px', height: '24px' }}>
+            <Handle
+              type="source"
+              position={Position.Right}
+              id={`${spec_output.name}-index:${index}`}
+              style={nodeStyles.handle.output}
+            />
+          </div>
         </div>
       ))}
     </div>
