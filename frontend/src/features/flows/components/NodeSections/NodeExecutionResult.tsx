@@ -6,9 +6,41 @@ interface NodeExecutionResultProps {
   status?: string;
 }
 
-export const NodeExecutionResult: React.FC<NodeExecutionResultProps> = ({ 
-  result, 
-  status = 'success' 
+// Helper function to beautify JSON
+const beautifyJson = (jsonString: string): string => {
+  try {
+    const parsed = JSON.parse(jsonString);
+    return JSON.stringify(parsed, null, 2);
+  } catch {
+    // If it's not valid JSON, return the original string
+    return jsonString;
+  }
+};
+
+// Helper function to add syntax highlighting
+const addSyntaxHighlighting = (jsonString: string): React.ReactElement => {
+  const highlighted = jsonString
+    // Highlight keys
+    .replace(/"([^"]+)":/g, '<span class="text-blue-600">"$1"</span>:')
+    // Highlight string values
+    .replace(/: "([^"]+)"/g, ': <span class="text-green-600">"$1"</span>')
+    // Highlight numbers
+    .replace(/: (\d+)/g, ': <span class="text-purple-600">$1</span>')
+    // Highlight booleans
+    .replace(/: (true|false)/g, ': <span class="text-orange-600">$1</span>')
+    // Highlight null
+    .replace(/: null/g, ': <span class="text-gray-500">null</span>')
+    // Highlight brackets and braces
+    .replace(/([\{\[\]\}])/g, '<span class="text-gray-700">$1</span>')
+    // Highlight commas
+    .replace(/,/g, '<span class="text-gray-400">,</span>');
+
+  return <span dangerouslySetInnerHTML={{ __html: highlighted }} />;
+};
+
+export const NodeExecutionResult: React.FC<NodeExecutionResultProps> = ({
+  result,
+  status = 'success'
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -69,7 +101,13 @@ export const NodeExecutionResult: React.FC<NodeExecutionResultProps> = ({
           onMouseLeave={handleMouseLeave}
           onWheelCapture={handleWheelCapture}
         >
-          {status === 'running' ? 'Execution in progress...' : (result || 'No output')}
+          {status === 'running' ? 'Execution in progress...' : (
+            result ? (
+              <div className="font-mono text-sm whitespace-pre-wrap">
+                {addSyntaxHighlighting(beautifyJson(result))}
+              </div>
+            ) : 'No output'
+          )}
         </div>
       )}
     </div>
