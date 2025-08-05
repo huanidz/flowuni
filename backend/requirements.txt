@@ -8,6 +8,7 @@ alembic==1.14.1
 loguru==0.7.3
 python-dotenv==1.0.1
 pydantic-settings==2.7.1
+watchfiles==1.1.0
 
 # Database
 sqlalchemy==2.0.38

@@ -1,7 +1,6 @@
-from loguru import logger
-from src.node_components.llm.adapters.providers.GoogleGeminiProvider import (
-    GoogleGeminiProvider,
-)
+from src.node_components.llm.providers import LLMProvider
+from src.node_components.llm.providers.adapters.LLMAdapterBase import LLMAdapter
+from src.node_components.llm.providers.LLMProviderConsts import LLMProviderName
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.handles.basics.DropdownInputHandle import (
@@ -9,8 +8,6 @@ from src.nodes.handles.basics.DropdownInputHandle import (
     DropdownOption,
 )
 from src.nodes.handles.basics.SecretTextInputHandle import SecretTextInputHandle
-
-# from src.nodes.HandleType import TextFieldInputHandle
 from src.nodes.handles.basics.TextFieldInputHandle import TextFieldInputHandle
 from src.nodes.NodeBase import Node, NodeSpec
 
@@ -24,8 +21,8 @@ class AgentNode(Node):
                 name="provider",
                 type=DropdownInputHandle(
                     options=[
-                        DropdownOption(label="OpenAI", value="OpenAI"),
-                        DropdownOption(label="Google", value="Google"),
+                        DropdownOption(label=str(provider), value=str(provider))
+                        for provider in LLMProviderName.get_all()
                     ]
                 ),
                 description="LLM provider",
@@ -71,18 +68,20 @@ class AgentNode(Node):
     )
 
     def process(self, input_values, parameter_values):
-        # Log every field of input_values
-        logger.info("Input values:")
-        for key, value in input_values.items():
-            logger.info(f"{key}: {value}")
-
+        provider = input_values["provider"]
         model = input_values["model"]
         api_key = input_values["API Key"]
         system_prompt = input_values["system_instruction"]
         input_message = input_values["input_message"]
 
-        llm_provider = GoogleGeminiProvider(model, system_prompt, api_key)
+        llm_provider: LLMAdapter = LLMProvider.get_provider(provider_name=provider)
+
+        llm_provider.init(
+            model=model,
+            system_prompt=system_prompt,
+            api_key=api_key,
+        )
 
         chat_response = llm_provider.chat_completion(messages=input_message)
 
-        return {"response": chat_response["content"]}
+        return {"response": chat_response.content}
