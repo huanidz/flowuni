@@ -11,13 +11,12 @@ import type {
 } from '@/features/nodes';
 
 // UI Sections
-import {
-  NodeHeader,
-  ParametersSection,
-  InputsSection,
-  OutputsSection,
-  NodeExecutionResult
-} from './NodeSections';
+
+import { InputsSection } from '../components/NodeSections/InputsSection';
+import { OutputsSection } from '../components/NodeSections/OutputsSection';
+import { NodeExecutionResult } from '../components/NodeSections/NodeExecutionResult';
+import { NodeHeader } from '../components/NodeSections/NodeHeader';
+import { ParametersSection } from '../components/NodeSections/ParametersSection';
 
 // Hooks
 import { useNodeHandlers } from '@/features/flows/hooks/useNodeHandlers';
