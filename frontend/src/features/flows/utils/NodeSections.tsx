@@ -147,7 +147,7 @@ export const OutputsSection: React.FC<OutputsSectionProps> = ({ spec_outputs }) 
           <HandleInfo
             name={spec_output.name}
             description={spec_output.description}
-            required={false}
+            required={false} // Only for UI (but in fact, the output handle must also be exist on a node.)
           />
 
           <div style={{ position: 'relative', width: '12px', height: '24px' }}>
