@@ -6,7 +6,8 @@ import { HandleComponentRegistry } from '@/features/flows/handles/HandleComponen
 import { nodeStyles } from '@/features/flows/styles/nodeStyles';
 import { executionResultStyles } from '@/features/flows/styles/nodeSectionStyles';
 import type { NodeParameterSpec, NodeInput, NodeOutput } from '@/features/nodes/types';
-
+import { HelpCircle } from 'lucide-react';
+import { HandleInfo } from '../components/NodeUI/HandleInfo';
 import { useEdges } from '@xyflow/react';
 
 // Parameters Section Component
@@ -103,16 +104,11 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
               />
             )}
 
-            <div style={nodeStyles.inputInfo}>
-              <strong>{spec_input.name}</strong>
-              {spec_input.description && (
-                <span style={nodeStyles.description}>
-                  {' '}
-                  - {spec_input.description}
-                </span>
-              )}
-              {spec_input.required && <span style={nodeStyles.required}> *</span>}
-            </div>
+            <HandleInfo
+              name={spec_input.name}
+              description={spec_input.description}
+              required={spec_input.required}
+            />
 
             {InputComponent && (
               <div style={nodeStyles.inputComponent}>
