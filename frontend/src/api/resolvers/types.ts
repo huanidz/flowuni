@@ -1,11 +1,11 @@
 // types/resolvers.ts
 export interface BaseResolver {
   type: string;
-  depends_on?: string[];
   cache_ttl?: number;
   timeout?: number;
   error_message?: string;
-  debug?: boolean;
+
+  [key: string]: any;
 }
 
 export interface HttpResolver extends BaseResolver {
@@ -22,7 +22,7 @@ export interface HttpResolver extends BaseResolver {
 export interface ConditionalResolver extends BaseResolver {
   type: 'conditional';
   field_id: string;
-  cases: Record<string, any>; // Will be typed as Resolver in full implementation
+  cases: Record<string, Resolver>; // Will be typed as Resolver in full implementation
   default_resolver?: any;     // Will be typed as Resolver in full implementation
 }
 

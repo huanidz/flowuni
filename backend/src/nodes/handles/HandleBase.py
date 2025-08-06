@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
-from src.nodes.handles.resolvers import Resolver
+from src.nodes.handles.resolvers.types import Resolver
 
 
 class HandleTypeBase(BaseModel, ABC):

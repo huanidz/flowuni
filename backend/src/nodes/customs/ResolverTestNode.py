@@ -5,6 +5,7 @@ from src.nodes.handles.basics.DropdownInputHandle import (
     DropdownInputHandle,
     DropdownOption,
 )
+from src.nodes.handles.resolvers.basics import ConditionalResolver
 
 # resolvers
 from src.nodes.handles.resolvers.basics.HttpResolver import HttpResolver
@@ -37,6 +38,27 @@ class ResolverTestNode(Node):
                         method="GET",
                         response_path="$.data.*.id",
                         error_path="error.message",
+                    ),
+                ),
+                description="LLM model",
+                allow_incoming_edges=False,
+            ),
+            NodeInput(
+                name="model2",
+                type=DropdownInputHandle(
+                    options=[],
+                    client_resolver=ConditionalResolver(
+                        type="conditional",
+                        field_id="provider",
+                        cases={
+                            "openrouter": HttpResolver(
+                                type="http",
+                                url="https://openrouter.ai/api/v1/models",
+                                method="GET",
+                                response_path="$.data.*.id",
+                                error_path="error.message",
+                            )
+                        },
                     ),
                 ),
                 description="LLM model",

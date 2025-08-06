@@ -1,5 +1,5 @@
 # backend/schemas/resolvers.py (FastAPI)
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -24,6 +24,12 @@ class BaseResolver(BaseModel):
         ge=1000,
         description="Max execution time in milliseconds",
         example=5000,
+    )
+
+    depends_on: List[str] = Field(
+        default_factory=list,
+        description="List of field names that this resolver depends on",
+        example=["provider", "model"],
     )
 
     # === ERROR HANDLING ===

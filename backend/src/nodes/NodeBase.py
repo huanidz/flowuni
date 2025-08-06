@@ -284,7 +284,7 @@ class Node(ABC):
 
             return {
                 "type": t.__class__.__name__,
-                "schema": resolved_schema,
+                # "schema": resolved_schema,
                 "defaults": defaults or {},
             }
         # class‐only case → just schema

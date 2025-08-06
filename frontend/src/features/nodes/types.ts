@@ -11,7 +11,7 @@ export interface NodeParameterSpec {
 
 export interface TypeDetail {
   type: string;
-  schema: {
+  schema?: {
     description: string;
     properties: Record<string, any>;
     title: string;

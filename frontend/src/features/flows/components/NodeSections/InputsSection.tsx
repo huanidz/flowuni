@@ -64,7 +64,7 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
             {InputComponent && (
               <div style={nodeStyles.inputComponent}>
                 <InputComponent
-                  label=""
+                  label={spec_input.name}
                   value={inputValue !== undefined ? inputValue : spec_input.default || ''}
                   onChange={(value: string) =>
                     onInputValueChange(spec_input.name, value)
