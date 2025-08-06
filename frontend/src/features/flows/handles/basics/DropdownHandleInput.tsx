@@ -125,8 +125,8 @@ export const DropdownHandleInput: React.FC<DropdownHandleInputProps> = ({
 
     fetchResolvedOptions();
       
-  // Use dependencyValues instead of node_input_values to prevent current handle changes from triggering
-  }, [resolver, dependencyValues]);
+  // Use stringified version to avoid reference equality that cause trigger useEffect
+  }, [JSON.stringify(dependencyValues)]);
 
   const optionsToUse = resolvedOptions.length > 0 ? resolvedOptions : (defaultOptions || []);
 
