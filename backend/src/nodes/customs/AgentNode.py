@@ -9,6 +9,7 @@ from src.nodes.handles.basics.DropdownInputHandle import (
 )
 from src.nodes.handles.basics.SecretTextInputHandle import SecretTextInputHandle
 from src.nodes.handles.basics.TextFieldInputHandle import TextFieldInputHandle
+from src.nodes.handles.resolvers.basics import ConditionalResolver, HttpResolver
 from src.nodes.NodeBase import Node, NodeSpec
 
 
@@ -31,11 +32,21 @@ class AgentNode(Node):
             NodeInput(
                 name="model",
                 type=DropdownInputHandle(
-                    options=[
-                        DropdownOption(
-                            label="gemini-2.5-flash", value="gemini-2.5-flash"
-                        ),
-                    ]
+                    options=[],
+                    client_resolver=ConditionalResolver(
+                        type="conditional",
+                        field_id="provider",
+                        cases={
+                            "openrouter": HttpResolver(
+                                type="http",
+                                url="https://openrouter.ai/api/v1/models",
+                                method="GET",
+                                response_path="$.data.*.id",
+                                error_path="error.message",
+                            )
+                        },
+                    ),
+                    searchable=True,
                 ),
                 description="LLM model",
                 allow_incoming_edges=False,

@@ -71,14 +71,6 @@ export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
 
   return (
     <div style={textfieldHandleStyles.container}>
-      {label && (
-        <Label style={{
-          ...textfieldHandleStyles.label,
-          opacity: disabled ? 0.5 : 1
-        }}>
-          {label}
-        </Label>
-      )}
       {description && (
         <span style={{
           ...textfieldHandleStyles.description,

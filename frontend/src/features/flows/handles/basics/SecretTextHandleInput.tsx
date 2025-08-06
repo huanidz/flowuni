@@ -70,14 +70,6 @@ export const SecretTextHandleInput: React.FC<SecretTextHandleInputProps> = ({
 
   return (
     <div style={secretTextHandleStyles.container}>
-      {label && (
-        <Label style={{
-          ...secretTextHandleStyles.label,
-          opacity: disabled ? 0.5 : 1
-        }}>
-          {label}
-        </Label>
-      )}
       {description && (
         <span style={{
           ...secretTextHandleStyles.description,
