@@ -34,11 +34,7 @@ export const DropdownHandleInput: React.FC<DropdownHandleInputProps> = ({
   const [isOpen, setIsOpen] = useState(false);
 
   const nodes = useNodes();
-  console.log("Nodes:", nodes);
-
   const resolver = type_detail.defaults?.client_resolver;
-
-  console.log("Resolver:", resolver);
 
   const {
     multiple: defaultMultiple = false,
@@ -50,8 +46,6 @@ export const DropdownHandleInput: React.FC<DropdownHandleInputProps> = ({
   const currentNode = nodes.find(node => node.id === nodeId);
   const node_input_values: any = currentNode?.data?.input_values || {};
 
-  console.log("Node data:", node_input_values);
-  
   // SOLUTION 1: Create dependency values excluding the current handle
   const dependencyValues = useMemo(() => {
     if (!resolver) return {};
@@ -97,7 +91,7 @@ export const DropdownHandleInput: React.FC<DropdownHandleInputProps> = ({
     
         if (!allDepsReady && relevantDeps.length > 0) {
           setResolvedOptions([]);
-          console.log("Dependencies not ready, skipping resolver");
+          // console.log("Dependencies not ready, skipping resolver");
           return;
         }
     
@@ -115,7 +109,7 @@ export const DropdownHandleInput: React.FC<DropdownHandleInputProps> = ({
           options = [result as { label: string; value: string }];
         }
   
-        console.log("Resolved options:", options, "--- LABEL: ", label);
+        // console.log("Resolved options:", options, "--- LABEL: ", label);
         setResolvedOptions(options);
       } catch (err) {
         console.error("Error running resolver:", err);
@@ -170,11 +164,6 @@ export const DropdownHandleInput: React.FC<DropdownHandleInputProps> = ({
 
   return (
     <div style={dropdownHandleStyles.container}>
-      {label && (
-        <label style={dropdownHandleStyles.label}>
-          {label}
-        </label>
-      )}
       {description && (
         <span style={dropdownHandleStyles.description}>
           {description}
