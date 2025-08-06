@@ -9,7 +9,11 @@ from src.nodes.handles.basics.DropdownInputHandle import (
 )
 from src.nodes.handles.basics.SecretTextInputHandle import SecretTextInputHandle
 from src.nodes.handles.basics.TextFieldInputHandle import TextFieldInputHandle
-from src.nodes.handles.resolvers.basics import ConditionalResolver, HttpResolver
+from src.nodes.handles.resolvers.basics import (
+    ConditionalResolver,
+    HttpResolver,
+    StaticResolver,
+)
 from src.nodes.NodeBase import Node, NodeSpec
 
 
@@ -43,7 +47,20 @@ class AgentNode(Node):
                                 method="GET",
                                 response_path="$.data.*.id",
                                 error_path="error.message",
-                            )
+                            ),
+                            "google-gemini": StaticResolver(
+                                type="static",
+                                options=[
+                                    {
+                                        "value": "gemini-2.5-flash",
+                                        "label": "gemini-2.5-flash",
+                                    },
+                                    {
+                                        "value": "gemini-2.5-pro",
+                                        "label": "gemini-2.5-pro",
+                                    },
+                                ],
+                            ),
                         },
                     ),
                     searchable=True,
