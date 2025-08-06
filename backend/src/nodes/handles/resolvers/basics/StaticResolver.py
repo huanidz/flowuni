@@ -1,8 +1,7 @@
 from typing import Any, List, Literal
 
 from pydantic import Field
-
-from backend.src.nodes.handles.resolvers.BaseResolver import BaseResolver
+from src.nodes.handles.resolvers.BaseResolver import BaseResolver
 
 
 class StaticResolver(BaseResolver):

@@ -1,15 +1,14 @@
 from typing import Dict, Literal, Optional
 
-from pydantic import Field, HttpUrl
-
-from backend.src.nodes.handles.resolvers.BaseResolver import BaseResolver
+from pydantic import Field
+from src.nodes.handles.resolvers.BaseResolver import BaseResolver
 
 
 class HttpResolver(BaseResolver):
     type: Literal["http"] = "http"
 
     # === REQUEST CONFIG ===
-    url: HttpUrl = Field(
+    url: str = Field(
         ...,
         description="Endpoint URL (must be HTTPS)",
         example="https://api.openai.com/v1/models",
@@ -20,7 +19,7 @@ class HttpResolver(BaseResolver):
         description="Request headers (placeholders supported)",
     )
     params: Dict[str, str] = Field(
-        default_factory=Dict, description="Query parameters (placeholders supported)"
+        default_factory=dict, description="Query parameters (placeholders supported)"
     )
     body: Optional[Dict] = Field(
         default=None, description="Request body (for POST/PUT)"

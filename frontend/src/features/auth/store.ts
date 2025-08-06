@@ -1,7 +1,7 @@
 // src/stores/useAuthStore.ts
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import apiClient from '@/api/client';
+import apiClient from '@/api/secureClient';
 
 export interface AuthState {
   isAuthenticated: boolean;

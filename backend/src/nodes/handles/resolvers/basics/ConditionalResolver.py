@@ -2,8 +2,7 @@
 from typing import Dict, Literal, Optional, Self
 
 from pydantic import Field, model_validator
-
-from backend.src.nodes.handles.resolvers.BaseResolver import BaseResolver
+from src.nodes.handles.resolvers.BaseResolver import BaseResolver
 
 
 class ConditionalResolver(BaseResolver):
@@ -17,7 +16,7 @@ class ConditionalResolver(BaseResolver):
         ...,
         description="Map field values to resolver configs",
         example={
-            "google": {"type": "static", "options": [...]},
+            "google": {"type": "static", "options": "..."},
             "openai": {"type": "http", "url": "..."},
         },
     )

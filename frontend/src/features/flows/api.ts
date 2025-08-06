@@ -1,4 +1,4 @@
-import apiClient from "@/api/client";
+import apiClient from "@/api/secureClient";
 import { 
   FLOWS_ENDPOINT, 
   FLOW_DEFINITION_COMPILE_ENDPOINT, 

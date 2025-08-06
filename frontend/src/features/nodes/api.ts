@@ -1,4 +1,4 @@
-import apiClient from "@/api/client";
+import apiClient from "@/api/secureClient";
 import { GET_NODES_ENDPOINT, NODE_CATALOG_ETAG_KEY, NODE_CATALOG_DATA_KEY } from "./consts";
 import { type NodeSpec } from "./types";
 

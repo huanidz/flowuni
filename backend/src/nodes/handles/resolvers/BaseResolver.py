@@ -1,12 +1,12 @@
 # backend/schemas/resolvers.py (FastAPI)
-from typing import Any, Optional, Type
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
 
 class BaseResolver(BaseModel):
     # === MANDATORY FIELDS ===
-    type: Type[Any] = Field(
+    type: Any = Field(
         ...,
         description="Discriminator field - determines resolver handler",
         example="http",
