@@ -33,9 +33,9 @@ class ResolverTestNode(Node):
                     options=[],
                     client_resolver=HttpResolver(
                         type="http",
-                        url="https://api.openai.com/v1/models",
+                        url="https://openrouter.ai/api/v1/models",
                         method="GET",
-                        response_path="data[*].id",
+                        response_path="$.data.*.id",
                         error_path="error.message",
                     ),
                 ),

@@ -1,15 +1,19 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import dropdownHandleStyles from '../../styles/handleStyles';
+import { useNodes } from '@xyflow/react';
+import { runResolver } from '@/api/resolvers/registry';
 
 interface DropdownHandleInputProps {
   label: string;
   description?: string;
   value: any;
+  nodeId: string;
   onChange?: (value: string | string[]) => void;
 
   // Config (NEW)
   type_detail: {
     defaults?: {
+      client_resolver?: any;
       multiple?: boolean;
       searchable?: boolean;
       options?: Array<{ label: string; value: string }>;
@@ -21,11 +25,18 @@ export const DropdownHandleInput: React.FC<DropdownHandleInputProps> = ({
   label,
   description,
   value,
+  nodeId,
   onChange,
   type_detail
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [resolvedOptions, setResolvedOptions] = useState<Array<{ label: string; value: string }>>([]);
   const [isOpen, setIsOpen] = useState(false);
+
+  const nodes = useNodes();
+  console.log("Nodes:", nodes);
+
+  const resolver = type_detail.defaults?.client_resolver;
 
   const {
     multiple: defaultMultiple = false,
@@ -33,6 +44,68 @@ export const DropdownHandleInput: React.FC<DropdownHandleInputProps> = ({
     options: defaultOptions = []
   } = type_detail.defaults || {};
 
+  // Get current node data for resolver context
+  const currentNode = nodes.find(node => node.id === nodeId);
+  const nodeData = currentNode?.data || {};
+
+  // Depends on other field. This is used for triggering useEffect: Only re-fetch when the field changes.
+  const depData = JSON.stringify(resolver?.depends_on?.map((dep: any) => nodeData[dep]));
+
+  console.log("Current node data:", nodeData);
+
+  // === RESOLVER HANDLING ===
+
+  useEffect(() => {
+
+    const fetchResolvedOptions = async () => { 
+
+      if (!resolver) {
+        return;
+      }
+  
+      try {
+        const deps = resolver.depends_on || [];
+        const allDepsReady = deps.every((dep: string) => 
+          nodeData[dep] !== undefined && nodeData[dep] !== ""
+        );
+    
+        if (!allDepsReady && deps.length > 0) {
+          setResolvedOptions([]);
+          console.log("Dependencies not ready, skipping resolver");
+          return;
+        }
+    
+        const result = await runResolver(resolver, nodeData);
+    
+        let options: Array<{ label: string; value: string }> = [];
+  
+        if (Array.isArray(result)) {
+          options = result.map(item => 
+            typeof item === 'string' 
+              ? { value: item, label: item }
+              : { value: item.value, label: item.label }
+          );
+        } else if (result && typeof result === 'object') {
+          options = [result as { label: string; value: string }];
+        }
+  
+        console.log("Resolved options:", options);
+
+        setResolvedOptions(options);
+      } catch (err) {
+        console.error("Error running resolver:", err);
+        setResolvedOptions([]);
+      } 
+    }
+
+    fetchResolvedOptions();
+      
+
+  }, [resolver, depData]);
+
+  const optionsToUse = resolvedOptions.length > 0 ? resolvedOptions : (defaultOptions || []);
+
+  // === BASIC HANDLE HANDLING ===
   const handleChange = (newValue: string | string[]) => {
     if (onChange) {
       onChange(newValue);
@@ -52,15 +125,15 @@ export const DropdownHandleInput: React.FC<DropdownHandleInputProps> = ({
     }
   };
 
-  const filteredOptions = (defaultOptions || []).filter(option =>
+  const filteredOptions = (optionsToUse || []).filter(option =>
     option.label.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const displayValue = defaultMultiple
     ? Array.isArray(value)
-      ? value.map(v => (defaultOptions || []).find(opt => opt.value === v)?.label || v).join(', ')
+      ? value.map(v => (optionsToUse || []).find(opt => opt.value === v)?.label || v).join(', ')
       : ''
-    : (defaultOptions || []).find(opt => opt.value === value)?.label || value || '';
+    : (optionsToUse || []).find(opt => opt.value === value)?.label || value || '';
 
   const handleFocus = (e: React.FocusEvent<HTMLDivElement>) => {
     e.target.style.borderColor = '#007bff';
