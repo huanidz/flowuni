@@ -3,6 +3,7 @@ from src.node_components.llm.providers.adapters.LLMAdapterBase import LLMAdapter
 from src.node_components.llm.providers.LLMProviderConsts import LLMProviderName
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
+from src.nodes.handles.agents.AgentToolInputHandle import AgentToolInputHandle
 from src.nodes.handles.basics.DropdownInputHandle import (
     DropdownInputHandle,
     DropdownOption,
@@ -85,6 +86,11 @@ class AgentNode(Node):
                 description="Agent instruction",
                 default="You are a helpful assistant.",
                 allow_incoming_edges=False,
+            ),
+            NodeInput(
+                name="tools",
+                type=AgentToolInputHandle(),
+                description="Agent tools",
             ),
         ],
         outputs=[
