@@ -15,6 +15,9 @@ class NodeInput(BaseModel):
     description: str = Field(default="", description="Input description")
     required: bool = Field(default=False, description="Whether input is required")
 
+    # Helper fields
+    allow_incoming_edges: bool = True
+
     @field_validator("type")
     @classmethod
     def validate_type(cls, v):

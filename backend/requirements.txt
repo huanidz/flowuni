@@ -8,6 +8,7 @@ alembic==1.14.1
 loguru==0.7.3
 python-dotenv==1.0.1
 pydantic-settings==2.7.1
+watchfiles==1.1.0
 
 # Database
 sqlalchemy==2.0.38
@@ -16,6 +17,7 @@ asyncpg==0.30.0
 
 # Others
 natsort==8.4.0
+rich==14.0.0
 
 # LLM-related
 instructor[vertexai]
@@ -33,3 +35,6 @@ aioredis==2.0.1
 # User and Authentication
 passlib[bcrypt]
 python-jose[cryptography]
+
+# LLM providers
+google-genai==1.20.0

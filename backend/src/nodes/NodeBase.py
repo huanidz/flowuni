@@ -1,11 +1,12 @@
 # node_base.py
 import json
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, Type, Union
+from typing import Any, Dict, Optional, Type, Union, get_args
 
 from pydantic import BaseModel
 from src.exceptions.node_exceptions import NodeValidationError
 from src.nodes.core.NodeInput import NodeInput
+from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.core.NodeSpec import NodeSpec
 from src.nodes.handles.HandleBase import HandleTypeBase
 from src.schemas.flowbuilder.flow_graph_schemas import NodeData
@@ -214,6 +215,7 @@ class Node(ABC):
     def _serialize_inputs(self) -> list:
         """Serialize input specifications."""
         serialized_inputs = []
+        input_spec: NodeInput
         for input_spec in self.spec.inputs:
             serialized_inputs.append(
                 NodeInputSchema(
@@ -223,6 +225,7 @@ class Node(ABC):
                     default=input_spec.default,
                     description=input_spec.description,
                     required=input_spec.required,
+                    allow_incoming_edges=input_spec.allow_incoming_edges,
                 ).model_dump()
             )
         return serialized_inputs
@@ -230,6 +233,7 @@ class Node(ABC):
     def _serialize_outputs(self) -> list:
         """Serialize output specifications."""
         serialized_outputs = []
+        output_spec: NodeOutput
         for output_spec in self.spec.outputs:
             serialized_outputs.append(
                 NodeOutputSchema(
@@ -263,6 +267,10 @@ class Node(ABC):
         any non‑None field values the user pre‑set.  Otherwise,
         if it's a Pydantic _class_, we only embed its schema.
         """
+        # Handle Union types
+        # if get_origin(t) is Union:
+        #     return self._serialize_union_type(t)
+
         # instance of a BaseModel → include schema and configured defaults
         if isinstance(t, BaseModel):
             schema = t.model_json_schema()
@@ -276,7 +284,7 @@ class Node(ABC):
 
             return {
                 "type": t.__class__.__name__,
-                "schema": resolved_schema,
+                # "schema": resolved_schema,
                 "defaults": defaults or {},
             }
         # class‐only case → just schema
@@ -287,6 +295,67 @@ class Node(ABC):
             return {"type": t.__name__, "schema": resolved_schema}
         # fallback
         return {"type": getattr(t, "__name__", str(t)), "schema": {}}
+
+    def _serialize_union_type(self, union_type: Type) -> Dict[str, Any]:
+        """
+        Serialize Union type information for JSON output.
+
+        Args:
+            union_type: A Union type (e.g., Union[str, int, List[str]])
+
+        Returns:
+            Dictionary containing the union type information and schema
+        """
+        # Get the individual types from the union
+        union_args = get_args(union_type)
+
+        # Handle Optional types (Union[T, None])
+        if len(union_args) == 2 and type(None) in union_args:
+            # This is an Optional type, handle it as a nullable type
+            actual_type = (
+                union_args[0] if union_args[1] is type(None) else union_args[1]
+            )
+            serialized_type = self._serialize_type(actual_type)
+            # Add null to the schema
+            if "schema" in serialized_type and isinstance(
+                serialized_type["schema"], dict
+            ):
+                if "anyOf" not in serialized_type["schema"]:
+                    serialized_type["schema"]["anyOf"] = []
+                serialized_type["schema"]["anyOf"].append({"type": "null"})
+            else:
+                serialized_type["schema"] = {"anyOf": [{"type": "null"}]}
+            return serialized_type
+
+        # Handle general Union types
+        schemas = []
+        type_names = []
+
+        for arg in union_args:
+            if arg is type(None):
+                continue  # Skip None for non-Optional unions
+
+            serialized_arg = self._serialize_type(arg)
+            type_names.append(serialized_arg.get("type", str(arg)))
+
+            # Extract the schema from the serialized type
+            if "schema" in serialized_arg and serialized_arg["schema"]:
+                schemas.append(serialized_arg["schema"])
+            else:
+                # If no schema, create a basic type schema
+                arg_type = getattr(arg, "__name__", str(arg))
+                schemas.append({"type": arg_type})
+
+        if not schemas:
+            return {"type": "Union", "schema": {}}
+
+        # Create the union schema
+        if len(schemas) == 1:
+            union_schema = schemas[0]
+        else:
+            union_schema = {"anyOf": schemas}
+
+        return {"type": "Union", "schema": union_schema, "union_types": type_names}
 
     def _resolve_refs(
         self, schema: Dict[str, Any], defs: Dict[str, Any]

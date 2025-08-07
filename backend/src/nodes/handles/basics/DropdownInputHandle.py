@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from src.nodes.handles.HandleBase import HandleTypeBase
 
 
@@ -20,6 +20,17 @@ class DropdownInputHandle(HandleTypeBase):
     options: List[DropdownOption] = Field(default_factory=list)
     multiple: bool = False
     searchable: bool = False
+
+    @field_validator("resolver", "client_resolver", mode="before")
+    @classmethod
+    def _validate_resolver_with_options(cls, v, info):
+        """Ensure resolver and client_resolver are None when options are provided"""
+        if info.data.get("options"):
+            if v is not None:
+                raise ValueError(
+                    "resolver and client_resolver must be None when options are provided"  # noqa
+                )
+        return v
 
     def get_type_name(self) -> str:
         return "dropdown"

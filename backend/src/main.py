@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
+from rich.traceback import install
 from src.configs.config import get_settings
 from src.configs.LoggingConfig import setup_logger
 from src.routes.auth_routes import auth_router
@@ -9,6 +10,8 @@ from src.routes.flow_routes import flow_router
 from src.routes.flow_runner_routes import flow_execution_router
 from src.routes.node_routes import node_router
 from src.utils.launch_utils import check_db_connection, check_redis_connection
+
+install(show_locals=True)
 
 # Get application settings and set up logging
 app_settings = get_settings()

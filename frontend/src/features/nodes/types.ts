@@ -11,7 +11,7 @@ export interface NodeParameterSpec {
 
 export interface TypeDetail {
   type: string;
-  schema: {
+  schema?: {
     description: string;
     properties: Record<string, any>;
     title: string;
@@ -27,6 +27,7 @@ export interface NodeInput {
   default: any;
   description: string;
   required: boolean;
+  allow_incoming_edges: boolean
 }
 
 export interface NodeOutput {

@@ -24,6 +24,9 @@ class NodeInputSchema(BaseModel):
     default: Optional[Any] = Field(default=None, description="Default input value")
     description: str = Field(default="", description="Input description")
     required: bool = Field(default=False, description="Whether input is required")
+    allow_incoming_edges: bool = Field(
+        default=True, description="Whether incoming edges are allowed"
+    )
 
 
 class NodeOutputSchema(BaseModel):

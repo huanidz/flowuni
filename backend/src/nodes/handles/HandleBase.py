@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
+from src.nodes.handles.resolvers.types import Resolver
 
 
 class HandleTypeBase(BaseModel, ABC):
@@ -10,10 +11,9 @@ class HandleTypeBase(BaseModel, ABC):
     # === Dynamic resolution support ===
     dynamic: bool = False
     resolver: Optional[str] = None  # Server resolver
-    client_resolver: Optional[str] = (
+    client_resolver: Optional[Resolver] = (
         None  # Client resolver (Code will be run at client)
     )
-    depends_on: List[str] = Field(default_factory=list)
     load_on_init: bool = False
     reload_on_change: bool = False
 

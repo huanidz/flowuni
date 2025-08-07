@@ -1,5 +1,5 @@
 // features/users/api.ts
-import api from '@/api/client';
+import api from '@/api/secureClient';
 import { type User } from './types';
 
 export const fetchUsers = async (): Promise<User[]> => {

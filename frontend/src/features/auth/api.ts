@@ -1,4 +1,4 @@
-import apiClient from '@/api/client';
+import apiClient from '@/api/secureClient';
 import { publicApiClient } from '@/api/publicClient';
 import { type LoginPayload, type RegisterPayload } from './types';
 import { ACCESS_TOKEN_KEY } from './consts';
