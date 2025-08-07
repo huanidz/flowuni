@@ -30,4 +30,4 @@ ENV PYTHONUNBUFFERED=1
 EXPOSE 5001
 
 # Command: Run alembic migrations + Uvicorn with watchfiles (restarts on crash & file changes)
-CMD ["sh", "-c", "alembic upgrade head && watchfiles 'uvicorn src.main:app --host 0.0.0.0 --port 5001 --timeout-graceful-shutdown 1' /app"]
+CMD ["sh", "-c", "alembic upgrade head && watchfiles  --sigint-timeout 1 --sigkill-timeout 1 --filter python 'uvicorn src.main:app --host 0.0.0.0 --port 5001' /app"]

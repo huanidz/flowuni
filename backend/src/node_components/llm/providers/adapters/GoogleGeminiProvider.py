@@ -1,9 +1,7 @@
-from typing import Any, Dict, List, Optional, Union
+from __future__ import annotations
 
-import instructor
-from google import genai
-from google.api_core import exceptions as google_exceptions
-from google.genai import types
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+
 from loguru import logger
 from src.node_components.llm.models.core import (
     ChatMessage,
@@ -13,6 +11,10 @@ from src.node_components.llm.models.core import (
     UsageMetrics,
 )
 from src.node_components.llm.providers.adapters.LLMAdapterBase import LLMAdapter
+
+if TYPE_CHECKING:
+    import instructor
+    from google.genai import types
 
 
 class GoogleGeminiProvider(LLMAdapter):
@@ -72,6 +74,9 @@ class GoogleGeminiProvider(LLMAdapter):
         """
         if self._client is None:
             try:
+                import instructor
+                from google import genai
+
                 model_client = genai.Client(
                     api_key=self.api_key,
                 )
@@ -149,6 +154,8 @@ class GoogleGeminiProvider(LLMAdapter):
         )
 
         # Map standard parameters to Gemini-specific parameters
+        from google.genai import types
+
         thinking_config = types.ThinkingConfig(thinking_budget=0)
 
         return types.GenerateContentConfig(
@@ -239,7 +246,13 @@ class GoogleGeminiProvider(LLMAdapter):
             logger.info(f"Successfully received response from {self.model}")
             return chat_response
 
-        except google_exceptions.GoogleAPIError as e:
+        except Exception as e:
+            # Lazy import google exceptions
+            from google.api_core import exceptions as google_exceptions
+
+            if isinstance(e, google_exceptions.GoogleAPIError):
+                logger.error(f"Google API error: {e}")
+                raise RuntimeError(f"Google API error: {e}")
             logger.error(f"Google API error: {e}")
             raise RuntimeError(f"Google API error: {e}")
 
