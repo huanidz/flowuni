@@ -23,6 +23,9 @@ export const OutputsSection: React.FC<OutputsSectionProps> = ({ spec_outputs, no
       {/* TOOL mode: render only the tool handle */}
       {isTool && (
         <div key="tool-output" style={nodeStyles.outputItem}>
+          <div style={{ marginTop: '8px', fontSize: '12px', color: '#666', fontStyle: 'italic', marginRight: '8px' }}>
+            ({spec_outputs.map(output => output.name).join(', ')})
+          </div>
           <HandleInfo
             name="Tool"
             description="Connect this to Agent Tool handle to enable tool using for that Agent"
