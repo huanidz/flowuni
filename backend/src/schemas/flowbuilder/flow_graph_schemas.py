@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel
 
@@ -20,7 +20,7 @@ class NodeData(BaseModel):
     parameter_values: Optional[Dict[str, Any]] = (
         None  # consider replacing with a typed model if possible
     )
-    mode: Optional[str] = None
+    mode: Optional[Literal["NormalMode", "ToolMode"]] = None
 
 
 class FlowNode(BaseModel):
