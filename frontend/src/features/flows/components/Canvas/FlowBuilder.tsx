@@ -38,7 +38,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
   const reactFlowInstance = useReactFlow();
 
   // Node state management
-  const updateHandlers = useNodeUpdate(setNodes);
+  const updateHandlers = useNodeUpdate(setNodes, setEdges, edges);
   
   // Node types management (With unified update handlers)
   const { nodeTypes, nodeTypesLoaded } = useNodeTypes(

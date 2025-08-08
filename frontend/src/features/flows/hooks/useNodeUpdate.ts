@@ -1,14 +1,16 @@
 // useNodeUpdate.ts
 import { useCallback } from 'react';
-import type { Node } from '@xyflow/react';
+import type { Node, Edge } from '@xyflow/react';
+import { useEdges } from '@xyflow/react';
 
 type SetNodesType = React.Dispatch<React.SetStateAction<Node[]>>;
+type SetEdgesType = React.Dispatch<React.SetStateAction<Edge[]>>;
 
 /**
  * Unified hook for handling all node state update operations.
  * to provide a single source of truth for node updates.
  */
-export const useNodeUpdate = (setNodes: SetNodesType) => {
+export const useNodeUpdate = (setNodes: SetNodesType, setEdges: SetEdgesType, edges: Edge[]) => {
   /**
    * Update node input values with a clean, direct approach
    */
@@ -43,6 +45,19 @@ export const useNodeUpdate = (setNodes: SetNodesType) => {
         nodes.map((node) => {
           if (node.id !== nodeId) return node;
           
+          // Check if the new mode is different from current mode
+          if (node.data.mode !== newMode) {
+            // Find all outgoing edges from this node
+            const outgoingEdges = edges.filter(edge => edge.source === nodeId);
+            
+            // Clear all outgoing edges by removing them from the edges state
+            if (outgoingEdges.length > 0) {
+              setEdges((prevEdges) =>
+                prevEdges.filter(edge => edge.source !== nodeId)
+              );
+            }
+          }
+          
           return {
             ...node,
             data: {
@@ -53,7 +68,7 @@ export const useNodeUpdate = (setNodes: SetNodesType) => {
         })
       );
     },
-    [setNodes]
+    [setNodes, setEdges, edges]
   );
 
   /**
