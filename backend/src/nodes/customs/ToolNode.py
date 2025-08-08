@@ -40,4 +40,4 @@ class ToolNode(Node):
     )
 
     def process(self, inputs, parameters):
-        return super().process(inputs, parameters)
+        return {"tool_result": inputs["input_message"], "tool_result2": "hello"}

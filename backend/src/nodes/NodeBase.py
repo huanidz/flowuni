@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, Type, Union, get_args
 
 from pydantic import BaseModel
+from src.consts.node_consts import NODE_DATA_MODE
 from src.exceptions.node_exceptions import NodeValidationError
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
@@ -161,6 +162,23 @@ class Node(ABC):
         """
         pass
 
+    # @abstractmethod
+    def build_tool(
+        self, inputs_values: Dict[str, Any], parameter_values: Dict[str, Any]
+    ) -> Any:
+        """
+        Build a tool from the node.
+
+        Args:
+            inputs_values: Dictionary of input values
+            parameter_values: Dictionary of parameter values
+
+        Returns:
+            Processing result
+            (single value for single output, dict for multiple outputs)
+        """
+        pass
+
     def execute(self, node_data: "NodeData") -> "NodeData":
         """
         Execute the node with given data and return updated node data.
@@ -171,13 +189,19 @@ class Node(ABC):
         Returns:
             Updated node data with processing results
         """
-        input_values = self._extract_input_values(node_data)
-        parameter_values = self._extract_parameter_values(node_data)
 
-        result = self.process(input_values, parameter_values)
-        output_values = self._build_output_mapping(result)
+        if node_data.mode == NODE_DATA_MODE.NORMAL:
+            input_values = self._extract_input_values(node_data)
+            parameter_values = self._extract_parameter_values(node_data)
 
-        return self._create_result_node_data(node_data, output_values)
+            result = self.process(input_values, parameter_values)
+            output_values = self._build_output_mapping(result)
+
+            return self._create_result_node_data(node_data, output_values)
+        else:
+            return self._create_tool_node_data(
+                node_data,
+            )
 
     def _create_result_node_data(
         self, original: "NodeData", outputs: Dict[str, Any]
@@ -189,9 +213,20 @@ class Node(ABC):
             input_values=original.input_values,
             output_values=outputs,
             parameter_values=original.parameter_values,
+            mode=original.mode,
         )
 
-    # def build_tool()
+    def _create_tool_node_data(self, original: "NodeData") -> "NodeData":
+        """Create result node data with outputs."""
+        # TODO: Simplify this flow.
+        return NodeData(
+            label=original.label,
+            node_type=original.node_type,
+            input_values=original.input_values,
+            output_values=original.output_values,
+            parameter_values=original.parameter_values,
+            mode=original.mode,
+        )
 
     # ============================================================================
     # SPEC SERIALIZATION
