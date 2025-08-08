@@ -16,29 +16,11 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
   onModeChange,
   canBeTool,
 }) => {
-  const isToolMode = mode === 'ToolMode';
   
   // Handle mode change through dropdown
   const handleModeSelect = (newMode: string) => {
     if (onModeChange) {
       onModeChange(newMode);
-    }
-  };
-
-  // Combine base toggle styles with mode-specific styles
-  const toggleStyles = {
-    container: nodeStyles.toggle.container,
-    switch: {
-      ...nodeStyles.toggle.switch,
-      ...(isToolMode ? nodeStyles.toggleToolMode.switch : nodeStyles.toggleNormalMode.switch),
-    },
-    slider: {
-      ...nodeStyles.toggle.slider,
-      ...(isToolMode ? nodeStyles.toggleToolMode.slider : nodeStyles.toggleNormalMode.slider),
-    },
-    label: {
-      ...nodeStyles.toggle.label,
-      ...(isToolMode ? nodeStyles.toggleToolMode.label : nodeStyles.toggleNormalMode.label),
     }
   };
 

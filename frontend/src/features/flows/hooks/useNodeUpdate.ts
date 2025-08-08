@@ -1,7 +1,6 @@
 // useNodeUpdate.ts
 import { useCallback } from 'react';
 import type { Node, Edge } from '@xyflow/react';
-import { useEdges } from '@xyflow/react';
 
 type SetNodesType = React.Dispatch<React.SetStateAction<Node[]>>;
 type SetEdgesType = React.Dispatch<React.SetStateAction<Edge[]>>;
@@ -45,19 +44,7 @@ export const useNodeUpdate = (setNodes: SetNodesType, setEdges: SetEdgesType, ed
         nodes.map((node) => {
           if (node.id !== nodeId) return node;
           
-          // Check if the new mode is different from current mode
-          if (node.data.mode !== newMode) {
-            // Find all outgoing edges from this node
-            const outgoingEdges = edges.filter(edge => edge.source === nodeId);
-            
-            // Clear all outgoing edges by removing them from the edges state
-            if (outgoingEdges.length > 0) {
-              setEdges((prevEdges) =>
-                prevEdges.filter(edge => edge.source !== nodeId)
-              );
-            }
-          }
-          
+          // Only update mode, handle edges separately
           return {
             ...node,
             data: {
@@ -67,6 +54,17 @@ export const useNodeUpdate = (setNodes: SetNodesType, setEdges: SetEdgesType, ed
           };
         })
       );
+
+      // Handle edge removal in a separate effect or after state update
+      // This will fix the bug of node start dragging when switching mode.
+      setTimeout(() => {
+        const outgoingEdges = edges.filter(edge => edge.source === nodeId);
+        if (outgoingEdges.length > 0) {
+          setEdges((prevEdges) =>
+            prevEdges.filter(edge => edge.source !== nodeId)
+          );
+        }
+      }, 0);
     },
     [setNodes, setEdges, edges]
   );
