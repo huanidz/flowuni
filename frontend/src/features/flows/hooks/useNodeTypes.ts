@@ -1,5 +1,5 @@
-// useAllNodeTypesConstructor.ts
-import { useEffect, useCallback, useState, useMemo } from 'react';
+// useNodeTypes.ts
+import { useEffect, useState, useMemo } from 'react';
 import { NodeFactory } from '@/features/flows/utils/NodeFactory';
 import { useNodeRegistry, type NodeSpec } from '@/features/nodes';
 import type { Node } from '@xyflow/react';
@@ -9,68 +9,22 @@ type SetNodesType = React.Dispatch<React.SetStateAction<Node[]>>;
 /**
  * Hook to register all available node types as React components.
  * Simplified to return nodeTypes directly and manage state internally.
+ * Separates node type registration from state management.
  *
  * @param setNodes - Callback to update nodes state from useNodesState.
+ * @param updateNodeData - Function to update node data
+ * @param updateNodeModeData - Function to update node mode data
+ * @param updateNodeParameterData - Function to update node parameter data
  * @returns Object containing nodeTypes and loading state.
  */
-export const useAllNodeTypesConstructor = (setNodes: SetNodesType) => {
+export const useNodeTypes = (
+  updateNodeData?: (nodeId: string, newData: any) => void,
+  updateNodeModeData?: (nodeId: string, newMode: string) => void,
+  updateNodeParameterData?: (nodeId: string, parameterName: string, value: any) => void
+) => {
   const { getAllNodes, loaded } = useNodeRegistry();
   const [nodeTypes, setNodeTypes] = useState<Record<string, React.FC<any>>>({});
   const [nodeTypesLoaded, setNodeTypesLoaded] = useState(false);
-
-  const updateNodeInputDataHandler = useCallback(
-    (nodeId: string, newData: any) => {
-      setNodes((nodes) =>
-        nodes.map((node) => {
-          if (node.id !== nodeId) return node;
-          
-          // Handle input_values as dictionary (no conversion needed)
-          const inputValues = newData.input_values;
-
-          // Node has schema of: RFNode (ReactFlow Node with data = NodeData)
-          // Reference: samples/RFNode_InputUpdateHandler.json
-
-          return {
-            ...node, // Spread other fields.
-            data: { // Update 'data' field.
-              ...node.data,
-              input_values: inputValues,
-            },
-          };
-        })
-      );
-    },
-    [setNodes]
-  );
-
-  const updateNodeModeDataHandler = useCallback(
-    (nodeId: string, newMode: string) => {
-      setNodes((nodes) =>
-        nodes.map((node) => {
-          if (node.id !== nodeId) return node;
-          
-          // Handle mode as string (no conversion needed)
-          const mode = newMode;
-
-          return {
-            ...node, // Spread other fields.
-            data: { // Update 'data' field.
-              ...node.data,
-              mode,
-            },
-          };
-        })
-      );
-    },
-    [setNodes]
-  );
-
-  // Enhanced node parameter update function
-  // Not doing anything now.
-  const updateNodeParameterDataHandler = useCallback(
-    () => {},
-    []
-  );
 
   useEffect(() => {
     // Wait until the node registry is fully loaded
@@ -91,11 +45,12 @@ export const useAllNodeTypesConstructor = (setNodes: SetNodesType) => {
       console.log("Node spec:", nodeSpec);
 
       // Use the factory to create a component for each node type
+      // Pass the update handlers directly
       const CustomNodeComponent = NodeFactory.createNodeComponent(
         nodeSpec,
-        updateNodeInputDataHandler,
-        updateNodeModeDataHandler,
-        updateNodeParameterDataHandler
+        updateNodeData,
+        updateNodeModeData,
+        updateNodeParameterData
       );
 
       // Only add if component was successfully created
@@ -109,7 +64,7 @@ export const useAllNodeTypesConstructor = (setNodes: SetNodesType) => {
     setNodeTypes(nodeTypeMap);
     setNodeTypesLoaded(true);
     
-  }, [loaded, updateNodeInputDataHandler, updateNodeParameterDataHandler, getAllNodes]);
+  }, [loaded, getAllNodes, updateNodeData, updateNodeModeData, updateNodeParameterData]);
 
   // Memoize the return object to prevent unnecessary re-renders
   return useMemo(() => ({

@@ -15,7 +15,8 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import { useAllNodeTypesConstructor } from '../../hooks/useNodeAllTypesConstructor';
+import { useNodeTypes } from '../../hooks/useNodeTypes';
+import { useNodeUpdate } from '../../hooks/useNodeUpdate';
 import { useDragDropHandler } from '@/features/flows/hooks/useDragAndDropHandler';
 import { useFlowActions } from '@/features/flows/hooks/useFlowActions';
 import { useCurrentFlowState } from '../../hooks/useCurrentFlowState';
@@ -36,8 +37,15 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
   // Use ReactFlow's instance hook instead of managing state manually
   const reactFlowInstance = useReactFlow();
 
-  // Node types management
-  const { nodeTypes, nodeTypesLoaded } = useAllNodeTypesConstructor(setNodes);
+  // Node state management
+  const updateHandlers = useNodeUpdate(setNodes);
+  
+  // Node types management (With unified update handlers)
+  const { nodeTypes, nodeTypesLoaded } = useNodeTypes(
+    updateHandlers.updateNodeData,
+    updateHandlers.updateNodeModeData,
+    updateHandlers.updateNodeParameterData
+  );
 
   // Use consolidated flow state hook (simplified without duplicate state)
   const {

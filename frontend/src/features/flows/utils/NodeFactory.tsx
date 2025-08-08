@@ -19,16 +19,9 @@ import { InputsSection } from '../components/NodeSections/InputsSection';
 import { OutputsSection } from '../components/NodeSections/OutputsSection';
 import { NodeExecutionResult } from '../components/NodeSections/NodeExecutionResult';
 import { NodeHeader } from '../components/NodeSections/NodeHeader';
-import { ParametersSection } from '../components/NodeSections/ParametersSection';
-
-// Hooks
-import { useNodeHandlers } from '@/features/flows/hooks/useNodeHandlers';
 
 // Styles
 import { nodeStyles } from '@/features/flows/styles/nodeStyles';
-
-// Type for node modes
-type NodeMode = typeof NODE_DATA_MODE.NORMAL | typeof NODE_DATA_MODE.TOOL;
 
 /**
  * Factory class to create custom React components for different node types.
@@ -67,43 +60,42 @@ class NodeFactoryClass {
       const mode = data.mode || NODE_DATA_MODE.NORMAL;
       const can_be_tool = nodeSpec.can_be_tool;
 
-      // Hook to manage user interactions with parameters and inputs
-      const {
-        handleParameterChange,
-        handleInputValueChange,
-        handleModeChange
-      } = useNodeHandlers(
-        id,
-        input_values,
-        updateNodeData,
-        updateNodeModeData,
-        updateNodeParameter
-      );
+      // Direct handlers passed from the unified update system
+      const handleParameterChange = updateNodeParameter
+        ? (paramName: string, value: any) => updateNodeParameter(id, paramName, value)
+        : undefined;
+        
+      const handleInputValueChange = updateNodeData
+        ? (inputName: string, value: any) => updateNodeData(id, {
+            input_values: {
+              ...input_values,
+              [inputName]: value
+            },
+          })
+        : undefined;
+        
+      const handleModeChange = updateNodeModeData
+        ? (newMode: string) => updateNodeModeData(id, newMode)
+        : undefined;
 
+
+      // === Render Node UI ===
       return (
         <div style={nodeStyles.container}>
           <NodeHeader
             label={label}
             description={description}
             mode={mode}
-            onModeChange={handleModeChange}
+            onModeChange={handleModeChange || (() => {})}
             canBeTool={can_be_tool}
           />
-
-          {/* Parameters Configuration */}
-          {/* <ParametersSection
-            spec_parameters={Object.values(nodeSpec.parameters)}
-            parameter_values={parameter_values}
-            nodeId={id}
-            onParameterChange={handleParameterChange}
-          /> */}
 
           {/* Inputs Configuration */}
           <InputsSection
             spec_inputs={nodeSpec.inputs}
             input_values={input_values}
             nodeId={id}
-            onInputValueChange={handleInputValueChange}
+            onInputValueChange={handleInputValueChange || (() => {})}
           />
 
           {/* Outputs Display */}
