@@ -1,6 +1,6 @@
 // NodeFactory.tsx
 
-import React from 'react';
+import React, { useState } from 'react';
 
 // Types
 import type {
@@ -57,8 +57,24 @@ class NodeFactoryClass {
         parameter_values = {},
         input_values = {},
         output_values = {},
+        mode = 'NormalMode',
       } = data;
-      // console.log("Node data:", data);
+      
+      const can_be_tool = nodeSpec.can_be_tool;
+
+      // State for managing node mode
+      const [currentMode, setCurrentMode] = useState<'NormalMode' | 'ToolMode'>(mode);
+
+      // Handle mode toggle
+      const handleModeToggle = () => {
+        const newMode = currentMode === 'NormalMode' ? 'ToolMode' : 'NormalMode';
+        setCurrentMode(newMode);
+        
+        // Update the node data with new mode
+        if (updateNodeData) {
+          updateNodeData(id, { ...data, mode: newMode });
+        }
+      };
 
       // Hook to manage user interactions with parameters and inputs
       const {
@@ -73,8 +89,13 @@ class NodeFactoryClass {
 
       return (
         <div style={nodeStyles.container}>
-          {/* Node Title and Description */}
-          <NodeHeader label={label} description={description} />
+          <NodeHeader
+            label={label}
+            description={description}
+            mode={currentMode}
+            onModeToggle={can_be_tool ? handleModeToggle : undefined}
+            canBeTool={can_be_tool}
+          />
 
           {/* Parameters Configuration */}
           {/* <ParametersSection
@@ -93,7 +114,7 @@ class NodeFactoryClass {
           />
 
           {/* Outputs Display */}
-          <OutputsSection spec_outputs={nodeSpec.outputs} />
+          <OutputsSection spec_outputs={nodeSpec.outputs} can_be_tool={nodeSpec.can_be_tool} />
 
           {/* Node Execution Result */}
           <NodeExecutionResult

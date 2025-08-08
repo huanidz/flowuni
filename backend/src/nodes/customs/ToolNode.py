@@ -26,6 +26,7 @@ class ToolNode(Node):
             )
         ],
         parameters={},
+        can_be_tool=True,
     )
 
     def process(self, inputs, parameters):

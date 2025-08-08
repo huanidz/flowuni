@@ -36,6 +36,8 @@ export interface NodeOutput {
   value: any;
   default: any;
   description: string;
+
+  enable_for_tool?: boolean;
 }
 
 export interface NodeSpec {
@@ -44,6 +46,8 @@ export interface NodeSpec {
   inputs: NodeInput[];
   outputs: NodeOutput[];
   parameters: NodeParameterSpec[];
+  
+  can_be_tool?: boolean;
 }
 
 // --- Node Data ---
@@ -55,6 +59,9 @@ export interface NodeData {
   parameter_values: Record<string, any>;
   input_values?: Record<string, any>;
   output_values?: Record<string, any>;
+
+  // Mode-related fields
+  mode?: 'NormalMode' | 'ToolMode';
 
   // Execution-related fields
   execution_result?: string;

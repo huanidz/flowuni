@@ -6,9 +6,10 @@ import { HandleInfo } from '../NodeUI/HandleInfo';
 
 interface OutputsSectionProps {
   spec_outputs: NodeOutput[];
+  can_be_tool?: boolean;
 }
 
-export const OutputsSection: React.FC<OutputsSectionProps> = ({ spec_outputs }) => {
+export const OutputsSection: React.FC<OutputsSectionProps> = ({ spec_outputs, can_be_tool }) => {
   if (spec_outputs.length === 0) return null;
 
   return (
