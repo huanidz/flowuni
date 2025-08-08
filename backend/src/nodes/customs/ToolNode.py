@@ -22,8 +22,17 @@ class ToolNode(Node):
         ],
         outputs=[
             NodeOutput(
-                name="tool_result", type=str, description="The response from agent."
-            )
+                name="tool_result",
+                type=str,
+                description="The response from agent.",
+                enable_for_tool=True,
+            ),
+            NodeOutput(
+                name="tool_result2",
+                type=str,
+                description="The response from agent.",
+                enable_for_tool=True,
+            ),
         ],
         parameters={},
         can_be_tool=True,

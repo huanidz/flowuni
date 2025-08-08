@@ -205,6 +205,8 @@ class Node(ABC):
         """
         raw = self.spec.model_dump()
 
+        # logger.info(f"Serializing node spec: {raw}")
+
         # Serialize inputs, outputs, and parameters
         raw["inputs"] = self._serialize_inputs()
         raw["outputs"] = self._serialize_outputs()
@@ -242,6 +244,7 @@ class Node(ABC):
                     value=output_spec.value,
                     default=output_spec.default,
                     description=output_spec.description,
+                    enable_for_tool=output_spec.enable_for_tool,
                 ).model_dump()
             )
         return serialized_outputs

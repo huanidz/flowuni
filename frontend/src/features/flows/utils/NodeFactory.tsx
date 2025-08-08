@@ -99,7 +99,7 @@ class NodeFactoryClass {
           />
 
           {/* Outputs Display */}
-          <OutputsSection spec_outputs={nodeSpec.outputs} can_be_tool={nodeSpec.can_be_tool} />
+          <OutputsSection spec_outputs={nodeSpec.outputs} node_mode={mode} />
 
           {/* Node Execution Result */}
           <NodeExecutionResult

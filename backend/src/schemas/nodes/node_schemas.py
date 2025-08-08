@@ -39,6 +39,9 @@ class NodeOutputSchema(BaseModel):
     value: Optional[Any] = Field(default=None, description="Current output value")
     default: Optional[Any] = Field(default=None, description="Default output value")
     description: str = Field(default="", description="Output description")
+    enable_for_tool: bool = Field(
+        default=False, description="Whether input is enabled for tool mode"
+    )
 
 
 class NodeParameterSchema(BaseModel):
