@@ -3,6 +3,7 @@ export type {
   NodeSpec, 
   CustomNodeProps,
   UpdateNodeDataFunction,
+  UpdateNodeModeDataFunction,
   UpdateNodeParameterFunction 
 } from './types';
 export type { NodeParameterSpec, NodeInput, NodeOutput } from './types';

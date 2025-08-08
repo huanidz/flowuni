@@ -4,3 +4,8 @@ export const FLOW_EXECUTION_STREAM_ENDPOINT = '/flow_execution/stream';
 
 export const FLOW_DEFINITION_COMPILE_ENDPOINT = `${FLOW_EXECUTION_ENDPOINT}/compile`;
 export const FLOW_DEFINITION_RUN_ENDPOINT = `${FLOW_EXECUTION_ENDPOINT}/execute`;
+
+export const NODE_DATA_MODE = {
+  NORMAL: 'NormalMode',
+  TOOL: 'ToolMode',
+} as const;

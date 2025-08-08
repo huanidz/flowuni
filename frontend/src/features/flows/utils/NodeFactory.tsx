@@ -7,11 +7,14 @@ import type {
   NodeSpec,
   CustomNodeProps,
   UpdateNodeDataFunction,
+  UpdateNodeModeDataFunction,
   UpdateNodeParameterFunction,
 } from '@/features/nodes';
 
-// UI Sections
+// Constants
+import { NODE_DATA_MODE } from '../consts';
 
+// UI Sections
 import { InputsSection } from '../components/NodeSections/InputsSection';
 import { OutputsSection } from '../components/NodeSections/OutputsSection';
 import { NodeExecutionResult } from '../components/NodeSections/NodeExecutionResult';
@@ -23,6 +26,9 @@ import { useNodeHandlers } from '@/features/flows/hooks/useNodeHandlers';
 
 // Styles
 import { nodeStyles } from '@/features/flows/styles/nodeStyles';
+
+// Type for node modes
+type NodeMode = typeof NODE_DATA_MODE.NORMAL | typeof NODE_DATA_MODE.TOOL;
 
 /**
  * Factory class to create custom React components for different node types.
@@ -39,6 +45,7 @@ class NodeFactoryClass {
   createNodeComponent(
     nodeSpec: NodeSpec,
     updateNodeData?: UpdateNodeDataFunction,
+    updateNodeModeData?: UpdateNodeModeDataFunction,
     updateNodeParameter?: UpdateNodeParameterFunction
   ): React.FC<CustomNodeProps> | null {
 
@@ -51,39 +58,25 @@ class NodeFactoryClass {
      * A React component that renders a node UI based on the provided props and spec.
      */
     const CustomNode: React.FC<CustomNodeProps> = ({ data, id }) => {
-      const {
-        label = nodeSpec.name,
-        description = nodeSpec.description,
-        parameter_values = {},
-        input_values = {},
-        output_values = {},
-        mode = 'NormalMode',
-      } = data;
       
+      const label = nodeSpec.name;
+      const description = nodeSpec.description;
+      const parameter_values = data.parameter_values || {};
+      const input_values = data.input_values || {};
+      const output_values = data.output_values || {};
+      const mode = data.mode || NODE_DATA_MODE.NORMAL;
       const can_be_tool = nodeSpec.can_be_tool;
-
-      // State for managing node mode
-      const [currentMode, setCurrentMode] = useState<'NormalMode' | 'ToolMode'>(mode);
-
-      // Handle mode toggle
-      const handleModeToggle = () => {
-        const newMode = currentMode === 'NormalMode' ? 'ToolMode' : 'NormalMode';
-        setCurrentMode(newMode);
-        
-        // Update the node data with new mode
-        if (updateNodeData) {
-          updateNodeData(id, { ...data, mode: newMode });
-        }
-      };
 
       // Hook to manage user interactions with parameters and inputs
       const {
         handleParameterChange,
-        handleInputValueChange
+        handleInputValueChange,
+        handleModeChange
       } = useNodeHandlers(
         id,
         input_values,
         updateNodeData,
+        updateNodeModeData,
         updateNodeParameter
       );
 
@@ -92,8 +85,8 @@ class NodeFactoryClass {
           <NodeHeader
             label={label}
             description={description}
-            mode={currentMode}
-            onModeToggle={can_be_tool ? handleModeToggle : undefined}
+            mode={mode}
+            onModeChange={handleModeChange}
             canBeTool={can_be_tool}
           />
 

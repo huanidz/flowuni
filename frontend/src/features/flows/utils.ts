@@ -1,6 +1,7 @@
 // utils/parseFlowDefinition.ts
 import type { Node, Edge } from '@xyflow/react';
 import { Position } from '@xyflow/react';
+import { NODE_DATA_MODE } from './consts';
 export interface ParsedFlowData {
   nodes: Node[];
   edges: Edge[];
@@ -17,6 +18,7 @@ export interface FlowDefinitionData {
       parameter_values: Record<string, any>;
       input_values: Record<string, any>;
       output_values: Record<string, any>;
+      mode: string;
     };
   }>;
   edges: Array<{
@@ -80,6 +82,7 @@ export const parseFlowDefinition = (
         parameter_values: nodeData.data?.parameter_values || {},
         input_values: nodeData.data?.input_values || {},
         output_values: nodeData.data?.output_values || {},
+        mode: nodeData.data?.mode || NODE_DATA_MODE.NORMAL,
       },
       style: { background: '#fff', color: '#000' },
       sourcePosition: Position.Right,

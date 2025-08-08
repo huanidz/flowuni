@@ -43,6 +43,28 @@ export const useAllNodeTypesConstructor = (setNodes: SetNodesType) => {
     [setNodes]
   );
 
+  const updateNodeModeDataHandler = useCallback(
+    (nodeId: string, newMode: string) => {
+      setNodes((nodes) =>
+        nodes.map((node) => {
+          if (node.id !== nodeId) return node;
+          
+          // Handle mode as string (no conversion needed)
+          const mode = newMode;
+
+          return {
+            ...node, // Spread other fields.
+            data: { // Update 'data' field.
+              ...node.data,
+              mode,
+            },
+          };
+        })
+      );
+    },
+    [setNodes]
+  );
+
   // Enhanced node parameter update function
   // Not doing anything now.
   const updateNodeParameterDataHandler = useCallback(
@@ -72,6 +94,7 @@ export const useAllNodeTypesConstructor = (setNodes: SetNodesType) => {
       const CustomNodeComponent = NodeFactory.createNodeComponent(
         nodeSpec,
         updateNodeInputDataHandler,
+        updateNodeModeDataHandler,
         updateNodeParameterDataHandler
       );
 

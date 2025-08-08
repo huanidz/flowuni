@@ -121,8 +121,8 @@
 
 .react-flow__edge path {
   stroke: #0d0d0e !important;
-  stroke-width: 2px !important;
-  filter: drop-shadow(0 0 2px rgba(0, 15, 14, 0.4));
+  stroke-width: 3px !important;
+  filter: drop-shadow(0 0 3px rgba(0, 15, 14, 0.4));
 }
 
 /* Styles for selected nodes */

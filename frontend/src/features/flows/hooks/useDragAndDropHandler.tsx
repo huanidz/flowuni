@@ -3,6 +3,7 @@ import type { Node, ReactFlowInstance } from '@xyflow/react';
 import { Position } from '@xyflow/react';
 import { useNodeRegistry } from '@/features/nodes';
 import React from 'react';
+import { NODE_DATA_MODE } from '../consts';
 
 export const useDragDropHandler = (
   reactFlowInstance: ReactFlowInstance | null,
@@ -80,6 +81,7 @@ export const useDragDropHandler = (
           parameter_values: initialParameters,
           input_values: initialInputValues,
           output_values: {},
+          mode: NODE_DATA_MODE.NORMAL,
         },
         style: { background: '#fff', color: '#000' },
         sourcePosition: Position.Right,

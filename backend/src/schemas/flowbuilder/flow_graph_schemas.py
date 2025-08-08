@@ -20,6 +20,7 @@ class NodeData(BaseModel):
     parameter_values: Optional[Dict[str, Any]] = (
         None  # consider replacing with a typed model if possible
     )
+    mode: Optional[str] = None
 
 
 class FlowNode(BaseModel):

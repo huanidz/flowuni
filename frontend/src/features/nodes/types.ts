@@ -61,7 +61,7 @@ export interface NodeData {
   output_values?: Record<string, any>;
 
   // Mode-related fields
-  mode?: 'NormalMode' | 'ToolMode';
+  mode?: string;
 
   // Execution-related fields
   execution_result?: string;
@@ -72,6 +72,7 @@ export interface NodeData {
 export type CustomNodeProps = NodeProps<RFNode<NodeData>>;
 
 export type UpdateNodeDataFunction = (nodeId: string, newData: any) => void;
+export type UpdateNodeModeDataFunction = (nodeId: string, newMode: string) => void;
 export type UpdateNodeParameterFunction = (
   nodeId: string,
   parameterName: string,

@@ -1,11 +1,12 @@
 // useNodeHandlers.ts
 import { useCallback } from 'react';
-import type { UpdateNodeDataFunction, UpdateNodeParameterFunction } from '@/features/nodes';
+import type { UpdateNodeDataFunction, UpdateNodeParameterFunction, UpdateNodeModeDataFunction } from '@/features/nodes';
 
 export const useNodeHandlers = (
   nodeId: string,
   input_values: Record<string, any>,
   updateNodeData?: UpdateNodeDataFunction,
+  updateNodeModeData?: UpdateNodeModeDataFunction,
   updateNodeParameter?: UpdateNodeParameterFunction
 ) => {
   const handleParameterChange = useCallback(
@@ -37,8 +38,18 @@ export const useNodeHandlers = (
     [nodeId, input_values, updateNodeData]
   );
 
+  const handleModeChange = useCallback(
+    (newMode: string) => {
+      if (updateNodeModeData) {
+        updateNodeModeData(nodeId, newMode);
+      }
+    },
+    [nodeId, updateNodeModeData]
+  );
+
   return {
     handleParameterChange,
     handleInputValueChange,
+    handleModeChange,
   };
 };
