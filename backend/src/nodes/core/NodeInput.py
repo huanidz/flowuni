@@ -18,6 +18,9 @@ class NodeInput(BaseModel):
     # Helper fields
     allow_incoming_edges: bool = True
 
+    # Tool related
+    enable_for_tool: bool = False
+
     @field_validator("type")
     @classmethod
     def validate_type(cls, v):

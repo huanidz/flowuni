@@ -28,6 +28,8 @@ export interface NodeInput {
   description: string;
   required: boolean;
   allow_incoming_edges: boolean
+
+  enable_for_tool?: boolean;
 }
 
 export interface NodeOutput {

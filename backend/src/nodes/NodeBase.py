@@ -191,6 +191,8 @@ class Node(ABC):
             parameter_values=original.parameter_values,
         )
 
+    # def build_tool()
+
     # ============================================================================
     # SPEC SERIALIZATION
     # ============================================================================
@@ -228,6 +230,7 @@ class Node(ABC):
                     description=input_spec.description,
                     required=input_spec.required,
                     allow_incoming_edges=input_spec.allow_incoming_edges,
+                    enable_for_tool=input_spec.enable_for_tool,
                 ).model_dump()
             )
         return serialized_inputs

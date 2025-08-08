@@ -96,6 +96,7 @@ class NodeFactoryClass {
             input_values={input_values}
             nodeId={id}
             onInputValueChange={handleInputValueChange || (() => {})}
+            node_mode={mode}
           />
 
           {/* Outputs Display */}
