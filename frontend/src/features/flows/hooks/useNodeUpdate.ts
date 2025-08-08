@@ -58,10 +58,10 @@ export const useNodeUpdate = (setNodes: SetNodesType, setEdges: SetEdgesType, ed
       // Handle edge removal in a separate effect or after state update
       // This will fix the bug of node start dragging when switching mode.
       setTimeout(() => {
-        const outgoingEdges = edges.filter(edge => edge.source === nodeId);
-        if (outgoingEdges.length > 0) {
+        const edgesToRemove = edges.filter(edge => edge.source === nodeId || edge.target === nodeId);
+        if (edgesToRemove.length > 0) {
           setEdges((prevEdges) =>
-            prevEdges.filter(edge => edge.source !== nodeId)
+            prevEdges.filter(edge => edge.source !== nodeId && edge.target !== nodeId)
           );
         }
       }, 0);
