@@ -38,7 +38,8 @@ export const nodeStyles = {
     display: 'flex',
     flexDirection: 'column' as const,
     gap: '12px',
-    marginBottom: '16px',
+    paddingBottom: '12px',
+    borderBottom: '1px solid #eee',
   },
 
   inputItem: {
