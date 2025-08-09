@@ -36,7 +36,7 @@ export const OutputsSection: React.FC<OutputsSectionProps> = ({ spec_outputs, no
             <Handle
               type="source"
               position={Position.Right}
-              id="output-tool-0"  // Use consistent ID structure
+              // id="output-tool-0"  // No need ID if only one output. If use ID, it will cause bug of can't connect.
               style={nodeStyles.handle.output}
               isConnectable={true}
             />

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Copy, Check } from 'lucide-react';
 import { executionResultStyles } from '@/features/flows/styles/nodeSectionStyles';
 
 interface NodeExecutionResultProps {
@@ -43,12 +44,27 @@ export const NodeExecutionResult: React.FC<NodeExecutionResultProps> = ({
   status = 'success'
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
 
   // Don't show if no result and not running
   if (!result && status !== 'running') return null;
 
   // Get status configuration from external styles
   const statusConfig = executionResultStyles.status[status as keyof typeof executionResultStyles.status] || executionResultStyles.status.success;
+
+  // Copy to clipboard function
+  const handleCopy = async () => {
+    if (result) {
+      try {
+        const textToCopy = beautifyJson(result);
+        await navigator.clipboard.writeText(textToCopy);
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000); // Reset after 2 seconds
+      } catch (err) {
+        console.error('Failed to copy to clipboard:', err);
+      }
+    }
+  };
 
   // Disable ReactFlow interactions when mouse enters the scrollable area
   const handleMouseEnter = () => {
@@ -89,6 +105,39 @@ export const NodeExecutionResult: React.FC<NodeExecutionResultProps> = ({
           {isExpanded ? '▼' : '▶'}
         </span>
         {statusConfig.title}
+        {result && isExpanded && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent collapsing when clicking copy button
+              handleCopy();
+            }}
+            style={{
+              marginLeft: 'auto',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '4px',
+              borderRadius: '4px',
+              display: 'flex',
+              alignItems: 'center',
+              color: 'inherit',
+              transition: 'background-color 0.2s'
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(0, 0, 0, 0.1)';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+            }}
+            title={isCopied ? 'Copied!' : 'Copy to clipboard'}
+          >
+            {isCopied ? (
+              <Check size={14} style={{ color: '#22c55e' }} />
+            ) : (
+              <Copy size={14} />
+            )}
+          </button>
+        )}
       </div>
       
       {isExpanded && (

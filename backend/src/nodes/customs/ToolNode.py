@@ -1,3 +1,4 @@
+from pydantic import BaseModel
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.handles.basics.TextFieldInputHandle import TextFieldInputHandle
@@ -28,16 +29,28 @@ class ToolNode(Node):
                 description="The response from agent.",
                 enable_for_tool=True,
             ),
-            NodeOutput(
-                name="tool_result2",
-                type=str,
-                description="The response from agent.",
-                enable_for_tool=True,
-            ),
+            # NodeOutput(
+            #     name="tool_result2",
+            #     type=str,
+            #     description="The response from agent.",
+            #     enable_for_tool=True,
+            # ),
         ],
         parameters={},
         can_be_tool=True,
     )
 
     def process(self, inputs, parameters):
-        return {"tool_result": inputs["input_message"], "tool_result2": "hello"}
+        # return {"tool_result": inputs["input_message"], "tool_result2": "hello"}
+        return {"tool_result": inputs["input_message"]}
+
+    def build_tool(self):
+        from loguru import logger
+
+        logger.info("build tool bro")
+
+        class ToolSchema(BaseModel):
+            input_message: str
+            system_instruction: str
+
+        return ToolSchema

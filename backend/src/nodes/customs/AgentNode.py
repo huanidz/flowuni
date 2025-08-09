@@ -1,5 +1,4 @@
-from src.node_components.llm.providers import LLMProvider
-from src.node_components.llm.providers.adapters.LLMAdapterBase import LLMAdapter
+from loguru import logger
 from src.node_components.llm.providers.LLMProviderConsts import LLMProviderName
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
@@ -101,21 +100,25 @@ class AgentNode(Node):
         parameters={},
     )
 
-    def process(self, input_values, parameter_values):
+    def process(self, input_values, parameter_values, tool_serialized_schemas):
         provider = input_values["provider"]
         model = input_values["model"]
         api_key = input_values["API Key"]
         system_prompt = input_values["system_instruction"]
         input_message = input_values["input_message"]
 
-        llm_provider: LLMAdapter = LLMProvider.get_provider(provider_name=provider)
+        tools = input_values["tools"]
 
-        llm_provider.init(
-            model=model,
-            system_prompt=system_prompt,
-            api_key=api_key,
-        )
+        logger.info(f"Tools: {tools}")
 
-        chat_response = llm_provider.chat_completion(messages=input_message)
+        # llm_provider: LLMAdapter = LLMProvider.get_provider(provider_name=provider)
 
-        return {"response": chat_response.content}
+        # llm_provider.init(
+        #     model=model,
+        #     system_prompt=system_prompt,
+        #     api_key=api_key,
+        # )
+
+        # chat_response = llm_provider.chat_completion(messages=input_message)
+
+        return {"response": tool_serialized_schemas}

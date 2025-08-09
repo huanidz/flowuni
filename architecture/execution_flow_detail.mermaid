@@ -1,0 +1,77 @@
+flowchart TD
+    A["GraphExecutor.__init__"] --> B["Initialize Components"]
+    B --> C["graph: nx.DiGraph<br/>execution_plan: List[List[str]]<br/>max_workers: Optional[int]<br/>execution_context: ExecutionContext"]
+    
+    C --> D["execute()"]
+    D --> E["Start ThreadPoolExecutor"]
+    E --> F{"For each layer in execution_plan"}
+    
+    F --> G["Execute Layer"]
+    G --> H{"Layer has multiple nodes?"}
+    
+    H -->|"Single Node"| I["_execute_single_node_sync"]
+    H -->|"Multiple Nodes"| J["_execute_layer_parallel"]
+    
+    I --> K["Get Node Spec & Data"]
+    I --> L["Create Node Instance"]
+    L --> M["Push RUNNING event"]
+    M --> N["node_instance.run(node_data)"]
+    N --> O["Push SUCCESS/FAILED event"]
+    O --> P["Return NodeExecutionResult"]
+    
+    J --> Q["Submit all nodes to ThreadPool"]
+    Q --> R["For each node: _execute_single_node_thread"]
+    R --> S["Get Node Data Copy"]
+    S --> T["Create Node Instance"]
+    T --> U["Push RUNNING event"]
+    U --> V["node_instance.run(node_data)"]
+    V --> W["Push SUCCESS/FAILED event"]
+    W --> X["Collect Results with as_completed"]
+    
+    P --> Y["Check for Failed Nodes"]
+    X --> Y
+    
+    Y -->|"Has Failures"| Z["Raise GraphExecutorError"]
+    Y -->|"All Success"| AA["_update_all_successors"]
+    
+    AA --> BB["For each successful node"]
+    BB --> CC["Get successors from graph"]
+    CC --> DD["_update_successors"]
+    DD --> EE["Update successor input_values<br/>with node output_values"]
+    
+    EE --> FF{"More layers?"}
+    FF -->|"Yes"| F
+    FF -->|"No"| GG["end_event()"]
+    GG --> HH["Return Success Result"]
+    
+    Z --> II["Log Error & Fail"]
+    
+    subgraph TS ["Thread Safety"]
+        JJ["_update_lock: threading.Lock"]
+        KK["copy.deepcopy for node data"]
+        LL["Thread-safe graph updates"]
+    end
+    
+    subgraph ES ["Event System"]
+        MM["push_event: RUNNING/SUCCESS/FAILED"]
+        NN["end_event: Execution complete"]
+        OO["ExecutionContext.publish_node_event"]
+    end
+    
+    subgraph NR ["Node Registry"]
+        PP["NodeRegistry.create_node_instance"]
+        QQ["Node.run(NodeData)"]
+    end
+    
+    subgraph DS ["Data Structures"]
+        RR["NodeExecutionResult<br/>- node_id<br/>- success<br/>- data<br/>- error<br/>- execution_time"]
+        SS["NodeData<br/>- input_values<br/>- output_values"]
+        TT["NodeSpec<br/>- name"]
+    end
+    
+    style D fill:#e1f5fe
+    style G fill:#f3e5f5
+    style I fill:#e8f5e8
+    style J fill:#fff3e0
+    style AA fill:#fce4ec
+    style DD fill:#f1f8e9

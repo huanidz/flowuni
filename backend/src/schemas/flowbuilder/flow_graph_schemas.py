@@ -21,6 +21,7 @@ class NodeData(BaseModel):
         None  # consider replacing with a typed model if possible
     )
     mode: Optional[Literal["NormalMode", "ToolMode"]] = None
+    tool_serialized_schemas: Optional[str] = None
 
 
 class FlowNode(BaseModel):
