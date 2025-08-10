@@ -147,25 +147,6 @@ class GraphExecutor:
                 f"Processed {completed_nodes} nodes across {len(self.execution_plan)} layers."  # noqa: E501
             )
 
-            # Log final results summary
-            # logger.info("=== FINAL EXECUTION RESULTS ===")
-            # for node_id in self.graph.nodes():
-            #     node_data = self.graph.nodes[node_id].get("data")
-            #     if (
-            #         node_data
-            #         and hasattr(node_data, "output_values")
-            #         and node_data.output_values
-            #     ):
-            #         for key, value in node_data.output_values.items():
-            #             value_preview = (
-            #                 str(value)[:100] + "..."
-            #                 if len(str(value)) > 100
-            #                 else str(value)
-            #             )
-            #             logger.info(f"  {node_id}.{key}: {value_preview}")
-            #     else:
-            #         logger.info(f"  {node_id}: no final outputs")
-
             self.end_event()
 
             return {
@@ -305,6 +286,8 @@ class GraphExecutor:
                 event=NodeExecutionEvent.SUCCESS,
                 data=executed_data.model_dump(),
             )
+
+            logger.info(f"Node {node_id} executed successfully: {executed_data}")
 
             execution_time = time.time() - start_time
 
@@ -473,6 +456,9 @@ class GraphExecutor:
 
                     source_handle = edge_data.get("source_handle", "")
                     target_handle = edge_data.get("target_handle", "")
+
+                    logger.info(f"source_handle: {source_handle}")
+                    logger.info(f"target_handle: {target_handle}")
 
                     # Handle the -index splitting (same as old version)
                     if source_handle and "-index" in source_handle:

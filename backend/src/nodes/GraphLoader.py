@@ -1,6 +1,7 @@
 from typing import List
 
 import networkx as nx
+from loguru import logger
 from src.nodes.NodeRegistry import NodeRegistry
 from src.schemas.flowbuilder.flow_graph_schemas import FlowGraphRequest, FlowNode
 
@@ -34,6 +35,8 @@ class GraphLoader:
 
         # Load edges
         for idx, edge in enumerate(flow.edges):
+            logger.debug(f"Loading edge {idx}: {edge}")
+
             G.add_edge(
                 u_of_edge=edge.source,
                 v_of_edge=edge.target,
