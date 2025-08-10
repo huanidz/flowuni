@@ -14,6 +14,7 @@ from src.executors.NodeExecution import NodeExecutionEvent
 from src.nodes.NodeBase import Node, NodeSpec
 from src.nodes.NodeRegistry import NodeRegistry
 from src.schemas.flowbuilder.flow_graph_schemas import NodeData
+from src.schemas.nodes.node_data_parsers import ToolDataParser
 
 
 class GraphExecutorError(Exception):
@@ -418,7 +419,7 @@ class GraphExecutor:
                 )
 
     def _update_successors(
-        self, node_name: str, successors: List[str], executed_data: NodeData
+        self, node_id: str, successors: List[str], executed_data: NodeData
     ):
         """
         Update successor nodes with output data from current node.
@@ -428,12 +429,12 @@ class GraphExecutor:
         """
 
         logger.debug(
-            f"Updating successors for node {node_name}, with data: {executed_data}"
+            f"Updating successors for node {node_id}, with data: {executed_data}"
         )
 
         if not executed_data or not executed_data.output_values:
             # TODO: Careful in the future if a node is only is in Tool mode and not support normal mode # noqa
-            logger.warning(f"Node {node_name} has no output data to propagate")
+            logger.warning(f"Node {node_id} has no output data to propagate")
             return
 
         SOURCE_MODE: str = executed_data.mode  # Either NormalMode or ToolMode
@@ -442,10 +443,10 @@ class GraphExecutor:
         with self._update_lock:
             for successor_name in successors:
                 try:
-                    edge_data = self.graph.get_edge_data(node_name, successor_name)
+                    edge_data = self.graph.get_edge_data(node_id, successor_name)
                     if not edge_data:
                         logger.warning(
-                            f"No edge data between {node_name} and {successor_name}"
+                            f"No edge data between {node_id} and {successor_name}"
                         )
                         continue
 
@@ -461,7 +462,7 @@ class GraphExecutor:
                     # Handle tool mode case using the dedicated function
                     if (source_handle is None) and (SOURCE_MODE == NODE_DATA_MODE.TOOL):
                         self._update_tool_mode_successor(
-                            node_name, successor_name, target_handle, executed_data
+                            node_id, successor_name, target_handle, executed_data
                         )
                         continue
 
@@ -474,7 +475,7 @@ class GraphExecutor:
 
                     # Handle normal mode case using the dedicated function
                     self._update_normal_mode_successor(
-                        node_name,
+                        node_id,
                         successor_name,
                         source_handle,
                         target_handle,
@@ -488,7 +489,7 @@ class GraphExecutor:
 
     def _update_normal_mode_successor(
         self,
-        node_name: str,
+        node_id: str,
         successor_name: str,
         source_handle: str,
         target_handle: str,
@@ -501,7 +502,7 @@ class GraphExecutor:
         to a target handle between nodes in normal mode.
 
         Args:
-            node_name: Name of the source node
+            node_id: Name of the source node
             successor_name: Name of the successor node to update
             source_handle: Source handle for the connection
             target_handle: Target handle for the connection
@@ -533,7 +534,7 @@ class GraphExecutor:
                 )
             else:
                 logger.warning(
-                    f"Source handle '{source_handle}' not found in {node_name} outputs"
+                    f"Source handle '{source_handle}' not found in {node_id} outputs"
                 )
 
         except Exception as e:
@@ -544,7 +545,7 @@ class GraphExecutor:
 
     def _update_tool_mode_successor(
         self,
-        node_name: str,
+        node_id: str,
         successor_name: str,
         target_handle: str,
         executed_data: NodeData,
@@ -557,7 +558,7 @@ class GraphExecutor:
         for the successor node.
 
         Args:
-            node_name: Name of the source node
+            node_id: Name of the source node
             successor_name: Name of the successor node to update
             target_handle: Target handle for the connection
             executed_data: Executed data from the source node
@@ -576,6 +577,12 @@ class GraphExecutor:
             # Load the tool schema from executed data
             loaded_schema = json.loads(executed_data.output_values["tool"])
 
+            tool_data = ToolDataParser(
+                from_node_id=node_id,
+                input_values=executed_data.input_values,
+                tool_schema=loaded_schema,
+            )
+
             logger.info(f"Loaded tool schemas for {successor_name}: {loaded_schema}")
 
             # Get current data for the target handle
@@ -591,7 +598,7 @@ class GraphExecutor:
             logger.info(f"Current schemas for {successor_name}: {successor_schemas}")
 
             # Add the new schema to the list
-            successor_schemas.append(loaded_schema)
+            successor_schemas.append(tool_data.model_dump())
 
             # Serialize back to string and update
             successor_node_data.input_values[target_handle] = json.dumps(
