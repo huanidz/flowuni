@@ -417,13 +417,14 @@ class GraphExecutor:
                     f"Failed to update successors for node {result.node_id}: {str(e)}"
                 )
 
-    def _update_successors(  # noqa: C901
+    def _update_successors(
         self, node_name: str, successors: List[str], executed_data: NodeData
     ):
         """
         Update successor nodes with output data from current node.
 
-        This method keeps the exact same logic as your working old version.
+        This method orchestrates the updating of successors by delegating to
+        specialized functions based on the connection type and mode.
         """
 
         logger.debug(
@@ -432,7 +433,6 @@ class GraphExecutor:
 
         if not executed_data or not executed_data.output_values:
             # TODO: Careful in the future if a node is only is in Tool mode and not support normal mode # noqa
-
             logger.warning(f"Node {node_name} has no output data to propagate")
             return
 
@@ -458,82 +458,158 @@ class GraphExecutor:
                     if target_handle and "-index" in target_handle:
                         target_handle = target_handle.split("-index")[0]
 
+                    # Handle tool mode case using the dedicated function
                     if (source_handle is None) and (SOURCE_MODE == NODE_DATA_MODE.TOOL):
-                        # This is the only case where the tool is enabled.
-                        # Update the tool_serialized_schemas for the successor node.
-                        successor_node_data: NodeData = self.graph.nodes[
-                            successor_name
-                        ].get("data")
-
-                        if successor_node_data is None:
-                            successor_node_data = NodeData()
-
-                        loaded_schema = json.loads(executed_data.output_values["tool"])
-
-                        logger.info(
-                            f"Loaded tool schemas for {successor_name}: {loaded_schema}"
+                        self._update_tool_mode_successor(
+                            node_name, successor_name, target_handle, executed_data
                         )
-
-                        # current_succesor_tool_schemas =
-
-                        logger.info(
-                            f"Current schemas for {successor_name}: {test_data}"
-                        )
-
-                        succesor_schemas: List[Dict[str, Any]] = json.loads(
-                            successor_node_data.input_values[target_handle]
-                        )
-
-                        logger.info(
-                            f"Current schemas for {successor_name}: {succesor_schemas}"
-                        )
-
-                        succesor_schemas.extend(loaded_schema)
-
-                        # Serialize back to string
-                        successor_node_data.input_values[target_handle] = json.dumps(
-                            succesor_schemas
-                        )
-
-                        self.graph.nodes[successor_name]["data"] = successor_node_data
                         continue
 
+                    # Validate handles for normal mode
                     if not source_handle or not target_handle:
                         logger.warning(
-                            f"Invalid handles: source='{source_handle}', target='{target_handle}'"  # noqa: E501
+                            f"Invalid handles: source='{source_handle}', target='{target_handle}'"  # noqa
                         )
                         continue
 
-                    # Get successor node data (same as old version)
-                    successor_node_data: NodeData = self.graph.nodes[
-                        successor_name
-                    ].get("data")
-
-                    if successor_node_data is None:
-                        successor_node_data = NodeData()
-
-                    # Ensure input_values exists
-                    if successor_node_data.input_values is None:
-                        successor_node_data.input_values = {}
-
-                    # Update successor input with current node output
-                    if source_handle in executed_data.output_values:
-                        successor_node_data.input_values[target_handle] = copy.deepcopy(
-                            executed_data.output_values[source_handle]
-                        )
-
-                        # Update the graph (same as old version)
-                        self.graph.nodes[successor_name]["data"] = successor_node_data
-
-                    else:
-                        logger.warning(
-                            f"Source handle '{source_handle}' not found in {node_name} outputs"  # noqa: E501
-                        )
+                    # Handle normal mode case using the dedicated function
+                    self._update_normal_mode_successor(
+                        node_name,
+                        successor_name,
+                        source_handle,
+                        target_handle,
+                        executed_data,
+                    )
 
                 except Exception as e:
                     logger.warning(
                         f"Failed to update successor {successor_name}: {str(e)}"
                     )
+
+    def _update_normal_mode_successor(
+        self,
+        node_name: str,
+        successor_name: str,
+        source_handle: str,
+        target_handle: str,
+        executed_data: NodeData,
+    ) -> None:
+        """
+        Handle normal mode successor updates.
+
+        This method handles the standard case where data flows from a source handle
+        to a target handle between nodes in normal mode.
+
+        Args:
+            node_name: Name of the source node
+            successor_name: Name of the successor node to update
+            source_handle: Source handle for the connection
+            target_handle: Target handle for the connection
+            executed_data: Executed data from the source node
+        """
+        try:
+            # Get successor node data
+            successor_node_data: NodeData = self.graph.nodes[successor_name].get("data")
+
+            if successor_node_data is None:
+                successor_node_data = NodeData()
+
+            # Ensure input_values exists
+            if successor_node_data.input_values is None:
+                successor_node_data.input_values = {}
+
+            # Update successor input with current node output
+            if source_handle in executed_data.output_values:
+                successor_node_data.input_values[target_handle] = copy.deepcopy(
+                    executed_data.output_values[source_handle]
+                )
+
+                # Update the graph
+                self.graph.nodes[successor_name]["data"] = successor_node_data
+
+                logger.debug(
+                    f"Successfully updated normal mode successor {successor_name}: "
+                    f"{source_handle} -> {target_handle}"
+                )
+            else:
+                logger.warning(
+                    f"Source handle '{source_handle}' not found in {node_name} outputs"
+                )
+
+        except Exception as e:
+            logger.error(
+                f"Failed to update normal mode successor {successor_name}: {str(e)}"
+            )
+            raise
+
+    def _update_tool_mode_successor(
+        self,
+        node_name: str,
+        successor_name: str,
+        target_handle: str,
+        executed_data: NodeData,
+    ) -> None:
+        """
+        Handle tool mode successor updates.
+
+        This method specifically handles the case where source_handle is None
+        and SOURCE_MODE is TOOL mode, updating the tool_serialized_schemas
+        for the successor node.
+
+        Args:
+            node_name: Name of the source node
+            successor_name: Name of the successor node to update
+            target_handle: Target handle for the connection
+            executed_data: Executed data from the source node
+        """
+        try:
+            # Get successor node data
+            successor_node_data: NodeData = self.graph.nodes[successor_name].get("data")
+
+            if successor_node_data is None:
+                successor_node_data = NodeData()
+
+            # Ensure input_values exists
+            if successor_node_data.input_values is None:
+                successor_node_data.input_values = {}
+
+            # Load the tool schema from executed data
+            loaded_schema = json.loads(executed_data.output_values["tool"])
+
+            logger.info(f"Loaded tool schemas for {successor_name}: {loaded_schema}")
+
+            # Get current data for the target handle
+            current_data = successor_node_data.input_values.get(target_handle, "")
+
+            # Handle empty string case
+            if current_data == "":
+                successor_schemas = []
+            else:
+                # Handle existing list case
+                successor_schemas: List[Dict[str, Any]] = json.loads(current_data)
+
+            logger.info(f"Current schemas for {successor_name}: {successor_schemas}")
+
+            # Add the new schema to the list
+            successor_schemas.append(loaded_schema)
+
+            # Serialize back to string and update
+            successor_node_data.input_values[target_handle] = json.dumps(
+                successor_schemas
+            )
+
+            # Update the graph node
+            self.graph.nodes[successor_name]["data"] = successor_node_data
+
+            logger.debug(
+                f"Successfully updated tool schemas for successor {successor_name}"
+            )
+
+        except Exception as e:
+            logger.error(
+                f"Failed to update tool mode successor {successor_name}: {str(e)}"
+            )
+            raise
 
     def prepare(self):
         """Prepare method for backward compatibility."""
