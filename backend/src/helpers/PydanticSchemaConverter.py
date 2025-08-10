@@ -119,3 +119,26 @@ class PydanticSchemaConverter:
         except Exception as e:
             logger.error(f"Error loading model from schema: {str(e)}")
             raise ValueError(f"Failed to load model from schema: {str(e)}") from e
+
+    @staticmethod
+    def get_schema_dict(schema_str: str) -> Dict[str, Any]:
+        """
+        Parse a JSON schema string and return the dictionary representation.
+
+        Args:
+            schema_str: JSON string containing the schema.
+
+        Returns:
+            A dictionary representation of the JSON schema.
+
+        Raises:
+            ValueError: If the schema string is invalid or cannot be parsed.
+        """
+        try:
+            return json.loads(schema_str)
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON schema string: {str(e)}")
+            raise ValueError(f"Invalid JSON schema string: {str(e)}") from e
+        except Exception as e:
+            logger.error(f"Error parsing schema string: {str(e)}")
+            raise ValueError(f"Failed to parse schema string: {str(e)}") from e

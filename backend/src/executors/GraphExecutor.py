@@ -1,4 +1,5 @@
 import copy
+import json
 import threading
 import time
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
@@ -7,6 +8,7 @@ from typing import Any, Dict, List, Optional
 import networkx as nx
 from loguru import logger
 from pydantic import BaseModel
+from src.consts.node_consts import NODE_DATA_MODE
 from src.executors.ExecutionContext import ExecutionContext
 from src.executors.NodeExecution import NodeExecutionEvent
 from src.nodes.NodeBase import Node, NodeSpec
@@ -67,11 +69,6 @@ class GraphExecutor:
 
         # Create node registry instance
         self._node_registry = NodeRegistry()
-
-        # logger.info(
-        #     f"Initialized GraphExecutor with {sum(len(layer) for layer in execution_plan)} nodes "  # noqa: E501
-        #     f"across {len(execution_plan)} layers"
-        # )
 
     def push_event(self, node_id: str, event: str, data: Any = {}):
         # Publish node event to Redis
@@ -366,17 +363,6 @@ class GraphExecutor:
             )
             execution_time = time.time() - start_time
 
-            # Log execution results
-            if executed_data and executed_data.output_values:
-                output_keys = list(executed_data.output_values.keys())
-                logger.success(
-                    f"Node {node_id} completed in {execution_time:.3f}s (parallel), outputs: {output_keys}"  # noqa: E501
-                )
-            else:
-                logger.success(
-                    f"Node {node_id} completed in {execution_time:.3f}s (parallel), no outputs"  # noqa: E501
-                )
-
             return NodeExecutionResult(
                 node_id=node_id,
                 success=True,
@@ -439,9 +425,18 @@ class GraphExecutor:
 
         This method keeps the exact same logic as your working old version.
         """
+
+        logger.debug(
+            f"Updating successors for node {node_name}, with data: {executed_data}"
+        )
+
         if not executed_data or not executed_data.output_values:
+            # TODO: Careful in the future if a node is only is in Tool mode and not support normal mode # noqa
+
             logger.warning(f"Node {node_name} has no output data to propagate")
             return
+
+        SOURCE_MODE: str = executed_data.mode  # Either NormalMode or ToolMode
 
         # Use lock for thread safety when updating graph
         with self._update_lock:
@@ -457,14 +452,51 @@ class GraphExecutor:
                     source_handle = edge_data.get("source_handle", "")
                     target_handle = edge_data.get("target_handle", "")
 
-                    logger.info(f"source_handle: {source_handle}")
-                    logger.info(f"target_handle: {target_handle}")
-
                     # Handle the -index splitting (same as old version)
                     if source_handle and "-index" in source_handle:
                         source_handle = source_handle.split("-index")[0]
                     if target_handle and "-index" in target_handle:
                         target_handle = target_handle.split("-index")[0]
+
+                    if (source_handle is None) and (SOURCE_MODE == NODE_DATA_MODE.TOOL):
+                        # This is the only case where the tool is enabled.
+                        # Update the tool_serialized_schemas for the successor node.
+                        successor_node_data: NodeData = self.graph.nodes[
+                            successor_name
+                        ].get("data")
+
+                        if successor_node_data is None:
+                            successor_node_data = NodeData()
+
+                        loaded_schema = json.loads(executed_data.output_values["tool"])
+
+                        logger.info(
+                            f"Loaded tool schemas for {successor_name}: {loaded_schema}"
+                        )
+
+                        # current_succesor_tool_schemas =
+
+                        logger.info(
+                            f"Current schemas for {successor_name}: {test_data}"
+                        )
+
+                        succesor_schemas: List[Dict[str, Any]] = json.loads(
+                            successor_node_data.input_values[target_handle]
+                        )
+
+                        logger.info(
+                            f"Current schemas for {successor_name}: {succesor_schemas}"
+                        )
+
+                        succesor_schemas.extend(loaded_schema)
+
+                        # Serialize back to string
+                        successor_node_data.input_values[target_handle] = json.dumps(
+                            succesor_schemas
+                        )
+
+                        self.graph.nodes[successor_name]["data"] = successor_node_data
+                        continue
 
                     if not source_handle or not target_handle:
                         logger.warning(
@@ -493,18 +525,6 @@ class GraphExecutor:
                         # Update the graph (same as old version)
                         self.graph.nodes[successor_name]["data"] = successor_node_data
 
-                        # Log data transfer
-                        value_info = f"{type(executed_data.output_values[source_handle]).__name__}"  # noqa: E501
-                        if hasattr(
-                            executed_data.output_values[source_handle], "__len__"
-                        ) and not isinstance(
-                            executed_data.output_values[source_handle], str
-                        ):
-                            value_info += f"(len={len(executed_data.output_values[source_handle])})"  # noqa: E501
-
-                        logger.debug(
-                            f"Data flow: {node_name}.{source_handle} -> {successor_name}.{target_handle} ({value_info})"  # noqa: E501
-                        )
                     else:
                         logger.warning(
                             f"Source handle '{source_handle}' not found in {node_name} outputs"  # noqa: E501

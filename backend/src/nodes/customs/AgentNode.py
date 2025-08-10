@@ -100,7 +100,7 @@ class AgentNode(Node):
         parameters={},
     )
 
-    def process(self, input_values, parameter_values, tool_serialized_schemas):
+    def process(self, input_values, parameter_values):
         provider = input_values["provider"]
         model = input_values["model"]
         api_key = input_values["API Key"]
@@ -121,4 +121,4 @@ class AgentNode(Node):
 
         # chat_response = llm_provider.chat_completion(messages=input_message)
 
-        return {"response": tool_serialized_schemas}
+        return {"response": "kek"}

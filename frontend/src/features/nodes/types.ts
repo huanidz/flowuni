@@ -64,7 +64,6 @@ export interface NodeData {
 
   // Mode-related fields
   mode?: string;
-  tool_serialized_schemas?: string;
 
   // Execution-related fields
   execution_result?: string;
