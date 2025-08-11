@@ -78,6 +78,13 @@ class GoogleGeminiProvider(LLMAdapter):
 
         constructed_messages = []
 
+        constructed_messages.append(
+            {
+                "role": "system",
+                "content": self.system_prompt,
+            }
+        )
+
         for message in messages:
             message_item = {"role": message.role, "content": message.content}
             constructed_messages.append(message_item)
@@ -86,9 +93,6 @@ class GoogleGeminiProvider(LLMAdapter):
             model=self.model,
             messages=constructed_messages,
             response_model=output_schema,
-            generation_config=self._build_generation_config(
-                generation_parameters=GenerationParams()
-            ),
         )
 
         return structured_response
@@ -115,6 +119,8 @@ class GoogleGeminiProvider(LLMAdapter):
         from google.genai import types
 
         thinking_config = types.ThinkingConfig(thinking_budget=0)
+
+        logger.info(f"System Prompt: {self.system_prompt}")
 
         return types.GenerateContentConfig(
             temperature=config_dict.get("temperature", 0.7),
