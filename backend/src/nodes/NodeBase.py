@@ -12,6 +12,7 @@ from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.core.NodeSpec import NodeSpec
 from src.nodes.handles.InputHandleBase import InputHandleTypeBase
 from src.schemas.flowbuilder.flow_graph_schemas import NodeData
+from src.schemas.nodes.node_data_parsers import BuildToolResult
 from src.schemas.nodes.node_schemas import (
     NodeInputSchema,
     NodeOutputSchema,
@@ -168,7 +169,7 @@ class Node(ABC):
     # @abstractmethod
     def build_tool(
         self,
-    ) -> Type[BaseModel]:
+    ) -> BuildToolResult:
         """
         Build a tool from the node.
 
@@ -205,13 +206,15 @@ class Node(ABC):
                 original=node_data, outputs=output_values
             )
         else:
-            ToolSchema: Type[BaseModel] = self.build_tool()
+            built_tool: BuildToolResult = self.build_tool()
             tool_serialized_schemas = PydanticSchemaConverter.serialize(
-                model_cls=ToolSchema
+                model_cls=built_tool.tool_schema
             )
 
             output_values = {
                 "tool": tool_serialized_schemas,
+                "tool_name": built_tool.tool_name,
+                "tool_description": built_tool.tool_description,
             }
 
             return self._create_result_node_data(

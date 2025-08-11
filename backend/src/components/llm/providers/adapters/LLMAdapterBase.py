@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional, Union
+from typing import List, Optional, Type, Union
 
-from src.node_components.llm.models.core import (
+from instructor import Instructor
+from pydantic import BaseModel
+from src.components.llm.models.core import (
     ChatMessage,
     ChatResponse,
     GenerationParams,
@@ -28,6 +30,18 @@ class LLMAdapterBase(ABC):
     ) -> ChatResponse:
         pass
 
+    @abstractmethod
+    def structured_completion(
+        self,
+        messages: List[ChatMessage],
+        output_schema: Type[BaseModel] = None,
+    ) -> Type[BaseModel]:
+        pass
+
+    @abstractmethod
+    def get_client(self) -> Instructor:
+        raise NotImplementedError("Subclass must implement this method")
+
 
 class LLMAdapter(LLMAdapterBase):
     def __init__(self) -> None:
@@ -46,4 +60,14 @@ class LLMAdapter(LLMAdapterBase):
         stream: bool = False,
         generation_parameters: GenerationParams = {},
     ) -> ChatResponse:
+        raise NotImplementedError("Subclass must implement this method")
+
+    def structured_completion(
+        self,
+        messages: List[ChatMessage],
+        output_schema: Type[BaseModel] = None,
+    ) -> Type[BaseModel]:
+        raise NotImplementedError("Subclass must implement this method")
+
+    def get_client(self) -> Instructor:
         raise NotImplementedError("Subclass must implement this method")

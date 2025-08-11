@@ -1,5 +1,5 @@
-from src.node_components.llm.providers.adapters.LLMAdapterBase import LLMAdapter
-from src.node_components.llm.providers.LLMProviderConsts import LLMProviderName
+from src.components.llm.providers.adapters.LLMAdapterBase import LLMAdapter
+from src.components.llm.providers.LLMProviderConsts import LLMProviderName
 
 
 class LLMProvider:
@@ -9,7 +9,7 @@ class LLMProvider:
     @staticmethod
     def get_provider(provider_name: str) -> LLMAdapter:
         if provider_name == LLMProviderName.GOOGLE_GEMINI:
-            from src.node_components.llm.providers.adapters import (
+            from src.components.llm.providers.adapters import (
                 GoogleGeminiProvider,
             )
 

@@ -4,6 +4,7 @@ from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.handles.basics.inputs.TextFieldInputHandle import TextFieldInputHandle
 from src.nodes.handles.basics.outputs.DataOutputHandle import DataOutputHandle
 from src.nodes.NodeBase import Node, NodeSpec
+from src.schemas.nodes.node_data_parsers import BuildToolResult
 
 
 class CalculatorNode(Node):
@@ -34,8 +35,12 @@ class CalculatorNode(Node):
         # return {"tool_result": inputs["input_message"], "tool_result2": "hello"}
         return {"tool_result": inputs["input_message"]}
 
-    def build_tool(self):
+    def build_tool(self) -> BuildToolResult:
         class CalculatorSchema(BaseModel):
             expression: str
 
-        return CalculatorSchema
+        return BuildToolResult(
+            tool_name="Calculator",
+            tool_description="Calculator tool that will run math expression.",
+            tool_schema=CalculatorSchema,
+        )

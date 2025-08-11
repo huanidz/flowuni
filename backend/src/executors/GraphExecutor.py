@@ -575,16 +575,20 @@ class GraphExecutor:
                 successor_node_data.input_values = {}
 
             # Load the tool schema from executed data
-            loaded_schema = json.loads(executed_data.output_values["tool"])
+            tool_schema = json.loads(executed_data.output_values["tool"])
+            tool_name = executed_data.output_values["tool_name"]
+            tool_desciption = executed_data.output_values["tool_description"]
 
             tool_data = ToolDataParser(
                 from_node_id=node_id,
                 input_values=executed_data.input_values,
                 parameter_values=executed_data.parameter_values,
-                tool_schema=loaded_schema,
+                tool_schema=tool_schema,
+                tool_name=tool_name,
+                tool_description=tool_desciption,
             )
 
-            logger.info(f"Loaded tool schemas for {successor_name}: {loaded_schema}")
+            logger.info(f"Loaded tool schemas for {successor_name}: {tool_schema}")
 
             # Get current data for the target handle
             current_data = successor_node_data.input_values.get(target_handle, "")

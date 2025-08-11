@@ -28,7 +28,7 @@ class ChatResponse(BaseModel):
     """Represents the complete response from a non-streaming chat request."""
 
     content: str = Field(..., description="The generated content")
-    usage: UsageMetrics = Field(..., description="Token usage metrics")
+    # usage: UsageMetrics = Field(..., description="Token usage metrics")
 
 
 class GenerationParams(BaseModel):
