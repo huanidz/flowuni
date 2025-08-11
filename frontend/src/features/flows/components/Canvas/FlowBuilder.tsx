@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useCallback } from 'react';
 import FlowToolbar from './FlowToolBar';
 import NodePalette from './FlowNodePallete';
 import {
@@ -17,6 +17,11 @@ import { useDragDropHandler } from '@/features/flows/hooks/useDragAndDropHandler
 import { useFlowActions } from '@/features/flows/hooks/useFlowActions';
 import { useCurrentFlowState } from '../../hooks/useCurrentFlowState';
 import { useFlowUtilOperations } from '../../hooks/useFlowUtilOperations';
+import { useConnectionValidation } from '../../hooks/useConnectionValidator';
+import type { NodeSpec } from '@/features/nodes';
+import { addEdge } from '@xyflow/react';
+import { type Connection } from '@xyflow/react';
+import { useNodeStore } from '@/features/nodes';
 
 interface FlowBuilderContentProps {
   flow_id: string;
@@ -84,6 +89,15 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
     setEdges,
   );
 
+
+  const { isValidConnection } = useConnectionValidation(currentNodes, currentEdges);
+
+  const onConnectV2 = useCallback((params: Connection) => {
+    if (isValidConnection(params)) {
+      setEdges(eds => addEdge(params, eds));
+    }
+  }, [isValidConnection]);
+
   // Unified loading/error state handling
   if (isLoading || !nodeTypesLoaded) {
     const message = isLoading ? 'Loading flow...' : 'Loading node types...';
@@ -134,7 +148,8 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
           edges={currentEdges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
+          onConnect={onConnectV2}
+          isValidConnection={isValidConnection}
           minZoom={1}
           maxZoom={2}
           className="bg-gray-50"

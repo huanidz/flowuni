@@ -18,7 +18,7 @@ export const useDragDropHandler = (
     []
   );
 
-  const { getNode, loaded } = useNodeRegistry();
+  const { getNodeSpecByRFNodeType, loaded } = useNodeRegistry();
 
   const onDrop = useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
@@ -49,7 +49,7 @@ export const useDragDropHandler = (
       const y = event.clientY - bounds.top;
       const position = reactFlowInstance.screenToFlowPosition({ x, y });
 
-      const nodeSpec = getNode(type);
+      const nodeSpec = getNodeSpecByRFNodeType(type);
       if (!nodeSpec) {
         console.error(`Node type "${type}" not found in registry.`);
         return;

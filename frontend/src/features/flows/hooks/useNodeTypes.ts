@@ -22,7 +22,7 @@ export const useNodeTypes = (
   updateNodeModeData?: (nodeId: string, newMode: string) => void,
   updateNodeParameterData?: (nodeId: string, parameterName: string, value: any) => void
 ) => {
-  const { getAllNodes, loaded } = useNodeRegistry();
+  const { getAllNodeSpecs, loaded } = useNodeRegistry();
   const [nodeTypes, setNodeTypes] = useState<Record<string, React.FC<any>>>({});
   const [nodeTypesLoaded, setNodeTypesLoaded] = useState(false);
 
@@ -34,7 +34,7 @@ export const useNodeTypes = (
     }
 
     // Fetch all node specifications from the registry
-    const allNodeSpecs = getAllNodes();
+    const allNodeSpecs = getAllNodeSpecs();
 
     console.log("All node specs:", allNodeSpecs);
 
@@ -64,7 +64,7 @@ export const useNodeTypes = (
     setNodeTypes(nodeTypeMap);
     setNodeTypesLoaded(true);
     
-  }, [loaded, getAllNodes, updateNodeData, updateNodeModeData, updateNodeParameterData]);
+  }, [loaded, getAllNodeSpecs, updateNodeData, updateNodeModeData, updateNodeParameterData]);
 
   // Memoize the return object to prevent unnecessary re-renders
   return useMemo(() => ({

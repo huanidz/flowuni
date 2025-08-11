@@ -28,6 +28,7 @@ export interface NodeInput {
   description: string;
   required: boolean;
   allow_incoming_edges: boolean
+  allow_multiple_incoming_edges: boolean
 
   enable_for_tool?: boolean;
 }

@@ -90,6 +90,7 @@ class AgentNode(Node):
                 name="tools",
                 type=AgentToolInputHandle(),
                 description="Agent tools",
+                allow_multiple_incoming_edges=True,
             ),
         ],
         outputs=[

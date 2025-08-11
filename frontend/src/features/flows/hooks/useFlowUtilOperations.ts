@@ -27,9 +27,12 @@ export const useFlowUtilOperations = (
       if (!source || !target) return;
 
       // Check if the specific target handle already has an incoming edge
-      const hasIncomingEdgeOnHandle = edges.some((edge) => 
-        edge.target === target && edge.targetHandle === targetHandle
-      );
+      // const hasIncomingEdgeOnHandle = edges.some((edge) => 
+      //   edge.target === target && edge.targetHandle === targetHandle
+      // );
+
+      const hasIncomingEdgeOnHandle = false;
+      
 
       if (hasIncomingEdgeOnHandle) {
         return; // Prevent connection - this specific handle already has an edge
