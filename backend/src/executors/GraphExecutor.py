@@ -580,6 +580,7 @@ class GraphExecutor:
             tool_data = ToolDataParser(
                 from_node_id=node_id,
                 input_values=executed_data.input_values,
+                parameter_values=executed_data.parameter_values,
                 tool_schema=loaded_schema,
             )
 
