@@ -27,3 +27,5 @@ export const HandleComponentRegistry: {
   [NodeInputType.SecretText]: SecretTextHandleInput,
   [NodeInputType.AgentTool]: AgentToolHandleInput,
 };
+
+// ===========================================================================

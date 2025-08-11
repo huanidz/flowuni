@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useCallback } from 'react';
 import FlowToolbar from './FlowToolBar';
 import NodePalette from './FlowNodePallete';
 import {
@@ -6,20 +6,22 @@ import {
   Controls,
   Background,
   BackgroundVariant,
-  useNodesState,
-  useEdgesState,
   useReactFlow,
   ReactFlowProvider,
-  type Edge,
-  type Node,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import { useAllNodeTypesConstructor } from '../../hooks/useNodeAllTypesConstructor';
+import { useNodeTypes } from '../../hooks/useNodeTypes';
+import { useNodeUpdate } from '../../hooks/useNodeUpdate';
 import { useDragDropHandler } from '@/features/flows/hooks/useDragAndDropHandler';
 import { useFlowActions } from '@/features/flows/hooks/useFlowActions';
 import { useCurrentFlowState } from '../../hooks/useCurrentFlowState';
 import { useFlowUtilOperations } from '../../hooks/useFlowUtilOperations';
+import { useConnectionValidation } from '../../hooks/useConnectionValidator';
+import type { NodeSpec } from '@/features/nodes';
+import { addEdge } from '@xyflow/react';
+import { type Connection } from '@xyflow/react';
+import { useNodeStore } from '@/features/nodes';
 
 interface FlowBuilderContentProps {
   flow_id: string;
@@ -28,25 +30,35 @@ interface FlowBuilderContentProps {
 // Separate the main flow component to use ReactFlow hooks
 const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
   const nodePaletteRef = useRef<HTMLDivElement>(null);
-  
-  // Use ReactFlow's built-in state management hooks
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
-  
-  // Use ReactFlow's instance hook instead of managing state manually
-  const reactFlowInstance = useReactFlow();
-
-  // Node types management
-  const { nodeTypes, nodeTypesLoaded } = useAllNodeTypesConstructor(setNodes);
-
+    
   // Use consolidated flow state hook (simplified without duplicate state)
   const {
+    nodes: currentNodes,
+    edges: currentEdges,
+    setNodes: setNodes,
+    setEdges: setEdges,
+    onNodesChange: onNodesChange,
+    onEdgesChange: onEdgesChange,
     initialNodes,
     initialEdges,
     initializeFlow,
     isLoading,
     flowError,
   } = useCurrentFlowState(flow_id);
+
+  // Use ReactFlow's instance hook instead of managing state manually
+  const reactFlowInstance = useReactFlow();
+
+  // Node state management
+  const updateHandlers = useNodeUpdate(setNodes, setEdges, currentEdges);
+  
+  // Node types management (With unified update handlers)
+  const { nodeTypes, nodeTypesLoaded } = useNodeTypes(
+    updateHandlers.updateNodeData,
+    updateHandlers.updateNodeModeData,
+    updateHandlers.updateNodeParameterData
+  );
+
 
   // Initialize flow when data is ready
   React.useEffect(() => {
@@ -57,7 +69,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
     }
   }, [initialNodes, initialEdges, nodeTypesLoaded, initializeFlow, setNodes, setEdges]);
 
-  const { onConnect, onKeyDown } = useFlowUtilOperations(nodes, edges, setNodes, setEdges, [], []);
+  const { onConnect, onKeyDown } = useFlowUtilOperations(currentNodes, currentEdges, setNodes, setEdges, [], []);
 
   const {
     onDragStart,
@@ -71,11 +83,20 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
     onClearFlow,
     onSaveFlow
   } = useFlowActions(
-    nodes,
-    edges,
+    currentNodes,
+    currentEdges,
     setNodes,
     setEdges,
   );
+
+
+  const { isValidConnection } = useConnectionValidation(currentNodes, currentEdges);
+
+  const onConnectV2 = useCallback((params: Connection) => {
+    if (isValidConnection(params)) {
+      setEdges(eds => addEdge(params, eds));
+    }
+  }, [isValidConnection]);
 
   // Unified loading/error state handling
   if (isLoading || !nodeTypesLoaded) {
@@ -123,11 +144,12 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
         />
 
         <ReactFlow
-          nodes={nodes}
-          edges={edges}
+          nodes={currentNodes}
+          edges={currentEdges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
+          onConnect={onConnectV2}
+          isValidConnection={isValidConnection}
           minZoom={1}
           maxZoom={2}
           className="bg-gray-50"

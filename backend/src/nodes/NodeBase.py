@@ -4,11 +4,13 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, Type, Union, get_args
 
 from pydantic import BaseModel
+from src.consts.node_consts import NODE_DATA_MODE
 from src.exceptions.node_exceptions import NodeValidationError
+from src.helpers.PydanticSchemaConverter import PydanticSchemaConverter
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.core.NodeSpec import NodeSpec
-from src.nodes.handles.HandleBase import HandleTypeBase
+from src.nodes.handles.InputHandleBase import InputHandleTypeBase
 from src.schemas.flowbuilder.flow_graph_schemas import NodeData
 from src.schemas.nodes.node_schemas import (
     NodeInputSchema,
@@ -57,7 +59,7 @@ class Node(ABC):
     # INPUT/OUTPUT HANDLING
     # ============================================================================
 
-    def get_input_handle(self, input_name: str) -> Optional[Type[HandleTypeBase]]:
+    def get_input_handle(self, input_name: str) -> Optional[Type[InputHandleTypeBase]]:
         """Get the handle type for a specific input."""
         input: NodeInput
         for input in self.spec.inputs:
@@ -146,10 +148,29 @@ class Node(ABC):
 
     @abstractmethod
     def process(
-        self, inputs_values: Dict[str, Any], parameter_values: Dict[str, Any]
+        self,
+        inputs_values: Dict[str, Any],
+        parameter_values: Dict[str, Any],
     ) -> Any:
         """
         Process inputs_values and parameter_values to produce outputs.
+
+        Args:
+            inputs_values: Dictionary of input values
+            parameter_values: Dictionary of parameter values
+
+        Returns:
+            Processing result
+            (single value for single output, dict for multiple outputs)
+        """
+        pass
+
+    # @abstractmethod
+    def build_tool(
+        self,
+    ) -> Type[BaseModel]:
+        """
+        Build a tool from the node.
 
         Args:
             inputs_values: Dictionary of input values
@@ -171,13 +192,31 @@ class Node(ABC):
         Returns:
             Updated node data with processing results
         """
-        input_values = self._extract_input_values(node_data)
-        parameter_values = self._extract_parameter_values(node_data)
 
-        result = self.process(input_values, parameter_values)
-        output_values = self._build_output_mapping(result)
+        if node_data.mode == NODE_DATA_MODE.NORMAL:
+            input_values = self._extract_input_values(node_data)
+            parameter_values = self._extract_parameter_values(node_data)
 
-        return self._create_result_node_data(node_data, output_values)
+            output_results = self.process(input_values, parameter_values)
+
+            output_values = self._build_output_mapping(output_results)
+
+            return self._create_result_node_data(
+                original=node_data, outputs=output_values
+            )
+        else:
+            ToolSchema: Type[BaseModel] = self.build_tool()
+            tool_serialized_schemas = PydanticSchemaConverter.serialize(
+                model_cls=ToolSchema
+            )
+
+            output_values = {
+                "tool": tool_serialized_schemas,
+            }
+
+            return self._create_result_node_data(
+                original=node_data, outputs=output_values
+            )
 
     def _create_result_node_data(
         self, original: "NodeData", outputs: Dict[str, Any]
@@ -189,6 +228,7 @@ class Node(ABC):
             input_values=original.input_values,
             output_values=outputs,
             parameter_values=original.parameter_values,
+            mode=original.mode,
         )
 
     # ============================================================================
@@ -204,6 +244,8 @@ class Node(ABC):
         - parameters (param → {type name, default, description})
         """
         raw = self.spec.model_dump()
+
+        # logger.info(f"Serializing node spec: {raw}")
 
         # Serialize inputs, outputs, and parameters
         raw["inputs"] = self._serialize_inputs()
@@ -226,6 +268,8 @@ class Node(ABC):
                     description=input_spec.description,
                     required=input_spec.required,
                     allow_incoming_edges=input_spec.allow_incoming_edges,
+                    allow_multiple_incoming_edges=input_spec.allow_multiple_incoming_edges,
+                    enable_for_tool=input_spec.enable_for_tool,
                 ).model_dump()
             )
         return serialized_inputs
@@ -242,6 +286,7 @@ class Node(ABC):
                     value=output_spec.value,
                     default=output_spec.default,
                     description=output_spec.description,
+                    enable_for_tool=output_spec.enable_for_tool,
                 ).model_dump()
             )
         return serialized_outputs

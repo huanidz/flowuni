@@ -19,7 +19,7 @@ class GraphCompiler:
 
     This compiler generates a layered execution plan where nodes in each layer can be
     executed in parallel, respecting the dependencies defined by the graph edges.
-    """
+    """  # noqa
 
     def __init__(self, graph: nx.DiGraph, remove_standalone: bool = False):
         """
@@ -61,7 +61,7 @@ class GraphCompiler:
 
             if standalone_nodes:
                 logger.info(
-                    f"Removing {len(standalone_nodes)} standalone nodes: {standalone_nodes}"
+                    f"Removing {len(standalone_nodes)} standalone nodes: {standalone_nodes}"  # noqa
                 )
                 processed_graph = graph.copy()
                 processed_graph.remove_nodes_from(standalone_nodes)
@@ -96,9 +96,9 @@ class GraphCompiler:
 
         Raises:
             GraphCompilerError: If compilation fails due to graph structure issues
-        """
+        """  # noqa
         logger.info(
-            f"Compiling graph with {len(self.graph.nodes)} nodes and {len(self.graph.edges)} edges"
+            f"Compiling graph with {len(self.graph.nodes)} nodes and {len(self.graph.edges)} edges"  # noqa
         )
 
         # Handle standalone nodes if not removing them
@@ -111,7 +111,7 @@ class GraphCompiler:
         # Use Kahn's algorithm for topological sorting with layers
         execution_plan = self._kahn_topological_sort()
 
-        # If we have standalone nodes and aren't removing them, add them to the first layer
+        # If we have standalone nodes and aren't removing them, add them to the first layer # noqa
         if standalone_nodes:
             if execution_plan:
                 # Add standalone nodes to the first layer
@@ -219,7 +219,7 @@ class GraphCompiler:
             missing = graph_nodes - all_nodes_in_plan
             extra = all_nodes_in_plan - graph_nodes
             raise GraphCompilerError(
-                f"Execution plan mismatch. Missing nodes: {missing}, Extra nodes: {extra}"
+                f"Execution plan mismatch. Missing nodes: {missing}, Extra nodes: {extra}"  # noqa
             )
 
     @property

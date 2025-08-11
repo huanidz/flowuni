@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from src.nodes.handles.resolvers.types import Resolver
 
 
-class HandleTypeBase(BaseModel, ABC):
+class InputHandleTypeBase(BaseModel, ABC):
     """Base class for all input handle types"""
 
     # === Dynamic resolution support ===

@@ -3,6 +3,7 @@ import type { Node, ReactFlowInstance } from '@xyflow/react';
 import { Position } from '@xyflow/react';
 import { useNodeRegistry } from '@/features/nodes';
 import React from 'react';
+import { NODE_DATA_MODE } from '../consts';
 
 export const useDragDropHandler = (
   reactFlowInstance: ReactFlowInstance | null,
@@ -17,7 +18,7 @@ export const useDragDropHandler = (
     []
   );
 
-  const { getNode, loaded } = useNodeRegistry();
+  const { getNodeSpecByRFNodeType, loaded } = useNodeRegistry();
 
   const onDrop = useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
@@ -48,7 +49,7 @@ export const useDragDropHandler = (
       const y = event.clientY - bounds.top;
       const position = reactFlowInstance.screenToFlowPosition({ x, y });
 
-      const nodeSpec = getNode(type);
+      const nodeSpec = getNodeSpecByRFNodeType(type);
       if (!nodeSpec) {
         console.error(`Node type "${type}" not found in registry.`);
         return;
@@ -70,6 +71,14 @@ export const useDragDropHandler = (
         ])
       );
 
+      // Initialize output values with default values as a simple key-value dictionary
+      const initialOutputValues = Object.fromEntries(
+        Object.entries(nodeSpec.outputs).map(([key, outputSpec]) => [
+          (outputSpec as any).name,
+          (outputSpec as any).default || ''
+        ])
+      );
+
       const customNode: Node = {
         id: `node_${type}_${Date.now()}`, // Using timestamp for unique ID
         type,
@@ -79,7 +88,8 @@ export const useDragDropHandler = (
           node_type: nodeSpec.name,
           parameter_values: initialParameters,
           input_values: initialInputValues,
-          output_values: {},
+          output_values: initialOutputValues,
+          mode: NODE_DATA_MODE.NORMAL,
         },
         style: { background: '#fff', color: '#000' },
         sourcePosition: Position.Right,

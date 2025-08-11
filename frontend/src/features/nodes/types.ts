@@ -28,6 +28,9 @@ export interface NodeInput {
   description: string;
   required: boolean;
   allow_incoming_edges: boolean
+  allow_multiple_incoming_edges: boolean
+
+  enable_for_tool?: boolean;
 }
 
 export interface NodeOutput {
@@ -36,6 +39,8 @@ export interface NodeOutput {
   value: any;
   default: any;
   description: string;
+
+  enable_for_tool?: boolean;
 }
 
 export interface NodeSpec {
@@ -44,6 +49,8 @@ export interface NodeSpec {
   inputs: NodeInput[];
   outputs: NodeOutput[];
   parameters: NodeParameterSpec[];
+  
+  can_be_tool?: boolean;
 }
 
 // --- Node Data ---
@@ -56,6 +63,9 @@ export interface NodeData {
   input_values?: Record<string, any>;
   output_values?: Record<string, any>;
 
+  // Mode-related fields
+  mode?: string;
+
   // Execution-related fields
   execution_result?: string;
   execution_status?: string;
@@ -65,6 +75,7 @@ export interface NodeData {
 export type CustomNodeProps = NodeProps<RFNode<NodeData>>;
 
 export type UpdateNodeDataFunction = (nodeId: string, newData: any) => void;
+export type UpdateNodeModeDataFunction = (nodeId: string, newMode: string) => void;
 export type UpdateNodeParameterFunction = (
   nodeId: string,
   parameterName: string,

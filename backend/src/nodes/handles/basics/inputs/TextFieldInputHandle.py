@@ -1,9 +1,9 @@
 from typing import Any, Dict, Optional
 
-from src.nodes.handles.HandleBase import HandleTypeBase
+from src.nodes.handles.InputHandleBase import InputHandleTypeBase
 
 
-class TextFieldInputHandle(HandleTypeBase):
+class TextFieldInputHandle(InputHandleTypeBase):
     """Handle for text field inputs"""
 
     placeholder: Optional[str] = None

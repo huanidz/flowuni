@@ -128,4 +128,64 @@ export const nodeStyles = {
     whiteSpace: 'pre-wrap',
     // New styles for scrolling will be applied inline
   },
+
+  // Toggle styles for mode switching
+  toggle: {
+    container: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      fontSize: '0.7em',
+    },
+    switch: {
+      position: 'relative' as const,
+      width: '44px',
+      height: '24px',
+      borderRadius: '12px',
+      border: 'none',
+      cursor: 'pointer',
+      transition: 'background-color 0.2s ease',
+      outline: 'none',
+    },
+    slider: {
+      position: 'absolute' as const,
+      top: '2px',
+      width: '20px',
+      height: '20px',
+      backgroundColor: 'white',
+      borderRadius: '50%',
+      transition: 'left 0.2s ease',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+    },
+    label: {
+      fontWeight: 'bold' as const,
+      userSelect: 'none' as const,
+    }
+  },
+
+  // Toggle styles for Tool mode
+  toggleToolMode: {
+    switch: {
+      backgroundColor: '#007bff',
+    },
+    slider: {
+      left: '22px',
+    },
+    label: {
+      color: '#007bff',
+    }
+  },
+
+  // Toggle styles for Normal mode
+  toggleNormalMode: {
+    switch: {
+      backgroundColor: '#ccc',
+    },
+    slider: {
+      left: '2px',
+    },
+    label: {
+      color: '#28a745',
+    }
+  },
 };

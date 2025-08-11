@@ -1,15 +1,15 @@
-from src.node_components.llm.providers import LLMProvider
-from src.node_components.llm.providers.adapters.LLMAdapterBase import LLMAdapter
+from loguru import logger
 from src.node_components.llm.providers.LLMProviderConsts import LLMProviderName
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.handles.agents.AgentToolInputHandle import AgentToolInputHandle
-from src.nodes.handles.basics.DropdownInputHandle import (
+from src.nodes.handles.basics.inputs.DropdownInputHandle import (
     DropdownInputHandle,
     DropdownOption,
 )
-from src.nodes.handles.basics.SecretTextInputHandle import SecretTextInputHandle
-from src.nodes.handles.basics.TextFieldInputHandle import TextFieldInputHandle
+from src.nodes.handles.basics.inputs.SecretTextInputHandle import SecretTextInputHandle
+from src.nodes.handles.basics.inputs.TextFieldInputHandle import TextFieldInputHandle
+from src.nodes.handles.basics.outputs.DataOutputHandle import DataOutputHandle
 from src.nodes.handles.resolvers.basics import (
     ConditionalResolver,
     HttpResolver,
@@ -91,11 +91,14 @@ class AgentNode(Node):
                 name="tools",
                 type=AgentToolInputHandle(),
                 description="Agent tools",
+                allow_multiple_incoming_edges=True,
             ),
         ],
         outputs=[
             NodeOutput(
-                name="response", type=str, description="The response from agent."
+                name="response",
+                type=DataOutputHandle(),
+                description="The response from agent.",
             )
         ],
         parameters={},
@@ -108,14 +111,18 @@ class AgentNode(Node):
         system_prompt = input_values["system_instruction"]
         input_message = input_values["input_message"]
 
-        llm_provider: LLMAdapter = LLMProvider.get_provider(provider_name=provider)
+        tools = input_values["tools"]
 
-        llm_provider.init(
-            model=model,
-            system_prompt=system_prompt,
-            api_key=api_key,
-        )
+        logger.info(f"Tools: {tools}")
 
-        chat_response = llm_provider.chat_completion(messages=input_message)
+        # llm_provider: LLMAdapter = LLMProvider.get_provider(provider_name=provider)
 
-        return {"response": chat_response.content}
+        # llm_provider.init(
+        #     model=model,
+        #     system_prompt=system_prompt,
+        #     api_key=api_key,
+        # )
+
+        # chat_response = llm_provider.chat_completion(messages=input_message)
+
+        return {"response": "kek"}

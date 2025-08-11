@@ -1,9 +1,9 @@
 from typing import Any, Dict, Optional
 
-from src.nodes.handles.HandleBase import HandleTypeBase
+from src.nodes.handles.InputHandleBase import InputHandleTypeBase
 
 
-class BooleanInputHandle(HandleTypeBase):
+class BooleanInputHandle(InputHandleTypeBase):
     """Handle for boolean/checkbox inputs"""
 
     label: Optional[str] = None

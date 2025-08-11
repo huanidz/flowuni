@@ -8,12 +8,12 @@ interface NodePaletteProps {
 const NodePalette = forwardRef<HTMLDivElement, NodePaletteProps>(({ onDragStart }, ref) => {
   const [nodeOptions, setNodeOptions] = useState<Array<{ name: string; description: string }>>([]);
 
-  const { nodes, getAllNodes } = useNodeRegistry();
+  const { nodes, getAllNodeSpecs } = useNodeRegistry();
 
   useEffect(() => {
     const loadPaletteNodes = async () => {
       try {
-        const allNodes = getAllNodes();
+        const allNodes = getAllNodeSpecs();
         const paletteNodes = allNodes.map(node => ({
           name: node.name,
           description: node.description || '',

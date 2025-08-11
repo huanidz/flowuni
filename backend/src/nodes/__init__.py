@@ -16,5 +16,5 @@ __all__ = [
     StringTransformNode,
     AgentNode,
     ResolverTestNode,
-    # ToolNode,
+    ToolNode,
 ]

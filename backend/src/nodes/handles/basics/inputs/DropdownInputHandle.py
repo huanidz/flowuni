@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field, field_validator
-from src.nodes.handles.HandleBase import HandleTypeBase
+from src.nodes.handles.InputHandleBase import InputHandleTypeBase
 
 
 class DropdownOption(BaseModel):
@@ -14,7 +14,7 @@ class DropdownOption(BaseModel):
     )
 
 
-class DropdownInputHandle(HandleTypeBase):
+class DropdownInputHandle(InputHandleTypeBase):
     """Handle for dropdown/select inputs"""
 
     options: List[DropdownOption] = Field(default_factory=list)

@@ -5,15 +5,17 @@ import { HelpCircle } from 'lucide-react';
 interface HandleInfoProps {
   name: string;
   description?: string;
+  helperText?: string;
   required?: boolean;
   style?: React.CSSProperties;
 }
 
-export const HandleInfo: React.FC<HandleInfoProps> = ({ 
-  name, 
-  description, 
-  required, 
-  style = {} 
+export const HandleInfo: React.FC<HandleInfoProps> = ({
+  name,
+  description,
+  helperText,
+  required,
+  style = {}
 }) => {
   const [showTooltip, setShowTooltip] = useState(false);
 
@@ -34,6 +36,7 @@ export const HandleInfo: React.FC<HandleInfoProps> = ({
       {required && (
         <span style={{ color: '#ef4444', fontSize: '14px' }}>*</span>
       )}
+      
       
       {description && (
         <div 
@@ -83,6 +86,12 @@ export const HandleInfo: React.FC<HandleInfoProps> = ({
             </div>
           )}
         </div>
+      )}
+
+      {helperText && (
+        <span style={{ fontSize: '12px', color: '#6b7280', marginLeft: '4px' }}>
+          ({helperText})
+        </span>
       )}
     </div>
   );

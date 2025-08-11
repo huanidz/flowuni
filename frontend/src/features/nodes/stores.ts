@@ -6,8 +6,8 @@ export interface NodeStore {
   loaded: boolean;
   setNodes: (nodes: NodeSpec[]) => void;
   setLoaded: (loaded: boolean) => void;
-  getNode: (nodeName: string) => NodeSpec | undefined;
-  getAllNodes: () => NodeSpec[];
+  getNodeSpecByRFNodeType: (nodeName: string) => NodeSpec | undefined;
+  getAllNodeSpecs: () => NodeSpec[];
   getNodeNames: () => string[];
   getInputPorts: (nodeName: string) => string[];
   getOutputPorts: (nodeName: string) => string[];
@@ -28,12 +28,12 @@ const useNodeStore = create<NodeStore>((set, get) => ({
   
   setLoaded: (loaded: boolean) => set({ loaded }),
 
-  getNode: (nodeName: string) => {
+  getNodeSpecByRFNodeType: (nodeName: string) => {
     const { nodes } = get();
     return nodes.find(node => node.name === nodeName);
   },
 
-  getAllNodes: () => {
+  getAllNodeSpecs: () => {
     const { nodes } = get();
     return nodes;
   },
@@ -44,17 +44,17 @@ const useNodeStore = create<NodeStore>((set, get) => ({
   },
 
   getInputPorts: (nodeName: string) => {
-    const node = get().getNode(nodeName);
+    const node = get().getNodeSpecByRFNodeType(nodeName);
     return node ? Object.keys(node.inputs) : [];
   },
 
   getOutputPorts: (nodeName: string) => {
-    const node = get().getNode(nodeName);
+    const node = get().getNodeSpecByRFNodeType(nodeName);
     return node ? Object.keys(node.outputs) : [];
   },
 
   getParameters: (nodeName: string) => {
-    const node = get().getNode(nodeName);
+    const node = get().getNodeSpecByRFNodeType(nodeName);
     return node ? node.parameters : {};
   },
 
@@ -64,9 +64,9 @@ const useNodeStore = create<NodeStore>((set, get) => ({
     targetNodeName: string,
     targetPort: string
   ) => {
-    const { getNode } = get();
-    const sourceNode = getNode(sourceNodeName);
-    const targetNode = getNode(targetNodeName);
+    const { getNodeSpecByRFNodeType } = get();
+    const sourceNode = getNodeSpecByRFNodeType(sourceNodeName);
+    const targetNode = getNodeSpecByRFNodeType(targetNodeName);
 
     if (!sourceNode || !targetNode) return false;
 

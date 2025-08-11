@@ -7,19 +7,18 @@ import type {
   NodeSpec,
   CustomNodeProps,
   UpdateNodeDataFunction,
+  UpdateNodeModeDataFunction,
   UpdateNodeParameterFunction,
 } from '@/features/nodes';
 
-// UI Sections
+// Constants
+import { NODE_DATA_MODE } from '../consts';
 
+// UI Sections
 import { InputsSection } from '../components/NodeSections/InputsSection';
 import { OutputsSection } from '../components/NodeSections/OutputsSection';
 import { NodeExecutionResult } from '../components/NodeSections/NodeExecutionResult';
 import { NodeHeader } from '../components/NodeSections/NodeHeader';
-import { ParametersSection } from '../components/NodeSections/ParametersSection';
-
-// Hooks
-import { useNodeHandlers } from '@/features/flows/hooks/useNodeHandlers';
 
 // Styles
 import { nodeStyles } from '@/features/flows/styles/nodeStyles';
@@ -39,6 +38,7 @@ class NodeFactoryClass {
   createNodeComponent(
     nodeSpec: NodeSpec,
     updateNodeData?: UpdateNodeDataFunction,
+    updateNodeModeData?: UpdateNodeModeDataFunction,
     updateNodeParameter?: UpdateNodeParameterFunction
   ): React.FC<CustomNodeProps> | null {
 
@@ -51,49 +51,56 @@ class NodeFactoryClass {
      * A React component that renders a node UI based on the provided props and spec.
      */
     const CustomNode: React.FC<CustomNodeProps> = ({ data, id }) => {
-      const {
-        label = nodeSpec.name,
-        description = nodeSpec.description,
-        parameter_values = {},
-        input_values = {},
-        output_values = {},
-      } = data;
-      // console.log("Node data:", data);
+      
+      const label = nodeSpec.name;
+      const description = nodeSpec.description;
+      const parameter_values = data.parameter_values || {};
+      const input_values = data.input_values || {};
+      const output_values = data.output_values || {};
+      const mode = data.mode || NODE_DATA_MODE.NORMAL;
+      const can_be_tool = nodeSpec.can_be_tool;
 
-      // Hook to manage user interactions with parameters and inputs
-      const {
-        handleParameterChange,
-        handleInputValueChange
-      } = useNodeHandlers(
-        id,
-        input_values,
-        updateNodeData,
-        updateNodeParameter
-      );
+      // Direct handlers passed from the unified update system
+      const handleParameterChange = updateNodeParameter
+        ? (paramName: string, value: any) => updateNodeParameter(id, paramName, value)
+        : undefined;
+        
+      const handleInputValueChange = updateNodeData
+        ? (inputName: string, value: any) => updateNodeData(id, {
+            input_values: {
+              ...input_values,
+              [inputName]: value
+            },
+          })
+        : undefined;
+        
+      const handleModeChange = updateNodeModeData
+        ? (newMode: string) => updateNodeModeData(id, newMode)
+        : undefined;
 
+
+      // === Render Node UI ===
       return (
         <div style={nodeStyles.container}>
-          {/* Node Title and Description */}
-          <NodeHeader label={label} description={description} />
-
-          {/* Parameters Configuration */}
-          {/* <ParametersSection
-            spec_parameters={Object.values(nodeSpec.parameters)}
-            parameter_values={parameter_values}
-            nodeId={id}
-            onParameterChange={handleParameterChange}
-          /> */}
+          <NodeHeader
+            label={label}
+            description={description}
+            mode={mode}
+            onModeChange={handleModeChange || (() => {})}
+            canBeTool={can_be_tool}
+          />
 
           {/* Inputs Configuration */}
           <InputsSection
             spec_inputs={nodeSpec.inputs}
             input_values={input_values}
             nodeId={id}
-            onInputValueChange={handleInputValueChange}
+            onInputValueChange={handleInputValueChange || (() => {})}
+            node_mode={mode}
           />
 
           {/* Outputs Display */}
-          <OutputsSection spec_outputs={nodeSpec.outputs} />
+          <OutputsSection spec_outputs={nodeSpec.outputs} node_mode={mode} />
 
           {/* Node Execution Result */}
           <NodeExecutionResult
