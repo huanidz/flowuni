@@ -1,41 +1,31 @@
 import type { Edge, Node, Connection } from "@xyflow/react";
 import type { NodeSpec } from "@/features/nodes";
 import type { TypeDetail, NodeInput } from "@/features/nodes/types";
-import { useNodeStore } from "@/features/nodes";
 import { NODE_DATA_MODE } from "../consts";
 
 export class ConnectionValidator {
-    private edges: Edge[] = [];
-    private nodes: Node[] = [];
+    private edges: Edge[];
+    private nodes: Node[];
     private getNodeSpecByRFNodeType: (nodeName: string) => NodeSpec | undefined;
 
     constructor(
-        edges: Edge[], 
-        nodes: Node[], 
-        getNodeSpecByRFNodeType: (nodeName: string) => NodeSpec | undefined // Pass the function
+        edges: Edge[],
+        nodes: Node[],
+        getNodeSpecByRFNodeType: (nodeName: string) => NodeSpec | undefined
     ) {
         this.edges = edges;
         this.nodes = nodes;
-        this.getNodeSpecByRFNodeType = getNodeSpecByRFNodeType; // Store it
+        this.getNodeSpecByRFNodeType = getNodeSpecByRFNodeType;
     }
 
-    
     isValidConnection = (connection: Connection | Edge): boolean => {
-        
         const { source, target, sourceHandle, targetHandle } = connection;
-
-        console.log("=========")
 
         // Rule 1: Prevent self-connection
         if (source === target) {
             console.warn('Self-connection not allowed');
             return false;
         }
-
-        console.log('Source:', source);
-        console.log('Target:', target);
-        console.log('Source Handle:', sourceHandle);
-        console.log('Target Handle:', targetHandle);
 
         // Get source and target nodes
         const sourceNode = this.nodes.find(n => n.id === source);
@@ -46,77 +36,42 @@ export class ConnectionValidator {
             return false;
         }
 
-        console.log('Source Node:', sourceNode);
-        console.log('Target Node:', targetNode);
+        // Get node specifications
+        const sourceNodeSpec = this.getNodeSpecByRFNodeType(sourceNode.type ?? '');
+        const targetNodeSpec = this.getNodeSpecByRFNodeType(targetNode.type ?? '');
 
-        // Getting node spec
-        const sourceNodeSpec = this.getNodeSpecByRFNodeType(sourceNode?.type || '');
-        const targetNodeSpec = this.getNodeSpecByRFNodeType(targetNode?.type || '');
-
-        console.log('Source Node Spec:', sourceNodeSpec);
-        console.log('Target Node Spec:', targetNodeSpec);
-
-        // Get the index of the target handle
-        // NOTE: never get the source handle index because it can be undefined (due to the ToolNode does not have a source handle id)
-        const targetHandleIndex = targetHandle?.split(':')[1];
-        console.log('Target Handle Index:', targetHandleIndex);
-
-        if (!targetHandleIndex) {
-            console.warn('Target handle index not found');
+        if (!sourceNodeSpec || !targetNodeSpec) {
+            console.warn('Node specification not found');
             return false;
         }
 
-        // Convert string index to number for array access
-        const targetHandleIndexNum = parseInt(targetHandleIndex, 10);
-        if (isNaN(targetHandleIndexNum)) {
-            console.warn('Invalid target handle index format');
+        // Get target input handle
+        const targetInputHandle = this.getTargetInputHandle(targetHandle ?? null, targetNodeSpec);
+        if (!targetInputHandle) {
+            console.warn('Target input handle not found or invalid');
             return false;
         }
 
-        const TargetInputHandle = targetNodeSpec?.inputs[targetHandleIndexNum];
-        
-        if (!TargetInputHandle) {
-            console.warn('Target input handle not found');
-            return false;
-        }
-        
-        if (TargetInputHandle.allow_incoming_edges === false) {
+        if (targetInputHandle.allow_incoming_edges === false) {
             return false;
         }
 
-        // Compare type
-        let SourceOutputHandle = null;
-        if (sourceHandle == null) {
-            // Meaning the source node is a ToolNode
-            // One and only one source handle must existed for ToolNode 
-            SourceOutputHandle = sourceNodeSpec?.outputs[0];
-        } else {
-            const sourceHandleIndex = sourceHandle?.split(':')[1];
-            if (!sourceHandleIndex) {
-                console.warn('Source handle index not found');
-                return false;
-            }
-
-            // Convert string index to number for array access
-            const sourceHandleIndexNum = parseInt(sourceHandleIndex, 10);
-            if (isNaN(sourceHandleIndexNum)) {
-                console.warn('Invalid source handle index format');
-                return false;
-            }
-
-            SourceOutputHandle = sourceNodeSpec?.outputs[sourceHandleIndexNum];
+        // Get source output handle
+        const sourceOutputHandle = this.getSourceOutputHandle(sourceHandle ?? null, sourceNodeSpec);
+        if (!sourceOutputHandle) {
+            console.warn('Source output handle not found');
+            return false;
         }
 
-        if (this.areTypesCompatible(sourceNode.data.mode as string, SourceOutputHandle.type_detail, TargetInputHandle.type_detail)) {
-            console.log('Types are compatible');
-        } else {
+        // Check type compatibility
+        const sourceNodeMode = sourceNode.data?.mode as string;
+        if (!this.areTypesCompatible(sourceNodeMode, sourceOutputHandle.type_detail, targetInputHandle.type_detail)) {
             console.warn('Types are incompatible');
             return false;
         }
 
-
         // Check if target input can accept another connection
-        if (!this.canInputAcceptConnection(target, targetHandle, TargetInputHandle)) {
+        if (!this.canInputAcceptConnection(target, targetHandle ?? null, targetInputHandle)) {
             console.warn('Target input cannot accept another connection');
             return false;
         }
@@ -124,53 +79,87 @@ export class ConnectionValidator {
         return true;
     };
 
-    private areTypesCompatible(source_node_mode: string, sourceTypeDetail: TypeDetail, targetTypeDetail: TypeDetail): boolean {
+    private getTargetInputHandle(targetHandle: string | null, targetNodeSpec: NodeSpec): NodeInput | null {
+        if (!targetHandle) {
+            console.warn('Target handle not provided');
+            return null;
+        }
+
+        const handleIndex = this.extractHandleIndex(targetHandle);
+        if (handleIndex === null) return null;
+
+        return targetNodeSpec.inputs[handleIndex] || null;
+    }
+
+    private getSourceOutputHandle(sourceHandle: string | null, sourceNodeSpec: NodeSpec) {
+        // ToolNode case: no source handle ID, use first output
+        if (sourceHandle === null) {
+            return sourceNodeSpec.outputs[0] || null;
+        }
+
+        const handleIndex = this.extractHandleIndex(sourceHandle);
+        if (handleIndex === null) return null;
+
+        return sourceNodeSpec.outputs[handleIndex] || null;
+    }
+
+    private extractHandleIndex(handle: string): number | null {
+        const parts = handle.split(':');
+        if (parts.length < 2) {
+            console.warn('Invalid handle format');
+            return null;
+        }
+
+        const index = parseInt(parts[1], 10);
+        if (isNaN(index)) {
+            console.warn('Invalid handle index format');
+            return null;
+        }
+
+        return index;
+    }
+
+    private areTypesCompatible(sourceNodeMode: string, sourceTypeDetail: TypeDetail, targetTypeDetail: TypeDetail): boolean {
         let sourceTypeName = sourceTypeDetail.type;
-        let targetTypeName = targetTypeDetail.type;
+        const targetTypeName = targetTypeDetail.type;
 
-        console.log('Source Type Name:', sourceTypeName);
-        console.log('Target Type Name:', targetTypeName);
-
-        if (source_node_mode == NODE_DATA_MODE.TOOL) {
+        // Override source type for tool nodes
+        if (sourceNodeMode === NODE_DATA_MODE.TOOL) {
             sourceTypeName = 'ToolOutputHandle';
         }
-    
-        // Define compatibility matrix based on your TypeDetail types
-        const compatibilityMatrix: { [key: string]: string[] } = {
-            'DataOutputHandle': ["TextFieldInputHandle", "DropdownInputHandle", "SecretTextInputHandle", "NumberInputHandle", "BooleanInputHandle", "FileInputHandle"],
+
+        const compatibilityMatrix: Record<string, string[]> = {
+            'DataOutputHandle': [
+                "TextFieldInputHandle",
+                "DropdownInputHandle", 
+                "SecretTextInputHandle",
+                "NumberInputHandle",
+                "BooleanInputHandle",
+                "FileInputHandle"
+            ],
             'ToolOutputHandle': ["AgentToolInputHandle"],
         };
-    
+
         const compatibleTargets = compatibilityMatrix[sourceTypeName] || [];
         return compatibleTargets.includes(targetTypeName);
     }
-    /**
-     * Check if target input can accept another connection
-     */
+
     private canInputAcceptConnection(
-        targetNodeId: string, 
-        targetHandleId: string | null, 
-        inputSpec: any
+        targetNodeId: string,
+        targetHandleId: string | null,
+        handleInputSpec: NodeInput
     ): boolean {
         // If input allows multiple connections, always allow
-        if (inputSpec.allow_multiple_incoming_edges) {
+        if (handleInputSpec.allow_multiple_incoming_edges) {
             return true;
         }
-    
+
         // Count existing connections to this target handle
-        const existingConnections = this.edges.filter(edge => 
+        const existingConnections = this.edges.filter(edge =>
             edge.target === targetNodeId && edge.targetHandle === targetHandleId
         );
-    
+
         // Allow connection if no existing connections (single connection rule)
         return existingConnections.length === 0;
     }
 }
-
-
-//     /**
-//      * Check if two TypeDetails are compatible
-//      */
-
-
-// }

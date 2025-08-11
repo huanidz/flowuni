@@ -268,6 +268,7 @@ class Node(ABC):
                     description=input_spec.description,
                     required=input_spec.required,
                     allow_incoming_edges=input_spec.allow_incoming_edges,
+                    allow_multiple_incoming_edges=input_spec.allow_multiple_incoming_edges,
                     enable_for_tool=input_spec.enable_for_tool,
                 ).model_dump()
             )
