@@ -29,16 +29,27 @@ interface FlowBuilderContentProps {
 // Separate the main flow component to use ReactFlow hooks
 const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
   const nodePaletteRef = useRef<HTMLDivElement>(null);
-  
-  // Use ReactFlow's built-in state management hooks
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
-  
+    
+  // Use consolidated flow state hook (simplified without duplicate state)
+  const {
+    nodes: currentNodes,
+    edges: currentEdges,
+    setNodes: setNodes,
+    setEdges: setEdges,
+    onNodesChange: onNodesChange,
+    onEdgesChange: onEdgesChange,
+    initialNodes,
+    initialEdges,
+    initializeFlow,
+    isLoading,
+    flowError,
+  } = useCurrentFlowState(flow_id);
+
   // Use ReactFlow's instance hook instead of managing state manually
   const reactFlowInstance = useReactFlow();
 
   // Node state management
-  const updateHandlers = useNodeUpdate(setNodes, setEdges, edges);
+  const updateHandlers = useNodeUpdate(setNodes, setEdges, currentEdges);
   
   // Node types management (With unified update handlers)
   const { nodeTypes, nodeTypesLoaded } = useNodeTypes(
@@ -47,14 +58,6 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
     updateHandlers.updateNodeParameterData
   );
 
-  // Use consolidated flow state hook (simplified without duplicate state)
-  const {
-    initialNodes,
-    initialEdges,
-    initializeFlow,
-    isLoading,
-    flowError,
-  } = useCurrentFlowState(flow_id);
 
   // Initialize flow when data is ready
   React.useEffect(() => {
@@ -65,7 +68,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
     }
   }, [initialNodes, initialEdges, nodeTypesLoaded, initializeFlow, setNodes, setEdges]);
 
-  const { onConnect, onKeyDown } = useFlowUtilOperations(nodes, edges, setNodes, setEdges, [], []);
+  const { onConnect, onKeyDown } = useFlowUtilOperations(currentNodes, currentEdges, setNodes, setEdges, [], []);
 
   const {
     onDragStart,
@@ -79,8 +82,8 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
     onClearFlow,
     onSaveFlow
   } = useFlowActions(
-    nodes,
-    edges,
+    currentNodes,
+    currentEdges,
     setNodes,
     setEdges,
   );
@@ -131,8 +134,8 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
         />
 
         <ReactFlow
-          nodes={nodes}
-          edges={edges}
+          nodes={currentNodes}
+          edges={currentEdges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
