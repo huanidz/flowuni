@@ -1,4 +1,4 @@
-import React, { useRef, useCallback } from 'react';
+import React, { useRef, useCallback, useEffect, useMemo } from 'react';
 import FlowToolbar from './FlowToolBar';
 import NodePalette from './FlowNodePallete';
 import {
@@ -16,12 +16,9 @@ import { useNodeUpdate } from '../../hooks/useNodeUpdate';
 import { useDragDropHandler } from '@/features/flows/hooks/useDragAndDropHandler';
 import { useFlowActions } from '@/features/flows/hooks/useFlowActions';
 import { useCurrentFlowState } from '../../hooks/useCurrentFlowState';
-import { useFlowUtilOperations } from '../../hooks/useFlowUtilOperations';
 import { useConnectionValidation } from '../../hooks/useConnectionValidator';
-import type { NodeSpec } from '@/features/nodes';
 import { addEdge } from '@xyflow/react';
 import { type Connection } from '@xyflow/react';
-import { useNodeStore } from '@/features/nodes';
 
 interface FlowBuilderContentProps {
   flow_id: string;
@@ -61,15 +58,13 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
 
 
   // Initialize flow when data is ready
-  React.useEffect(() => {
+  useEffect(() => {
     if (initialNodes && nodeTypesLoaded) {
       setNodes(initialNodes);
       setEdges(initialEdges || []);
       initializeFlow();
     }
   }, [initialNodes, initialEdges, nodeTypesLoaded, initializeFlow, setNodes, setEdges]);
-
-  const { onConnect, onKeyDown } = useFlowUtilOperations(currentNodes, currentEdges, setNodes, setEdges, [], []);
 
   const {
     onDragStart,
@@ -132,7 +127,6 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
         className="relative w-full h-full"
         onDrop={onDrop}
         onDragOver={onDragOver}
-        onKeyDown={onKeyDown}
         tabIndex={1}
       >
         <NodePalette onDragStart={onDragStart} ref={nodePaletteRef} />

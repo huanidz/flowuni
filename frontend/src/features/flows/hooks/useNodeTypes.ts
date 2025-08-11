@@ -42,7 +42,7 @@ export const useNodeTypes = (
     const nodeTypeMap: Record<string, React.FC<any>> = {};
 
     allNodeSpecs.forEach((nodeSpec: NodeSpec) => {
-      console.log("Node spec:", nodeSpec);
+      // console.log("Node spec:", nodeSpec);
 
       // Use the factory to create a component for each node type
       // Pass the update handlers directly
@@ -60,7 +60,7 @@ export const useNodeTypes = (
     });
 
     // Store the complete set of node components
-    console.log("Node type map:", nodeTypeMap);
+    // console.log("Node type map:", nodeTypeMap);
     setNodeTypes(nodeTypeMap);
     setNodeTypesLoaded(true);
     

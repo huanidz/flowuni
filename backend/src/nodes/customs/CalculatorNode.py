@@ -6,26 +6,21 @@ from src.nodes.handles.basics.outputs.DataOutputHandle import DataOutputHandle
 from src.nodes.NodeBase import Node, NodeSpec
 
 
-class ToolNode(Node):
+class CalculatorNode(Node):
     spec: NodeSpec = NodeSpec(
-        name="Tool",
-        description="Tool node that use tools to process the message.",
+        name="Calculator",
+        description="Calculator node that will run math expression.",
         inputs=[
             NodeInput(
-                name="input_message",
+                name="expression",
                 type=TextFieldInputHandle(),
-                description="The message to be processed by agent.",
+                description="The expression need to be evaluated.",
                 enable_for_tool=True,
-            ),
-            NodeInput(
-                name="system_instruction",
-                type=TextFieldInputHandle(),
-                description="Agent instruction",
             ),
         ],
         outputs=[
             NodeOutput(
-                name="tool_result",
+                name="result",
                 type=DataOutputHandle(),
                 description="The response from agent.",
                 enable_for_tool=True,
@@ -40,12 +35,7 @@ class ToolNode(Node):
         return {"tool_result": inputs["input_message"]}
 
     def build_tool(self):
-        from loguru import logger
+        class CalculatorSchema(BaseModel):
+            expression: str
 
-        logger.info("build tool bro")
-
-        class ToolSchema(BaseModel):
-            input_message: str
-            system_instruction: str
-
-        return ToolSchema
+        return CalculatorSchema
