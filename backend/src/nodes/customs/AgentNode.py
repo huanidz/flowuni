@@ -3,12 +3,13 @@ from src.node_components.llm.providers.LLMProviderConsts import LLMProviderName
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.handles.agents.AgentToolInputHandle import AgentToolInputHandle
-from src.nodes.handles.basics.DropdownInputHandle import (
+from src.nodes.handles.basics.inputs.DropdownInputHandle import (
     DropdownInputHandle,
     DropdownOption,
 )
-from src.nodes.handles.basics.SecretTextInputHandle import SecretTextInputHandle
-from src.nodes.handles.basics.TextFieldInputHandle import TextFieldInputHandle
+from src.nodes.handles.basics.inputs.SecretTextInputHandle import SecretTextInputHandle
+from src.nodes.handles.basics.inputs.TextFieldInputHandle import TextFieldInputHandle
+from src.nodes.handles.basics.outputs.DataOutputHandle import DataOutputHandle
 from src.nodes.handles.resolvers.basics import (
     ConditionalResolver,
     HttpResolver,
@@ -95,7 +96,9 @@ class AgentNode(Node):
         ],
         outputs=[
             NodeOutput(
-                name="response", type=str, description="The response from agent."
+                name="response",
+                type=DataOutputHandle(),
+                description="The response from agent.",
             )
         ],
         parameters={},

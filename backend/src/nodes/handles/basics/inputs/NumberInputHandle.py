@@ -1,9 +1,9 @@
 from typing import Any, Dict, Optional, Union
 
-from src.nodes.handles.HandleBase import HandleTypeBase
+from src.nodes.handles.InputHandleBase import InputHandleTypeBase
 
 
-class NumberInputHandle(HandleTypeBase):
+class NumberInputHandle(InputHandleTypeBase):
     """Handle for number inputs"""
 
     min_value: Optional[float] = None

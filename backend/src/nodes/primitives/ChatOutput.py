@@ -1,5 +1,5 @@
 from src.nodes.core.NodeInput import NodeInput
-from src.nodes.handles.basics.TextFieldInputHandle import TextFieldInputHandle
+from src.nodes.handles.basics.inputs.TextFieldInputHandle import TextFieldInputHandle
 from src.nodes.NodeBase import Node, NodeSpec
 
 

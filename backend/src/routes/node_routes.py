@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from loguru import logger
 from src.dependencies.auth_dependency import get_current_user
 from src.dependencies.node_dep import get_node_registry, get_node_service
-from src.nodes.handles.HandleBase import HandleTypeBase
+from src.nodes.handles.InputHandleBase import InputHandleTypeBase
 from src.nodes.NodeBase import NodeSpec
 from src.nodes.NodeRegistry import NodeRegistry
 from src.schemas.nodes.node_schemas import ResolveRequest
@@ -112,9 +112,9 @@ def resolve_dynamic_input(
 
         # Get input handle by name
         input_handle = node_cls.get_input_handle(req.input_name)
-        if not isinstance(input_handle, HandleTypeBase):
+        if not isinstance(input_handle, InputHandleTypeBase):
             logger.warning(
-                f"Input handle '{req.input_name}' is not a valid HandleTypeBase"
+                f"Input handle '{req.input_name}' is not a valid InputHandleTypeBase"
             )
             raise HTTPException(
                 status_code=400,

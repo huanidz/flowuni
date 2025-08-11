@@ -1,7 +1,7 @@
 from src.node_components.llm.providers.LLMProviderConsts import LLMProviderName
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
-from src.nodes.handles.basics.DropdownInputHandle import (
+from src.nodes.handles.basics.inputs.DropdownInputHandle import (
     DropdownInputHandle,
     DropdownOption,
 )

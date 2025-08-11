@@ -57,7 +57,7 @@ export const OutputsSection: React.FC<OutputsSectionProps> = ({ spec_outputs, no
             <Handle
               type="source"
               position={Position.Right}
-              id={`${spec_output.name}-${index}`}  // Use consistent ID structure
+              id={`${spec_output.name}-index:${index}`}  // Use consistent ID structure
               style={nodeStyles.handle.output}
               isConnectable={true}
             />

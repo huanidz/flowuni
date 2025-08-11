@@ -10,7 +10,7 @@ from src.helpers.PydanticSchemaConverter import PydanticSchemaConverter
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.core.NodeSpec import NodeSpec
-from src.nodes.handles.HandleBase import HandleTypeBase
+from src.nodes.handles.InputHandleBase import InputHandleTypeBase
 from src.schemas.flowbuilder.flow_graph_schemas import NodeData
 from src.schemas.nodes.node_schemas import (
     NodeInputSchema,
@@ -59,7 +59,7 @@ class Node(ABC):
     # INPUT/OUTPUT HANDLING
     # ============================================================================
 
-    def get_input_handle(self, input_name: str) -> Optional[Type[HandleTypeBase]]:
+    def get_input_handle(self, input_name: str) -> Optional[Type[InputHandleTypeBase]]:
         """Get the handle type for a specific input."""
         input: NodeInput
         for input in self.spec.inputs:

@@ -1,9 +1,9 @@
 from typing import Any, Dict
 
-from src.nodes.handles.HandleBase import HandleTypeBase
+from src.nodes.handles.InputHandleBase import InputHandleTypeBase
 
 
-class SecretTextInputHandle(HandleTypeBase):
+class SecretTextInputHandle(InputHandleTypeBase):
     """Handle for secret text inputs"""
 
     multiline: bool = True

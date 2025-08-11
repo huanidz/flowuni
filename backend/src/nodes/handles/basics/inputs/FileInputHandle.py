@@ -1,10 +1,10 @@
 from typing import Any, Dict, List, Optional, Union
 
 from pydantic import Field
-from src.nodes.handles.HandleBase import HandleTypeBase
+from src.nodes.handles.InputHandleBase import InputHandleTypeBase
 
 
-class FileInputHandle(HandleTypeBase):
+class FileInputHandle(InputHandleTypeBase):
     """Handle for file upload inputs"""
 
     accepted_types: List[str] = Field(

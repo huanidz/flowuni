@@ -1,9 +1,9 @@
 from typing import Any, Dict, Optional
 
-from src.nodes.handles.HandleBase import HandleTypeBase
+from src.nodes.handles.InputHandleBase import InputHandleTypeBase
 
 
-class AgentToolInputHandle(HandleTypeBase):
+class AgentToolInputHandle(InputHandleTypeBase):
     """Handle for agent tool inputs"""
 
     # tool_name: Optional[str] = None

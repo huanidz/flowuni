@@ -1,7 +1,8 @@
 from pydantic import BaseModel
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
-from src.nodes.handles.basics.TextFieldInputHandle import TextFieldInputHandle
+from src.nodes.handles.basics.inputs.TextFieldInputHandle import TextFieldInputHandle
+from src.nodes.handles.basics.outputs.DataOutputHandle import DataOutputHandle
 from src.nodes.NodeBase import Node, NodeSpec
 
 
@@ -25,16 +26,10 @@ class ToolNode(Node):
         outputs=[
             NodeOutput(
                 name="tool_result",
-                type=str,
+                type=DataOutputHandle(),
                 description="The response from agent.",
                 enable_for_tool=True,
             ),
-            # NodeOutput(
-            #     name="tool_result2",
-            #     type=str,
-            #     description="The response from agent.",
-            #     enable_for_tool=True,
-            # ),
         ],
         parameters={},
         can_be_tool=True,
