@@ -18,12 +18,12 @@ export const NodeEditBoard: React.FC<NodeEditBoardProps> = ({
   onParameterChange,
   onModeChange,
 }) => {
-  const [activeTab, setActiveTab] = useState<'inputs' | 'parameters' | 'advanced'>('inputs');
+  const [activeTab, setActiveTab] = useState<'inputs' | 'parameters' | 'tool'>('inputs');
 
   const tabs = [
     { id: 'inputs', label: 'Inputs' },
     { id: 'parameters', label: 'Params' },
-    { id: 'advanced', label: 'Advanced' },
+    { id: 'tool', label: 'Tool' },
   ] as const;
 
   const renderInputsTab = () => {
@@ -90,17 +90,6 @@ export const NodeEditBoard: React.FC<NodeEditBoardProps> = ({
               <option value="ToolMode">Tool</option>
             </select>
           </div>
-          <div style={nodeStyles.editItem}>
-            <label style={nodeStyles.editLabel}>Status:</label>
-            <select
-              value="active"
-              style={nodeStyles.editSelect}
-              disabled
-              title="Node status (read-only)"
-            >
-              <option value="active">Active</option>
-            </select>
-          </div>
         </div>
       </div>
     );
@@ -129,7 +118,7 @@ export const NodeEditBoard: React.FC<NodeEditBoardProps> = ({
       <div style={nodeStyles.tabContent}>
         {activeTab === 'inputs' && renderInputsTab()}
         {activeTab === 'parameters' && renderParametersTab()}
-        {activeTab === 'advanced' && renderAdvancedTab()}
+        {activeTab === 'tool' && renderAdvancedTab()}
       </div>
     </div>
   );

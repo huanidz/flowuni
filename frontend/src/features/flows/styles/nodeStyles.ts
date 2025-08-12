@@ -252,7 +252,7 @@ export const nodeStyles = {
   },
 
   editLabel: {
-    fontSize: '10px',
+    fontSize: '12px',
     fontWeight: 'bold' as const,
     color: '#555',
     minWidth: '60px',
