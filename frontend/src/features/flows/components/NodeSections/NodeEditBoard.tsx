@@ -95,6 +95,8 @@ export const NodeEditBoard: React.FC<NodeEditBoardProps> = ({
   const renderAdvancedTab = () => {
     const isInToolMode = mode === 'ToolMode';
 
+    if (!isInToolMode) return null;
+
     return (
       <div style={nodeStyles.editSection}>
         <div style={{...nodeStyles.sectionTitle, fontSize: '11px', marginBottom: '4px'}}>Advanced Settings</div>
