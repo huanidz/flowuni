@@ -188,4 +188,86 @@ export const nodeStyles = {
       color: '#28a745',
     }
   },
+  // Edit Board styles
+  editBoard: {
+    border: '1px solid #ddd',
+    borderRadius: '6px',
+    background: '#f9f9f9',
+    marginTop: '12px',
+    padding: '12px',
+  },
+
+  tabNavigation: {
+    display: 'flex',
+    gap: '4px',
+    marginBottom: '12px',
+    borderBottom: '1px solid #eee',
+    paddingBottom: '4px',
+  },
+
+  tabButton: {
+    padding: '6px 12px',
+    border: '1px solid #ddd',
+    borderRadius: '4px 4px 0 0',
+    background: 'white',
+    cursor: 'pointer',
+    fontSize: '12px',
+    borderLeft: 'none',
+    borderTop: 'none',
+    borderRight: 'none',
+    fontWeight: 'normal' as const,
+  },
+
+  tabButtonActive: {
+    background: '#007bff',
+    color: 'white',
+    fontWeight: 'bold' as const,
+    borderLeft: 'none',
+    borderTop: 'none',
+    borderRight: 'none',
+  },
+
+  tabContent: {
+    minHeight: '200px',
+  },
+
+  editSection: {
+    marginBottom: '16px',
+  },
+
+  editGrid: {
+    display: 'grid',
+    gap: '12px',
+  },
+
+  editItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+  },
+
+  editLabel: {
+    fontSize: '12px',
+    fontWeight: 'bold' as const,
+    color: '#333',
+    minWidth: '80px',
+  },
+
+  editInput: {
+    flex: 1,
+    padding: '4px 8px',
+    border: '1px solid #ccc',
+    borderRadius: '4px',
+    fontSize: '12px',
+  },
+
+  editSelect: {
+    flex: 1,
+    padding: '4px 8px',
+    border: '1px solid #ccc',
+    borderRadius: '4px',
+    fontSize: '12px',
+    background: 'white',
+    cursor: 'pointer',
+  },
 };

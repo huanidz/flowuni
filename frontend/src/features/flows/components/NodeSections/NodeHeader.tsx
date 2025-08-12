@@ -7,6 +7,8 @@ interface NodeHeaderProps {
   mode?: string;
   onModeChange?: (newMode: string) => void;
   canBeTool?: boolean;
+  onToggleEditBoard?: () => void;
+  showEditBoard?: boolean;
 }
 
 export const NodeHeader: React.FC<NodeHeaderProps> = ({
@@ -15,6 +17,8 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
   mode,
   onModeChange,
   canBeTool,
+  onToggleEditBoard,
+  showEditBoard,
 }) => {
   
   // Handle mode change through dropdown
@@ -28,8 +32,8 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
     <div style={nodeStyles.header}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ fontWeight: 'bold' }}>{label}</div>
-        {canBeTool && onModeChange && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          {canBeTool && onModeChange && (
             <select
               value={mode}
               onChange={(e) => handleModeSelect(e.target.value)}
@@ -47,8 +51,27 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
               <option value="NormalMode">Normal Mode</option>
               <option value="ToolMode">Tool Mode</option>
             </select>
-          </div>
-        )}
+          )}
+          {onToggleEditBoard && (
+            <button
+              onClick={onToggleEditBoard}
+              style={{
+                padding: '4px 8px',
+                fontSize: '0.8em',
+                border: '1px solid #007bff',
+                borderRadius: '4px',
+                background: showEditBoard ? '#007bff' : '#fff',
+                color: showEditBoard ? '#fff' : '#007bff',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+              title={showEditBoard ? 'Hide Edit Board' : 'Show Edit Board'}
+              aria-label={showEditBoard ? 'Hide Edit Board' : 'Show Edit Board'}
+            >
+              {showEditBoard ? 'Hide' : 'Edit'}
+            </button>
+          )}
+        </div>
       </div>
       {description && (
         <div style={{

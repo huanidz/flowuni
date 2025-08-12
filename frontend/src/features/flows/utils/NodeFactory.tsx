@@ -19,6 +19,7 @@ import { InputsSection } from '../components/NodeSections/InputsSection';
 import { OutputsSection } from '../components/NodeSections/OutputsSection';
 import { NodeExecutionResult } from '../components/NodeSections/NodeExecutionResult';
 import { NodeHeader } from '../components/NodeSections/NodeHeader';
+import { NodeEditBoard } from '../components/NodeSections/NodeEditBoard';
 
 // Styles
 import { nodeStyles } from '@/features/flows/styles/nodeStyles';
@@ -59,6 +60,7 @@ class NodeFactoryClass {
       const output_values = data.output_values || {};
       const mode = data.mode || NODE_DATA_MODE.NORMAL;
       const can_be_tool = nodeSpec.can_be_tool;
+      const [showEditBoard, setShowEditBoard] = React.useState(false);
 
       // Direct handlers passed from the unified update system
       const handleParameterChange = updateNodeParameter
@@ -78,6 +80,10 @@ class NodeFactoryClass {
         ? (newMode: string) => updateNodeModeData(id, newMode)
         : undefined;
 
+      const handleToggleEditBoard = () => {
+        setShowEditBoard(!showEditBoard);
+      };
+
 
       // === Render Node UI ===
       return (
@@ -88,6 +94,8 @@ class NodeFactoryClass {
             mode={mode}
             onModeChange={handleModeChange || (() => {})}
             canBeTool={can_be_tool}
+            onToggleEditBoard={handleToggleEditBoard}
+            showEditBoard={showEditBoard}
           />
 
           {/* Inputs Configuration */}
@@ -107,6 +115,17 @@ class NodeFactoryClass {
             result={data.execution_result}
             status={data.execution_status}
           />
+
+          {/* Node Edit Board - Hidden by default */}
+          {showEditBoard && (
+            <NodeEditBoard
+              input_values={input_values}
+              parameter_values={parameter_values}
+              mode={mode}
+              onInputValueChange={handleInputValueChange || (() => {})}
+              onParameterChange={handleParameterChange || (() => {})}
+            />
+          )}
         </div>
       );
     };
