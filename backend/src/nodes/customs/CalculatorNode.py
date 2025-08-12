@@ -1,4 +1,8 @@
+from typing import Any, Dict, Union
+
+from loguru import logger
 from pydantic import BaseModel
+from src.components.funcs.CalculatorNodeFuncs import safe_eval
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.handles.basics.inputs.TextFieldInputHandle import TextFieldInputHandle
@@ -31,9 +35,27 @@ class CalculatorNode(Node):
         can_be_tool=True,
     )
 
-    def process(self, inputs, parameters):
-        # return {"tool_result": inputs["input_message"], "tool_result2": "hello"}
-        return {"tool_result": inputs["input_message"]}
+    def process(
+        self, inputs: Dict[str, Any], parameters: Dict[str, Any]
+    ) -> Dict[str, Union[float, int, str]]:
+        """
+        Process the calculator node by evaluating the mathematical expression.
+
+        Args:
+            inputs: Dictionary containing the expression to evaluate
+            parameters: Dictionary of parameters (not used in this node)
+
+        Returns:
+            Dictionary containing the evaluation result or error message
+        """
+        expression: str = inputs.get("expression", "")
+
+        # Log the incoming expression for debugging
+        logger.info(f"Evaluating expression: {expression}")
+
+        result = safe_eval(expression)
+
+        return {"result": result}
 
     def build_tool(self) -> BuildToolResult:
         class CalculatorSchema(BaseModel):
