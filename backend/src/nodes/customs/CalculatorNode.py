@@ -8,6 +8,7 @@ from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.handles.basics.inputs.TextFieldInputHandle import TextFieldInputHandle
 from src.nodes.handles.basics.outputs.DataOutputHandle import DataOutputHandle
 from src.nodes.NodeBase import Node, NodeSpec
+from src.schemas.flowbuilder.flow_graph_schemas import ToolConfig
 from src.schemas.nodes.node_data_parsers import BuildToolResult
 
 
@@ -57,12 +58,19 @@ class CalculatorNode(Node):
 
         return {"result": result}
 
-    def build_tool(self, tool_configs: Dict[str, Any]) -> BuildToolResult:
+    def build_tool(self, tool_configs: ToolConfig) -> BuildToolResult:
+        tool_name = tool_configs.tool_name if tool_configs.tool_name else "Calculator"
+        tool_description = (
+            tool_configs.tool_description
+            if tool_configs.tool_description
+            else "Calculator tool that will run math expression."
+        )
+
         class CalculatorSchema(BaseModel):
             expression: str
 
         return BuildToolResult(
-            tool_name="Calculator",
-            tool_description="Calculator tool that will run math expression.",
+            tool_name=tool_name,
+            tool_description=tool_description,
             tool_schema=CalculatorSchema,
         )
