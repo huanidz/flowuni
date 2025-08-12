@@ -11,7 +11,7 @@ from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.core.NodeSpec import NodeSpec
 from src.nodes.handles.InputHandleBase import InputHandleTypeBase
-from src.schemas.flowbuilder.flow_graph_schemas import NodeData
+from src.schemas.flowbuilder.flow_graph_schemas import NodeData, ToolConfig
 from src.schemas.nodes.node_data_parsers import BuildToolResult
 from src.schemas.nodes.node_schemas import (
     NodeInputSchema,
@@ -93,6 +93,9 @@ class Node(ABC):
             for name, spec in self.spec.parameters.items()
         }
 
+    def _extract_tool_configs(self, node_data: "NodeData") -> Dict[str, Any]:
+        return node_data.tool_configs
+
     # ============================================================================
     # OUTPUT MAPPING AND VALIDATION
     # ============================================================================
@@ -167,9 +170,7 @@ class Node(ABC):
         pass
 
     # @abstractmethod
-    def build_tool(
-        self,
-    ) -> BuildToolResult:
+    def build_tool(self, tool_configs: ToolConfig) -> BuildToolResult:
         """
         Build a tool from the node.
 
@@ -206,7 +207,8 @@ class Node(ABC):
                 original=node_data, outputs=output_values
             )
         else:
-            built_tool: BuildToolResult = self.build_tool()
+            tool_configs: ToolConfig = self._extract_tool_configs(node_data)
+            built_tool: BuildToolResult = self.build_tool(tool_configs)
             tool_serialized_schemas = PydanticSchemaConverter.serialize(
                 model_cls=built_tool.tool_schema
             )

@@ -63,6 +63,9 @@ export interface NodeData {
   input_values?: Record<string, any>;
   output_values?: Record<string, any>;
 
+  // Tool related fields
+  tool_configs? : Record<string, any>; // Note: this only can happen in Tool-able Node. else None by default
+
   // Mode-related fields
   mode?: string;
 

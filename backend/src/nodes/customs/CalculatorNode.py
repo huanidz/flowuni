@@ -57,7 +57,7 @@ class CalculatorNode(Node):
 
         return {"result": result}
 
-    def build_tool(self) -> BuildToolResult:
+    def build_tool(self, tool_configs: Dict[str, Any]) -> BuildToolResult:
         class CalculatorSchema(BaseModel):
             expression: str
 

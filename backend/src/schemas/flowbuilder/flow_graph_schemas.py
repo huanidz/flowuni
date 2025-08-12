@@ -10,6 +10,11 @@ class Position(BaseModel):
     y: float
 
 
+class ToolConfig(BaseModel):
+    tool_name: str
+    tool_description: str
+
+
 class NodeData(BaseModel):
     """Represents metadata and parameters associated with a node."""
 
@@ -21,6 +26,7 @@ class NodeData(BaseModel):
         None  # consider replacing with a typed model if possible
     )
     mode: Optional[Literal["NormalMode", "ToolMode"]] = None
+    tool_configs: Optional[ToolConfig] = None
 
 
 class FlowNode(BaseModel):
