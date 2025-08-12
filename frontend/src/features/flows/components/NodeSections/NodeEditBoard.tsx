@@ -7,6 +7,7 @@ interface NodeEditBoardProps {
   mode: string;
   onInputValueChange: (inputName: string, value: any) => void;
   onParameterChange: (paramName: string, value: any) => void;
+  onModeChange: (newMode: string) => void;
 }
 
 export const NodeEditBoard: React.FC<NodeEditBoardProps> = ({
@@ -15,6 +16,7 @@ export const NodeEditBoard: React.FC<NodeEditBoardProps> = ({
   mode,
   onInputValueChange,
   onParameterChange,
+  onModeChange,
 }) => {
   const [activeTab, setActiveTab] = useState<'inputs' | 'parameters' | 'advanced'>('inputs');
 
@@ -77,8 +79,7 @@ export const NodeEditBoard: React.FC<NodeEditBoardProps> = ({
             <select
               value={mode}
               onChange={(e) => {
-                // This would typically call a mode change handler
-                console.log('Mode changed to:', e.target.value);
+                onModeChange(e.target.value);
               }}
               style={nodeStyles.editSelect}
             >

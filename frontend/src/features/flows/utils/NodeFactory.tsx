@@ -124,6 +124,7 @@ class NodeFactoryClass {
               mode={mode}
               onInputValueChange={handleInputValueChange || (() => {})}
               onParameterChange={handleParameterChange || (() => {})}
+              onModeChange={handleModeChange || (() => {})}
             />
           )}
         </div>
