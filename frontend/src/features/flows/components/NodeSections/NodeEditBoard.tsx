@@ -6,6 +6,7 @@ interface NodeEditBoardProps {
   spec_inputs: NodeInput[];
   input_values: Record<string, any>;
   parameter_values: Record<string, any>;
+  tool_configs: Record<string, any>;
   mode: string;
   onInputValueChange: (inputName: string, value: any) => void;
   onParameterChange: (paramName: string, value: any) => void;
@@ -17,6 +18,7 @@ export const NodeEditBoard: React.FC<NodeEditBoardProps> = ({
   spec_inputs,
   input_values,
   parameter_values,
+  tool_configs,
   mode,
   onInputValueChange,
   onParameterChange,
@@ -91,6 +93,8 @@ export const NodeEditBoard: React.FC<NodeEditBoardProps> = ({
   };
 
   const renderAdvancedTab = () => {
+    const isInToolMode = mode === 'ToolMode';
+
     return (
       <div style={nodeStyles.editSection}>
         <div style={{...nodeStyles.sectionTitle, fontSize: '11px', marginBottom: '4px'}}>Advanced Settings</div>
@@ -109,6 +113,34 @@ export const NodeEditBoard: React.FC<NodeEditBoardProps> = ({
               <option value="ToolMode">Tool</option>
             </select>
           </div>
+
+          {/* Show tool configuration fields only in ToolMode */}
+          {isInToolMode && (
+            <>
+              <div style={nodeStyles.editItem}>
+                <label style={nodeStyles.editLabel}>Tool Name:</label>
+                <input
+                  type="text"
+                  value={tool_configs.tool_name || ''}
+                  onChange={(e) => onToolConfigChange('tool_name', e.target.value)}
+                  style={nodeStyles.editInput}
+                  title="Name of the tool"
+                  placeholder='Name (Visible to LLM)'
+                />
+              </div>
+              <div style={nodeStyles.editItem}>
+                <label style={nodeStyles.editLabel}>Tool Description:</label>
+                <input
+                  type="text"
+                  value={tool_configs.tool_description || ''}
+                  onChange={(e) => onToolConfigChange('tool_description', e.target.value)}
+                  style={nodeStyles.editInput}
+                  title="Desc of the tool"
+                  placeholder="Desc (Visible to LLM)"
+                />
+              </div>
+            </>
+          )}
         </div>
       </div>
     );

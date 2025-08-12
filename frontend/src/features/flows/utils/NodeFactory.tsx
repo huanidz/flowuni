@@ -65,8 +65,6 @@ class NodeFactoryClass {
       const can_be_tool = nodeSpec.can_be_tool;
       const [showEditBoard, setShowEditBoard] = React.useState(false);
 
-      console.log("tool_configs", tool_configs);
-
       // Direct handlers passed from the unified update system
       const handleParameterChange = updateNodeParameter
         ? (paramName: string, value: any) => updateNodeParameter(id, paramName, value)
@@ -120,6 +118,7 @@ class NodeFactoryClass {
               spec_inputs={nodeSpec.inputs}
               input_values={input_values}
               parameter_values={parameter_values}
+              tool_configs={tool_configs}
               mode={mode}
               onInputValueChange={handleInputValueChange || (() => {})}
               onParameterChange={handleParameterChange || (() => {})}

@@ -104,8 +104,8 @@ export const useNodeUpdate = (setNodes: SetNodesType, setEdges: SetEdgesType, ed
             ...node,
             data: {
               ...node.data,
-              tool_config: {
-                ...(node.data.tool_config || {}),
+              tool_configs: {
+                ...(node.data.tool_configs || {}),
                 [toolConfigName]: value,
               },
             },
