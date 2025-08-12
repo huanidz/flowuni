@@ -119,6 +119,7 @@ class NodeFactoryClass {
           {/* Node Edit Board - Hidden by default */}
           {showEditBoard && (
             <NodeEditBoard
+              spec_inputs={nodeSpec.inputs}
               input_values={input_values}
               parameter_values={parameter_values}
               mode={mode}

@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { nodeStyles } from '@/features/flows/styles/nodeStyles';
+import { type NodeInput } from '@/features/nodes';
 
 interface NodeEditBoardProps {
+  spec_inputs: NodeInput[];
   input_values: Record<string, any>;
   parameter_values: Record<string, any>;
   mode: string;
@@ -11,6 +13,7 @@ interface NodeEditBoardProps {
 }
 
 export const NodeEditBoard: React.FC<NodeEditBoardProps> = ({
+  spec_inputs,
   input_values,
   parameter_values,
   mode,
@@ -27,23 +30,37 @@ export const NodeEditBoard: React.FC<NodeEditBoardProps> = ({
   ] as const;
 
   const renderInputsTab = () => {
+    const isInToolMode = mode === 'ToolMode';
+
     return (
       <div style={nodeStyles.editSection}>
-        <div style={{...nodeStyles.sectionTitle, fontSize: '11px', marginBottom: '4px'}}>Input Values</div>
+        <div style={{ ...nodeStyles.sectionTitle, fontSize: '11px', marginBottom: '4px' }}>
+          Input Values
+        </div>
+
         <div style={nodeStyles.editGrid}>
-          {Object.entries(input_values).map(([key, value]) => (
-            <div key={`input-${key}`} style={nodeStyles.editItem}>
-              <label style={nodeStyles.editLabel} title={key}>{key.length > 12 ? key.substring(0, 12) + '...' : key}:</label>
-              <input
-                type="text"
-                value={value || ''}
-                onChange={(e) => onInputValueChange(key, e.target.value)}
-                style={nodeStyles.editInput}
-                disabled={mode === 'ToolMode'}
-                title={`${key}: ${value}`}
-              />
-            </div>
-          ))}
+          {Object.entries(input_values).map(([key, value]) => {
+            const specInput = spec_inputs.find(input => input.name === key);
+            const isDisabled = isInToolMode && specInput?.enable_for_tool;
+            const displayKey = key.length > 12 ? `${key.slice(0, 12)}...` : key;
+            const displayValue = isDisabled ? '' : (value || '');
+
+            return (
+              <div key={`input-${key}`} style={nodeStyles.editItem}>
+                <label style={nodeStyles.editLabel} title={key}>
+                  {displayKey}:
+                </label>
+                <input
+                  type="text"
+                  value={displayValue}
+                  onChange={e => onInputValueChange(key, e.target.value)}
+                  style={nodeStyles.editInput}
+                  disabled={isDisabled}
+                  title={`${key}: ${value}`}
+                />
+              </div>
+            );
+          })}
         </div>
       </div>
     );

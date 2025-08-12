@@ -72,7 +72,7 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
               title={showEditBoard ? 'Hide Edit Board' : 'Show Edit Board'}
               aria-label={showEditBoard ? 'Hide Edit Board' : 'Show Edit Board'}
             >
-              {showEditBoard ? '✕' : '✎'}
+              {showEditBoard ? 'Hide' : 'Edit'}
             </button>
           )}
         </div>
