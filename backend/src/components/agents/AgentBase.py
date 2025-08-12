@@ -98,14 +98,15 @@ class Agent(ABC):
 
         return ChatResponse(content=formatted_results)
 
-    def _build_tools_map(self) -> Dict[str, ToolDataParser]:
+    def _build_tools_map(self) -> Dict[str, Dict[str, ToolDataParser]]:
         """
         Build a mapping of tool names to tool parsers.
 
         Returns:
             Dict[str, ToolDataParser]: Mapping of tool names to parsers
         """
-        return {tool.tool_name: tool for tool in self.tools}
+
+        return {tool.tool_name: {tool.tool_origin: tool} for tool in self.tools}
 
     def _prepare_system_prompt(self) -> str:
         """
@@ -141,7 +142,9 @@ class Agent(ABC):
             Tuple[str, str]: (tool_name, execution_result)
         """
         try:
-            tool = self.tools_map[tool_call.tool_name]
+            origin_map = self.tools_map[tool_call.tool_name]
+
+            origin_tool_name, tool = next(iter(origin_map.items()))
 
             llm_tool_params = tool_call.tool_params
 
@@ -154,7 +157,7 @@ class Agent(ABC):
             final_input_values = {**default_input_values, **llm_input_values}
 
             node_registry = NodeRegistry()
-            node_instance = node_registry.create_node_instance(name=tool.tool_name)
+            node_instance = node_registry.create_node_instance(name=origin_tool_name)
 
             result = node_instance.process(final_input_values, tool.parameter_values)
             logger.info(f"Tool '{tool_call.tool_name}' executed successfully")

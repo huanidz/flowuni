@@ -583,6 +583,7 @@ class GraphExecutor:
                 from_node_id=node_id,
                 input_values=executed_data.input_values,
                 parameter_values=executed_data.parameter_values,
+                tool_origin=executed_data.node_type,
                 tool_schema=tool_schema,
                 tool_name=tool_name,
                 tool_description=tool_desciption,
