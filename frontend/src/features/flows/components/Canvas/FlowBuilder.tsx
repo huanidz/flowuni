@@ -53,7 +53,8 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
   const { nodeTypes, nodeTypesLoaded } = useNodeTypes(
     updateHandlers.updateNodeInputData,
     updateHandlers.updateNodeModeData,
-    updateHandlers.updateNodeParameterData
+    updateHandlers.updateNodeParameterData,
+    updateHandlers.updateNodeToolConfigData
   );
 
 

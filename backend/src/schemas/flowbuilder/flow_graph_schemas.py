@@ -11,8 +11,8 @@ class Position(BaseModel):
 
 
 class ToolConfig(BaseModel):
-    tool_name: str
-    tool_description: str
+    tool_name: Optional[str] = None
+    tool_description: Optional[str] = None
 
 
 class NodeData(BaseModel):

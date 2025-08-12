@@ -232,6 +232,7 @@ class Node(ABC):
             node_type=original.node_type,
             input_values=original.input_values,
             output_values=outputs,
+            tool_configs=original.tool_configs,
             parameter_values=original.parameter_values,
             mode=original.mode,
         )

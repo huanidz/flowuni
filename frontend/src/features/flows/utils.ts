@@ -19,6 +19,7 @@ export interface FlowDefinitionData {
       input_values: Record<string, any>;
       output_values: Record<string, any>;
       mode: string;
+      tool_configs: Record<string, any>;
     };
   }>;
   edges: Array<{
@@ -83,6 +84,7 @@ export const parseFlowDefinition = (
         input_values: nodeData.data?.input_values || {},
         output_values: nodeData.data?.output_values || {},
         mode: nodeData.data?.mode || NODE_DATA_MODE.NORMAL,
+        tool_configs: nodeData.data?.tool_configs || {},
       },
       style: { background: '#fff', color: '#000' },
       sourcePosition: Position.Right,

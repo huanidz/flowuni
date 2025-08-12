@@ -10,6 +10,7 @@ interface NodeEditBoardProps {
   onInputValueChange: (inputName: string, value: any) => void;
   onParameterChange: (paramName: string, value: any) => void;
   onModeChange: (newMode: string) => void;
+  onToolConfigChange: (toolConfigName: string, value: any) => void;
 }
 
 export const NodeEditBoard: React.FC<NodeEditBoardProps> = ({
@@ -20,6 +21,7 @@ export const NodeEditBoard: React.FC<NodeEditBoardProps> = ({
   onInputValueChange,
   onParameterChange,
   onModeChange,
+  onToolConfigChange,
 }) => {
   const [activeTab, setActiveTab] = useState<'inputs' | 'parameters' | 'tool'>('inputs');
 

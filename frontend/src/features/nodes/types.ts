@@ -84,3 +84,9 @@ export type UpdateNodeParameterFunction = (
   parameterName: string,
   value: any
 ) => void;
+
+export type UpdateNodeToolConfigFunction = (
+  nodeId: string,
+  toolConfigName: string,
+  value: any
+) => void;

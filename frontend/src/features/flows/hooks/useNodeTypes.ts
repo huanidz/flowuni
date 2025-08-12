@@ -17,7 +17,8 @@ import { useNodeRegistry, type NodeSpec } from '@/features/nodes';
 export const useNodeTypes = (
   updateNodeInputData?: (nodeId: string, inputName: string, newData: any) => void,
   updateNodeModeData?: (nodeId: string, newMode: string) => void,
-  updateNodeParameterData?: (nodeId: string, parameterName: string, value: any) => void
+  updateNodeParameterData?: (nodeId: string, parameterName: string, value: any) => void,
+  updateNodeToolConfigData?: (nodeId: string, toolConfigName: string, value: any) => void
 ) => {
   const { getAllNodeSpecs, loaded } = useNodeRegistry();
   const [nodeTypes, setNodeTypes] = useState<Record<string, React.FC<any>>>({});
@@ -47,7 +48,8 @@ export const useNodeTypes = (
         nodeSpec,
         updateNodeInputData,
         updateNodeModeData,
-        updateNodeParameterData
+        updateNodeParameterData,
+        updateNodeToolConfigData
       );
 
       // Only add if component was successfully created

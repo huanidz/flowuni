@@ -94,6 +94,28 @@ export const useNodeUpdate = (setNodes: SetNodesType, setEdges: SetEdgesType, ed
     [setNodes]
   );
 
+  const updateNodeToolConfigData = useCallback(
+    (nodeId: string, toolConfigName: string, value: any) => {
+      setNodes((nodes) =>
+        nodes.map((node) => {
+          if (node.id !== nodeId) return node;
+          
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              tool_config: {
+                ...(node.data.tool_config || {}),
+                [toolConfigName]: value,
+              },
+            },
+          };
+        })
+      );
+    },
+    [setNodes]
+  );
+
   /**
    * Update node data with complete object (for complex updates)
    */
@@ -120,6 +142,7 @@ export const useNodeUpdate = (setNodes: SetNodesType, setEdges: SetEdgesType, ed
     updateNodeInputData, // Input data
     updateNodeModeData, // Mode data
     updateNodeParameterData, // Parameter data
+    updateNodeToolConfigData, // Tool config data
     updateNodeData, // General data (Or complete `data` field.)
   };
 };

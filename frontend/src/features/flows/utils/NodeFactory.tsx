@@ -9,6 +9,7 @@ import type {
   UpdateNodeInputDataFunction,
   UpdateNodeModeDataFunction,
   UpdateNodeParameterFunction,
+  UpdateNodeToolConfigFunction
 } from '@/features/nodes';
 
 // Constants
@@ -40,7 +41,8 @@ class NodeFactoryClass {
     nodeSpec: NodeSpec,
     updateNodeInputData?: UpdateNodeInputDataFunction,
     updateNodeModeData?: UpdateNodeModeDataFunction,
-    updateNodeParameter?: UpdateNodeParameterFunction
+    updateNodeParameter?: UpdateNodeParameterFunction,
+    updateNodeToolConfig?: UpdateNodeToolConfigFunction
   ): React.FC<CustomNodeProps> | null {
 
     if (!nodeSpec) {
@@ -58,9 +60,12 @@ class NodeFactoryClass {
       const parameter_values = data.parameter_values || {};
       const input_values = data.input_values || {};
       const output_values = data.output_values || {};
+      const tool_configs = data.tool_configs || {};
       const mode = data.mode || NODE_DATA_MODE.NORMAL;
       const can_be_tool = nodeSpec.can_be_tool;
       const [showEditBoard, setShowEditBoard] = React.useState(false);
+
+      console.log("tool_configs", tool_configs);
 
       // Direct handlers passed from the unified update system
       const handleParameterChange = updateNodeParameter
@@ -73,6 +78,10 @@ class NodeFactoryClass {
         
       const handleModeChange = updateNodeModeData
         ? (newMode: string) => updateNodeModeData(id, newMode)
+        : undefined;
+
+      const handleToolConfigChange = updateNodeToolConfig
+        ? (toolName: string, value: any) => updateNodeToolConfig(id, toolName, value)
         : undefined;
 
       const handleToggleEditBoard = () => {
@@ -115,6 +124,7 @@ class NodeFactoryClass {
               onInputValueChange={handleInputValueChange || (() => {})}
               onParameterChange={handleParameterChange || (() => {})}
               onModeChange={handleModeChange || (() => {})}
+              onToolConfigChange={handleToolConfigChange || (() => {})}
             />
           )}
 
