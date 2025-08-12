@@ -77,7 +77,7 @@ export interface NodeData {
 
 export type CustomNodeProps = NodeProps<RFNode<NodeData>>;
 
-export type UpdateNodeDataFunction = (nodeId: string, newData: any) => void;
+export type UpdateNodeInputDataFunction = (nodeId: string, inputName: string, newData: any) => void;
 export type UpdateNodeModeDataFunction = (nodeId: string, newMode: string) => void;
 export type UpdateNodeParameterFunction = (
   nodeId: string,

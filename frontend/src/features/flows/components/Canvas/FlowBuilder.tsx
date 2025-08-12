@@ -51,7 +51,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
   
   // Node types management (With unified update handlers)
   const { nodeTypes, nodeTypesLoaded } = useNodeTypes(
-    updateHandlers.updateNodeData,
+    updateHandlers.updateNodeInputData,
     updateHandlers.updateNodeModeData,
     updateHandlers.updateNodeParameterData
   );

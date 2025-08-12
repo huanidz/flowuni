@@ -6,7 +6,7 @@ import React from 'react';
 import type {
   NodeSpec,
   CustomNodeProps,
-  UpdateNodeDataFunction,
+  UpdateNodeInputDataFunction,
   UpdateNodeModeDataFunction,
   UpdateNodeParameterFunction,
 } from '@/features/nodes';
@@ -32,13 +32,13 @@ class NodeFactoryClass {
    * Generates a custom node component based on a given node specification.
    *
    * @param nodeSpec - The specification of the node to render.
-   * @param updateNodeData - Optional callback to update node data.
+   * @param updateNodeInputData - Optional callback to update node input data.
    * @param updateNodeParameter - Optional callback to update node parameters.
    * @returns A React functional component for the node, or null if spec is invalid.
    */
   createNodeComponent(
     nodeSpec: NodeSpec,
-    updateNodeData?: UpdateNodeDataFunction,
+    updateNodeInputData?: UpdateNodeInputDataFunction,
     updateNodeModeData?: UpdateNodeModeDataFunction,
     updateNodeParameter?: UpdateNodeParameterFunction
   ): React.FC<CustomNodeProps> | null {
@@ -67,13 +67,8 @@ class NodeFactoryClass {
         ? (paramName: string, value: any) => updateNodeParameter(id, paramName, value)
         : undefined;
         
-      const handleInputValueChange = updateNodeData
-        ? (inputName: string, value: any) => updateNodeData(id, {
-            input_values: {
-              ...input_values,
-              [inputName]: value
-            },
-          })
+      const handleInputValueChange = updateNodeInputData
+        ? (inputName: string, value: any) => updateNodeInputData(id, inputName, value)
         : undefined;
         
       const handleModeChange = updateNodeModeData
@@ -110,12 +105,6 @@ class NodeFactoryClass {
           {/* Outputs Display */}
           <OutputsSection spec_outputs={nodeSpec.outputs} node_mode={mode} />
 
-          {/* Node Execution Result */}
-          <NodeExecutionResult
-            result={data.execution_result}
-            status={data.execution_status}
-          />
-
           {/* Node Edit Board - Hidden by default */}
           {showEditBoard && (
             <NodeEditBoard
@@ -128,6 +117,13 @@ class NodeFactoryClass {
               onModeChange={handleModeChange || (() => {})}
             />
           )}
+
+          {/* Node Execution Result */}
+          <NodeExecutionResult
+            result={data.execution_result}
+            status={data.execution_status}
+          />
+
         </div>
       );
     };
