@@ -22,24 +22,25 @@ export const NodeEditBoard: React.FC<NodeEditBoardProps> = ({
 
   const tabs = [
     { id: 'inputs', label: 'Inputs' },
-    { id: 'parameters', label: 'Parameters' },
+    { id: 'parameters', label: 'Params' },
     { id: 'advanced', label: 'Advanced' },
   ] as const;
 
   const renderInputsTab = () => {
     return (
       <div style={nodeStyles.editSection}>
-        <div style={nodeStyles.sectionTitle}>Input Values</div>
+        <div style={{...nodeStyles.sectionTitle, fontSize: '11px', marginBottom: '4px'}}>Input Values</div>
         <div style={nodeStyles.editGrid}>
           {Object.entries(input_values).map(([key, value]) => (
             <div key={`input-${key}`} style={nodeStyles.editItem}>
-              <label style={nodeStyles.editLabel}>{key}:</label>
+              <label style={nodeStyles.editLabel} title={key}>{key.length > 12 ? key.substring(0, 12) + '...' : key}:</label>
               <input
                 type="text"
                 value={value || ''}
                 onChange={(e) => onInputValueChange(key, e.target.value)}
                 style={nodeStyles.editInput}
                 disabled={mode === 'ToolMode'}
+                title={`${key}: ${value}`}
               />
             </div>
           ))}
@@ -51,16 +52,17 @@ export const NodeEditBoard: React.FC<NodeEditBoardProps> = ({
   const renderParametersTab = () => {
     return (
       <div style={nodeStyles.editSection}>
-        <div style={nodeStyles.sectionTitle}>Parameter Values</div>
+        <div style={{...nodeStyles.sectionTitle, fontSize: '11px', marginBottom: '4px'}}>Parameter Values</div>
         <div style={nodeStyles.editGrid}>
           {Object.entries(parameter_values).map(([key, value]) => (
             <div key={`param-${key}`} style={nodeStyles.editItem}>
-              <label style={nodeStyles.editLabel}>{key}:</label>
+              <label style={nodeStyles.editLabel} title={key}>{key.length > 12 ? key.substring(0, 12) + '...' : key}:</label>
               <input
                 type="text"
                 value={value || ''}
                 onChange={(e) => onParameterChange(key, e.target.value)}
                 style={nodeStyles.editInput}
+                title={`${key}: ${value}`}
               />
             </div>
           ))}
@@ -72,7 +74,7 @@ export const NodeEditBoard: React.FC<NodeEditBoardProps> = ({
   const renderAdvancedTab = () => {
     return (
       <div style={nodeStyles.editSection}>
-        <div style={nodeStyles.sectionTitle}>Advanced Settings</div>
+        <div style={{...nodeStyles.sectionTitle, fontSize: '11px', marginBottom: '4px'}}>Advanced Settings</div>
         <div style={nodeStyles.editGrid}>
           <div style={nodeStyles.editItem}>
             <label style={nodeStyles.editLabel}>Mode:</label>
@@ -82,17 +84,19 @@ export const NodeEditBoard: React.FC<NodeEditBoardProps> = ({
                 onModeChange(e.target.value);
               }}
               style={nodeStyles.editSelect}
+              title="Change node operation mode"
             >
-              <option value="NormalMode">Normal Mode</option>
-              <option value="ToolMode">Tool Mode</option>
+              <option value="NormalMode">Normal</option>
+              <option value="ToolMode">Tool</option>
             </select>
           </div>
           <div style={nodeStyles.editItem}>
-            <label style={nodeStyles.editLabel}>Node Status:</label>
+            <label style={nodeStyles.editLabel}>Status:</label>
             <select
               value="active"
               style={nodeStyles.editSelect}
               disabled
+              title="Node status (read-only)"
             >
               <option value="active">Active</option>
             </select>
@@ -103,7 +107,7 @@ export const NodeEditBoard: React.FC<NodeEditBoardProps> = ({
   };
 
   return (
-    <div style={nodeStyles.editBoard}>
+    <div style={{...nodeStyles.editBoard, overflowY: 'auto' as const}}>
       {/* Tab Navigation */}
       <div style={nodeStyles.tabNavigation}>
         {tabs.map((tab) => (
@@ -114,8 +118,9 @@ export const NodeEditBoard: React.FC<NodeEditBoardProps> = ({
               ...(activeTab === tab.id ? nodeStyles.tabButtonActive : {})
             }}
             onClick={() => setActiveTab(tab.id)}
+            title={`Switch to ${tab.label} tab`}
           >
-            {tab.label}
+            {tab.label.length > 8 ? tab.label.substring(0, 8) + '...' : tab.label}
           </button>
         ))}
       </div>
