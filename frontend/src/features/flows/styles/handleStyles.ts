@@ -263,7 +263,7 @@ export const dynamicTypeHandleStyles = {
     lineHeight: '1.4',
   } as CSSProperties,
   typeSelectorContainer: {
-    marginBottom: '16px',
+    marginBottom: '4px',
   } as CSSProperties,
   selectTrigger: {
     width: '100%',

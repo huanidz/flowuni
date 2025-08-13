@@ -54,7 +54,7 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
     const [showInputComponent, setShowInputComponent] = React.useState(defaultVisibility);
     
     // Handle DynamicTypeInput value format
-    const effectiveValue = inputType === NodeInputType.DynamicType && inputValue && typeof inputValue === 'object' && inputValue.selectedTyped
+    const effectiveValue = inputType === NodeInputType.DynamicType && inputValue && typeof inputValue === 'object' && inputValue.selected_type
       ? inputValue
       : inputValue ?? spec_input.default ?? '';
 

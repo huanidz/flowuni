@@ -41,7 +41,7 @@ export const SidebarInputsSection: React.FC<SidebarInputsSectionProps> = ({
 
     // Handle DynamicTypeInput value format
     const inputType = spec_input.type_detail.type;
-    const effectiveValue = inputType === NodeInputType.DynamicType && inputValue && typeof inputValue === 'object' && inputValue.selectedTyped
+    const effectiveValue = inputType === NodeInputType.DynamicType && inputValue && typeof inputValue === 'object' && inputValue.selected_type
       ? inputValue
       : inputValue ?? spec_input.default ?? '';
 
