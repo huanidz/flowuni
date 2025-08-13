@@ -190,6 +190,7 @@ export const TableHandleInput: React.FC<TableHandleInputProps> = ({
                 <TableHead key={index}>
                   {col.label}
                   {col.required && <span className="text-red-500 ml-1">*</span>}
+                  <br/>
                   <span className="text-xs text-muted-foreground ml-1">
                     ({col.dtype})
                   </span>
