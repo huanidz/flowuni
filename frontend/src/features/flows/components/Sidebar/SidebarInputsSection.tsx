@@ -33,11 +33,7 @@ export const SidebarInputsSection: React.FC<SidebarInputsSectionProps> = ({
   };
 
   const renderInput = (spec_input: NodeInput, index: number) => {
-    // Use SidebarTableHandleInput for table inputs in the sidebar
-    const isTableInput = spec_input.type_detail.type === NodeInputType.Table;
-    const InputComponent = isTableInput
-      ? HandleComponentRegistry[NodeInputType.SidebarTable]
-      : HandleComponentRegistry[spec_input.type_detail.type];
+    const InputComponent = HandleComponentRegistry[spec_input.type_detail.type];
     const hasInputComponent = !!InputComponent;
     const inputValue = input_values[spec_input.name];
     const isExpanded = expandedInputs[spec_input.name] !== false;
