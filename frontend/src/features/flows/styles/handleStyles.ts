@@ -241,3 +241,32 @@ export const tableHandleStyles = {
     marginLeft: '2px',
   } as CSSProperties,
 };
+
+// Dynamic type handle styles
+export const dynamicTypeHandleStyles = {
+  container: {
+    display: 'flex',
+    flexDirection: 'column',
+    fontSize: '12px',
+    width: '100%',
+  } as CSSProperties,
+  label: {
+    marginBottom: '4px',
+    fontWeight: 'bold',
+    color: '#333',
+  } as CSSProperties,
+  description: {
+    marginBottom: '4px',
+    color: '#666',
+    fontSize: '11px',
+  } as CSSProperties,
+  typeSelectorContainer: {
+    marginBottom: '12px',
+  } as CSSProperties,
+  selectTrigger: {
+    width: '100%',
+  } as CSSProperties,
+  componentContainer: {
+    marginTop: '8px',
+  } as CSSProperties,
+} as const;

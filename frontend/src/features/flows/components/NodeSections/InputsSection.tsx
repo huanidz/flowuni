@@ -11,6 +11,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 // Configuration for default showInputComponent state by input type
 const INPUT_TYPE_DEFAULT_VISIBILITY: Record<string, boolean> = {
   [NodeInputType.Table]: false,
+  [NodeInputType.DynamicType]: true,
   // All other types default to true (not explicitly listed)
 };
 

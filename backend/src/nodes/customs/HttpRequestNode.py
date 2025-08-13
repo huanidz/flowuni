@@ -93,6 +93,11 @@ class HttpRequestNode(Node):
                 type=DynamicTypeInputHandle(
                     type_options=[
                         DynamicTypeItem(
+                            type_label="Json",
+                            type_name=TextFieldInputHandle.__name__,
+                            details=TextFieldInputHandle(),
+                        ),
+                        DynamicTypeItem(
                             type_label="Form",
                             type_name=TableInputHandle.__name__,
                             details=TableInputHandle(
@@ -114,7 +119,7 @@ class HttpRequestNode(Node):
                                     ),
                                 ]
                             ),
-                        )
+                        ),
                     ]
                 ),
                 description="The JSON body of the request.",

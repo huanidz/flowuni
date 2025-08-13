@@ -9,6 +9,12 @@ export interface NodeParameterSpec {
   [key: string]: any;
 }
 
+export interface DynamicTypeItem {
+  type_label: string;
+  type_name: string;
+  details: any;
+}
+
 export interface TypeDetail {
   type: string;
   schema?: {

@@ -4,13 +4,15 @@ import { DropdownHandleInput } from './basics/DropdownHandleInput';
 import { SecretTextHandleInput } from './basics/SecretTextHandleInput';
 import { AgentToolHandleInput } from './basics/AgentToolHandleInput';
 import { TableHandleInput } from './basics/TableHandleInput';
+import { DynamicTypeHandleInput } from './basics/DynamicTypeHandleInput';
 
 export type NodeInputType =
   | 'TextFieldInputHandle'
   | 'DropdownInputHandle'
   | 'SecretTextInputHandle'
   | 'AgentToolInputHandle'
-  | 'TableInputHandle' /* etc. */;
+  | 'TableInputHandle'
+  | 'DynamicTypeInputHandle' /* etc. */;
 
 export const NodeInputType = {
   TextField: 'TextFieldInputHandle',
@@ -18,6 +20,7 @@ export const NodeInputType = {
   SecretText: 'SecretTextInputHandle',
   AgentTool: 'AgentToolInputHandle',
   Table: 'TableInputHandle',
+  DynamicType: 'DynamicTypeInputHandle',
 } as const;
 
 
@@ -30,6 +33,7 @@ export const HandleComponentRegistry: {
   [NodeInputType.SecretText]: SecretTextHandleInput,
   [NodeInputType.AgentTool]: AgentToolHandleInput,
   [NodeInputType.Table]: TableHandleInput,
+  [NodeInputType.DynamicType]: DynamicTypeHandleInput,
 };
 
 // ===========================================================================
