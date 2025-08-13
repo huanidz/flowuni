@@ -8,15 +8,19 @@ export const nodeStyles = {
     position: 'relative' as const,
     boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
     maxWidth: '230px',
+    cursor: 'default' as const,
   },
 
   header: {
     fontWeight: 'bold' as const,
     textAlign: 'center' as const,
     marginBottom: '12px',
-    paddingBottom: '8px',
+    padding: '8px',
     borderBottom: '1px solid #eee',
     color: '#333',
+    backgroundColor: '#e5ecc2ff',
+    borderRadius: '6px',
+    cursor: 'move' as const,
   },
 
   sectionTitle: {

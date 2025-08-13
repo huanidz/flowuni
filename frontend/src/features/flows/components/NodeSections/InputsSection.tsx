@@ -1,12 +1,18 @@
 import React, { useMemo } from 'react';
 import { Handle, Position, useEdges } from '@xyflow/react';
-import { HandleComponentRegistry } from '@/features/flows/handles/HandleComponentRegistry';
+import { HandleComponentRegistry, NodeInputType } from '@/features/flows/handles/HandleComponentRegistry';
 import { nodeStyles } from '@/features/flows/styles/nodeStyles';
 import { nodeInputSectionStyles } from '@/features/flows/styles/nodeInputSectionStyles';
 import type { NodeInput } from '@/features/nodes/types';
 import { HandleInfo } from '../NodeUI/HandleInfo';
 import { NODE_DATA_MODE } from '@/features/flows/consts';
 import { ChevronDown, ChevronRight } from 'lucide-react';
+
+// Configuration for default showInputComponent state by input type
+const INPUT_TYPE_DEFAULT_VISIBILITY: Record<string, boolean> = {
+  [NodeInputType.Table]: false,
+  // All other types default to true (not explicitly listed)
+};
 
 interface InputsSectionProps {
   spec_inputs: NodeInput[];
@@ -36,14 +42,16 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
   if (spec_inputs.length === 0) return null;
 
   const renderInput = (spec_input: NodeInput, index: number) => {
-    const [showInputComponent, setShowInputComponent] = React.useState(true);
     const InputComponent = HandleComponentRegistry[spec_input.type_detail.type];
     const hasInputComponent = !!InputComponent;
     const inputValue = input_values[spec_input.name];
     const handleId = `${spec_input.name}-index:${index}`;
     const isConnected = targetHandleEdges.has(handleId);
     const isToolMode = node_mode === NODE_DATA_MODE.TOOL && spec_input.enable_for_tool;
-
+    const inputType = spec_input.type_detail.type;
+    const defaultVisibility = INPUT_TYPE_DEFAULT_VISIBILITY[inputType] ?? true;
+    const [showInputComponent, setShowInputComponent] = React.useState(defaultVisibility);
+    
     const inputProps = {
       label: spec_input.name,
       value: inputValue ?? spec_input.default ?? '',
