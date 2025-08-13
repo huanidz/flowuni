@@ -7,6 +7,10 @@ from src.nodes.handles.basics.inputs.DropdownInputHandle import (
     DropdownInputHandle,
     DropdownOption,
 )
+from src.nodes.handles.basics.inputs.DynamicTypeInputHandle import (
+    DynamicTypeInputHandle,
+    DynamicTypeItem,
+)
 from src.nodes.handles.basics.inputs.TableInputHandle import (
     TableColumn,
     TableColumnDType,
@@ -86,19 +90,31 @@ class HttpRequestNode(Node):
             ),
             NodeInput(
                 name="body",
-                type=TableInputHandle(
-                    columns=[
-                        TableColumn(
-                            name="name", label="name", dtype=TableColumnDType.STRING
-                        ),
-                        TableColumn(
-                            name="value", label="value", dtype=TableColumnDType.STRING
-                        ),
-                        TableColumn(
-                            name="ToolEnable",
-                            label="ToolEnable",
-                            dtype=TableColumnDType.BOOLEAN,
-                        ),
+                type=DynamicTypeInputHandle(
+                    type_options=[
+                        DynamicTypeItem(
+                            type_label="Form",
+                            type_name=TableInputHandle.__name__,
+                            details=TableInputHandle(
+                                columns=[
+                                    TableColumn(
+                                        name="name",
+                                        label="name",
+                                        dtype=TableColumnDType.STRING,
+                                    ),
+                                    TableColumn(
+                                        name="value",
+                                        label="value",
+                                        dtype=TableColumnDType.STRING,
+                                    ),
+                                    TableColumn(
+                                        name="ToolEnable",
+                                        label="ToolEnable",
+                                        dtype=TableColumnDType.BOOLEAN,
+                                    ),
+                                ]
+                            ),
+                        )
                     ]
                 ),
                 description="The JSON body of the request.",
