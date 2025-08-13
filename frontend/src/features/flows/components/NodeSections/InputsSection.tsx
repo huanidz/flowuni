@@ -5,6 +5,7 @@ import { nodeStyles } from '@/features/flows/styles/nodeStyles';
 import type { NodeInput } from '@/features/nodes/types';
 import { HandleInfo } from '../NodeUI/HandleInfo';
 import { NODE_DATA_MODE } from '@/features/flows/consts';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 
 interface InputsSectionProps {
   spec_inputs: NodeInput[];
@@ -34,7 +35,9 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
   if (spec_inputs.length === 0) return null;
 
   const renderInput = (spec_input: NodeInput, index: number) => {
+    const [showInputComponent, setShowInputComponent] = React.useState(true);
     const InputComponent = HandleComponentRegistry[spec_input.type_detail.type];
+    const hasInputComponent = !!InputComponent;
     const inputValue = input_values[spec_input.name];
     const handleId = `${spec_input.name}-index:${index}`;
     const isConnected = targetHandleEdges.has(handleId);
@@ -49,8 +52,48 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
       disabled: isToolMode || isConnected
     };
 
+    const toggleInputComponent = () => {
+      setShowInputComponent(!showInputComponent);
+    };
+
     return (
       <div key={`input-${index}`} style={nodeStyles.inputItem}>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+          <HandleInfo
+            name={spec_input.name}
+            description={spec_input.description}
+            required={spec_input.required}
+            helperText={isToolMode ? 'Tool Parameter' : ''}
+          />
+          {hasInputComponent && (
+            <button
+              onClick={toggleInputComponent}
+              style={{
+                marginLeft: '8px',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '12px',
+                color: '#666',
+                padding: '2px',
+                borderRadius: '3px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseDown={(e) => e.preventDefault()}
+              title={showInputComponent ? 'Hide input' : 'Show input'}
+            >
+              {showInputComponent ? (
+                <ChevronDown size={14} />
+              ) : (
+                <ChevronRight size={14} />
+              )}
+            </button>
+          )}
+        </div>
+
         {!isToolMode && spec_input.allow_incoming_edges && (
           <Handle
             type="target"
@@ -60,14 +103,7 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
           />
         )}
 
-        <HandleInfo
-          name={spec_input.name}
-          description={spec_input.description}
-          required={spec_input.required}
-          helperText={isToolMode ? 'Tool Parameter' : ''}
-        />
-
-        {InputComponent && (
+        {hasInputComponent && showInputComponent && (
           <div style={nodeStyles.inputComponent}>
             <InputComponent {...inputProps} />
           </div>
