@@ -9,6 +9,8 @@ interface NodeHeaderProps {
   canBeTool?: boolean;
   onToggleEditBoard?: () => void;
   showEditBoard?: boolean;
+  nodeId?: string;
+  onSelectNode?: (nodeId: string) => void;
 }
 
 export const NodeHeader: React.FC<NodeHeaderProps> = ({
@@ -19,6 +21,8 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
   canBeTool,
   onToggleEditBoard,
   showEditBoard,
+  nodeId,
+  onSelectNode,
 }) => {
   
   // Handle mode change through dropdown
@@ -28,8 +32,19 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
     }
   };
 
+  // Handle node selection
+  const handleHeaderClick = () => {
+    if (nodeId && onSelectNode) {
+      onSelectNode(nodeId);
+    }
+  };
+
   return (
-    <div style={nodeStyles.header}>
+    <div
+      style={nodeStyles.header}
+      onClick={handleHeaderClick}
+      title="Click to select node for editing"
+    >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ fontWeight: 'bold', fontSize: '12px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '120px' }} title={label}>
           {label}
@@ -38,7 +53,10 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
           {canBeTool && onModeChange && (
             <select
               value={mode}
-              onChange={(e) => handleModeSelect(e.target.value)}
+              onChange={(e) => {
+                e.stopPropagation();
+                handleModeSelect(e.target.value);
+              }}
               style={{
                 padding: '2px 6px',
                 fontSize: '10px',
@@ -57,7 +75,10 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
           )}
           {onToggleEditBoard && (
             <button
-              onClick={onToggleEditBoard}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleEditBoard();
+              }}
               style={{
                 padding: '2px 6px',
                 fontSize: '10px',

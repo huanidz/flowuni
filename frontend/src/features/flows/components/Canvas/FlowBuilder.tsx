@@ -17,8 +17,10 @@ import { useDragDropHandler } from '@/features/flows/hooks/useDragAndDropHandler
 import { useFlowActions } from '@/features/flows/hooks/useFlowActions';
 import { useCurrentFlowState } from '../../hooks/useCurrentFlowState';
 import { useConnectionValidation } from '../../hooks/useConnectionValidator';
+import { useSelectedNode } from '@/features/flows/hooks/useSelectedNode';
 import { addEdge } from '@xyflow/react';
 import { type Connection } from '@xyflow/react';
+import { NodeConfigSidebar } from '@/features/flows/components/Sidebar/NodeConfigSidebar';
 
 interface FlowBuilderContentProps {
   flow_id: string;
@@ -43,6 +45,17 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
     flowError,
   } = useCurrentFlowState(flow_id);
 
+  // Use selected node state
+  const {
+    selectedNode,
+    nodeSpec,
+    isSidebarCollapsed,
+    selectNode,
+    deselectNode,
+    toggleSidebarCollapse,
+    closeSidebar,
+  } = useSelectedNode();
+
   // Use ReactFlow's instance hook instead of managing state manually
   const reactFlowInstance = useReactFlow();
 
@@ -54,7 +67,8 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
     updateHandlers.updateNodeInputData,
     updateHandlers.updateNodeModeData,
     updateHandlers.updateNodeParameterData,
-    updateHandlers.updateNodeToolConfigData
+    updateHandlers.updateNodeToolConfigData,
+    selectNode
   );
 
 
@@ -123,9 +137,9 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
   }
 
   return (
-    <div className="w-full h-screen bg-gray-100">
+    <div className="w-full h-screen bg-gray-100 flex">
       <div
-        className="relative w-full h-full"
+        className="relative flex-grow"
         onDrop={onDrop}
         onDragOver={onDragOver}
         tabIndex={1}
@@ -154,11 +168,52 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
           snapToGrid={true}
           snapGrid={[15, 15]}
           attributionPosition="top-right"
+          onNodeClick={(_, node) => {
+            // Only handle node click if it's not already selected
+            if (!selectedNode || selectedNode.id !== node.id) {
+              selectNode(node.id);
+            }
+          }}
+          onPaneClick={() => {
+            // Deselect node when clicking on the pane
+            deselectNode();
+          }}
         >
           <Controls />
           <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
         </ReactFlow>
       </div>
+
+      {/* Node Configuration Sidebar */}
+      {selectedNode && nodeSpec && (
+        <NodeConfigSidebar
+          selectedNode={selectedNode}
+          nodeSpec={nodeSpec}
+          isCollapsed={isSidebarCollapsed}
+          onToggleCollapse={toggleSidebarCollapse}
+          onClose={closeSidebar}
+          onInputValueChange={(inputName, value) => {
+            if (selectedNode && updateHandlers.updateNodeInputData) {
+              updateHandlers.updateNodeInputData(selectedNode.id, inputName, value);
+            }
+          }}
+          onParameterChange={(paramName, value) => {
+            if (selectedNode && updateHandlers.updateNodeParameterData) {
+              updateHandlers.updateNodeParameterData(selectedNode.id, paramName, value);
+            }
+          }}
+          onModeChange={(newMode) => {
+            if (selectedNode && updateHandlers.updateNodeModeData) {
+              updateHandlers.updateNodeModeData(selectedNode.id, newMode);
+            }
+          }}
+          onToolConfigChange={(toolConfigName, value) => {
+            if (selectedNode && updateHandlers.updateNodeToolConfigData) {
+              updateHandlers.updateNodeToolConfigData(selectedNode.id, toolConfigName, value);
+            }
+          }}
+        />
+      )}
     </div>
   );
 };

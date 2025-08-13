@@ -18,7 +18,8 @@ export const useNodeTypes = (
   updateNodeInputData?: (nodeId: string, inputName: string, newData: any) => void,
   updateNodeModeData?: (nodeId: string, newMode: string) => void,
   updateNodeParameterData?: (nodeId: string, parameterName: string, value: any) => void,
-  updateNodeToolConfigData?: (nodeId: string, toolConfigName: string, value: any) => void
+  updateNodeToolConfigData?: (nodeId: string, toolConfigName: string, value: any) => void,
+  selectNode?: (nodeId: string) => void
 ) => {
   const { getAllNodeSpecs, loaded } = useNodeRegistry();
   const [nodeTypes, setNodeTypes] = useState<Record<string, React.FC<any>>>({});
@@ -49,7 +50,8 @@ export const useNodeTypes = (
         updateNodeInputData,
         updateNodeModeData,
         updateNodeParameterData,
-        updateNodeToolConfigData
+        updateNodeToolConfigData,
+        selectNode
       );
 
       // Only add if component was successfully created
@@ -63,7 +65,7 @@ export const useNodeTypes = (
     setNodeTypes(nodeTypeMap);
     setNodeTypesLoaded(true);
     
-  }, [loaded, getAllNodeSpecs, updateNodeInputData, updateNodeModeData, updateNodeParameterData]);
+  }, [loaded, getAllNodeSpecs, updateNodeInputData, updateNodeModeData, updateNodeParameterData, updateNodeToolConfigData, selectNode]);
 
   // Memoize the return object to prevent unnecessary re-renders
   return useMemo(() => ({
