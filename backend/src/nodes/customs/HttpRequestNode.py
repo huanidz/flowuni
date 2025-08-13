@@ -9,6 +9,7 @@ from src.nodes.handles.basics.inputs.DropdownInputHandle import (
 )
 from src.nodes.handles.basics.inputs.TableInputHandle import (
     TableColumn,
+    TableColumnDType,
     TableInputHandle,
 )
 from src.nodes.handles.basics.inputs.TextFieldInputHandle import TextFieldInputHandle
@@ -44,8 +45,17 @@ class HttpRequestNode(Node):
                 name="headers",
                 type=TableInputHandle(
                     columns=[
-                        TableColumn(name="Key", label="Key"),
-                        TableColumn(name="Value", label="Value"),
+                        TableColumn(
+                            name="Key", label="Key", dtype=TableColumnDType.STRING
+                        ),
+                        TableColumn(
+                            name="Value", label="Value", dtype=TableColumnDType.STRING
+                        ),
+                        TableColumn(
+                            name="ToolEnable",
+                            label="ToolEnable",
+                            dtype=TableColumnDType.BOOLEAN,
+                        ),
                     ]
                 ),
                 description="The headers of the request.",
@@ -86,7 +96,9 @@ class HttpRequestNode(Node):
 
         return {"result": "zxc"}
 
-    def build_tool(self, tool_configs: ToolConfig) -> BuildToolResult:
+    def build_tool(
+        self, inputs_values: Dict[str, Any], tool_configs: ToolConfig
+    ) -> BuildToolResult:
         tool_name = tool_configs.tool_name if tool_configs.tool_name else "Calculator"
         tool_description = (
             tool_configs.tool_description

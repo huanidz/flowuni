@@ -58,7 +58,9 @@ class CalculatorNode(Node):
 
         return {"result": result}
 
-    def build_tool(self, tool_configs: ToolConfig) -> BuildToolResult:
+    def build_tool(
+        self, inputs_values: Dict[str, Any], tool_configs: ToolConfig
+    ) -> BuildToolResult:
         tool_name = tool_configs.tool_name if tool_configs.tool_name else "Calculator"
         tool_description = (
             tool_configs.tool_description

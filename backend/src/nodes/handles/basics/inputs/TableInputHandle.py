@@ -1,7 +1,14 @@
+from enum import Enum
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 from src.nodes.handles.InputHandleBase import InputHandleTypeBase
+
+
+class TableColumnDType(str, Enum):
+    STRING = "string"
+    NUMBER = "number"
+    BOOLEAN = "boolean"
 
 
 class TableColumn(BaseModel):
@@ -9,6 +16,7 @@ class TableColumn(BaseModel):
 
     name: str = Field(..., description="Column name/identifier")
     label: str = Field(..., description="Display label for the column")
+    dtype: TableColumnDType = Field(..., description="Data type for the column")
     required: bool = Field(default=False, description="Whether this column is required")
 
 

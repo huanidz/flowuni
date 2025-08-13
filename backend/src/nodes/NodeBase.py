@@ -170,7 +170,9 @@ class Node(ABC):
         pass
 
     # @abstractmethod
-    def build_tool(self, tool_configs: ToolConfig) -> BuildToolResult:
+    def build_tool(
+        self, inputs_values: Dict[str, Any], tool_configs: ToolConfig
+    ) -> BuildToolResult:
         """
         Build a tool from the node.
 
@@ -207,8 +209,9 @@ class Node(ABC):
                 original=node_data, outputs=output_values
             )
         else:
+            input_values = self._extract_input_values(node_data)
             tool_configs: ToolConfig = self._extract_tool_configs(node_data)
-            built_tool: BuildToolResult = self.build_tool(tool_configs)
+            built_tool: BuildToolResult = self.build_tool(input_values, tool_configs)
             tool_serialized_schemas = PydanticSchemaConverter.serialize(
                 model_cls=built_tool.tool_schema
             )

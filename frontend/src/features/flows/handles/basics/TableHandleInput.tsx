@@ -7,6 +7,7 @@ import type { TypeDetail } from '@/features/nodes/types';
 interface TableColumn {
   name: string;
   label: string;
+  dtype: string; // either 'string', 'number', or 'boolean'
   required: boolean;
 }
 
@@ -24,19 +25,59 @@ const MIN_ROWS = 0;
 const EMPTY_CELL_VALUE = '';
 
 // Utility functions
-const createEmptyRow = (columns: TableColumn[]): string[] => 
-  columns.map(() => EMPTY_CELL_VALUE);
+const createEmptyRow = (columns: TableColumn[]): any[] => 
+  columns.map(col => {
+    switch (col.dtype) {
+      case 'boolean':
+        return false;
+      case 'number':
+        return '';
+      default:
+        return EMPTY_CELL_VALUE;
+    }
+  });
 
-const convertRowsToObjects = (rows: string[][], columns: TableColumn[]) =>
+const convertRowsToObjects = (rows: any[][], columns: TableColumn[]) =>
   rows.map(row => 
     columns.reduce((obj, col, index) => ({
       ...obj,
-      [col.name]: row[index] || EMPTY_CELL_VALUE
+      [col.name]: convertCellValue(row[index], col.dtype)
     }), {})
   );
 
-const convertObjectsToRows = (objects: any[], columns: TableColumn[]): string[][] =>
-  objects.map(obj => columns.map(col => obj[col.name] || EMPTY_CELL_VALUE));
+const convertObjectsToRows = (objects: any[], columns: TableColumn[]): any[][] =>
+  objects.map(obj => columns.map(col => obj[col.name] ?? createEmptyRow([col])[0]));
+
+const convertCellValue = (value: any, dtype: string): any => {
+  switch (dtype) {
+    case 'boolean':
+      if (typeof value === 'boolean') return value;
+      if (typeof value === 'string') {
+        return value.toLowerCase() === 'true';
+      }
+      return false;
+    case 'number':
+      if (typeof value === 'number') return value;
+      if (typeof value === 'string' && value !== '') {
+        const num = parseFloat(value);
+        return isNaN(num) ? '' : num;
+      }
+      return '';
+    default: // string
+      return value?.toString() || '';
+  }
+};
+
+const formatCellValueForDisplay = (value: any, dtype: string): string => {
+  switch (dtype) {
+    case 'boolean':
+      return value; // checkbox handles boolean directly
+    case 'number':
+      return value?.toString() || '';
+    default: // string
+      return value?.toString() || '';
+  }
+};
 
 export const TableHandleInput: React.FC<TableHandleInputProps> = ({
   description,
@@ -52,7 +93,7 @@ export const TableHandleInput: React.FC<TableHandleInputProps> = ({
     loadOnInit: type_detail.defaults?.load_on_init || false
   };
 
-  const [tableRows, setTableRows] = useState<string[][]>([]);
+  const [tableRows, setTableRows] = useState<any[][]>([]);
 
   // Initialize table data
   useEffect(() => {
@@ -73,14 +114,15 @@ export const TableHandleInput: React.FC<TableHandleInputProps> = ({
     }
   }, [value, config.loadOnInit, config.minRows]);
 
-  const updateTable = (newRows: string[][]) => {
+  const updateTable = (newRows: any[][]) => {
     setTableRows(newRows);
     onChange?.(convertRowsToObjects(newRows, config.columns));
   };
 
-  const handleCellChange = (rowIndex: number, colIndex: number, newValue: string) => {
+  const handleCellChange = (rowIndex: number, colIndex: number, newValue: any) => {
     const newRows = [...tableRows];
-    newRows[rowIndex][colIndex] = newValue;
+    const column = config.columns[colIndex];
+    newRows[rowIndex][colIndex] = convertCellValue(newValue, column.dtype);
     updateTable(newRows);
   };
 
@@ -93,6 +135,31 @@ export const TableHandleInput: React.FC<TableHandleInputProps> = ({
     if (tableRows.length <= config.minRows) return;
     const newRows = tableRows.filter((_, index) => index !== rowIndex);
     updateTable(newRows);
+  };
+
+  const renderCell = (cellValue: any, rowIndex: number, colIndex: number, column: TableColumn) => {
+    if (column.dtype === 'boolean') {
+      return (
+        <input
+          type="checkbox"
+          checked={Boolean(cellValue)}
+          onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.checked)}
+          disabled={disabled}
+          className="h-4 w-4"
+        />
+      );
+    }
+
+    return (
+      <Input
+        type={column.dtype === 'number' ? 'number' : 'text'}
+        value={formatCellValueForDisplay(cellValue, column.dtype)}
+        onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
+        disabled={disabled}
+        placeholder={column.label}
+        className="h-8"
+      />
+    );
   };
 
   // Early return for no columns
@@ -123,6 +190,9 @@ export const TableHandleInput: React.FC<TableHandleInputProps> = ({
                 <TableHead key={index}>
                   {col.label}
                   {col.required && <span className="text-red-500 ml-1">*</span>}
+                  <span className="text-xs text-muted-foreground ml-1">
+                    ({col.dtype})
+                  </span>
                 </TableHead>
               ))}
               {showActions && <TableHead className="w-24">Actions</TableHead>}
@@ -144,13 +214,7 @@ export const TableHandleInput: React.FC<TableHandleInputProps> = ({
                 <TableRow key={rowIndex}>
                   {row.map((cellValue, colIndex) => (
                     <TableCell key={colIndex}>
-                      <Input
-                        value={cellValue}
-                        onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
-                        disabled={disabled}
-                        placeholder={config.columns[colIndex]?.label}
-                        className="h-8"
-                      />
+                      {renderCell(cellValue, rowIndex, colIndex, config.columns[colIndex])}
                     </TableCell>
                   ))}
                   
