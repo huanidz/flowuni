@@ -8,7 +8,7 @@ export const sidebarStyles = {
     minHeight: '400px',
     width: '35%',
     minWidth: '300px',
-    maxWidth: '400px',
+    maxWidth: '500px',
     backgroundColor: '#ffffff',
     borderRadius: '16px',
     overflow: 'hidden',
