@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Handle, Position, useEdges } from '@xyflow/react';
 import { HandleComponentRegistry } from '@/features/flows/handles/HandleComponentRegistry';
 import { nodeStyles } from '@/features/flows/styles/nodeStyles';
+import { nodeInputSectionStyles } from '@/features/flows/styles/nodeInputSectionStyles';
 import type { NodeInput } from '@/features/nodes/types';
 import { HandleInfo } from '../NodeUI/HandleInfo';
 import { NODE_DATA_MODE } from '@/features/flows/consts';
@@ -58,7 +59,7 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
 
     return (
       <div key={`input-${index}`} style={nodeStyles.inputItem}>
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+        <div style={nodeInputSectionStyles.inputItemContainer}>
           <HandleInfo
             name={spec_input.name}
             description={spec_input.description}
@@ -68,20 +69,7 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
           {hasInputComponent && (
             <button
               onClick={toggleInputComponent}
-              style={{
-                marginLeft: '8px',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: '12px',
-                color: '#666',
-                padding: '2px',
-                borderRadius: '3px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'all 0.2s ease'
-              }}
+              style={nodeInputSectionStyles.toggleButton}
               onMouseDown={(e) => e.preventDefault()}
               title={showInputComponent ? 'Hide input' : 'Show input'}
             >
