@@ -68,7 +68,6 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
     updateHandlers.updateNodeModeData,
     updateHandlers.updateNodeParameterData,
     updateHandlers.updateNodeToolConfigData,
-    selectNode
   );
 
 
@@ -159,7 +158,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
           onEdgesChange={onEdgesChange}
           onConnect={onConnectV2}
           isValidConnection={isValidConnection}
-          minZoom={1}
+          minZoom={0.88}
           maxZoom={2}
           className="bg-gray-50"
           nodeTypes={nodeTypes}
@@ -174,10 +173,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
               selectNode(node.id);
             }
           }}
-          onPaneClick={() => {
-            // Deselect node when clicking on the pane
-            deselectNode();
-          }}
+          onPaneClick={() => {deselectNode();}}
         >
           <Controls />
           <Background variant={BackgroundVariant.Dots} gap={12} size={1} />

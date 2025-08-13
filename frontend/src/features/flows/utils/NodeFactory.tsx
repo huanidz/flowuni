@@ -42,7 +42,6 @@ class NodeFactoryClass {
     updateNodeModeData?: UpdateNodeModeDataFunction,
     updateNodeParameter?: UpdateNodeParameterFunction,
     updateNodeToolConfig?: UpdateNodeToolConfigFunction,
-    selectNode?: (nodeId: string) => void
   ): React.FC<CustomNodeProps> | null {
 
     if (!nodeSpec) {
@@ -79,10 +78,7 @@ class NodeFactoryClass {
             mode={mode}
             onModeChange={handleModeChange || (() => {})}
             canBeTool={can_be_tool}
-            onToggleEditBoard={() => {}} // Simplified - no edit board toggle
-            showEditBoard={false} // Always false since we're using the sidebar
             nodeId={id}
-            onSelectNode={selectNode || (() => {})}
           />
 
           {/* Inputs Configuration */}
