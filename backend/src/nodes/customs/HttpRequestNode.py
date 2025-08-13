@@ -1,4 +1,4 @@
-from typing import Any, Dict, Union
+from typing import Any, Dict, List, Union
 
 from pydantic import BaseModel
 from src.nodes.core.NodeInput import NodeInput
@@ -35,6 +35,9 @@ class HttpRequestNode(Node):
                     options=[
                         DropdownOption(label="GET", value="GET"),
                         DropdownOption(label="POST", value="POST"),
+                        DropdownOption(label="PUT", value="PUT"),
+                        DropdownOption(label="PATCH", value="PATCH"),
+                        DropdownOption(label="DELETE", value="DELETE"),
                     ]
                 ),
                 description="The method of the request.",
@@ -46,10 +49,10 @@ class HttpRequestNode(Node):
                 type=TableInputHandle(
                     columns=[
                         TableColumn(
-                            name="Key", label="Key", dtype=TableColumnDType.STRING
+                            name="name", label="name", dtype=TableColumnDType.STRING
                         ),
                         TableColumn(
-                            name="Value", label="Value", dtype=TableColumnDType.STRING
+                            name="value", label="value", dtype=TableColumnDType.STRING
                         ),
                         TableColumn(
                             name="ToolEnable",
@@ -59,6 +62,46 @@ class HttpRequestNode(Node):
                     ]
                 ),
                 description="The headers of the request.",
+                allow_incoming_edges=False,
+            ),
+            NodeInput(
+                name="query_params",
+                type=TableInputHandle(
+                    columns=[
+                        TableColumn(
+                            name="name", label="name", dtype=TableColumnDType.STRING
+                        ),
+                        TableColumn(
+                            name="value", label="value", dtype=TableColumnDType.STRING
+                        ),
+                        TableColumn(
+                            name="ToolEnable",
+                            label="ToolEnable",
+                            dtype=TableColumnDType.BOOLEAN,
+                        ),
+                    ]
+                ),
+                description="The query params of the request.",
+                allow_incoming_edges=False,
+            ),
+            NodeInput(
+                name="body",
+                type=TableInputHandle(
+                    columns=[
+                        TableColumn(
+                            name="name", label="name", dtype=TableColumnDType.STRING
+                        ),
+                        TableColumn(
+                            name="value", label="value", dtype=TableColumnDType.STRING
+                        ),
+                        TableColumn(
+                            name="ToolEnable",
+                            label="ToolEnable",
+                            dtype=TableColumnDType.BOOLEAN,
+                        ),
+                    ]
+                ),
+                description="The JSON body of the request.",
                 allow_incoming_edges=False,
             ),
         ],
@@ -99,18 +142,34 @@ class HttpRequestNode(Node):
     def build_tool(
         self, inputs_values: Dict[str, Any], tool_configs: ToolConfig
     ) -> BuildToolResult:
-        tool_name = tool_configs.tool_name if tool_configs.tool_name else "Calculator"
+        tool_name = (
+            tool_configs.tool_name if tool_configs.tool_name else "HttpRequestTool"
+        )
         tool_description = (
             tool_configs.tool_description
             if tool_configs.tool_description
-            else "Calculator tool that will run math expression."
+            else "HttpRequest tool that will send http request."
         )
 
-        class CalculatorSchema(BaseModel):
-            expression: str
+        class HttpRequestHeaderSchema(BaseModel):
+            name: str
+            value: str
+
+        class HttpRequestQuerySchema(BaseModel):
+            name: str
+            value: str
+
+        class HttpRequestBodySchema(BaseModel):
+            name: str
+            value: str
+
+        class HttpRequestSchema(BaseModel):
+            headers: List[HttpRequestHeaderSchema]
+            query_params: List[HttpRequestQuerySchema]
+            body: List[HttpRequestBodySchema]
 
         return BuildToolResult(
             tool_name=tool_name,
             tool_description=tool_description,
-            tool_schema=CalculatorSchema,
+            tool_schema=HttpRequestSchema,
         )
