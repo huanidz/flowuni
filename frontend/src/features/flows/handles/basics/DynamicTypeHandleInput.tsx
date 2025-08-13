@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { TypeDetail, DynamicTypeItem } from '@/features/nodes/types';
 import { HandleComponentRegistry } from '../HandleComponentRegistry';
 import { dynamicTypeHandleStyles } from '../../styles/handleStyles';
@@ -82,28 +80,30 @@ export const DynamicTypeHandleInput: React.FC<DynamicTypeHandleInputProps> = ({
       )}
       
       <div style={dynamicTypeHandleStyles.typeSelectorContainer}>
-        <Label htmlFor={`${label}-type-select`} style={dynamicTypeHandleStyles.label}>
+        <label htmlFor={`${label}-type-select`} style={dynamicTypeHandleStyles.label}>
           Input Type
-        </Label>
-        <Select
+        </label>
+        <select
+          id={`${label}-type-select`}
           value={selectedType}
-          onValueChange={handleTypeChange}
+          onChange={(e) => handleTypeChange(e.target.value)}
           disabled={disabled}
+          style={{
+            ...dynamicTypeHandleStyles.selectTrigger,
+            ...(disabled ? dynamicTypeHandleStyles.selectTriggerDisabled : {}),
+            ...(disabled ? {} : {
+              ':hover': dynamicTypeHandleStyles.selectTriggerHover,
+              ':focus': dynamicTypeHandleStyles.selectTriggerFocus,
+            }),
+          }}
         >
-          <SelectTrigger 
-            id={`${label}-type-select`}
-            style={dynamicTypeHandleStyles.selectTrigger}
-          >
-            <SelectValue placeholder="Select input type" />
-          </SelectTrigger>
-          <SelectContent>
-            {typeOptions.map((option: DynamicTypeItem) => (
-              <SelectItem key={option.type_name} value={option.type_name}>
-                {option.type_label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          <option value="">Select input type</option>
+          {typeOptions.map((option: DynamicTypeItem) => (
+            <option key={option.type_name} value={option.type_name}>
+              {option.type_label}
+            </option>
+          ))}
+        </select>
       </div>
 
       {SelectedComponent && selectedOption && (
