@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { TypeDetail } from '@/features/nodes/types';
-import { tableHandleStyles } from '@/features/flows/styles/handleStyles';
 
 interface TableColumn {
   name: string;
@@ -11,223 +13,176 @@ interface TableColumn {
 interface TableHandleInputProps {
   label: string;
   description?: string;
-  value: any;
-  onChange?: (value: any) => void;
+  value: any[];
+  onChange?: (value: any[]) => void;
   type_detail: TypeDetail;
-  disabled: boolean;
+  disabled?: boolean;
 }
 
+// Constants
+const MIN_ROWS = 0;
+const EMPTY_CELL_VALUE = '';
+
+// Utility functions
+const createEmptyRow = (columns: TableColumn[]): string[] => 
+  columns.map(() => EMPTY_CELL_VALUE);
+
+const convertRowsToObjects = (rows: string[][], columns: TableColumn[]) =>
+  rows.map(row => 
+    columns.reduce((obj, col, index) => ({
+      ...obj,
+      [col.name]: row[index] || EMPTY_CELL_VALUE
+    }), {})
+  );
+
+const convertObjectsToRows = (objects: any[], columns: TableColumn[]): string[][] =>
+  objects.map(obj => columns.map(col => obj[col.name] || EMPTY_CELL_VALUE));
+
 export const TableHandleInput: React.FC<TableHandleInputProps> = ({
-  label,
   description,
-  value,
+  value = [],
   onChange,
   type_detail,
-  disabled = true
+  disabled = false
 }) => {
-  const {
-    dynamic = false,
-    load_on_init = false,
-    reload_on_change = false,
-    columns = [],
-    min_rows = 0,
-    allow_dynamic_rows = true
-  } = type_detail.defaults || {};
+  const config = {
+    columns: type_detail.defaults?.columns || [],
+    minRows: type_detail.defaults?.min_rows || MIN_ROWS,
+    allowDynamicRows: type_detail.defaults?.allow_dynamic_rows ?? true,
+    loadOnInit: type_detail.defaults?.load_on_init || false
+  };
 
-  const [tableData, setTableData] = useState<any[][]>([]);
-  const [initialized, setInitialized] = useState(false);
+  const [tableRows, setTableRows] = useState<string[][]>([]);
 
   // Initialize table data
   useEffect(() => {
-    if (load_on_init && !initialized) {
-      initializeTableData();
-      setInitialized(true);
-    }
-  }, [load_on_init, initialized]);
-
-  // Initialize table with default data structure
-  const initializeTableData = () => {
-    if (!columns || columns.length === 0) return;
-
-    // Create empty rows based on min_rows
-    const initialRows: any[][] = [];
-    for (let i = 0; i < min_rows; i++) {
-      const row: any[] = columns.map((col: TableColumn) => '');
-      initialRows.push(row);
-    }
-
-    setTableData(initialRows);
-    if (onChange) {
-      onChange(convertToOutputFormat(initialRows));
-    }
-  };
-
-  // Convert table data to output format
-  const convertToOutputFormat = (data: any[][]) => {
-    if (!columns || columns.length === 0) return null;
-
-    return data.map((row, rowIndex) => {
-      const rowData: any = {};
-      columns.forEach((col: TableColumn, colIndex: number) => {
-        rowData[col.name] = row[colIndex] || '';
-      });
-      return rowData;
-    });
-  };
-
-  // Handle cell value change
-  const handleCellChange = (rowIndex: number, colIndex: number, newValue: string) => {
-    if (disabled) return;
-
-    const newData = [...tableData];
-    newData[rowIndex][colIndex] = newValue;
-    setTableData(newData);
-
-    if (onChange) {
-      onChange(convertToOutputFormat(newData));
-    }
-  };
-
-  // Add new row
-  const addRow = () => {
-    if (disabled || !allow_dynamic_rows) return;
-
-    const newRow: any[] = columns.map((col: TableColumn) => '');
-    const newData = [...tableData, newRow];
-    setTableData(newData);
-
-    if (onChange) {
-      onChange(convertToOutputFormat(newData));
-    }
-  };
-
-  // Remove row
-  const removeRow = (rowIndex: number) => {
-    if (disabled || !allow_dynamic_rows || tableData.length <= min_rows) return;
-
-    const newData = tableData.filter((_, index) => index !== rowIndex);
-    setTableData(newData);
-
-    if (onChange) {
-      onChange(convertToOutputFormat(newData));
-    }
-  };
-
-  // Initialize with provided value
-  useEffect(() => {
-    if (value && Array.isArray(value)) {
-      // Check if value is in object format (array of objects) and convert to array of arrays
-      if (value.length > 0 && typeof value[0] === 'object' && !Array.isArray(value[0])) {
-        // Convert from array of objects to array of arrays
-        const convertedData = value.map((row: any) => {
-          return columns.map((col: TableColumn) => row[col.name] || '');
-        });
-        setTableData(convertedData);
-      } else {
-        // Already in array of arrays format
-        setTableData(value);
-      }
-    } else if (load_on_init && !initialized) {
-      initializeTableData();
-    }
-  }, [value, load_on_init, initialized]);
-
-  // Render table
-  const renderTable = () => {
-    if (!columns || columns.length === 0) {
-      return (
-        <div style={{ color: '#666', fontStyle: 'italic' }}>
-          No columns defined
-        </div>
+    if (value?.length > 0) {
+      // Convert input data to rows format
+      const isObjectFormat = typeof value[0] === 'object' && !Array.isArray(value[0]);
+      const rows = isObjectFormat 
+        ? convertObjectsToRows(value, config.columns)
+        : value;
+      setTableRows(rows);
+    } else if (config.loadOnInit && config.minRows > 0) {
+      // Initialize with empty rows
+      const emptyRows = Array.from({ length: config.minRows }, () => 
+        createEmptyRow(config.columns)
       );
+      setTableRows(emptyRows);
+      onChange?.(convertRowsToObjects(emptyRows, config.columns));
     }
+  }, [value, config.loadOnInit, config.minRows]);
 
+  const updateTable = (newRows: string[][]) => {
+    setTableRows(newRows);
+    onChange?.(convertRowsToObjects(newRows, config.columns));
+  };
+
+  const handleCellChange = (rowIndex: number, colIndex: number, newValue: string) => {
+    const newRows = [...tableRows];
+    newRows[rowIndex][colIndex] = newValue;
+    updateTable(newRows);
+  };
+
+  const addRow = () => {
+    const newRows = [...tableRows, createEmptyRow(config.columns)];
+    updateTable(newRows);
+  };
+
+  const removeRow = (rowIndex: number) => {
+    if (tableRows.length <= config.minRows) return;
+    const newRows = tableRows.filter((_, index) => index !== rowIndex);
+    updateTable(newRows);
+  };
+
+  // Early return for no columns
+  if (!config.columns?.length) {
     return (
-      <div style={tableHandleStyles.container}>
-        <table style={tableHandleStyles.table}>
-          <thead>
-            <tr>
-              {columns.map((col: TableColumn, index: number) => (
-                <th key={index} style={tableHandleStyles.th}>
-                  {col.label}
-                  {col.required && <span style={tableHandleStyles.required}>*</span>}
-                </th>
-              ))}
-              {allow_dynamic_rows && !disabled && (
-                <th style={tableHandleStyles.th}>Actions</th>
-              )}
-            </tr>
-          </thead>
-          <tbody>
-            {tableData.map((row, rowIndex) => (
-              <tr key={rowIndex}>
-                {row.map((cellValue, colIndex) => (
-                  <td key={colIndex} style={tableHandleStyles.td}>
-                    <input
-                      type="text"
-                      value={cellValue}
-                      onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
-                      disabled={disabled}
-                      style={tableHandleStyles.input}
-                      placeholder={columns[colIndex]?.label || ''}
-                    />
-                  </td>
-                ))}
-                {allow_dynamic_rows && !disabled && (
-                  <td style={tableHandleStyles.td}>
-                    <button
-                      type="button"
-                      onClick={() => removeRow(rowIndex)}
-                      style={tableHandleStyles.removeButton}
-                      title="Remove row"
-                    >
-                      ×
-                    </button>
-                  </td>
-                )}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        
-        {allow_dynamic_rows && !disabled && (
-          <button
-            type="button"
-            onClick={addRow}
-            style={tableHandleStyles.addButton}
-          >
-            + Add Row
-          </button>
-        )}
+      <div className="text-muted-foreground italic">
+        No columns defined
       </div>
     );
-  };
+  }
+
+  const canModifyRows = config.allowDynamicRows && !disabled;
+  const showActions = canModifyRows;
 
   return (
-    <div style={tableHandleStyles.outerContainer}>
+    <div className="space-y-2">
       {description && (
-        <span style={{
-          ...tableHandleStyles.description,
-          opacity: disabled ? 0.5 : 1
-        }}>
+        <p className={`text-sm text-muted-foreground ${disabled ? 'opacity-50' : ''}`}>
           {description}
-        </span>
+        </p>
       )}
-      
-      {disabled ? (
-        <div style={tableHandleStyles.disabledContainer}>
-          {value && Array.isArray(value) && value.length > 0 ? (
-            <div style={tableHandleStyles.disabledPreview}>
-              Table with {value.length} row(s) and {columns.length} column(s)
-            </div>
-          ) : (
-            <div style={tableHandleStyles.disabledPreview}>
-              No table data
-            </div>
-          )}
-        </div>
-      ) : (
-        renderTable()
+
+      <div className="border rounded-md">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              {config.columns.map((col: TableColumn, index: number) => (
+                <TableHead key={index}>
+                  {col.label}
+                  {col.required && <span className="text-red-500 ml-1">*</span>}
+                </TableHead>
+              ))}
+              {showActions && <TableHead className="w-24">Actions</TableHead>}
+            </TableRow>
+          </TableHeader>
+          
+          <TableBody>
+            {tableRows.length === 0 ? (
+              <TableRow>
+                <TableCell 
+                  colSpan={config.columns.length + (showActions ? 1 : 0)}
+                  className="text-center text-muted-foreground py-8"
+                >
+                  No data
+                </TableCell>
+              </TableRow>
+            ) : (
+              tableRows.map((row, rowIndex) => (
+                <TableRow key={rowIndex}>
+                  {row.map((cellValue, colIndex) => (
+                    <TableCell key={colIndex}>
+                      <Input
+                        value={cellValue}
+                        onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
+                        disabled={disabled}
+                        placeholder={config.columns[colIndex]?.label}
+                        className="h-8"
+                      />
+                    </TableCell>
+                  ))}
+                  
+                  {showActions && (
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeRow(rowIndex)}
+                        disabled={tableRows.length <= config.minRows}
+                        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                      >
+                        ×
+                      </Button>
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {canModifyRows && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={addRow}
+          className="w-full"
+        >
+          + Add Row
+        </Button>
       )}
     </div>
   );
