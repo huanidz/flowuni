@@ -87,7 +87,7 @@ export const SidebarInputsSection: React.FC<SidebarInputsSectionProps> = ({
 
   return (
     <div style={sidebarStyles.section}>
-      <div style={sidebarStyles.sectionTitle}>Inputs</div>
+      {/* <div style={sidebarStyles.sectionTitle}>Inputs</div> */}
       {spec_inputs.map(renderInput)}
     </div>
   );
