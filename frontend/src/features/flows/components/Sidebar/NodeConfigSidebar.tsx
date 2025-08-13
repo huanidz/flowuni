@@ -90,18 +90,21 @@ export const NodeConfigSidebar: React.FC<NodeConfigSidebarProps> = ({
   };
 
   const renderParametersSection = () => {
-    if (nodeSpec.parameters.length === 0) {
-      return <div style={sidebarStyles.emptyStateText}>No parameters</div>;
-    }
 
-    return (
-      <SidebarParametersSection
-        spec_parameters={nodeSpec.parameters}
-        parameter_values={parameter_values}
-        nodeId={selectedNode.id}
-        onParameterChange={onParameterChange}
-      />
-    );
+    return null; // TODO: Current not supported.
+
+    // if (nodeSpec.parameters.length === 0) {
+    //   return <div style={sidebarStyles.emptyStateText}>No parameters</div>;
+    // }
+
+    // return (
+    //   <SidebarParametersSection
+    //     spec_parameters={nodeSpec.parameters}
+    //     parameter_values={parameter_values}
+    //     nodeId={selectedNode.id}
+    //     onParameterChange={onParameterChange}
+    //   />
+    // );
   };
 
   const renderToolConfigSection = () => {
@@ -167,9 +170,9 @@ export const NodeConfigSidebar: React.FC<NodeConfigSidebarProps> = ({
           {renderInputsSection()}
         </SidebarSection>
 
-        <SidebarSection title="Parameters" defaultCollapsed={true}>
+        {/* <SidebarSection title="Parameters" defaultCollapsed={true}>
           {renderParametersSection()}
-        </SidebarSection>
+        </SidebarSection> */}
 
         {nodeSpec.can_be_tool && (
           <SidebarSection title="Tool Configuration" defaultCollapsed={true}>
@@ -177,9 +180,9 @@ export const NodeConfigSidebar: React.FC<NodeConfigSidebarProps> = ({
           </SidebarSection>
         )}
 
-        <SidebarSection title="Outputs" defaultCollapsed={true}>
+        {/* <SidebarSection title="Outputs" defaultCollapsed={true}>
           {renderOutputsSection()}
-        </SidebarSection>
+        </SidebarSection> */}
 
         <SidebarSection title="Execution Results" defaultCollapsed={true}>
           {renderExecutionResultsSection()}

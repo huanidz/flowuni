@@ -14,7 +14,7 @@ export const SidebarToolConfigSection: React.FC<SidebarToolConfigSectionProps> =
   onToolConfigChange,
   mode
 }) => {
-  const isInToolMode = mode === NODE_DATA_MODE.TOOL;
+  const isInToolMode = (mode === NODE_DATA_MODE.TOOL);
 
   if (!isInToolMode) return null;
 
@@ -22,7 +22,7 @@ export const SidebarToolConfigSection: React.FC<SidebarToolConfigSectionProps> =
     <div style={sidebarStyles.section}>
       <div style={sidebarStyles.sectionTitle}>Tool Configuration</div>
       
-      <div style={sidebarStyles.inputItem}>
+      {/* <div style={sidebarStyles.inputItem}>
         <div style={sidebarStyles.inputLabel}>Mode</div>
         <div style={sidebarStyles.inputDescription}>
           Configure how this node operates
@@ -40,7 +40,7 @@ export const SidebarToolConfigSection: React.FC<SidebarToolConfigSectionProps> =
           <option value={NODE_DATA_MODE.NORMAL}>Normal</option>
           <option value={NODE_DATA_MODE.TOOL}>Tool</option>
         </select>
-      </div>
+      </div> */}
 
       <div style={sidebarStyles.inputItem}>
         <div style={sidebarStyles.inputLabel}>Tool Name</div>
