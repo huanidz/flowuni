@@ -109,7 +109,11 @@ export const NodeConfigSidebar: React.FC<NodeConfigSidebarProps> = ({
 
   const renderToolConfigSection = () => {
     if (mode !== NODE_DATA_MODE.TOOL) {
-      return null;
+      return (
+        <div style={sidebarStyles.emptyStateText}>
+          No tool configuration while in normal mode.
+        </div>
+      );
     }
 
     return (

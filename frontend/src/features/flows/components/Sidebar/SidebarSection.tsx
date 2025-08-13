@@ -20,7 +20,7 @@ export const SidebarSection: React.FC<SidebarSectionProps> = ({
 
   return (
     <div style={sidebarStyles.section}>
-      <div style={sidebarStyles.sectionHeader}>
+      <div style={sidebarStyles.sectionHeader} onClick={toggleCollapse}>
         <h3 style={sidebarStyles.sectionTitle}>{title}</h3>
         <button
           style={{
@@ -28,7 +28,6 @@ export const SidebarSection: React.FC<SidebarSectionProps> = ({
             transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
             transition: 'transform 0.2s ease',
           }}
-          onClick={toggleCollapse}
           title={isCollapsed ? `Expand ${title}` : `Collapse ${title}`}
           aria-label={isCollapsed ? `Expand ${title}` : `Collapse ${title}`}
         >

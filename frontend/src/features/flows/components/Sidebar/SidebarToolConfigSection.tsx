@@ -21,26 +21,6 @@ export const SidebarToolConfigSection: React.FC<SidebarToolConfigSectionProps> =
   return (
     <div style={sidebarStyles.section}>
       <div style={sidebarStyles.sectionTitle}>Tool Configuration</div>
-      
-      {/* <div style={sidebarStyles.inputItem}>
-        <div style={sidebarStyles.inputLabel}>Mode</div>
-        <div style={sidebarStyles.inputDescription}>
-          Configure how this node operates
-        </div>
-        <select
-          value={mode}
-          onChange={(e) => {
-            // This will be handled by the parent component
-            // We'll pass this up through the onToolConfigChange
-            onToolConfigChange('mode', e.target.value);
-          }}
-          style={sidebarStyles.modeSelect}
-          title="Change node operation mode"
-        >
-          <option value={NODE_DATA_MODE.NORMAL}>Normal</option>
-          <option value={NODE_DATA_MODE.TOOL}>Tool</option>
-        </select>
-      </div> */}
 
       <div style={sidebarStyles.inputItem}>
         <div style={sidebarStyles.inputLabel}>Tool Name</div>

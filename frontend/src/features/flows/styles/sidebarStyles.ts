@@ -83,6 +83,7 @@ export const sidebarStyles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
+    cursor: 'pointer',
   },
 
   sectionTitle: {
