@@ -19,14 +19,14 @@ export const SidebarHeader: React.FC<SidebarHeaderProps> = ({
     <div style={sidebarStyles.header}>
       <h2 style={sidebarStyles.headerTitle}>{title}</h2>
       <div style={sidebarStyles.headerActions}>
-        <button
+        {/* <button
           style={sidebarStyles.iconButton}
           onClick={onToggleCollapse}
           title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {isCollapsed ? <Maximize2 size={18} /> : <Minimize2 size={18} />}
-        </button>
+        </button> */}
         <button
           style={sidebarStyles.iconButton}
           onClick={onClose}
