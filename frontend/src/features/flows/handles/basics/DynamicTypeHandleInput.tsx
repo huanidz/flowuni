@@ -22,32 +22,59 @@ export const DynamicTypeHandleInput: React.FC<DynamicTypeHandleInputProps> = ({
   disabled = false,
   nodeId
 }) => {
-  const [selectedType, setSelectedType] = useState<string>('');
-  const [typeValues, setTypeValues] = useState<Record<string, any>>({});
-  
   const typeOptions = type_detail.defaults?.type_options || [];
   
-  // Initialize selected type and values
+  // Parse the value to extract selected type and type-specific values
+  // Expected format: { selectedTyped: 'type_name', typeValues: { 'type_name': value } }
+  const [selectedTyped, setSelectedType] = useState<string>('');
+  const [typeValues, setTypeValues] = useState<Record<string, any>>({});
+  
+  // Initialize selected type and values from props
   useEffect(() => {
-    if (typeOptions.length > 0 && !selectedType) {
-      // Default to first option if none selected
-      const defaultType = typeOptions[0].type_name;
-      setSelectedType(defaultType);
+    if (typeOptions.length > 0) {
+      let initialSelectedType = selectedTyped;
+      let initialTypeValues = { ...typeValues };
       
-      // Initialize values for all types
-      const initialValues: Record<string, any> = {};
-      typeOptions.forEach((option: DynamicTypeItem) => {
-        initialValues[option.type_name] = value || null;
-      });
-      setTypeValues(initialValues);
+      // If value is an object with our expected structure
+      if (value && typeof value === 'object' && value.selectedTyped && value.typeValues) {
+        initialSelectedType = value.selectedTyped;
+        initialTypeValues = value.typeValues;
+      }
+      // If value is not in expected format, initialize with defaults
+      else {
+        // Default to first option if none selected
+        if (!initialSelectedType && typeOptions.length > 0) {
+          initialSelectedType = typeOptions[0].type_name;
+        }
+        
+        // Initialize values for all types if not already set
+        typeOptions.forEach((option: DynamicTypeItem) => {
+          if (initialTypeValues[option.type_name] === undefined) {
+            initialTypeValues[option.type_name] = value || null;
+          }
+        });
+      }
+      
+      setSelectedType(initialSelectedType);
+      setTypeValues(initialTypeValues);
     }
-  }, [typeOptions, selectedType, value]);
+  }, [typeOptions, value]);
 
   const handleTypeChange = (newTypeName: string) => {
     setSelectedType(newTypeName);
-    // When type changes, emit the current value for that type
+    
+    // Create the complete value object with the new selected type
+    const newValue = {
+      selectedTyped: newTypeName,
+      typeValues: {
+        ...typeValues,
+        [newTypeName]: typeValues[newTypeName] || null
+      }
+    };
+    
+    // Emit the change to parent
     if (onChange) {
-      onChange(typeValues[newTypeName] || null);
+      onChange(newValue);
     }
   };
 
@@ -55,17 +82,24 @@ export const DynamicTypeHandleInput: React.FC<DynamicTypeHandleInputProps> = ({
     // Update the value for the currently selected type
     const newTypeValues = {
       ...typeValues,
-      [selectedType]: childValue
+      [selectedTyped]: childValue
     };
+    
+    // Create the complete value object
+    const newValue = {
+      selectedTyped,
+      typeValues: newTypeValues
+    };
+    
     setTypeValues(newTypeValues);
     
     // Emit the change to parent
     if (onChange) {
-      onChange(childValue);
+      onChange(newValue);
     }
   };
 
-  const selectedOption = typeOptions.find((option: DynamicTypeItem) => option.type_name === selectedType);
+  const selectedOption = typeOptions.find((option: DynamicTypeItem) => option.type_name === selectedTyped);
   const SelectedComponent = selectedOption ? HandleComponentRegistry[selectedOption.type_name] : null;
 
   return (
@@ -85,7 +119,7 @@ export const DynamicTypeHandleInput: React.FC<DynamicTypeHandleInputProps> = ({
         </label>
         <select
           id={`${label}-type-select`}
-          value={selectedType}
+          value={selectedTyped}
           onChange={(e) => handleTypeChange(e.target.value)}
           disabled={disabled}
           style={{
@@ -110,7 +144,7 @@ export const DynamicTypeHandleInput: React.FC<DynamicTypeHandleInputProps> = ({
         <div style={dynamicTypeHandleStyles.componentContainer}>
           <SelectedComponent
             label={label}
-            value={typeValues[selectedType] || null}
+            value={typeValues[selectedTyped] || null}
             onChange={handleChildValueChange}
             type_detail={{
               ...type_detail,

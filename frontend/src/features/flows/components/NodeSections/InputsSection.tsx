@@ -11,7 +11,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 // Configuration for default showInputComponent state by input type
 const INPUT_TYPE_DEFAULT_VISIBILITY: Record<string, boolean> = {
   [NodeInputType.Table]: false,
-  // [NodeInputType.DynamicType]: true,
+  [NodeInputType.DynamicType]: true,
   // All other types default to true (not explicitly listed)
 };
 
@@ -53,10 +53,15 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
     const defaultVisibility = INPUT_TYPE_DEFAULT_VISIBILITY[inputType] ?? true;
     const [showInputComponent, setShowInputComponent] = React.useState(defaultVisibility);
     
+    // Handle DynamicTypeInput value format
+    const effectiveValue = inputType === NodeInputType.DynamicType && inputValue && typeof inputValue === 'object' && inputValue.selectedTyped
+      ? inputValue
+      : inputValue ?? spec_input.default ?? '';
+
     const inputProps = {
       label: spec_input.name,
-      value: inputValue ?? spec_input.default ?? '',
-      onChange: (value: string) => onInputValueChange(spec_input.name, value),
+      value: effectiveValue,
+      onChange: (value: any) => onInputValueChange(spec_input.name, value),
       nodeId,
       type_detail: spec_input.type_detail,
       disabled: isToolMode || isConnected

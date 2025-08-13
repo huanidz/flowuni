@@ -39,10 +39,16 @@ export const SidebarInputsSection: React.FC<SidebarInputsSectionProps> = ({
     const isExpanded = expandedInputs[spec_input.name] !== false;
     const isToolMode = node_mode === NODE_DATA_MODE.TOOL && spec_input.enable_for_tool;
 
+    // Handle DynamicTypeInput value format
+    const inputType = spec_input.type_detail.type;
+    const effectiveValue = inputType === NodeInputType.DynamicType && inputValue && typeof inputValue === 'object' && inputValue.selectedTyped
+      ? inputValue
+      : inputValue ?? spec_input.default ?? '';
+
     const inputProps = {
       label: spec_input.name,
-      value: inputValue ?? spec_input.default ?? '',
-      onChange: (value: string) => onInputValueChange(spec_input.name, value),
+      value: effectiveValue,
+      onChange: (value: any) => onInputValueChange(spec_input.name, value),
       nodeId,
       type_detail: spec_input.type_detail,
       disabled: isToolMode,
