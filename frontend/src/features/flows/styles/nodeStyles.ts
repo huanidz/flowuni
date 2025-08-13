@@ -8,7 +8,6 @@ export const nodeStyles = {
     position: 'relative' as const,
     boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
     maxWidth: '230px',
-    overflow: 'hidden',
   },
 
   header: {
