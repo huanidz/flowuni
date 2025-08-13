@@ -20,7 +20,7 @@ export const SidebarToolConfigSection: React.FC<SidebarToolConfigSectionProps> =
 
   return (
     <div style={sidebarStyles.section}>
-      <div style={sidebarStyles.sectionTitle}>Tool Configuration</div>
+      {/* <div style={sidebarStyles.sectionTitle}>Tool Configuration</div> */}
 
       <div style={sidebarStyles.inputItem}>
         <div style={sidebarStyles.inputLabel}>Tool Name</div>
