@@ -160,3 +160,84 @@ export const secretTextHandleStyles = {
     width: '100%',
   } as CSSProperties,
 } as const;
+
+// Table handle styles
+export const tableHandleStyles = {
+  outerContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    fontSize: '12px',
+    width: '100%',
+  } as CSSProperties,
+  description: {
+    marginBottom: '4px',
+    color: '#666',
+    fontSize: '11px',
+  } as CSSProperties,
+  container: {
+    width: '100%',
+    border: '1px solid #ccc',
+    borderRadius: '4px',
+    overflow: 'hidden',
+  } as CSSProperties,
+  table: {
+    width: '100%',
+    borderCollapse: 'collapse',
+    fontSize: '12px',
+  } as CSSProperties,
+  th: {
+    backgroundColor: '#f5f5f5',
+    border: '1px solid #ccc',
+    padding: '6px 8px',
+    fontWeight: 'bold',
+    textAlign: 'left' as const,
+    whiteSpace: 'nowrap' as const,
+  } as CSSProperties,
+  td: {
+    border: '1px solid #ccc',
+    padding: '4px 6px',
+    verticalAlign: 'top' as const,
+  } as CSSProperties,
+  input: {
+    width: '100%',
+    padding: '2px 4px',
+    border: 'none',
+    outline: 'none',
+    fontSize: '11px',
+    backgroundColor: 'transparent',
+  } as CSSProperties,
+  addButton: {
+    marginTop: '8px',
+    padding: '4px 8px',
+    backgroundColor: '#007bff',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '11px',
+  } as CSSProperties,
+  removeButton: {
+    padding: '4px 8px',
+    backgroundColor: '#dc3545',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '12px',
+  } as CSSProperties,
+  disabledContainer: {
+    padding: '12px',
+    backgroundColor: '#f8f9fa',
+    border: '1px solid #e9ecef',
+    borderRadius: '4px',
+    textAlign: 'center',
+  } as CSSProperties,
+  disabledPreview: {
+    color: '#6c757d',
+    fontSize: '11px',
+  } as CSSProperties,
+  required: {
+    color: '#dc3545',
+    marginLeft: '2px',
+  } as CSSProperties,
+};
