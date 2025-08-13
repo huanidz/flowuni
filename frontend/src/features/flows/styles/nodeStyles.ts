@@ -1,22 +1,26 @@
 export const nodeStyles = {
   container: {
     border: '1px solid #777',
-    padding: '12px',
-    borderRadius: '8px',
+    padding: '8px',
+    borderRadius: '6px',
     background: 'white',
-    minWidth: '300px',
+    minWidth: '280px',
     position: 'relative' as const,
     boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
     maxWidth: '230px',
+    cursor: 'default' as const,
   },
 
   header: {
     fontWeight: 'bold' as const,
     textAlign: 'center' as const,
     marginBottom: '12px',
-    paddingBottom: '8px',
+    padding: '8px',
     borderBottom: '1px solid #eee',
     color: '#333',
+    backgroundColor: '#e5ecc2ff',
+    borderRadius: '6px',
+    cursor: 'move' as const,
   },
 
   sectionTitle: {
@@ -187,5 +191,94 @@ export const nodeStyles = {
     label: {
       color: '#28a745',
     }
+  },
+  // Edit Board styles - Optimized for narrow width
+  editBoard: {
+    border: '1px solid #e0e0e0',
+    borderRadius: '4px',
+    background: '#fafafa',
+    marginTop: '8px',
+    padding: '8px',
+    maxHeight: '300px',
+    overflowY: 'auto',
+  },
+
+  tabNavigation: {
+    display: 'flex',
+    gap: '2px',
+    marginBottom: '6px',
+    borderBottom: '1px solid #ddd',
+    paddingBottom: '2px',
+  },
+
+  tabButton: {
+    padding: '4px 8px',
+    border: '1px solid #ddd',
+    borderRadius: '3px 3px 0 0',
+    background: 'white',
+    cursor: 'pointer',
+    fontSize: '11px',
+    borderLeft: 'none',
+    borderTop: 'none',
+    borderRight: 'none',
+    fontWeight: 'normal' as const,
+    whiteSpace: 'nowrap',
+  },
+
+  tabButtonActive: {
+    background: '#007bff',
+    color: 'white',
+    fontWeight: 'bold' as const,
+    borderLeft: 'none',
+    borderTop: 'none',
+    borderRight: 'none',
+  },
+
+  tabContent: {
+    minHeight: '150px',
+  },
+
+  editSection: {
+    marginBottom: '8px',
+  },
+
+  editGrid: {
+    display: 'grid',
+    gap: '6px',
+  },
+
+  editItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    flexWrap: 'nowrap' as const,
+  },
+
+  editLabel: {
+    fontSize: '12px',
+    fontWeight: 'bold' as const,
+    color: '#555',
+    minWidth: '60px',
+    flexShrink: 0,
+  },
+
+  editInput: {
+    flex: 1,
+    padding: '2px 6px',
+    border: '1px solid #ccc',
+    borderRadius: '3px',
+    fontSize: '10px',
+    minWidth: 0,
+  },
+
+  editSelect: {
+    flex: 1,
+    padding: '2px 6px',
+    border: '1px solid #ccc',
+    borderRadius: '3px',
+    fontSize: '10px',
+    background: 'white',
+    cursor: 'pointer',
+    minWidth: 0,
   },
 };

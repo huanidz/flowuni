@@ -89,11 +89,13 @@ export const useDragDropHandler = (
           parameter_values: initialParameters,
           input_values: initialInputValues,
           output_values: initialOutputValues,
+          tool_configs: {}, // TODO: Make it load default value (if can)
           mode: NODE_DATA_MODE.NORMAL,
         },
         style: { background: '#fff', color: '#000' },
         sourcePosition: Position.Right,
         targetPosition: Position.Left,
+        dragHandle: '.node-drag-handle',
       };
 
       console.log("Custom node:", customNode);

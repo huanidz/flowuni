@@ -6,9 +6,10 @@ import React from 'react';
 import type {
   NodeSpec,
   CustomNodeProps,
-  UpdateNodeDataFunction,
+  UpdateNodeInputDataFunction,
   UpdateNodeModeDataFunction,
   UpdateNodeParameterFunction,
+  UpdateNodeToolConfigFunction
 } from '@/features/nodes';
 
 // Constants
@@ -31,15 +32,16 @@ class NodeFactoryClass {
    * Generates a custom node component based on a given node specification.
    *
    * @param nodeSpec - The specification of the node to render.
-   * @param updateNodeData - Optional callback to update node data.
+   * @param updateNodeInputData - Optional callback to update node input data.
    * @param updateNodeParameter - Optional callback to update node parameters.
    * @returns A React functional component for the node, or null if spec is invalid.
    */
   createNodeComponent(
     nodeSpec: NodeSpec,
-    updateNodeData?: UpdateNodeDataFunction,
+    updateNodeInputData?: UpdateNodeInputDataFunction,
     updateNodeModeData?: UpdateNodeModeDataFunction,
-    updateNodeParameter?: UpdateNodeParameterFunction
+    updateNodeParameter?: UpdateNodeParameterFunction,
+    updateNodeToolConfig?: UpdateNodeToolConfigFunction,
   ): React.FC<CustomNodeProps> | null {
 
     if (!nodeSpec) {
@@ -54,30 +56,18 @@ class NodeFactoryClass {
       
       const label = nodeSpec.name;
       const description = nodeSpec.description;
-      const parameter_values = data.parameter_values || {};
       const input_values = data.input_values || {};
-      const output_values = data.output_values || {};
       const mode = data.mode || NODE_DATA_MODE.NORMAL;
       const can_be_tool = nodeSpec.can_be_tool;
 
       // Direct handlers passed from the unified update system
-      const handleParameterChange = updateNodeParameter
-        ? (paramName: string, value: any) => updateNodeParameter(id, paramName, value)
-        : undefined;
-        
-      const handleInputValueChange = updateNodeData
-        ? (inputName: string, value: any) => updateNodeData(id, {
-            input_values: {
-              ...input_values,
-              [inputName]: value
-            },
-          })
+      const handleInputValueChange = updateNodeInputData
+        ? (inputName: string, value: any) => updateNodeInputData(id, inputName, value)
         : undefined;
         
       const handleModeChange = updateNodeModeData
         ? (newMode: string) => updateNodeModeData(id, newMode)
         : undefined;
-
 
       // === Render Node UI ===
       return (
@@ -88,6 +78,7 @@ class NodeFactoryClass {
             mode={mode}
             onModeChange={handleModeChange || (() => {})}
             canBeTool={can_be_tool}
+            nodeId={id}
           />
 
           {/* Inputs Configuration */}
@@ -107,6 +98,7 @@ class NodeFactoryClass {
             result={data.execution_result}
             status={data.execution_status}
           />
+
         </div>
       );
     };

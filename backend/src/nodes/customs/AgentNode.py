@@ -1,5 +1,13 @@
-from loguru import logger
-from src.node_components.llm.providers.LLMProviderConsts import LLMProviderName
+import json
+
+from src.components.agents.AgentBase import Agent
+from src.components.llm.models.core import (
+    ChatMessage,
+    ChatResponse,
+)
+from src.components.llm.providers.adapters.LLMAdapterBase import LLMAdapter
+from src.components.llm.providers.LLMProvider import LLMProvider
+from src.components.llm.providers.LLMProviderConsts import LLMProviderName
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.handles.agents.AgentToolInputHandle import AgentToolInputHandle
@@ -16,6 +24,7 @@ from src.nodes.handles.resolvers.basics import (
     StaticResolver,
 )
 from src.nodes.NodeBase import Node, NodeSpec
+from src.schemas.nodes.node_data_parsers import ToolDataParser
 
 
 class AgentNode(Node):
@@ -111,18 +120,22 @@ class AgentNode(Node):
         system_prompt = input_values["system_instruction"]
         input_message = input_values["input_message"]
 
-        tools = input_values["tools"]
+        tools = json.loads(input_values["tools"])
+        tools = [ToolDataParser(**tool) for tool in tools]
 
-        logger.info(f"Tools: {tools}")
+        llm_provider: LLMAdapter = LLMProvider.get_provider(provider_name=provider)
+        llm_provider.init(
+            model=model,
+            system_prompt=system_prompt,
+            api_key=api_key,
+        )
+        agent = Agent(
+            llm_provider=llm_provider,
+            system_prompt=system_prompt,
+            tools=tools,
+        )
 
-        # llm_provider: LLMAdapter = LLMProvider.get_provider(provider_name=provider)
+        chat_message = ChatMessage(role="user", content=input_message)
+        chat_response: ChatResponse = agent.chat(message=chat_message)
 
-        # llm_provider.init(
-        #     model=model,
-        #     system_prompt=system_prompt,
-        #     api_key=api_key,
-        # )
-
-        # chat_response = llm_provider.chat_completion(messages=input_message)
-
-        return {"response": "kek"}
+        return {"response": chat_response.content}

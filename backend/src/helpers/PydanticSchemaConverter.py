@@ -142,3 +142,40 @@ class PydanticSchemaConverter:
         except Exception as e:
             logger.error(f"Error parsing schema string: {str(e)}")
             raise ValueError(f"Failed to parse schema string: {str(e)}") from e
+
+    @staticmethod
+    def load_from_dict(
+        schema_dict: Dict[str, Any], model_name: str = "DynamicModel"
+    ) -> Type[BaseModel]:
+        """
+        Load a Pydantic model from a JSON schema dictionary.
+
+        Args:
+            schema_dict: Dictionary containing the JSON schema.
+            model_name: Name to use for the dynamically created model.
+
+        Returns:
+            A dynamically generated Pydantic model class.
+
+        Raises:
+            ValueError: If the schema dictionary is invalid or cannot be parsed.
+        """
+        try:
+            if not schema_dict:
+                raise ValueError("Schema dictionary is required")
+
+            props: Dict[str, Any] = schema_dict.get("properties", {})
+            required_fields: Set[str] = set(schema_dict.get("required", []))
+
+            fields: Dict[str, Tuple[Any, Any]] = {}
+            for name, field_info in props.items():
+                py_type = PydanticSchemaConverter._jsonschema_to_pytype(field_info)
+                default = ... if name in required_fields else None
+                fields[name] = (py_type, default)
+
+            return create_model(model_name, **fields)
+        except Exception as e:
+            logger.error(f"Error loading model from schema dictionary: {str(e)}")
+            raise ValueError(
+                f"Failed to load model from schema dictionary: {str(e)}"
+            ) from e

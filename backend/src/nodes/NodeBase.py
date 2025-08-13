@@ -11,7 +11,8 @@ from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.core.NodeSpec import NodeSpec
 from src.nodes.handles.InputHandleBase import InputHandleTypeBase
-from src.schemas.flowbuilder.flow_graph_schemas import NodeData
+from src.schemas.flowbuilder.flow_graph_schemas import NodeData, ToolConfig
+from src.schemas.nodes.node_data_parsers import BuildToolResult
 from src.schemas.nodes.node_schemas import (
     NodeInputSchema,
     NodeOutputSchema,
@@ -92,6 +93,9 @@ class Node(ABC):
             for name, spec in self.spec.parameters.items()
         }
 
+    def _extract_tool_configs(self, node_data: "NodeData") -> Dict[str, Any]:
+        return node_data.tool_configs
+
     # ============================================================================
     # OUTPUT MAPPING AND VALIDATION
     # ============================================================================
@@ -167,8 +171,8 @@ class Node(ABC):
 
     # @abstractmethod
     def build_tool(
-        self,
-    ) -> Type[BaseModel]:
+        self, inputs_values: Dict[str, Any], tool_configs: ToolConfig
+    ) -> BuildToolResult:
         """
         Build a tool from the node.
 
@@ -205,13 +209,17 @@ class Node(ABC):
                 original=node_data, outputs=output_values
             )
         else:
-            ToolSchema: Type[BaseModel] = self.build_tool()
+            input_values = self._extract_input_values(node_data)
+            tool_configs: ToolConfig = self._extract_tool_configs(node_data)
+            built_tool: BuildToolResult = self.build_tool(input_values, tool_configs)
             tool_serialized_schemas = PydanticSchemaConverter.serialize(
-                model_cls=ToolSchema
+                model_cls=built_tool.tool_schema
             )
 
             output_values = {
                 "tool": tool_serialized_schemas,
+                "tool_name": built_tool.tool_name,
+                "tool_description": built_tool.tool_description,
             }
 
             return self._create_result_node_data(
@@ -227,6 +235,7 @@ class Node(ABC):
             node_type=original.node_type,
             input_values=original.input_values,
             output_values=outputs,
+            tool_configs=original.tool_configs,
             parameter_values=original.parameter_values,
             mode=original.mode,
         )

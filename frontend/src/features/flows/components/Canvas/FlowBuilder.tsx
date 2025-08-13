@@ -1,4 +1,4 @@
-import React, { useRef, useCallback } from 'react';
+import React, { useRef, useCallback, useEffect, useState } from 'react';
 import FlowToolbar from './FlowToolBar';
 import NodePalette from './FlowNodePallete';
 import {
@@ -16,12 +16,11 @@ import { useNodeUpdate } from '../../hooks/useNodeUpdate';
 import { useDragDropHandler } from '@/features/flows/hooks/useDragAndDropHandler';
 import { useFlowActions } from '@/features/flows/hooks/useFlowActions';
 import { useCurrentFlowState } from '../../hooks/useCurrentFlowState';
-import { useFlowUtilOperations } from '../../hooks/useFlowUtilOperations';
 import { useConnectionValidation } from '../../hooks/useConnectionValidator';
-import type { NodeSpec } from '@/features/nodes';
+import { useSelectedNode } from '@/features/flows/hooks/useSelectedNode';
 import { addEdge } from '@xyflow/react';
 import { type Connection } from '@xyflow/react';
-import { useNodeStore } from '@/features/nodes';
+import { NodeConfigSidebar } from '@/features/flows/components/Sidebar/NodeConfigSidebar';
 
 interface FlowBuilderContentProps {
   flow_id: string;
@@ -46,6 +45,17 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
     flowError,
   } = useCurrentFlowState(flow_id);
 
+  // Use selected node state
+  const {
+    selectedNode,
+    nodeSpec,
+    isSidebarCollapsed,
+    selectNode,
+    deselectNode,
+    toggleSidebarCollapse,
+    closeSidebar,
+  } = useSelectedNode();
+
   // Use ReactFlow's instance hook instead of managing state manually
   const reactFlowInstance = useReactFlow();
 
@@ -54,22 +64,21 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
   
   // Node types management (With unified update handlers)
   const { nodeTypes, nodeTypesLoaded } = useNodeTypes(
-    updateHandlers.updateNodeData,
+    updateHandlers.updateNodeInputData,
     updateHandlers.updateNodeModeData,
-    updateHandlers.updateNodeParameterData
+    updateHandlers.updateNodeParameterData,
+    updateHandlers.updateNodeToolConfigData,
   );
 
 
   // Initialize flow when data is ready
-  React.useEffect(() => {
+  useEffect(() => {
     if (initialNodes && nodeTypesLoaded) {
       setNodes(initialNodes);
       setEdges(initialEdges || []);
       initializeFlow();
     }
   }, [initialNodes, initialEdges, nodeTypesLoaded, initializeFlow, setNodes, setEdges]);
-
-  const { onConnect, onKeyDown } = useFlowUtilOperations(currentNodes, currentEdges, setNodes, setEdges, [], []);
 
   const {
     onDragStart,
@@ -127,12 +136,11 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
   }
 
   return (
-    <div className="w-full h-screen bg-gray-100">
+    <div className="w-full h-screen bg-gray-100 flex">
       <div
-        className="relative w-full h-full"
+        className="relative flex-grow"
         onDrop={onDrop}
         onDragOver={onDragOver}
-        onKeyDown={onKeyDown}
         tabIndex={1}
       >
         <NodePalette onDragStart={onDragStart} ref={nodePaletteRef} />
@@ -150,7 +158,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
           onEdgesChange={onEdgesChange}
           onConnect={onConnectV2}
           isValidConnection={isValidConnection}
-          minZoom={1}
+          minZoom={0.88}
           maxZoom={2}
           className="bg-gray-50"
           nodeTypes={nodeTypes}
@@ -159,11 +167,49 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
           snapToGrid={true}
           snapGrid={[15, 15]}
           attributionPosition="top-right"
+          onNodeClick={(_, node) => {
+            // Only handle node click if it's not already selected
+            if (!selectedNode || selectedNode.id !== node.id) {
+              selectNode(node.id);
+            }
+          }}
+          onPaneClick={() => {deselectNode();}}
         >
           <Controls />
           <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
         </ReactFlow>
       </div>
+
+      {/* Node Configuration Sidebar */}
+      {selectedNode && nodeSpec && (
+        <NodeConfigSidebar
+          selectedNode={selectedNode}
+          nodeSpec={nodeSpec}
+          isCollapsed={isSidebarCollapsed}
+          onToggleCollapse={toggleSidebarCollapse}
+          onClose={closeSidebar}
+          onInputValueChange={(inputName, value) => {
+            if (selectedNode && updateHandlers.updateNodeInputData) {
+              updateHandlers.updateNodeInputData(selectedNode.id, inputName, value);
+            }
+          }}
+          onParameterChange={(paramName, value) => {
+            if (selectedNode && updateHandlers.updateNodeParameterData) {
+              updateHandlers.updateNodeParameterData(selectedNode.id, paramName, value);
+            }
+          }}
+          onModeChange={(newMode) => {
+            if (selectedNode && updateHandlers.updateNodeModeData) {
+              updateHandlers.updateNodeModeData(selectedNode.id, newMode);
+            }
+          }}
+          onToolConfigChange={(toolConfigName, value) => {
+            if (selectedNode && updateHandlers.updateNodeToolConfigData) {
+              updateHandlers.updateNodeToolConfigData(selectedNode.id, toolConfigName, value);
+            }
+          }}
+        />
+      )}
     </div>
   );
 };

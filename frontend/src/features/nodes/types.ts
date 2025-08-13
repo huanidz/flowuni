@@ -9,6 +9,12 @@ export interface NodeParameterSpec {
   [key: string]: any;
 }
 
+export interface DynamicTypeItem {
+  type_label: string;
+  type_name: string;
+  details: any;
+}
+
 export interface TypeDetail {
   type: string;
   schema?: {
@@ -63,6 +69,9 @@ export interface NodeData {
   input_values?: Record<string, any>;
   output_values?: Record<string, any>;
 
+  // Tool related fields
+  tool_configs? : Record<string, any>; // Note: this only can happen in Tool-able Node. else None by default
+
   // Mode-related fields
   mode?: string;
 
@@ -74,10 +83,16 @@ export interface NodeData {
 
 export type CustomNodeProps = NodeProps<RFNode<NodeData>>;
 
-export type UpdateNodeDataFunction = (nodeId: string, newData: any) => void;
+export type UpdateNodeInputDataFunction = (nodeId: string, inputName: string, newData: any) => void;
 export type UpdateNodeModeDataFunction = (nodeId: string, newMode: string) => void;
 export type UpdateNodeParameterFunction = (
   nodeId: string,
   parameterName: string,
+  value: any
+) => void;
+
+export type UpdateNodeToolConfigFunction = (
+  nodeId: string,
+  toolConfigName: string,
   value: any
 ) => void;

@@ -7,6 +7,7 @@ interface NodeHeaderProps {
   mode?: string;
   onModeChange?: (newMode: string) => void;
   canBeTool?: boolean;
+  nodeId?: string;
 }
 
 export const NodeHeader: React.FC<NodeHeaderProps> = ({
@@ -15,6 +16,7 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
   mode,
   onModeChange,
   canBeTool,
+  nodeId,
 }) => {
   
   // Handle mode change through dropdown
@@ -25,41 +27,54 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
   };
 
   return (
-    <div style={nodeStyles.header}>
+    <div
+      style={nodeStyles.header}
+      className='node-drag-handle'
+    >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ fontWeight: 'bold' }}>{label}</div>
-        {canBeTool && onModeChange && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+        <div style={{ fontWeight: 'bold', fontSize: '12px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '120px' }} title={label}>
+          {label}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+          {canBeTool && onModeChange && (
             <select
               value={mode}
-              onChange={(e) => handleModeSelect(e.target.value)}
+              onChange={(e) => {
+                e.stopPropagation();
+                handleModeSelect(e.target.value);
+              }}
               style={{
-                padding: '4px 8px',
-                fontSize: '0.8em',
+                padding: '2px 6px',
+                fontSize: '10px',
                 border: '1px solid #ccc',
-                borderRadius: '4px',
+                borderRadius: '3px',
                 background: '#fff',
                 cursor: 'pointer',
+                minWidth: '0',
               }}
               title="Change node mode"
               aria-label="Change node mode"
             >
-              <option value="NormalMode">Normal Mode</option>
-              <option value="ToolMode">Tool Mode</option>
+              <option value="NormalMode">Normal</option>
+              <option value="ToolMode">Tool</option>
             </select>
-          </div>
-        )}
+          )}
+        </div>
       </div>
       {description && (
         <div style={{
-          fontSize: '0.65em',
+          fontSize: '9px',
           color: '#666',
           fontWeight: 'normal',
           textAlign: 'left',
           display: 'block',
-          marginTop: '4px',
-          paddingLeft: '0'
-        }}>
+          marginTop: '2px',
+          paddingLeft: '0',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          maxWidth: '180px'
+        }} title={description}>
           {description}
         </div>
       )}

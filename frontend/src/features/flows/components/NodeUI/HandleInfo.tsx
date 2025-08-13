@@ -32,7 +32,7 @@ export const HandleInfo: React.FC<HandleInfoProps> = ({
         ...style 
       }}
     >
-      <span style={{ fontSize: '14px', fontWeight: 'bold' }}>{name}</span>
+      <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#26271eff' }}>{name}</span>
       {required && (
         <span style={{ color: '#ef4444', fontSize: '14px' }}>*</span>
       )}
