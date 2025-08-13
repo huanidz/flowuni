@@ -95,6 +95,7 @@ export const useDragDropHandler = (
         style: { background: '#fff', color: '#000' },
         sourcePosition: Position.Right,
         targetPosition: Position.Left,
+        dragHandle: '.node-drag-handle',
       };
 
       console.log("Custom node:", customNode);

@@ -29,6 +29,7 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
   return (
     <div
       style={nodeStyles.header}
+      className='node-drag-handle'
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ fontWeight: 'bold', fontSize: '12px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '120px' }} title={label}>
