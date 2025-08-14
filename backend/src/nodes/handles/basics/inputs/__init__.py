@@ -22,7 +22,7 @@ from enum import Enum
 from typing import Type
 
 
-class InputHandleTypeEnum(Type, Enum):
+class InputHandleTypeEnum(Enum):
     TEXT_FIELD = TextFieldInputHandle
     DROPDOWN = DropdownInputHandle
     NUMBER = NumberInputHandle

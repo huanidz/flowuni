@@ -525,6 +525,11 @@ class GraphExecutor:
 
             # Step 2: Extract or initialize the node data
             successor_node_data: NodeData = successor_graph_node.get("data")
+            successor_node_spec: NodeSpec = successor_graph_node.get("spec")
+
+            logger.info(
+                f"Updating successor node {successor_name} with spec: {successor_node_spec}"
+            )
 
             if successor_node_data is None:
                 successor_node_data = NodeData()
@@ -542,6 +547,13 @@ class GraphExecutor:
 
             # Step 5: Extract the output value from the source handle
             output_value_to_transfer = executed_data.output_values[source_handle]
+
+            # Step 5.5. Adapt the output value to the target handle type
+            # output_value_to_transfer = NodeDataFlowAdapter.adapt(
+            #     output_value_to_transfer=output_value_to_transfer,
+            #     source_handle,
+            #     target_handle,
+            # )
 
             # Step 6: Perform deep copy to prevent reference issues
             copied_output_value = copy.deepcopy(output_value_to_transfer)

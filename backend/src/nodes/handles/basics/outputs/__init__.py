@@ -1,15 +1,17 @@
 from .DataOutputHandle import DataOutputHandle
+from .NumberOutputHandle import NumberOutputHandle
 from .ToolOutputHandle import ToolOutputHandle
 
 __all__ = [
     "DataOutputHandle",
     "ToolOutputHandle",
+    "NumberOutputHandle",
 ]
 
 from enum import Enum
-from typing import Type
 
 
-class OutputHandleTypeEnum(Type, Enum):
+class OutputHandleTypeEnum(Enum):
     DATA = DataOutputHandle
     TOOL = ToolOutputHandle
+    NUMBER = NumberOutputHandle
