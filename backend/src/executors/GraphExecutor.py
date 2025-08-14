@@ -496,54 +496,72 @@ class GraphExecutor:
         executed_data: NodeData,
     ) -> None:
         """
-        Handle normal mode successor updates.
+        Handle normal mode successor updates with maximum readability.
 
         This method handles the standard case where data flows from a source handle
-        to a target handle between nodes in normal mode.
+        to a target handle between nodes in normal mode. The implementation prioritizes
+        clarity and explicit error handling over brevity.
 
         Args:
-            node_id: Name of the source node
-            successor_name: Name of the successor node to update
-            source_handle: Source handle for the connection
-            target_handle: Target handle for the connection
-            executed_data: Executed data from the source node
+            node_id: Name of the source node that produced the data
+            successor_name: Name of the successor node to update with new data
+            source_handle: Source handle name for the outgoing connection
+            target_handle: Target handle name for the incoming connection
+            executed_data: Executed data from the source node containing outputs
+
+        Raises:
+            Exception: Re-raises any exception that occurs during the update process
         """
         try:
-            # Get successor node data
-            successor_node_data: NodeData = self.graph.nodes[successor_name].get("data")
+            # Step 1: Retrieve the successor node from the graph
+            successor_graph_node = self.graph.nodes.get(successor_name)
+            if successor_graph_node is None:
+                error_message = f"Successor node '{successor_name}' not found in graph"
+                logger.error(error_message)
+                raise ValueError(error_message)
+
+            # Step 2: Extract or initialize the node data
+            successor_node_data: NodeData = successor_graph_node.get("data")
 
             if successor_node_data is None:
                 successor_node_data = NodeData()
 
-            # Ensure input_values exists
+            # Step 3: Ensure the input_values dictionary exists
             if successor_node_data.input_values is None:
                 successor_node_data.input_values = {}
 
-            # Update successor input with current node output
-            if source_handle in executed_data.output_values:
-                successor_node_data.input_values[target_handle] = copy.deepcopy(
-                    executed_data.output_values[source_handle]
-                )
-
-                # Update the graph
-                self.graph.nodes[successor_name]["data"] = successor_node_data
-
-                logger.debug(
-                    f"Successfully updated normal mode successor {successor_name}: "
-                    f"{source_handle} -> {target_handle}"
-                )
-            else:
+            # Step 4: Validate that the source handle exists in the executed data
+            if source_handle not in executed_data.output_values:
                 logger.warning(
                     f"Source handle '{source_handle}' not found in {node_id} outputs"
                 )
+                return  # Exit early if source handle doesn't exist
 
-        except Exception as e:
+            # Step 5: Extract the output value from the source handle
+            output_value_to_transfer = executed_data.output_values[source_handle]
+
+            # Step 6: Perform deep copy to prevent reference issues
+            copied_output_value = copy.deepcopy(output_value_to_transfer)
+
+            # Step 7: Assign the copied value to the target handle
+            successor_node_data.input_values[target_handle] = copied_output_value
+
+            # Step 8: Update the graph with the modified node data
+            self.graph.nodes[successor_name]["data"] = successor_node_data
+
+            # Step 9: Log successful completion
+            logger.debug(
+                f"Successfully updated normal mode successor {successor_name}: "
+                f"{source_handle} -> {target_handle}"
+            )
+
+        except Exception as exception:
             logger.error(
-                f"Failed to update normal mode successor {successor_name}: {str(e)}"
+                f"Failed to update normal mode successor {successor_name}: {str(exception)}"
             )
             raise
 
-    def _update_tool_mode_successor(
+    def _update_tool_mode_successor(  # noqa
         self,
         node_id: str,
         successor_name: str,
@@ -551,76 +569,132 @@ class GraphExecutor:
         executed_data: NodeData,
     ) -> None:
         """
-        Handle tool mode successor updates.
+        Handle tool mode successor updates with maximum readability.
 
         This method specifically handles the case where source_handle is None
         and SOURCE_MODE is TOOL mode, updating the tool_serialized_schemas
-        for the successor node.
+        for the successor node. The implementation prioritizes clarity and
+        explicit error handling over brevity.
 
         Args:
-            node_id: Name of the source node
-            successor_name: Name of the successor node to update
-            target_handle: Target handle for the connection
-            executed_data: Executed data from the source node
+            node_id: Name of the source node that produced the tool data
+            successor_name: Name of the successor node to update with tool schemas
+            target_handle: Target handle for the incoming tool schema connection
+            executed_data: Executed data from the source node containing tool outputs
+
+        Raises:
+            Exception: Re-raises any exception that occurs during the update process
         """
         try:
-            # Get successor node data
-            successor_node_data: NodeData = self.graph.nodes[successor_name].get("data")
+            # Step 1: Retrieve the successor node from the graph
+            successor_graph_node = self.graph.nodes.get(successor_name)
+            if successor_graph_node is None:
+                error_message = f"Successor node '{successor_name}' not found in graph"
+                logger.error(error_message)
+                raise ValueError(error_message)
+
+            # Step 2: Extract or initialize the node data
+            successor_node_data: NodeData = successor_graph_node.get("data")
 
             if successor_node_data is None:
                 successor_node_data = NodeData()
 
-            # Ensure input_values exists
+            # Step 3: Ensure the input_values dictionary exists
             if successor_node_data.input_values is None:
                 successor_node_data.input_values = {}
 
-            # Load the tool schema from executed data
-            tool_schema = json.loads(executed_data.output_values["tool"])
-            tool_name = executed_data.output_values["tool_name"]
-            tool_desciption = executed_data.output_values["tool_description"]
+            # Step 4: Validate required tool data exists in executed data
+            required_tool_keys = ["tool", "tool_name", "tool_description"]
+            missing_keys = []
 
-            tool_data = ToolDataParser(
+            for required_key in required_tool_keys:
+                if required_key not in executed_data.output_values:
+                    missing_keys.append(required_key)
+
+            if missing_keys:
+                error_message = (
+                    f"Missing required tool data keys in node '{node_id}': {missing_keys}. "
+                    f"Available keys: {list(executed_data.output_values.keys())}"
+                )
+                logger.error(error_message)
+                raise ValueError(error_message)
+
+            # Step 5: Extract tool information from executed data
+            raw_tool_schema = executed_data.output_values["tool"]
+            tool_name = executed_data.output_values["tool_name"]
+            tool_description = executed_data.output_values["tool_description"]
+
+            # Step 6: Parse the tool schema JSON
+            try:
+                parsed_tool_schema = json.loads(raw_tool_schema)
+            except json.JSONDecodeError as json_error:
+                error_message = (
+                    f"Invalid JSON in tool schema from node '{node_id}': {json_error}"
+                )
+                logger.error(error_message)
+                raise ValueError(error_message) from json_error
+
+            # Step 7: Create the tool data parser object
+            tool_data_parser = ToolDataParser(
                 from_node_id=node_id,
                 input_values=executed_data.input_values,
                 parameter_values=executed_data.parameter_values,
                 tool_origin=executed_data.node_type,
-                tool_schema=tool_schema,
+                tool_schema=parsed_tool_schema,
                 tool_name=tool_name,
-                tool_description=tool_desciption,
+                tool_description=tool_description,
             )
 
-            logger.info(f"Loaded tool schemas for {successor_name}: {tool_schema}")
+            # Step 8: Get current schemas from the target handle
+            current_target_data = successor_node_data.input_values.get(
+                target_handle, ""
+            )
 
-            # Get current data for the target handle
-            current_data = successor_node_data.input_values.get(target_handle, "")
-
-            # Handle empty string case
-            if current_data == "":
-                successor_schemas = []
+            # Step 9: Parse existing schemas or initialize empty list
+            if current_target_data == "":
+                existing_tool_schemas = []
             else:
-                # Handle existing list case
-                successor_schemas: List[Dict[str, Any]] = json.loads(current_data)
+                try:
+                    existing_tool_schemas: List[Dict[str, Any]] = json.loads(
+                        current_target_data
+                    )
+                except json.JSONDecodeError as json_error:
+                    logger.warning(
+                        f"Invalid JSON in existing tool schemas for '{successor_name}', "
+                        f"initializing with empty list: {json_error}"
+                    )
+                    existing_tool_schemas = []
 
-            logger.info(f"Current schemas for {successor_name}: {successor_schemas}")
+            # Step 10: Add the new tool schema to the existing schemas
+            new_tool_schema_dict = tool_data_parser.model_dump()
+            updated_tool_schemas = existing_tool_schemas + [new_tool_schema_dict]
 
-            # Add the new schema to the list
-            successor_schemas.append(tool_data.model_dump())
+            # Step 11: Serialize the updated schemas back to JSON string
+            try:
+                serialized_updated_schemas = json.dumps(updated_tool_schemas)
+            except (TypeError, ValueError) as serialization_error:
+                error_message = (
+                    f"Failed to serialize updated tool schemas for '{successor_name}': "
+                    f"{serialization_error}"
+                )
+                logger.error(error_message)
+                raise ValueError(error_message) from serialization_error
 
-            # Serialize back to string and update
-            successor_node_data.input_values[target_handle] = json.dumps(
-                successor_schemas
-            )
+            # Step 12: Update the successor node with the new schemas
+            successor_node_data.input_values[target_handle] = serialized_updated_schemas
 
-            # Update the graph node
+            # Step 13: Save the updated node data back to the graph
             self.graph.nodes[successor_name]["data"] = successor_node_data
 
+            # Step 14: Log successful completion
             logger.debug(
-                f"Successfully updated tool schemas for successor {successor_name}"
+                f"Successfully updated tool schemas for successor {successor_name}: "
+                f"Added tool '{tool_name}' from node '{node_id}'"
             )
 
-        except Exception as e:
+        except Exception as exception:
             logger.error(
-                f"Failed to update tool mode successor {successor_name}: {str(e)}"
+                f"Failed to update tool mode successor {successor_name}: {str(exception)}"
             )
             raise
 
