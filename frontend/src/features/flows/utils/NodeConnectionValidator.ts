@@ -135,7 +135,8 @@ export class ConnectionValidator {
                 "SecretTextInputHandle",
                 "NumberInputHandle",
                 "BooleanInputHandle",
-                "FileInputHandle"
+                "FileInputHandle",
+                "DynamicTypeInputHandle",
             ],
             'ToolOutputHandle': ["AgentToolInputHandle"],
         };
