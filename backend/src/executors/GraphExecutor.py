@@ -10,6 +10,7 @@ from loguru import logger
 from pydantic import BaseModel
 from src.consts.node_consts import NODE_DATA_MODE
 from src.executors.ExecutionContext import ExecutionContext
+from src.executors.NodeDataFlowAdapter import NodeDataFlowAdapter
 from src.executors.NodeExecution import NodeExecutionEvent
 from src.nodes.NodeBase import Node, NodeSpec
 from src.nodes.NodeRegistry import NodeRegistry
@@ -513,6 +514,8 @@ class GraphExecutor:
             Exception: Re-raises any exception that occurs during the update process
         """
         try:
+            NodeDataFlowAdapter()
+
             # Step 1: Retrieve the successor node from the graph
             successor_graph_node = self.graph.nodes.get(successor_name)
             if successor_graph_node is None:
