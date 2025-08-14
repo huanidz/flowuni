@@ -527,6 +527,9 @@ class GraphExecutor:
             successor_node_data: NodeData = successor_graph_node.get("data")
             successor_node_spec: NodeSpec = successor_graph_node.get("spec")
 
+            logger.info("XX sourcehandle: " + source_handle)
+            logger.info("XX targethandle: " + target_handle)
+
             logger.info(
                 f"Updating successor node {successor_name} with spec: {successor_node_spec}"
             )
