@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ChevronRight, ChevronDown, AlertTriangle } from 'lucide-react';
 import type { TypeDetail } from '@/features/nodes/types';
 
@@ -38,16 +38,29 @@ export const ToolableJsonHandleInput: React.FC<
     const [errors, setErrors] = useState<string[]>([]);
     const [isParsed, setIsParsed] = useState(false);
     const [isInitialized, setIsInitialized] = useState(false);
+    const parseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     // Initialize from value prop
     useEffect(() => {
-        if (value && value.example_json) {
-            setJsonInput(JSON.stringify(value.example_json, null, 2));
+        if (value && value.example_json !== undefined) {
+            // Handle all types of data, not just valid JSON
+            if (typeof value.example_json === 'string') {
+                setJsonInput(value.example_json);
+            } else {
+                try {
+                    setJsonInput(JSON.stringify(value.example_json, null, 2));
+                } catch {
+                    setJsonInput(String(value.example_json));
+                }
+            }
             setIsInitialized(true);
 
-            // Always parse the JSON to update the fields
+            // Try to parse the JSON to update the fields
             try {
-                const parsed = JSON.parse(JSON.stringify(value.example_json));
+                const parsed =
+                    typeof value.example_json === 'string'
+                        ? JSON.parse(value.example_json)
+                        : value.example_json;
                 const { nodes, errors } = parseToTree(parsed);
                 setFields(nodes);
                 setErrors(errors);
@@ -64,6 +77,15 @@ export const ToolableJsonHandleInput: React.FC<
             }
         }
     }, [value]);
+
+    // Cleanup timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (parseTimeoutRef.current) {
+                clearTimeout(parseTimeoutRef.current);
+            }
+        };
+    }, []);
 
     // Apply toolable_config to field nodes
     const applyToolableConfig = (nodes: FieldNode[], toolableConfig: any) => {
@@ -232,30 +254,56 @@ export const ToolableJsonHandleInput: React.FC<
         }
     };
 
-    // Handle JSON input change
+    // Handle JSON input change with debouncing
     const handleJsonInputChange = (newJsonInput: string) => {
         setJsonInput(newJsonInput);
 
-        // Try to parse and update if valid
-        try {
-            const parsed = JSON.parse(newJsonInput);
-            const { nodes, errors } = parseToTree(parsed);
-            setFields(nodes);
-            setErrors(errors);
-            setIsParsed(true);
+        // Clear any existing timeout
+        if (parseTimeoutRef.current) {
+            clearTimeout(parseTimeoutRef.current);
+        }
 
-            // Update both example_json and toolable_config in the parent component
-            if (onChange) {
-                const toolableConfig = generateMappingFromFields(nodes);
+        // Update the parent component immediately with the raw input for mirroring
+        if (onChange) {
+            // Try to parse as JSON, if fails, just store as string
+            try {
+                const parsed = JSON.parse(newJsonInput);
                 onChange({
                     example_json: parsed,
-                    toolable_config: toolableConfig,
+                    toolable_config: value?.toolable_config || {},
+                });
+            } catch {
+                // If not valid JSON, store as string
+                onChange({
+                    example_json: newJsonInput,
+                    toolable_config: value?.toolable_config || {},
                 });
             }
-        } catch {
-            // Don't update on invalid JSON, wait for explicit parse
-            setIsParsed(false);
         }
+
+        // Set up debounced parsing
+        parseTimeoutRef.current = setTimeout(() => {
+            // Try to parse and update if valid
+            try {
+                const parsed = JSON.parse(newJsonInput);
+                const { nodes, errors } = parseToTree(parsed);
+                setFields(nodes);
+                setErrors(errors);
+                setIsParsed(true);
+
+                // Update both example_json and toolable_config in the parent component
+                if (onChange) {
+                    const toolableConfig = generateMappingFromFields(nodes);
+                    onChange({
+                        example_json: parsed,
+                        toolable_config: toolableConfig,
+                    });
+                }
+            } catch {
+                // Don't update fields on invalid JSON
+                setIsParsed(false);
+            }
+        }, 1000); // Wait 1 second after no changes
     };
 
     // Update field toolability (with optional children update)
