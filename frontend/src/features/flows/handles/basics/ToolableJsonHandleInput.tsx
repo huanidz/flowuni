@@ -193,11 +193,12 @@ export const ToolableJsonHandleInput: React.FC<
             setErrors(errors);
             setIsParsed(true);
 
-            // Update the example_json in the parent component
+            // Update both example_json and toolable_config in the parent component
             if (onChange) {
+                const toolableConfig = generateMappingFromFields(nodes);
                 onChange({
                     example_json: parsed,
-                    toolable_config: generateMapping(),
+                    toolable_config: toolableConfig,
                 });
             }
         } catch {
