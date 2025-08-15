@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Union
 from pydantic import BaseModel
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
+from src.nodes.handles.basics.inputs import ToolableJsonInputHandle
 from src.nodes.handles.basics.inputs.DropdownInputHandle import (
     DropdownInputHandle,
     DropdownOption,
@@ -70,7 +71,6 @@ class HttpRequestNode(Node):
                 ),
                 description="The headers of the request.",
                 allow_incoming_edges=False,
-                enable_as_whole_for_tool=True,
             ),
             NodeInput(
                 name="query_params",
@@ -91,7 +91,6 @@ class HttpRequestNode(Node):
                 ),
                 description="The query params of the request.",
                 allow_incoming_edges=False,
-                enable_as_whole_for_tool=True,
             ),
             NodeInput(
                 name="body",
@@ -102,8 +101,13 @@ class HttpRequestNode(Node):
                             type_name=TextFieldInputHandle.__name__,
                             details=TextFieldInputHandle(
                                 multiline=True,
-                                format=TextFieldInputFormatEnum.TOOLABLE_JSON,
+                                format=TextFieldInputFormatEnum.JSON,
                             ),
+                        ),
+                        DynamicTypeItem(
+                            type_label="Toolable Json",
+                            type_name=ToolableJsonInputHandle.__name__,
+                            details=ToolableJsonInputHandle(),
                         ),
                         DynamicTypeItem(
                             type_label="Form",
@@ -132,7 +136,6 @@ class HttpRequestNode(Node):
                 ),
                 description="The JSON body of the request.",
                 allow_incoming_edges=False,
-                enable_as_whole_for_tool=True,
             ),
         ],
         outputs=[

@@ -7,7 +7,6 @@ from src.nodes.handles.InputHandleBase import InputHandleTypeBase
 class TextFieldInputFormatEnum(str, Enum):
     PLAIN = "plain"
     JSON = "json"
-    TOOLABLE_JSON = "toolable_json"
 
 
 class TextFieldInputHandle(InputHandleTypeBase):
