@@ -70,9 +70,6 @@ class NodeDataFlowAdapter:
     ) -> NodeData:
         """Adapt source node data to target's NodeData."""
 
-        logger.info(f"👉 source_handle_type: {source_handle_type}")
-        logger.info(f"👉 target_handle_type: {target_handle_type}")
-
         if not NodeDataFlowAdapter._should_adapt(
             source_handle_type, target_handle_type
         ):
@@ -111,7 +108,7 @@ class NodeDataFlowAdapter:
         source_handle_type: Type, target_handle_type: Type
     ) -> Optional[Callable]:
         """Find the appropriate adapter function for the given type conversion."""
-        adapter_key = (target_handle_type, source_handle_type)
+        adapter_key = (source_handle_type, target_handle_type)
         adapter_func = AdapterMatrix.MATRIX.get(adapter_key)
 
         if not adapter_func:
