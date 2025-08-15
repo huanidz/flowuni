@@ -37,7 +37,6 @@ export const ToolableJsonHandleInput: React.FC<
     const [fields, setFields] = useState<FieldNode[]>([]);
     const [errors, setErrors] = useState<string[]>([]);
     const [isParsed, setIsParsed] = useState(false);
-    const [isInitialized, setIsInitialized] = useState(false);
     const parseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     // Initialize from value prop
@@ -53,8 +52,6 @@ export const ToolableJsonHandleInput: React.FC<
                     setJsonInput(String(value.example_json));
                 }
             }
-            setIsInitialized(true);
-
             // Try to parse the JSON to update the fields
             try {
                 const parsed =
@@ -77,15 +74,6 @@ export const ToolableJsonHandleInput: React.FC<
             }
         }
     }, [value]);
-
-    // Cleanup timeout on unmount
-    useEffect(() => {
-        return () => {
-            if (parseTimeoutRef.current) {
-                clearTimeout(parseTimeoutRef.current);
-            }
-        };
-    }, []);
 
     // Apply toolable_config to field nodes
     const applyToolableConfig = (nodes: FieldNode[], toolableConfig: any) => {
@@ -232,22 +220,15 @@ export const ToolableJsonHandleInput: React.FC<
     };
 
     const handleParse = () => {
-        try {
-            const parsed = JSON.parse(jsonInput);
+        const { success, data: parsed } = safeParse(jsonInput);
+
+        if (success) {
             const { nodes, errors } = parseToTree(parsed);
             setFields(nodes);
             setErrors(errors);
             setIsParsed(true);
-
-            // Update both example_json and toolable_config in the parent component
-            if (onChange) {
-                const toolableConfig = generateMappingFromFields(nodes);
-                onChange({
-                    example_json: parsed,
-                    toolable_config: toolableConfig,
-                });
-            }
-        } catch {
+            notifyParent(parsed, nodes);
+        } else {
             setFields([]);
             setErrors(['Invalid JSON format']);
             setIsParsed(false);
@@ -264,46 +245,72 @@ export const ToolableJsonHandleInput: React.FC<
         }
 
         // Update the parent component immediately with the raw input for mirroring
+        const { success, data: parsed } = safeParse(newJsonInput);
         if (onChange) {
-            // Try to parse as JSON, if fails, just store as string
-            try {
-                const parsed = JSON.parse(newJsonInput);
-                onChange({
-                    example_json: parsed,
-                    toolable_config: value?.toolable_config || {},
-                });
-            } catch {
-                // If not valid JSON, store as string
-                onChange({
-                    example_json: newJsonInput,
-                    toolable_config: value?.toolable_config || {},
-                });
-            }
+            onChange({
+                example_json: success ? parsed : newJsonInput,
+                toolable_config: value?.toolable_config || {},
+            });
         }
 
         // Set up debounced parsing
         parseTimeoutRef.current = setTimeout(() => {
-            // Try to parse and update if valid
-            try {
-                const parsed = JSON.parse(newJsonInput);
+            if (success) {
                 const { nodes, errors } = parseToTree(parsed);
                 setFields(nodes);
                 setErrors(errors);
                 setIsParsed(true);
-
-                // Update both example_json and toolable_config in the parent component
-                if (onChange) {
-                    const toolableConfig = generateMappingFromFields(nodes);
-                    onChange({
-                        example_json: parsed,
-                        toolable_config: toolableConfig,
-                    });
-                }
-            } catch {
+                notifyParent(parsed, nodes);
+            } else {
                 // Don't update fields on invalid JSON
                 setIsParsed(false);
             }
         }, 1000); // Wait 1 second after no changes
+    };
+
+    // Generic function to update nodes at a specific path
+    const updateNodeAtPath = (
+        nodes: FieldNode[],
+        path: string,
+        updateFn: (node: FieldNode) => FieldNode,
+        includeChildren = false
+    ): FieldNode[] => {
+        return nodes.map(node => {
+            if (node.path === path) {
+                const updatedNode = updateFn(node);
+
+                // If includeChildren is true and the node has children, apply the update to all children
+                if (includeChildren && updatedNode.children) {
+                    const updateAllChildren = (
+                        children: FieldNode[]
+                    ): FieldNode[] =>
+                        children.map(child => ({
+                            ...child,
+                            ...updateFn(child), // Apply the same update to children
+                            children: child.children
+                                ? updateAllChildren(child.children)
+                                : child.children,
+                        }));
+                    updatedNode.children = updateAllChildren(
+                        updatedNode.children
+                    );
+                }
+
+                return updatedNode;
+            }
+
+            return {
+                ...node,
+                children: node.children
+                    ? updateNodeAtPath(
+                          node.children,
+                          path,
+                          updateFn,
+                          includeChildren
+                      )
+                    : node.children,
+            };
+        });
     };
 
     // Update field toolability (with optional children update)
@@ -312,96 +319,46 @@ export const ToolableJsonHandleInput: React.FC<
         isToolable: boolean,
         includeChildren = false
     ) => {
-        const updateNodes = (nodes: FieldNode[]): FieldNode[] => {
-            return nodes.map(node => {
-                if (node.path === path) {
-                    const updated = { ...node, isToolable };
-                    if (includeChildren && node.children) {
-                        const updateAll = (
-                            children: FieldNode[]
-                        ): FieldNode[] =>
-                            children.map(child => ({
-                                ...child,
-                                isToolable,
-                                children: child.children
-                                    ? updateAll(child.children)
-                                    : child.children,
-                            }));
-                        updated.children = updateAll(node.children);
-                    }
-                    return updated;
-                }
-                return {
-                    ...node,
-                    children: node.children
-                        ? updateNodes(node.children)
-                        : node.children,
-                };
-            });
-        };
-        const updatedFields = updateNodes(fields);
+        const updatedFields = updateNodeAtPath(
+            fields,
+            path,
+            node => ({ ...node, isToolable }),
+            includeChildren
+        );
         setFields(updatedFields);
 
         // Update the toolable_config in the parent component
         if (onChange && isParsed) {
-            const toolableConfig = generateMappingFromFields(updatedFields);
-            try {
-                const exampleJson = JSON.parse(jsonInput);
-                onChange({
-                    example_json: exampleJson,
-                    toolable_config: toolableConfig,
-                });
-            } catch (e) {
-                console.error('Error parsing JSON:', e);
+            const { success, data: exampleJson } = safeParse(jsonInput);
+            if (success) {
+                notifyParent(exampleJson, updatedFields);
             }
         }
     };
 
     const updateDefault = (path: string, value: any) => {
-        const updateNodes = (nodes: FieldNode[]): FieldNode[] => {
-            return nodes.map(node =>
-                node.path === path
-                    ? { ...node, defaultValue: value }
-                    : {
-                          ...node,
-                          children: node.children
-                              ? updateNodes(node.children)
-                              : node.children,
-                      }
-            );
-        };
-        const updatedFields = updateNodes(fields);
+        const updatedFields = updateNodeAtPath(fields, path, node => ({
+            ...node,
+            defaultValue: value,
+        }));
         setFields(updatedFields);
 
         // Update the toolable_config in the parent component
         if (onChange && isParsed) {
-            const toolableConfig = generateMappingFromFields(updatedFields);
-            try {
-                const exampleJson = JSON.parse(jsonInput);
-                onChange({
-                    example_json: exampleJson,
-                    toolable_config: toolableConfig,
-                });
-            } catch (e) {
-                console.error('Error parsing JSON:', e);
+            const { success, data: exampleJson } = safeParse(jsonInput);
+            if (success) {
+                notifyParent(exampleJson, updatedFields);
             }
         }
     };
 
     const toggleExpanded = (path: string) => {
-        const updateNodes = (nodes: FieldNode[]): FieldNode[] => {
-            return nodes.map(node =>
-                node.path === path
-                    ? { ...node, isExpanded: !node.isExpanded }
-                    : {
-                          ...node,
-                          children: node.children
-                              ? updateNodes(node.children)
-                              : node.children,
-                      }
-            );
-        };
-        setFields(updateNodes(fields));
+        setFields(
+            updateNodeAtPath(fields, path, node => ({
+                ...node,
+                isExpanded: !node.isExpanded,
+            }))
+        );
     };
 
     // Check if all children are toolable
@@ -412,24 +369,33 @@ export const ToolableJsonHandleInput: React.FC<
         );
     };
 
-    // Generate parameter mapping from current fields
-    const generateMapping = () => {
-        const mapping: any = {};
-        const collect = (nodes: FieldNode[]) => {
-            nodes.forEach(node => {
-                if (!node.children?.length) {
-                    mapping[node.path] = {
-                        toolable: node.isToolable,
-                        defaultValue: node.defaultValue,
-                        type: node.type,
-                    };
-                } else {
-                    collect(node.children);
-                }
+    // Safe JSON parsing with error handling
+    const safeParse = (jsonString: string): { success: boolean; data: any } => {
+        try {
+            const parsed = JSON.parse(jsonString);
+            return { success: true, data: parsed };
+        } catch {
+            return { success: false, data: null };
+        }
+    };
+
+    // Notify parent component of changes
+    const notifyParent = (parsedJson: any, fields: FieldNode[]) => {
+        if (onChange) {
+            const toolableConfig = generateMappingFromFields(fields);
+            onChange({
+                example_json: parsedJson,
+                toolable_config: toolableConfig,
             });
-        };
-        collect(fields);
-        return mapping;
+        }
+    };
+
+    // Format default value based on type
+    const formatDefaultValue = (value: any, type: string): string => {
+        if (typeof value === 'string') {
+            return value;
+        }
+        return JSON.stringify(value);
     };
 
     // Generate parameter mapping from provided fields
@@ -523,11 +489,10 @@ export const ToolableJsonHandleInput: React.FC<
                             </span>
                             <input
                                 type="text"
-                                value={
-                                    typeof node.defaultValue === 'string'
-                                        ? node.defaultValue
-                                        : JSON.stringify(node.defaultValue)
-                                }
+                                value={formatDefaultValue(
+                                    node.defaultValue,
+                                    node.type
+                                )}
                                 onChange={e => {
                                     let val: any = e.target.value;
                                     if (node.type === 'number')
@@ -638,7 +603,11 @@ export const ToolableJsonHandleInput: React.FC<
                         Parameter Mapping
                     </h3>
                     <pre className="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto text-xs">
-                        {JSON.stringify(generateMapping(), null, 2)}
+                        {JSON.stringify(
+                            generateMappingFromFields(fields),
+                            null,
+                            2
+                        )}
                     </pre>
                 </div>
             )}
