@@ -14,6 +14,7 @@ interface TextFieldHandleInputProps {
     // Config (NEW)
     type_detail: TypeDetail;
     disabled: boolean;
+    isToolMode?: boolean;
 }
 
 export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({

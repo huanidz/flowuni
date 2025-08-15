@@ -18,6 +18,7 @@ interface TableHandleInputProps {
   onChange?: (value: any[]) => void;
   type_detail: TypeDetail;
   disabled?: boolean;
+  isToolMode?: boolean;
 }
 
 // Constants
