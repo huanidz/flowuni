@@ -25,6 +25,7 @@ export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
 
     type_detail,
     disabled = true,
+    isToolMode = false,
 }) => {
     const {
         placeholder: defaultPlaceholder = '',
@@ -32,6 +33,8 @@ export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
         maxLength: defaultMaxLength,
         format: defaultFormat = TEXT_FIELD_FORMAT.PLAIN,
     } = type_detail.defaults;
+
+    const [isModalOpen, setIsModalOpen] = React.useState(false);
 
     const handleChange = (newValue: string) => {
         if (onChange && !disabled) {
@@ -87,17 +90,28 @@ export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
                 </span>
             )}
             {defaultMultiline ? (
-                <Textarea
-                    value={disabled ? '' : value || ''}
-                    onChange={e => handleChange(e.target.value)}
-                    placeholder={disabled ? '' : defaultPlaceholder}
-                    maxLength={defaultMaxLength}
-                    disabled={disabled}
-                    className="nodrag"
-                    style={getInputStyles()}
-                    onFocus={handleFocus}
-                    onBlur={handleBlur}
-                />
+                <div style={textfieldHandleStyles.jsonEditButtonContainer}>
+                    <Textarea
+                        value={disabled ? '' : value || ''}
+                        onChange={e => handleChange(e.target.value)}
+                        placeholder={disabled ? '' : defaultPlaceholder}
+                        maxLength={defaultMaxLength}
+                        disabled={disabled}
+                        className="nodrag"
+                        style={getInputStyles()}
+                        onFocus={handleFocus}
+                        onBlur={handleBlur}
+                    />
+                    {defaultFormat === TEXT_FIELD_FORMAT.JSON && isToolMode && (
+                        <button
+                            type="button"
+                            onClick={() => setIsModalOpen(true)}
+                            style={textfieldHandleStyles.jsonEditButton}
+                        >
+                            Edit JSON
+                        </button>
+                    )}
+                </div>
             ) : (
                 <Input
                     type="text"
@@ -111,6 +125,21 @@ export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
                     onFocus={handleFocus}
                     onBlur={handleBlur}
                 />
+            )}
+            {isModalOpen && (
+                <div style={textfieldHandleStyles.modalOverlay}>
+                    <div style={textfieldHandleStyles.modalContent}>
+                        <div style={textfieldHandleStyles.modalHeader}>
+                            <button
+                                onClick={() => setIsModalOpen(false)}
+                                style={textfieldHandleStyles.modalCloseButton}
+                            >
+                                Close
+                            </button>
+                        </div>
+                        {/* Modal content will be added here later */}
+                    </div>
+                </div>
             )}
         </div>
     );

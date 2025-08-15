@@ -70,6 +70,7 @@ class HttpRequestNode(Node):
                 ),
                 description="The headers of the request.",
                 allow_incoming_edges=False,
+                enable_for_tool=True,
             ),
             NodeInput(
                 name="query_params",
@@ -90,6 +91,7 @@ class HttpRequestNode(Node):
                 ),
                 description="The query params of the request.",
                 allow_incoming_edges=False,
+                enable_for_tool=True,
             ),
             NodeInput(
                 name="body",
@@ -129,6 +131,7 @@ class HttpRequestNode(Node):
                 ),
                 description="The JSON body of the request.",
                 allow_incoming_edges=False,
+                enable_for_tool=True,
             ),
         ],
         outputs=[
