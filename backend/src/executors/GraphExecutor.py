@@ -593,8 +593,8 @@ class GraphExecutor:
             # Step 6. Adapt the output value to the target handle type
             adapted_output_value_to_transfer = NodeDataFlowAdapter.adapt(
                 output_data_to_transfer=output_value_to_transfer,
-                source_handle_type=type(output_handle_from_current_node),
-                target_handle_type=type(input_handle_from_successor_node),
+                source_handle_type=type(output_handle_from_current_node.type),
+                target_handle_type=type(input_handle_from_successor_node.type),
             )
 
             # Step 7: Assign the copied value to the target handle

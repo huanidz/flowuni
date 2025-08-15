@@ -1,4 +1,4 @@
-from typing import Callable, Optional, Type
+from typing import Any, Callable, Optional, Type
 
 from loguru import logger
 from src.nodes.handles.basics.inputs import InputHandleTypeEnum
@@ -10,14 +10,52 @@ class AdapterMatrix:
     """Matrix-based adapter for node data transformation."""
 
     @staticmethod
+    def _default_adapter(val: Any) -> Any:
+        return val
+
+    @staticmethod
     def _number_to_text_field(val: float) -> str:
         return str(val)
 
+    @staticmethod
+    def _number_to_bool(val: float) -> bool:
+        return bool(val)
+
+    @staticmethod
+    def _string_to_number(val: str) -> float:
+        return float(val)
+
+    @staticmethod
+    def _string_to_bool(val: str) -> bool:
+        return bool(val)
+
     MATRIX = {
+        # Source: NUMBER
         (
             OutputHandleTypeEnum.NUMBER.value,
             InputHandleTypeEnum.TEXT_FIELD.value,
         ): _number_to_text_field,
+        (
+            OutputHandleTypeEnum.NUMBER.value,
+            InputHandleTypeEnum.BOOLEAN.value,
+        ): _number_to_bool,
+        (
+            OutputHandleTypeEnum.NUMBER.value,
+            InputHandleTypeEnum.DROPDOWN.value,
+        ): _number_to_text_field,
+        # Source: TextField
+        (
+            OutputHandleTypeEnum.STRING.value,
+            InputHandleTypeEnum.NUMBER.value,
+        ): _string_to_number,
+        (
+            OutputHandleTypeEnum.STRING.value,
+            InputHandleTypeEnum.BOOLEAN.value,
+        ): _string_to_bool,
+        (
+            OutputHandleTypeEnum.STRING.value,
+            InputHandleTypeEnum.DROPDOWN.value,
+        ): _default_adapter,
     }
 
 
@@ -31,6 +69,9 @@ class NodeDataFlowAdapter:
         target_handle_type: Type,
     ) -> NodeData:
         """Adapt source node data to target's NodeData."""
+
+        logger.info(f"👉 source_handle_type: {source_handle_type}")
+        logger.info(f"👉 target_handle_type: {target_handle_type}")
 
         if not NodeDataFlowAdapter._should_adapt(
             source_handle_type, target_handle_type
@@ -81,7 +122,9 @@ class NodeDataFlowAdapter:
         return adapter_func
 
     @staticmethod
-    def _apply_adapter(output_data: NodeData, adapter_func: Callable) -> NodeData:
+    def _apply_adapter(output_data: Any, adapter_func: Callable) -> Any:
         """Apply the adapter function to the output data."""
-        output_data.output_values = adapter_func(output_data.output_values)
+        output_data = adapter_func(output_data)
+
+        logger.debug(f"Adapted output data value is: {output_data}")
         return output_data
