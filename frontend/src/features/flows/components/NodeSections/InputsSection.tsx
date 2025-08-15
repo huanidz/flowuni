@@ -52,8 +52,9 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
         const inputValue = input_values[spec_input.name];
         const handleId = `${spec_input.name}-index:${index}`;
         const isConnected = targetHandleEdges.has(handleId);
-        const isToolMode =
-            node_mode === NODE_DATA_MODE.TOOL && spec_input.enable_for_tool;
+        const isWholeAsToolMode =
+            node_mode === NODE_DATA_MODE.TOOL &&
+            spec_input.enable_as_whole_for_tool;
         const inputType = spec_input.type_detail.type;
         const defaultVisibility =
             INPUT_TYPE_DEFAULT_VISIBILITY[inputType] ?? true;
@@ -76,8 +77,8 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
                 onInputValueChange(spec_input.name, value),
             nodeId,
             type_detail: spec_input.type_detail,
-            disabled: isToolMode || isConnected,
-            isToolMode: isToolMode,
+            disabled: isWholeAsToolMode || isConnected,
+            isWholeAsToolMode: isWholeAsToolMode,
         };
 
         const toggleInputComponent = () => {
@@ -91,7 +92,7 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
                         name={spec_input.name}
                         description={spec_input.description}
                         required={spec_input.required}
-                        helperText={isToolMode ? 'Tool Parameter' : ''}
+                        helperText={isWholeAsToolMode ? 'Tool Parameter' : ''}
                     />
                     {hasInputComponent && (
                         <button
@@ -111,7 +112,7 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
                     )}
                 </div>
 
-                {!isToolMode && spec_input.allow_incoming_edges && (
+                {!isWholeAsToolMode && spec_input.allow_incoming_edges && (
                     <Handle
                         type="target"
                         position={Position.Left}

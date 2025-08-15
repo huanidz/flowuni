@@ -11,7 +11,7 @@ interface DynamicTypeHandleInputProps {
     type_detail: TypeDetail;
     disabled?: boolean;
     nodeId?: string;
-    isToolMode?: boolean;
+    isWholeAsToolMode?: boolean;
 }
 
 export const DynamicTypeHandleInput: React.FC<DynamicTypeHandleInputProps> = ({
@@ -22,6 +22,7 @@ export const DynamicTypeHandleInput: React.FC<DynamicTypeHandleInputProps> = ({
     type_detail,
     disabled = false,
     nodeId,
+    isWholeAsToolMode,
 }) => {
     const typeOptions = type_detail.defaults?.type_options || [];
 
@@ -173,6 +174,7 @@ export const DynamicTypeHandleInput: React.FC<DynamicTypeHandleInputProps> = ({
                         }}
                         disabled={disabled}
                         nodeId={nodeId}
+                        isWholeAsToolMode={isWholeAsToolMode}
                     />
                 </div>
             )}

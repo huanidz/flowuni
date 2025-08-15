@@ -9,7 +9,7 @@ interface DropdownHandleInputProps {
     value: any;
     nodeId: string;
     onChange?: (value: string | string[]) => void;
-    isToolMode?: boolean;
+    isWholeAsToolMode?: boolean;
 
     // Config (NEW)
     type_detail: {

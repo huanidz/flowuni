@@ -14,7 +14,7 @@ interface TextFieldHandleInputProps {
     // Config (NEW)
     type_detail: TypeDetail;
     disabled: boolean;
-    isToolMode?: boolean;
+    isWholeAsToolMode?: boolean;
 }
 
 export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
@@ -25,7 +25,7 @@ export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
 
     type_detail,
     disabled = true,
-    isToolMode = false,
+    isWholeAsToolMode = false,
 }) => {
     const {
         placeholder: defaultPlaceholder = '',
@@ -102,15 +102,16 @@ export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
                         onFocus={handleFocus}
                         onBlur={handleBlur}
                     />
-                    {defaultFormat === TEXT_FIELD_FORMAT.JSON && isToolMode && (
-                        <button
-                            type="button"
-                            onClick={() => setIsModalOpen(true)}
-                            style={textfieldHandleStyles.jsonEditButton}
-                        >
-                            Edit JSON
-                        </button>
-                    )}
+                    {defaultFormat === TEXT_FIELD_FORMAT.JSON &&
+                        isWholeAsToolMode && (
+                            <button
+                                type="button"
+                                onClick={() => setIsModalOpen(true)}
+                                style={textfieldHandleStyles.jsonEditButton}
+                            >
+                                Edit JSON
+                            </button>
+                        )}
                 </div>
             ) : (
                 <Input

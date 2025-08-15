@@ -8,7 +8,7 @@ interface AgentToolHandleInputProps {
     onChange?: (value: string) => void;
     type_detail: TypeDetail;
     disabled: boolean;
-    isToolMode?: boolean;
+    isWholeAsToolMode?: boolean;
 }
 
 export const AgentToolHandleInput: React.FC<AgentToolHandleInputProps> = ({

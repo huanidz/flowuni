@@ -12,7 +12,7 @@ interface SecretTextHandleInputProps {
     onChange?: (value: string) => void;
     type_detail: TypeDetail;
     disabled: boolean;
-    isToolMode?: boolean;
+    isWholeAsToolMode?: boolean;
 }
 
 export const SecretTextHandleInput: React.FC<SecretTextHandleInputProps> = ({
