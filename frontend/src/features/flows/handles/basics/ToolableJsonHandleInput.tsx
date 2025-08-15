@@ -219,22 +219,6 @@ export const ToolableJsonHandleInput: React.FC<
         return { nodes, errors };
     };
 
-    const handleParse = () => {
-        const { success, data: parsed } = safeParse(jsonInput);
-
-        if (success) {
-            const { nodes, errors } = parseToTree(parsed);
-            setFields(nodes);
-            setErrors(errors);
-            setIsParsed(true);
-            notifyParent(parsed, nodes);
-        } else {
-            setFields([]);
-            setErrors(['Invalid JSON format']);
-            setIsParsed(false);
-        }
-    };
-
     // Handle JSON input change with debouncing
     const handleJsonInputChange = (newJsonInput: string) => {
         setJsonInput(newJsonInput);
@@ -428,7 +412,6 @@ export const ToolableJsonHandleInput: React.FC<
                 <div
                     className={`flex items-center gap-2 py-1 px-2 hover:bg-gray-50 rounded ml-${depth * 4}`}
                 >
-                    {/* Expand/Collapse or Checkbox */}
                     {hasChildren ? (
                         <button
                             onClick={() => toggleExpanded(node.path)}
@@ -453,13 +436,11 @@ export const ToolableJsonHandleInput: React.FC<
                         />
                     )}
 
-                    {/* Field name */}
                     <span className="font-mono text-sm font-medium">
                         {hasChildren ? `[-] ${node.key}` : `[ ] ${node.key}`}
                     </span>
 
-                    {/* Parent selection */}
-                    {hasChildren && (
+                    {hasChildren ? (
                         <div className="flex items-center gap-1 ml-2">
                             <input
                                 type="checkbox"
@@ -476,10 +457,7 @@ export const ToolableJsonHandleInput: React.FC<
                             />
                             <span className="text-xs text-gray-500">all</span>
                         </div>
-                    )}
-
-                    {/* Leaf node controls */}
-                    {!hasChildren && (
+                    ) : (
                         <div className="flex items-center gap-2 ml-auto">
                             <span className="text-xs bg-gray-100 px-1 rounded">
                                 {node.type}
@@ -508,7 +486,6 @@ export const ToolableJsonHandleInput: React.FC<
                     )}
                 </div>
 
-                {/* Children */}
                 {hasChildren && node.isExpanded && (
                     <div>
                         {node.children!.map(child =>
@@ -526,31 +503,15 @@ export const ToolableJsonHandleInput: React.FC<
                 <span className="text-xs text-gray-600">{description}</span>
             )}
 
-            {/* JSON Input */}
             <div className="space-y-2">
                 <textarea
                     value={jsonInput}
                     onChange={e => handleJsonInputChange(e.target.value)}
-                    placeholder={`{
-  "users": [
-    {"name": "John", "age": 30, "email": "john@example.com"},
-    {"name": "Jane", "age": 25}
-  ],
-  "settings": {"theme": "dark", "notifications": true}
-}`}
+                    placeholder={`{\n  "users": [{"name": "John", "age": 30}],\n  "settings": {"theme": "dark"}\n}`}
                     className="w-full h-32 p-3 border rounded-lg font-mono text-sm resize-none"
                     disabled={disabled}
                 />
 
-                <button
-                    onClick={handleParse}
-                    disabled={disabled}
-                    className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    Parse JSON
-                </button>
-
-                {/* Errors */}
                 {errors.length > 0 && (
                     <div className="space-y-2">
                         {errors.map((error, i) => (
@@ -578,7 +539,6 @@ export const ToolableJsonHandleInput: React.FC<
                 )}
             </div>
 
-            {/* Field Tree */}
             {isParsed && (
                 <div className="space-y-2">
                     <label className="text-sm font-medium">
@@ -596,7 +556,6 @@ export const ToolableJsonHandleInput: React.FC<
                 </div>
             )}
 
-            {/* Output Preview */}
             {isParsed && fields.length > 0 && (
                 <div className="mt-4">
                     <h3 className="text-sm font-medium mb-2">
