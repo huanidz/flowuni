@@ -31,3 +31,8 @@ EXPOSE 5001
 
 # Command: Run alembic migrations + Uvicorn with watchfiles (restarts on crash & file changes)
 CMD ["sh", "-c", "alembic upgrade head && watchfiles  --sigint-timeout 1 --sigkill-timeout 1 --filter python 'uvicorn src.main:app --host 0.0.0.0 --port 5001' /app"]
+
+# Use this to check the import time (Use for profiling and optimization of imports)
+# CMD ["sh", "-c", "alembic upgrade head && \
+#   watchfiles --sigint-timeout 0 --sigkill-timeout 0 --filter python \
+#   'python -X importtime -m uvicorn src.main:app --host 0.0.0.0 --port 5001 2> /app/importtime.log' /app"]

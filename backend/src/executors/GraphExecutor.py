@@ -12,6 +12,7 @@ from src.consts.node_consts import NODE_DATA_MODE
 from src.executors.ExecutionContext import ExecutionContext
 from src.executors.NodeDataFlowAdapter import NodeDataFlowAdapter
 from src.executors.NodeExecution import NodeExecutionEvent
+from src.nodes.core import NodeInput, NodeOutput
 from src.nodes.NodeBase import Node, NodeSpec
 from src.nodes.NodeRegistry import NodeRegistry
 from src.schemas.flowbuilder.flow_graph_schemas import NodeData
@@ -514,7 +515,12 @@ class GraphExecutor:
             Exception: Re-raises any exception that occurs during the update process
         """
         try:
-            NodeDataFlowAdapter()
+            # Step 0: Retrieve the current_node from the graph
+            current_graph_node = self.graph.nodes.get(node_id)
+            if current_graph_node is None:
+                error_message = f"Current node '{node_id}' not found in graph"
+                logger.error(error_message)
+                raise ValueError(error_message)
 
             # Step 1: Retrieve the successor node from the graph
             successor_graph_node = self.graph.nodes.get(successor_node_id)
@@ -526,15 +532,46 @@ class GraphExecutor:
                 raise ValueError(error_message)
 
             # Step 2: Extract or initialize the node data
+            current_node_spec: NodeSpec = current_graph_node.get("spec")
+
             successor_node_data: NodeData = successor_graph_node.get("data")
             successor_node_spec: NodeSpec = successor_graph_node.get("spec")
 
-            logger.info("XX sourcehandle: " + source_handle)
-            logger.info("XX targethandle: " + target_handle)
-
-            logger.info(
-                f"Updating successor node {successor_node_id} with spec: {successor_node_spec}"
+            # Find and get the target handle
+            output_handle_from_current_node: NodeOutput = next(
+                (
+                    output
+                    for output in current_node_spec.outputs
+                    if output.name == source_handle
+                ),
+                None,
             )
+
+            # Find and get the source handle
+            input_handle_from_successor_node: NodeInput = next(
+                (
+                    input
+                    for input in successor_node_spec.inputs
+                    if input.name == target_handle
+                ),
+                None,
+            )
+
+            if output_handle_from_current_node is None:
+                logger.error(
+                    f"Source handle '{source_handle}' not found in node '{node_id}' outputs"  # noqa
+                )
+                raise ValueError(
+                    f"Source handle '{source_handle}' not found in node '{node_id}' outputs"  # noqa
+                )
+
+            if input_handle_from_successor_node is None:
+                logger.error(
+                    f"Target handle '{target_handle}' not found in node '{successor_node_id}' inputs"  # noqa
+                )
+                raise ValueError(
+                    f"Target handle '{target_handle}' not found in node '{successor_node_id}' inputs"  # noqa
+                )
 
             if successor_node_data is None:
                 successor_node_data = NodeData()
@@ -553,18 +590,17 @@ class GraphExecutor:
             # Step 5: Extract the output value from the source handle
             output_value_to_transfer = executed_data.output_values[source_handle]
 
-            # Step 5.5. Adapt the output value to the target handle type
-            # output_value_to_transfer = NodeDataFlowAdapter.adapt(
-            #     output_value_to_transfer=output_value_to_transfer,
-            #     source_handle,
-            #     target_handle,
-            # )
-
-            # Step 6: Perform deep copy to prevent reference issues
-            copied_output_value = copy.deepcopy(output_value_to_transfer)
+            # Step 6. Adapt the output value to the target handle type
+            adapted_output_value_to_transfer = NodeDataFlowAdapter.adapt(
+                output_data_to_transfer=output_value_to_transfer,
+                source_handle_type=type(output_handle_from_current_node),
+                target_handle_type=type(input_handle_from_successor_node),
+            )
 
             # Step 7: Assign the copied value to the target handle
-            successor_node_data.input_values[target_handle] = copied_output_value
+            successor_node_data.input_values[target_handle] = (
+                adapted_output_value_to_transfer
+            )
 
             # Step 8: Update the graph with the modified node data
             self.graph.nodes[successor_node_id]["data"] = successor_node_data
@@ -577,7 +613,7 @@ class GraphExecutor:
 
         except Exception as exception:
             logger.error(
-                f"Failed to update normal mode successor {successor_node_id}: {str(exception)}"
+                f"Failed to update normal mode successor {successor_node_id}: {str(exception)}"  # noqa
             )
             raise
 
@@ -635,7 +671,7 @@ class GraphExecutor:
 
             if missing_keys:
                 error_message = (
-                    f"Missing required tool data keys in node '{node_id}': {missing_keys}. "
+                    f"Missing required tool data keys in node '{node_id}': {missing_keys}. "  # noqa
                     f"Available keys: {list(executed_data.output_values.keys())}"
                 )
                 logger.error(error_message)
@@ -682,7 +718,7 @@ class GraphExecutor:
                     )
                 except json.JSONDecodeError as json_error:
                     logger.warning(
-                        f"Invalid JSON in existing tool schemas for '{successor_node_id}', "
+                        f"Invalid JSON in existing tool schemas for '{successor_node_id}', "  # noqa
                         f"initializing with empty list: {json_error}"
                     )
                     existing_tool_schemas = []
@@ -696,7 +732,7 @@ class GraphExecutor:
                 serialized_updated_schemas = json.dumps(updated_tool_schemas)
             except (TypeError, ValueError) as serialization_error:
                 error_message = (
-                    f"Failed to serialize updated tool schemas for '{successor_node_id}': "
+                    f"Failed to serialize updated tool schemas for '{successor_node_id}': "  # noqa
                     f"{serialization_error}"
                 )
                 logger.error(error_message)
@@ -716,7 +752,7 @@ class GraphExecutor:
 
         except Exception as exception:
             logger.error(
-                f"Failed to update tool mode successor {successor_node_id}: {str(exception)}"
+                f"Failed to update tool mode successor {successor_node_id}: {str(exception)}"  # noqa
             )
             raise
 

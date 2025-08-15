@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, Optional, Type
 
 from loguru import logger
 from src.nodes.handles.basics.inputs import InputHandleTypeEnum
@@ -71,31 +71,24 @@ class NodeDataFlowAdapter:
     @staticmethod
     def adapt(
         output_data_to_transfer: NodeData,
-        source_handle_type_detail: Dict[str, Any],
-        target_handle_type_detail: Dict[str, Any],
+        source_handle_type: Type,
+        target_handle_type: Type,
     ) -> NodeData:
         """Adapt source node data to target's NodeData."""
 
-        input_node_type = NodeDataFlowAdapter._get_input_node_type(
-            source_handle_type_detail
-        )
-        output_node_type = NodeDataFlowAdapter._get_output_node_type(
-            target_handle_type_detail
-        )
-
         if (
-            not input_node_type
-            or not output_node_type
-            or input_node_type == output_node_type
+            not source_handle_type
+            or not target_handle_type
+            or source_handle_type == target_handle_type
         ):
             # Fallback
             logger.warning(
-                f"Failed to adapt node data from {input_node_type} to {output_node_type}"
+                f"Failed to adapt node data from {source_handle_type} to {target_handle_type}"
             )
             return output_data_to_transfer
 
         adapter_func: Callable = AdapterMatrix.MATRIX.get(
-            (output_node_type.value, input_node_type.value)
+            (target_handle_type, source_handle_type)
         )
 
         if adapter_func:
@@ -105,6 +98,6 @@ class NodeDataFlowAdapter:
             return output_data_to_transfer
 
         logger.warning(
-            f"Failed to find adapter for {input_node_type} to {output_node_type}"
+            f"Failed to find adapter for {source_handle_type} to {target_handle_type}"
         )
         return output_data_to_transfer
