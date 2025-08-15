@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, Optional, Type
+from typing import Callable, Optional, Type
 
 from loguru import logger
 from src.nodes.handles.basics.inputs import InputHandleTypeEnum
@@ -22,51 +22,7 @@ class AdapterMatrix:
 
 
 class NodeDataFlowAdapter:
-    @staticmethod
-    def _get_input_node_type(
-        type_detail: Dict[str, Any],
-    ) -> Optional[InputHandleTypeEnum]:
-        """Extract node type from type_detail.
-
-        Args:
-            type_detail: Dictionary containing type information,
-            expected to have a "type" key
-
-        Returns:
-            InputHandleTypeEnum if the type is valid, None otherwise
-        """
-        type_str = type_detail.get("type")
-        if not type_str:
-            return None
-
-        try:
-            return InputHandleTypeEnum[type_str]
-        except KeyError:
-            logger.warning(f"Unknown input handle type: {type_str}")
-            return None
-
-    @staticmethod
-    def _get_output_node_type(
-        type_detail: Dict[str, Any],
-    ) -> Optional[OutputHandleTypeEnum]:
-        """Extract node type from type_detail.
-
-        Args:
-            type_detail: Dictionary containing type information,
-            expected to have a "type" key
-
-        Returns:
-            OutputHandleTypeEnum if the type is valid, None otherwise
-        """
-        type_str = type_detail.get("type")
-        if not type_str:
-            return None
-
-        try:
-            return OutputHandleTypeEnum[type_str]
-        except KeyError:
-            logger.warning(f"Unknown output handle type: {type_str}")
-            return None
+    """Adapter for node data transformation."""
 
     @staticmethod
     def adapt(
@@ -76,28 +32,56 @@ class NodeDataFlowAdapter:
     ) -> NodeData:
         """Adapt source node data to target's NodeData."""
 
-        if (
-            not source_handle_type
-            or not target_handle_type
-            or source_handle_type == target_handle_type
+        if not NodeDataFlowAdapter._should_adapt(
+            source_handle_type, target_handle_type
         ):
-            # Fallback
-            logger.warning(
-                f"Failed to adapt node data from {source_handle_type} to {target_handle_type}"
-            )
             return output_data_to_transfer
 
-        adapter_func: Callable = AdapterMatrix.MATRIX.get(
-            (target_handle_type, source_handle_type)
+        adapter_func = NodeDataFlowAdapter._find_adapter(
+            source_handle_type, target_handle_type
         )
 
         if adapter_func:
-            output_data_to_transfer.output_values = adapter_func(
-                output_data_to_transfer.output_values
+            return NodeDataFlowAdapter._apply_adapter(
+                output_data_to_transfer, adapter_func
             )
-            return output_data_to_transfer
 
-        logger.warning(
-            f"Failed to find adapter for {source_handle_type} to {target_handle_type}"
-        )
         return output_data_to_transfer
+
+    @staticmethod
+    def _should_adapt(source_handle_type: Type, target_handle_type: Type) -> bool:
+        """Check if adaptation is needed and possible."""
+        if not source_handle_type or not target_handle_type:
+            logger.warning(
+                f"Cannot adapt: invalid handle types - source: {source_handle_type}, target: {target_handle_type}"  # noqa
+            )
+            return False
+
+        if source_handle_type == target_handle_type:
+            logger.debug(
+                f"No adaptation needed: source and target types are the same: {source_handle_type}"  # noqa
+            )
+            return False
+
+        return True
+
+    @staticmethod
+    def _find_adapter(
+        source_handle_type: Type, target_handle_type: Type
+    ) -> Optional[Callable]:
+        """Find the appropriate adapter function for the given type conversion."""
+        adapter_key = (target_handle_type, source_handle_type)
+        adapter_func = AdapterMatrix.MATRIX.get(adapter_key)
+
+        if not adapter_func:
+            logger.warning(
+                f"No adapter found for conversion from {source_handle_type} to {target_handle_type}"  # noqa
+            )
+
+        return adapter_func
+
+    @staticmethod
+    def _apply_adapter(output_data: NodeData, adapter_func: Callable) -> NodeData:
+        """Apply the adapter function to the output data."""
+        output_data.output_values = adapter_func(output_data.output_values)
+        return output_data
