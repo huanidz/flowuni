@@ -95,7 +95,7 @@ class HttpRequestNode(Node):
                         DynamicTypeItem(
                             type_label="Json",
                             type_name=TextFieldInputHandle.__name__,
-                            details=TextFieldInputHandle(),
+                            details=TextFieldInputHandle(multiline=True),
                         ),
                         DynamicTypeItem(
                             type_label="Form",

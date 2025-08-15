@@ -6,7 +6,7 @@ from src.components.funcs.CalculatorNodeFuncs import safe_eval
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.handles.basics.inputs.TextFieldInputHandle import TextFieldInputHandle
-from src.nodes.handles.basics.outputs.DataOutputHandle import DataOutputHandle
+from src.nodes.handles.basics.outputs import NumberOutputHandle
 from src.nodes.NodeBase import Node, NodeSpec
 from src.schemas.flowbuilder.flow_graph_schemas import ToolConfig
 from src.schemas.nodes.node_data_parsers import BuildToolResult
@@ -27,7 +27,7 @@ class CalculatorNode(Node):
         outputs=[
             NodeOutput(
                 name="result",
-                type=DataOutputHandle(),
+                type=NumberOutputHandle(),
                 description="The response from agent.",
                 enable_for_tool=True,
             ),

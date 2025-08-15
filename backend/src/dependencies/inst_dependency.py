@@ -1,13 +1,14 @@
 # app/dependencies/instructor_ext.py
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
-import instructor
-from google.oauth2.service_account import Credentials
-from instructor import Instructor, Mode
 from src.configs.config import get_settings
 from src.utils.chat_completion_utils import get_current_time
-from vertexai import init
-from vertexai.generative_models import GenerativeModel
+
+if TYPE_CHECKING:
+    from google.oauth2.service_account import Credentials
+    from instructor import Instructor, Mode, from_vertexai
+    from vertexai import init
+    from vertexai.generative_models import GenerativeModel
 
 
 class InstructorService:
@@ -40,7 +41,7 @@ class InstructorService:
             model_name=model_name,
             system_instruction=[combined_instruction],
         )
-        return instructor.from_vertexai(client=model, mode=Mode.VERTEXAI_JSON)
+        return from_vertexai(client=model, mode=Mode.VERTEXAI_JSON)
 
 
 # Get settings and create global instance

@@ -32,6 +32,6 @@ class StringTransformNode(Node):
             return {"output": ""}
 
         # Implement your transformation logic here
-        transformed_string = input_string.upper()
+        transformed_string = str(input_string).upper()
 
         return {"output": transformed_string}
