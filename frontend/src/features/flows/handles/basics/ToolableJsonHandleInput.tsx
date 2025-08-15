@@ -41,31 +41,55 @@ export const ToolableJsonHandleInput: React.FC<
 
     // Initialize from value prop
     useEffect(() => {
-        if (value && value.example_json && !isInitialized) {
+        if (value && value.example_json) {
             setJsonInput(JSON.stringify(value.example_json, null, 2));
             setIsInitialized(true);
-            if (value.toolable_config) {
-                // Parse the toolable_config to set initial field states
-                parseFromToolableConfig(value.toolable_config);
+
+            // Always parse the JSON to update the fields
+            try {
+                const parsed = JSON.parse(JSON.stringify(value.example_json));
+                const { nodes, errors } = parseToTree(parsed);
+                setFields(nodes);
+                setErrors(errors);
+                setIsParsed(true);
+
+                // Apply toolable_config if it exists
+                if (value.toolable_config) {
+                    applyToolableConfig(nodes, value.toolable_config);
+                }
+            } catch {
+                setFields([]);
+                setErrors(['Invalid JSON format']);
+                setIsParsed(false);
             }
         }
-    }, [value, isInitialized]);
+    }, [value]);
 
-    // Parse toolable_config to set initial field states
-    const parseFromToolableConfig = (toolableConfig: any) => {
-        // This would be implemented to restore field states from toolable_config
-        // For now, we'll just parse the JSON without triggering onChange
-        try {
-            const parsed = JSON.parse(jsonInput);
-            const { nodes, errors } = parseToTree(parsed);
-            setFields(nodes);
-            setErrors(errors);
-            setIsParsed(true);
-        } catch {
-            setFields([]);
-            setErrors(['Invalid JSON format']);
-            setIsParsed(false);
-        }
+    // Apply toolable_config to field nodes
+    const applyToolableConfig = (nodes: FieldNode[], toolableConfig: any) => {
+        const applyConfig = (nodes: FieldNode[]): FieldNode[] => {
+            return nodes.map(node => {
+                const config = toolableConfig[node.path];
+                const updatedNode = { ...node };
+
+                if (config) {
+                    updatedNode.isToolable = config.toolable || false;
+                    updatedNode.defaultValue =
+                        config.defaultValue !== undefined
+                            ? config.defaultValue
+                            : node.defaultValue;
+                }
+
+                if (node.children) {
+                    updatedNode.children = applyConfig(node.children);
+                }
+
+                return updatedNode;
+            });
+        };
+
+        const updatedNodes = applyConfig(nodes);
+        setFields(updatedNodes);
     };
 
     // Merge all array items into single schema
@@ -204,6 +228,32 @@ export const ToolableJsonHandleInput: React.FC<
         } catch {
             setFields([]);
             setErrors(['Invalid JSON format']);
+            setIsParsed(false);
+        }
+    };
+
+    // Handle JSON input change
+    const handleJsonInputChange = (newJsonInput: string) => {
+        setJsonInput(newJsonInput);
+
+        // Try to parse and update if valid
+        try {
+            const parsed = JSON.parse(newJsonInput);
+            const { nodes, errors } = parseToTree(parsed);
+            setFields(nodes);
+            setErrors(errors);
+            setIsParsed(true);
+
+            // Update both example_json and toolable_config in the parent component
+            if (onChange) {
+                const toolableConfig = generateMappingFromFields(nodes);
+                onChange({
+                    example_json: parsed,
+                    toolable_config: toolableConfig,
+                });
+            }
+        } catch {
+            // Don't update on invalid JSON, wait for explicit parse
             setIsParsed(false);
         }
     };
@@ -467,7 +517,7 @@ export const ToolableJsonHandleInput: React.FC<
             <div className="space-y-2">
                 <textarea
                     value={jsonInput}
-                    onChange={e => setJsonInput(e.target.value)}
+                    onChange={e => handleJsonInputChange(e.target.value)}
                     placeholder={`{
   "users": [
     {"name": "John", "age": 30, "email": "john@example.com"},
