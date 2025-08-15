@@ -278,7 +278,7 @@ class Node(ABC):
                     required=input_spec.required,
                     allow_incoming_edges=input_spec.allow_incoming_edges,
                     allow_multiple_incoming_edges=input_spec.allow_multiple_incoming_edges,
-                    enable_for_tool=input_spec.enable_for_tool,
+                    enable_as_whole_for_tool=input_spec.enable_as_whole_for_tool,
                 ).model_dump()
             )
         return serialized_inputs

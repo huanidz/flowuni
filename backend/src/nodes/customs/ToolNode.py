@@ -15,7 +15,7 @@ class ToolNode(Node):
                 name="input_message",
                 type=TextFieldInputHandle(),
                 description="The message to be processed by agent.",
-                enable_for_tool=True,
+                enable_as_whole_for_tool=True,
             ),
             NodeInput(
                 name="system_instruction",

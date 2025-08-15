@@ -20,7 +20,7 @@ class NodeInput(BaseModel):
     allow_multiple_incoming_edges: bool = False
 
     # Tool related
-    enable_for_tool: bool = False
+    enable_as_whole_for_tool: bool = False
 
     @field_validator("type")
     @classmethod

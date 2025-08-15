@@ -6,6 +6,7 @@ from .NumberInputHandle import NumberInputHandle
 from .SecretTextInputHandle import SecretTextInputHandle
 from .TableInputHandle import TableInputHandle
 from .TextFieldInputHandle import TextFieldInputHandle
+from .ToolableJsonInputHandle import ToolableJsonInputHandle
 
 __all__ = [
     "BooleanInputHandle",
@@ -16,10 +17,10 @@ __all__ = [
     "TextFieldInputHandle",
     "DynamicTypeInputHandle",
     "TableInputHandle",
+    "ToolableJsonInputHandle",
 ]
 
 from enum import Enum
-from typing import Type
 
 
 class InputHandleTypeEnum(Enum):
@@ -31,3 +32,4 @@ class InputHandleTypeEnum(Enum):
     SECRET_TEXT = SecretTextInputHandle
     DYNAMIC_TYPE = DynamicTypeInputHandle
     TABLE = TableInputHandle
+    TOOLABLE_JSON = ToolableJsonInputHandle

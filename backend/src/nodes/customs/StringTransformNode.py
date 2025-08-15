@@ -1,6 +1,7 @@
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.handles.basics.inputs.TextFieldInputHandle import TextFieldInputHandle
+from src.nodes.handles.basics.outputs import StringOutputHandle
 from src.nodes.NodeBase import Node, NodeSpec
 
 
@@ -16,7 +17,11 @@ class StringTransformNode(Node):
             )
         ],
         outputs=[
-            NodeOutput(name="output", type=str, description="The transformed string.")
+            NodeOutput(
+                name="output",
+                type=StringOutputHandle(),
+                description="The transformed string.",
+            )
         ],
         parameters={},
     )
@@ -26,7 +31,7 @@ class StringTransformNode(Node):
 
         import time
 
-        time.sleep(3)
+        time.sleep(1)
 
         if not input_string:
             return {"output": ""}

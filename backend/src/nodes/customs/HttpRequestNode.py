@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Union
 from pydantic import BaseModel
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
+from src.nodes.handles.basics.inputs import ToolableJsonInputHandle
 from src.nodes.handles.basics.inputs.DropdownInputHandle import (
     DropdownInputHandle,
     DropdownOption,
@@ -16,7 +17,10 @@ from src.nodes.handles.basics.inputs.TableInputHandle import (
     TableColumnDType,
     TableInputHandle,
 )
-from src.nodes.handles.basics.inputs.TextFieldInputHandle import TextFieldInputHandle
+from src.nodes.handles.basics.inputs.TextFieldInputHandle import (
+    TextFieldInputFormatEnum,
+    TextFieldInputHandle,
+)
 from src.nodes.handles.basics.outputs.DataOutputHandle import DataOutputHandle
 from src.nodes.NodeBase import Node, NodeSpec
 from src.schemas.flowbuilder.flow_graph_schemas import ToolConfig
@@ -95,7 +99,15 @@ class HttpRequestNode(Node):
                         DynamicTypeItem(
                             type_label="Json",
                             type_name=TextFieldInputHandle.__name__,
-                            details=TextFieldInputHandle(multiline=True),
+                            details=TextFieldInputHandle(
+                                multiline=True,
+                                format=TextFieldInputFormatEnum.JSON,
+                            ),
+                        ),
+                        DynamicTypeItem(
+                            type_label="Toolable Json",
+                            type_name=ToolableJsonInputHandle.__name__,
+                            details=ToolableJsonInputHandle(),
                         ),
                         DynamicTypeItem(
                             type_label="Form",

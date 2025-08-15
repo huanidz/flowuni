@@ -1,6 +1,12 @@
+from enum import Enum
 from typing import Any, Dict, Optional
 
 from src.nodes.handles.InputHandleBase import InputHandleTypeBase
+
+
+class TextFieldInputFormatEnum(str, Enum):
+    PLAIN = "plain"
+    JSON = "json"
 
 
 class TextFieldInputHandle(InputHandleTypeBase):
@@ -9,6 +15,7 @@ class TextFieldInputHandle(InputHandleTypeBase):
     placeholder: Optional[str] = None
     max_length: Optional[int] = None
     multiline: bool = False
+    format: TextFieldInputFormatEnum = TextFieldInputFormatEnum.PLAIN
 
     def get_type_name(self) -> str:
         return "text_field"
@@ -28,6 +35,7 @@ class TextFieldInputHandle(InputHandleTypeBase):
             "type": "text_field",
             "placeholder": self.placeholder,
             "multiline": self.multiline,
+            "format": self.format.value,
         }
         if self.max_length:
             schema["max_length"] = self.max_length

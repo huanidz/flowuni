@@ -2,35 +2,28 @@ import React from 'react';
 import type { TypeDetail } from '@/features/nodes/types';
 
 interface AgentToolHandleInputProps {
-  label: string;
-  description?: string;
-  value: any;
-  onChange?: (value: string) => void;
-  type_detail: TypeDetail;
-  disabled: boolean;
+    label: string;
+    description?: string;
+    value: any;
+    onChange?: (value: string) => void;
+    type_detail: TypeDetail;
+    disabled: boolean;
+    isWholeAsToolMode?: boolean;
 }
 
 export const AgentToolHandleInput: React.FC<AgentToolHandleInputProps> = ({
-  label,
-  description,
-  value,
-  onChange,
-  type_detail,
-  disabled = true
+    label,
+    description,
+    value,
+    onChange,
+    type_detail,
+    disabled = true,
 }) => {
-  const handleChange = (newValue: string) => {
-    if (onChange && !disabled) {
-      onChange(newValue);
-    }
-  };
+    const handleChange = (newValue: string) => {
+        if (onChange && !disabled) {
+            onChange(newValue);
+        }
+    };
 
-  return (
-    <div>
-      {description && (
-        <span>
-          {/* {description} */}
-        </span>
-      )}
-    </div>
-  );
+    return <div>{description && <span>{/* {description} */}</span>}</div>;
 };
