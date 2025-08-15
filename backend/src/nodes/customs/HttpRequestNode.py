@@ -16,7 +16,10 @@ from src.nodes.handles.basics.inputs.TableInputHandle import (
     TableColumnDType,
     TableInputHandle,
 )
-from src.nodes.handles.basics.inputs.TextFieldInputHandle import TextFieldInputHandle
+from src.nodes.handles.basics.inputs.TextFieldInputHandle import (
+    TextFieldInputFormatEnum,
+    TextFieldInputHandle,
+)
 from src.nodes.handles.basics.outputs.DataOutputHandle import DataOutputHandle
 from src.nodes.NodeBase import Node, NodeSpec
 from src.schemas.flowbuilder.flow_graph_schemas import ToolConfig
@@ -95,7 +98,9 @@ class HttpRequestNode(Node):
                         DynamicTypeItem(
                             type_label="Json",
                             type_name=TextFieldInputHandle.__name__,
-                            details=TextFieldInputHandle(multiline=True),
+                            details=TextFieldInputHandle(
+                                multiline=True, format=TextFieldInputFormatEnum.JSON
+                            ),
                         ),
                         DynamicTypeItem(
                             type_label="Form",
