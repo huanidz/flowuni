@@ -602,6 +602,19 @@ class JSONFlattener:
             logger.error(f"Error converting to JSON: {e}")
             raise
 
+    def set_flattened_json(self, json_dict: dict) -> None:
+        """
+        Set the flattened data from a JSON string.
+
+        Args:
+            json_data: JSON dict
+        """
+        try:
+            self.flattened_data = json_dict
+        except Exception as e:
+            logger.error(f"Error parsing JSON: {e}")
+            raise
+
     def get_created_models(self) -> Dict[str, Type[BaseModel]]:
         """
         Get all created models.

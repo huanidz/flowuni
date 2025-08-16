@@ -1,6 +1,6 @@
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, Union
 
-from pydantic import BaseModel
+from loguru import logger
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.handles.basics.inputs import ToolableJsonInputHandle
@@ -23,6 +23,12 @@ from src.nodes.handles.basics.inputs.TextFieldInputHandle import (
 )
 from src.nodes.handles.basics.outputs.DataOutputHandle import DataOutputHandle
 from src.nodes.NodeBase import Node, NodeSpec
+from src.nodes.utils.http_request_node_utils import (
+    build_merged_tool_schema,
+    create_body_schema_from_toolable_json,
+    create_pydantic_model_from_table_data,
+    extract_toolable_items,
+)
 from src.schemas.flowbuilder.flow_graph_schemas import ToolConfig
 from src.schemas.nodes.node_data_parsers import BuildToolResult
 
@@ -175,34 +181,64 @@ class HttpRequestNode(Node):
     def build_tool(
         self, inputs_values: Dict[str, Any], tool_configs: ToolConfig
     ) -> BuildToolResult:
+        """
+        Build a tool schema by merging headers, query parameters, and body schemas.
+
+        Args:
+            inputs_values: Dictionary containing input values from the node
+            tool_configs: Tool configuration containing name and description
+
+        Returns:
+            BuildToolResult containing the merged tool schema
+
+        Raises:
+            ValueError: If body type is not 'Toolable Json' or no toolable fields found
+            RuntimeError: If schema creation fails
+        """
         tool_name = (
             tool_configs.tool_name if tool_configs.tool_name else "HttpRequestTool"
         )
         tool_description = (
             tool_configs.tool_description
             if tool_configs.tool_description
-            else "HttpRequest tool that will send http request."
+            else "HTTP Request tool that sends HTTP requests with configurable headers, query parameters, and body."  # noqa
         )
 
-        class HttpRequestHeaderSchema(BaseModel):
-            name: str
-            value: str
+        try:
+            # Extract input values
+            headers = inputs_values.get("headers", [])
+            query_params = inputs_values.get("query_params", [])
+            body = inputs_values.get("body", {})
 
-        class HttpRequestQuerySchema(BaseModel):
-            name: str
-            value: str
+            # Create individual schemas
+            toolable_headers = extract_toolable_items(headers, "headers")
+            HeaderToolSchema = create_pydantic_model_from_table_data(
+                input_list=toolable_headers, model_name="HeaderToolSchema"
+            )
 
-        class HttpRequestBodySchema(BaseModel):
-            name: str
-            value: str
+            toolable_query_params = extract_toolable_items(
+                query_params, "query parameters"
+            )
+            QueryToolSchema = create_pydantic_model_from_table_data(
+                input_list=toolable_query_params, model_name="QueryToolSchema"
+            )
 
-        class HttpRequestSchema(BaseModel):
-            headers: List[HttpRequestHeaderSchema]
-            query_params: List[HttpRequestQuerySchema]
-            body: List[HttpRequestBodySchema]
+            BodyJsonSchema = create_body_schema_from_toolable_json(body)
 
-        return BuildToolResult(
-            tool_name=tool_name,
-            tool_description=tool_description,
-            tool_schema=HttpRequestSchema,
-        )
+            # Build merged schema
+            tool_schema = build_merged_tool_schema(
+                HeaderToolSchema, QueryToolSchema, BodyJsonSchema, tool_name
+            )
+
+            return BuildToolResult(
+                tool_name=tool_name,
+                tool_description=tool_description,
+                tool_schema=tool_schema,
+            )
+
+        except ValueError as ve:
+            logger.error(f"Validation error in build_tool: {ve}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error creating tool schema: {e}")
+            raise RuntimeError(f"Failed to create tool schema: {e}") from e
