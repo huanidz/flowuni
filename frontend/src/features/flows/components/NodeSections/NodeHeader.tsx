@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { MoreVertical } from 'lucide-react';
 import { nodeStyles } from '@/features/flows/styles/nodeStyles';
 
 interface NodeHeaderProps {
@@ -18,6 +19,8 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
     canBeTool,
     nodeId,
 }) => {
+    const [showActionsMenu, setShowActionsMenu] = useState(false);
+
     // Handle mode change through dropdown
     const handleModeSelect = (newMode: string) => {
         if (onModeChange) {
@@ -25,13 +28,74 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
         }
     };
 
+    // Handle actions menu toggle
+    const toggleActionsMenu = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setShowActionsMenu(!showActionsMenu);
+    };
+
+    // Close menu when clicking outside
+    React.useEffect(() => {
+        const handleClickOutside = () => {
+            if (showActionsMenu) {
+                setShowActionsMenu(false);
+            }
+        };
+
+        if (showActionsMenu) {
+            document.addEventListener('click', handleClickOutside);
+            return () => {
+                document.removeEventListener('click', handleClickOutside);
+            };
+        }
+    }, [showActionsMenu]);
+
     return (
         <div style={nodeStyles.header} className="node-drag-handle">
+            {/* Mini island/panel menu */}
+            {showActionsMenu && (
+                <div style={nodeStyles.actionsMenu}>
+                    <div style={nodeStyles.actionsMenuContainer}>
+                        <div
+                            style={nodeStyles.actionsMenuItem}
+                            onClick={e => {
+                                e.stopPropagation();
+                                // Add action handlers here
+                                setShowActionsMenu(false);
+                            }}
+                        >
+                            Edit Node
+                        </div>
+                        <div
+                            style={nodeStyles.actionsMenuItem}
+                            onClick={e => {
+                                e.stopPropagation();
+                                // Add action handlers here
+                                setShowActionsMenu(false);
+                            }}
+                        >
+                            Duplicate
+                        </div>
+                        <div
+                            style={nodeStyles.actionsMenuItemDelete}
+                            onClick={e => {
+                                e.stopPropagation();
+                                // Add action handlers here
+                                setShowActionsMenu(false);
+                            }}
+                        >
+                            Delete
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div
                 style={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
+                    position: 'relative',
                 }}
             >
                 <div
@@ -77,6 +141,16 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
                             <option value="ToolMode">Tool</option>
                         </select>
                     )}
+
+                    {/* Actions button */}
+                    <button
+                        onClick={toggleActionsMenu}
+                        style={nodeStyles.actionsButton}
+                        title="Actions"
+                        aria-label="Actions"
+                    >
+                        <MoreVertical size={14} />
+                    </button>
                 </div>
             </div>
             {description && (
