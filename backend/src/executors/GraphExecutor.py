@@ -158,8 +158,7 @@ class GraphExecutor:
             }
 
         except Exception as e:
-            logger.error(f"Graph execution failed: {str(e)}")
-            raise GraphExecutorError(f"Execution failed: {str(e)}") from e
+            raise GraphExecutorError(f"Execution failed: {str(e)}.") from e
 
     def _execute_layer_parallel(
         self, executor: ThreadPoolExecutor, layer_nodes: List[str], layer_index: int
