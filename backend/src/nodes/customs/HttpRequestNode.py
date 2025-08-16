@@ -1,5 +1,7 @@
+import json
 from typing import Any, Dict, Union
 
+import requests
 from loguru import logger
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
@@ -156,27 +158,146 @@ class HttpRequestNode(Node):
         can_be_tool=True,
     )
 
-    def process(
+    def process(  # noqa
         self, inputs: Dict[str, Any], parameters: Dict[str, Any]
-    ) -> Dict[str, Union[float, int, str]]:
+    ) -> Dict[str, Union[float, int, str, dict]]:
         """
-        Process the calculator node by evaluating the mathematical expression.
+        Process the HTTP request node by making an HTTP request.
 
         Args:
-            inputs: Dictionary containing the expression to evaluate
+            inputs: Dictionary containing the request parameters
             parameters: Dictionary of parameters (not used in this node)
 
         Returns:
-            Dictionary containing the evaluation result or error message
+            Dictionary containing the HTTP response or error message
         """
-        # expression: str = inputs.get("expression", "")
+        try:
+            # Validate URL
+            url = inputs.get("url", "").strip()
+            if not url:
+                return {"result": {"error": "URL cannot be empty"}}
 
-        # # Log the incoming expression for debugging
-        # logger.info(f"Evaluating expression: {expression}")
+            # Validate HTTP method
+            method = inputs.get("method", "GET").upper()
+            supported_methods = ["GET", "POST", "PUT", "PATCH", "DELETE"]
+            if method not in supported_methods:
+                return {
+                    "result": {
+                        "error": f"Unsupported HTTP method: {method}. Supported methods: {supported_methods}"  # noqa
+                    }
+                }
 
-        # result = safe_eval(expression)
+            # Process headers
+            headers_dict = {}
+            headers = inputs.get("headers", [])
+            if headers:
+                for header in headers:
+                    if (
+                        isinstance(header, dict)
+                        and "name" in header
+                        and "value" in header
+                    ):
+                        name = header.get("name", "").strip()
+                        value = header.get("value", "").strip()
+                        if name and value:  # Only add non-empty headers
+                            headers_dict[name] = value
 
-        return {"result": "zxc"}
+            # Process query parameters
+            params_dict = {}
+            query_params = inputs.get("query_params", [])
+            if query_params:
+                for param in query_params:
+                    if isinstance(param, dict) and "name" in param and "value" in param:
+                        name = param.get("name", "").strip()
+                        value = param.get("value", "").strip()
+                        if name and value:  # Only add non-empty params
+                            params_dict[name] = value
+
+            # Process body
+            body_data = None
+            body = inputs.get("body", {})
+            if body and isinstance(body, dict):
+                # Check if body has the expected structure
+                if "type_values" in body:
+                    type_values = body.get("type_values", {})
+                    # Always use TextFieldInputHandle as specified
+                    text_field_value = type_values.get("TextFieldInputHandle")
+                    if text_field_value and text_field_value.strip():
+                        try:
+                            # Try to parse as JSON
+                            body_data = json.loads(text_field_value)
+                        except json.JSONDecodeError:
+                            # If not valid JSON, use as string
+                            body_data = text_field_value.strip()
+                elif body:
+                    # Handle case where body is directly provided (fallback)
+                    body_data = body
+
+            # Add Content-Type header if body is present and no Content-Type is set
+            if (
+                body_data is not None
+                and "Content-Type" not in headers_dict
+                and "content-type" not in headers_dict
+            ):
+                if isinstance(body_data, dict):
+                    headers_dict["Content-Type"] = "application/json"
+                else:
+                    headers_dict["Content-Type"] = "text/plain"
+
+            # Make HTTP request
+            logger.info(f"Making {method} request to {url}")
+
+            request_kwargs = {
+                "method": method,
+                "url": url,
+                "headers": headers_dict if headers_dict else None,
+                "params": params_dict if params_dict else None,
+                "timeout": 30,  # 30 second timeout
+            }
+
+            # Add body for methods that support it
+            if method in ["POST", "PUT", "PATCH"] and body_data is not None:
+                if isinstance(body_data, dict):
+                    request_kwargs["json"] = body_data
+                else:
+                    request_kwargs["data"] = body_data
+
+            response = requests.request(**request_kwargs)
+
+            # Process response
+            result = {
+                "status_code": response.status_code,
+                "headers": dict(response.headers),
+                "url": response.url,
+            }
+
+            # Try to parse response as JSON, fallback to text
+            try:
+                result["data"] = response.json()
+            except json.JSONDecodeError:
+                result["data"] = response.text
+
+            # Add success/error status
+            result["success"] = 200 <= response.status_code < 300
+
+            return {"result": str(result)}
+
+        except requests.exceptions.Timeout:
+            logger.error("HTTP request timed out")
+            return {"result": str({"error": "Request timed out"})}
+        except requests.exceptions.ConnectionError:
+            logger.error("HTTP connection error")
+            return {
+                "result": str(
+                    {"error": "Connection error - unable to reach the server"}
+                )
+            }
+        except requests.exceptions.RequestException as e:
+            logger.error(f"HTTP request error: {e}")
+            return str({"result": {"error": f"Request failed: {str(e)}"}})
+        except Exception as e:
+            logger.error(f"Unexpected error in HTTP request: {e}")
+            return str({"result": {"error": f"Unexpected error: {str(e)}"}})
 
     def build_tool(
         self, inputs_values: Dict[str, Any], tool_configs: ToolConfig
