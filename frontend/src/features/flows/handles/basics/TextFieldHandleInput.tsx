@@ -1,12 +1,8 @@
 import React from 'react';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { ControlledInput } from '@/features/flows/components/ControlledInput';
 import type { TypeDetail } from '@/features/nodes/types';
 import { textfieldHandleStyles } from '../../styles/handleStyles';
 import { TEXT_FIELD_FORMAT } from '../consts/TextFieldHandleInputConsts';
-
-// Debug counter to track re-renders
-let renderCount = 0;
 
 interface TextFieldHandleInputProps {
     label: string;
@@ -30,11 +26,6 @@ export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
     disabled = true,
     isWholeAsToolMode = false,
 }) => {
-    // Debug: Track re-renders
-    renderCount++;
-    console.log(
-        `[TextFieldHandleInput] Render #${renderCount}, label: ${label}, value: "${value}", disabled: ${disabled}`
-    );
     const {
         placeholder: defaultPlaceholder = '',
         multiline: defaultMultiline = false,
@@ -48,10 +39,6 @@ export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
     const lastCursorPosition = React.useRef<number | null>(null);
 
     const handleChange = (newValue: string) => {
-        console.log(
-            `[TextFieldHandleInput] handleChange called with newValue: "${newValue}", disabled: ${disabled}`
-        );
-
         // Save cursor position before update
         if (defaultMultiline && textareaRef.current) {
             lastCursorPosition.current = textareaRef.current.selectionStart;
@@ -60,9 +47,6 @@ export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
         }
 
         if (onChange && !disabled) {
-            console.log(
-                `[TextFieldHandleInput] Calling onChange callback with: "${newValue}"`
-            );
             onChange(newValue);
         }
     };
@@ -135,14 +119,11 @@ export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
             )}
             {defaultMultiline ? (
                 <div style={textfieldHandleStyles.jsonEditButtonContainer}>
-                    <Textarea
-                        ref={textareaRef}
+                    <ControlledInput
+                        type="textarea"
                         value={disabled ? '' : value || ''}
-                        onChange={e => {
-                            console.log(
-                                `[TextFieldHandleInput] Textarea onChange event, current value: "${e.target.value}"`
-                            );
-                            handleChange(e.target.value);
+                        onChange={newValue => {
+                            handleChange(newValue);
                         }}
                         placeholder={disabled ? '' : defaultPlaceholder}
                         maxLength={defaultMaxLength}
@@ -164,15 +145,11 @@ export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
                         )}
                 </div>
             ) : (
-                <Input
-                    ref={inputRef}
+                <ControlledInput
                     type="text"
                     value={disabled ? '' : value || ''}
-                    onChange={e => {
-                        console.log(
-                            `[TextFieldHandleInput] Input onChange event, current value: "${e.target.value}"`
-                        );
-                        handleChange(e.target.value);
+                    onChange={newValue => {
+                        handleChange(newValue);
                     }}
                     placeholder={disabled ? '' : defaultPlaceholder}
                     maxLength={defaultMaxLength}

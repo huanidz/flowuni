@@ -1,5 +1,5 @@
 // useNodeTypes.ts
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { NodeFactory } from '@/features/flows/utils/NodeFactory';
 import { useNodeRegistry, type NodeSpec } from '@/features/nodes';
 
@@ -38,6 +38,22 @@ export const useNodeTypes = (
     );
     const [nodeTypesLoaded, setNodeTypesLoaded] = useState(false);
 
+    // Memoize the update handlers to prevent unnecessary re-renders
+    const memoizedUpdateHandlers = useMemo(
+        () => ({
+            updateNodeInputData,
+            updateNodeModeData,
+            updateNodeParameterData,
+            updateNodeToolConfigData,
+        }),
+        [
+            updateNodeInputData,
+            updateNodeModeData,
+            updateNodeParameterData,
+            updateNodeToolConfigData,
+        ]
+    );
+
     useEffect(() => {
         // Wait until the node registry is fully loaded
         if (!loaded) {
@@ -57,13 +73,13 @@ export const useNodeTypes = (
             // console.log("Node spec:", nodeSpec);
 
             // Use the factory to create a component for each node type
-            // Pass the update handlers directly
+            // Pass the memoized update handlers
             const CustomNodeComponent = NodeFactory.createNodeComponent(
                 nodeSpec,
-                updateNodeInputData,
-                updateNodeModeData,
-                updateNodeParameterData,
-                updateNodeToolConfigData
+                memoizedUpdateHandlers.updateNodeInputData,
+                memoizedUpdateHandlers.updateNodeModeData,
+                memoizedUpdateHandlers.updateNodeParameterData,
+                memoizedUpdateHandlers.updateNodeToolConfigData
             );
 
             // Only add if component was successfully created
@@ -76,22 +92,18 @@ export const useNodeTypes = (
         // console.log("Node type map:", nodeTypeMap);
         setNodeTypes(nodeTypeMap);
         setNodeTypesLoaded(true);
-    }, [
-        loaded,
-        getAllNodeSpecs,
-        updateNodeInputData,
-        updateNodeModeData,
-        updateNodeParameterData,
-        updateNodeToolConfigData,
-    ]);
+    }, [loaded, getAllNodeSpecs, memoizedUpdateHandlers]);
+
+    // Memoize the nodeTypes object to prevent ReactFlow warning
+    const memoizedNodeTypes = useMemo(() => nodeTypes, [nodeTypes]);
 
     // Memoize the return object to prevent unnecessary re-renders
     return useMemo(
         () => ({
-            nodeTypes,
+            nodeTypes: memoizedNodeTypes,
             nodeTypesLoaded,
             loaded,
         }),
-        [nodeTypes, nodeTypesLoaded, loaded]
+        [memoizedNodeTypes, nodeTypesLoaded, loaded]
     );
 };
