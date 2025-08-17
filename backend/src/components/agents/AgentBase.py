@@ -117,8 +117,11 @@ class Agent(ABC):
                 tool_origin_parser_pair: ToolDataParser = self.tools_map[tool_call_name]
 
                 tool_origin, tool = next(iter(tool_origin_parser_pair.items()))
+                import json
 
-                ToolSchema = PydanticSchemaConverter.load_from_dict(tool.tool_schema)
+                ToolSchema = PydanticSchemaConverter.load(json.dumps(tool.tool_schema))
+
+                logger.info(f"👉 ToolSchema: {ToolSchema.model_json_schema()}")
 
                 tool_call_response = self.llm_provider.structured_completion(
                     messages=chat_messages, output_schema=ToolSchema

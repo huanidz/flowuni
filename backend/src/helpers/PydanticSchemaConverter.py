@@ -79,7 +79,9 @@ class PydanticSchemaConverter:
             if not model_cls:
                 raise ValueError("Model class is required")
 
-            schema_dict: Dict[str, Any] = model_cls.model_json_schema()
+            schema_dict: Dict[str, Any] = model_cls.model_json_schema(
+                by_alias=False, mode="serialization"
+            )
             return json.dumps(schema_dict)
         except Exception as e:
             logger.error(f"Error serializing model {model_cls}: {str(e)}")
