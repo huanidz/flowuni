@@ -109,6 +109,10 @@ def create_body_schema_from_toolable_json(
     Raises:
         ValueError: If body type is not supported for tools
     """
+
+    if not isinstance(body, Dict):
+        return None
+
     body_type = body.get("selected_type", "")
     if body_type and body_type != ToolableJsonInputHandle.__name__:
         raise ValueError(

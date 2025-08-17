@@ -325,41 +325,31 @@ class HttpRequestNode(Node):
             else "HTTP Request tool that sends HTTP requests with configurable headers, query parameters, and body."  # noqa
         )
 
-        try:
-            # Extract input values
-            headers = inputs_values.get("headers", [])
-            query_params = inputs_values.get("query_params", [])
-            body = inputs_values.get("body", {})
+        # Extract input values
+        headers = inputs_values.get("headers", [])
+        query_params = inputs_values.get("query_params", [])
+        body = inputs_values.get("body", {})
 
-            # Create individual schemas
-            toolable_headers = extract_toolable_items(headers, "headers")
-            HeaderToolSchema = create_pydantic_model_from_table_data(
-                input_list=toolable_headers, model_name="HeaderToolSchema"
-            )
+        # Create individual schemas
+        toolable_headers = extract_toolable_items(headers, "headers")
+        HeaderToolSchema = create_pydantic_model_from_table_data(
+            input_list=toolable_headers, model_name="HeaderToolSchema"
+        )
 
-            toolable_query_params = extract_toolable_items(
-                query_params, "query parameters"
-            )
-            QueryToolSchema = create_pydantic_model_from_table_data(
-                input_list=toolable_query_params, model_name="QueryToolSchema"
-            )
+        toolable_query_params = extract_toolable_items(query_params, "query parameters")
+        QueryToolSchema = create_pydantic_model_from_table_data(
+            input_list=toolable_query_params, model_name="QueryToolSchema"
+        )
 
-            BodyJsonSchema = create_body_schema_from_toolable_json(body)
+        BodyJsonSchema = create_body_schema_from_toolable_json(body)
 
-            # Build merged schema
-            tool_schema = build_merged_tool_schema(
-                HeaderToolSchema, QueryToolSchema, BodyJsonSchema, tool_name
-            )
+        # Build merged schema
+        tool_schema = build_merged_tool_schema(
+            HeaderToolSchema, QueryToolSchema, BodyJsonSchema, tool_name
+        )
 
-            return BuildToolResult(
-                tool_name=tool_name,
-                tool_description=tool_description,
-                tool_schema=tool_schema,
-            )
-
-        except ValueError as ve:
-            logger.error(f"Validation error in build_tool: {ve}")
-            raise
-        except Exception as e:
-            logger.error(f"Unexpected error creating tool schema: {e}")
-            raise RuntimeError(f"Failed to create tool schema: {e}") from e
+        return BuildToolResult(
+            tool_name=tool_name,
+            tool_description=tool_description,
+            tool_schema=tool_schema,
+        )

@@ -6,18 +6,19 @@ and methods that can be extended or overridden by specific agent implementations
 """
 
 from abc import ABC
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 from loguru import logger
-from src.components.agents.schemas.AgentOutputSchema import AgentOutputSchema
+
+# from src.components.agents.schemas.AgentOutputSchema import AgentOutputSchema
 from src.components.llm.models.core import (
     ChatMessage,
     ChatResponse,
 )
 from src.components.llm.providers.adapters.LLMAdapterBase import LLMAdapter
+from src.helpers.PydanticChatSchemaConstructor import PydanticChatSchemaConstructor
+from src.helpers.PydanticSchemaConverter import PydanticSchemaConverter
 from src.helpers.ToolHelper import ToolHelper
-from src.nodes.NodeRegistry import NodeRegistry
 from src.schemas.nodes.node_data_parsers import ToolDataParser
 
 
@@ -78,25 +79,57 @@ class Agent(ABC):
         # Initialize LLM provider
         self._initialize_llm_provider(system_prompt)
 
+        ENABLE_REASONING = True
+        ENABLE_TOOL_USE = True
+
+        AgentResponseSchema = PydanticChatSchemaConstructor.create_agent_response_model(
+            enable_reasoning=ENABLE_REASONING, enable_tool_use=ENABLE_TOOL_USE
+        )
+
+        chat_messages = [message]
+
         # Get structured completion from LLM
-        agent_response: AgentOutputSchema = self.llm_provider.structured_completion(
-            messages=[message], output_schema=AgentOutputSchema
+        agent_response = self.llm_provider.structured_completion(
+            messages=chat_messages, output_schema=AgentResponseSchema
         )
         logger.info(f"Agent Response: {agent_response.model_dump_json(indent=2)}")
 
-        # Handle response based on whether tools were called
-        if not agent_response.planned_tool_calls:
-            return ChatResponse(content=agent_response.final_response)
+        if ENABLE_TOOL_USE:
+            if not agent_response.planned_tool_calls:
+                return ChatResponse(content=agent_response.final_response)
 
-        # Execute all planned tool calls in parallel
-        tool_results = self._execute_tools_parallel(
-            agent_response.planned_tool_calls, max_workers=max_workers
-        )
+            for tool_call in agent_response.planned_tool_calls:
+                tool_call_name = tool_call.tool_name
 
-        # Format the results
-        formatted_results = self._format_multiple_tool_results(tool_results)
+                IM_EXECUTING_TOOL_MESSAGE = f"Im executing tool {tool_call.tool_name}"
 
-        return ChatResponse(content=formatted_results)
+                chat_messages = [
+                    *chat_messages,
+                    ChatMessage(
+                        role=self.llm_provider.roles.ASSISTANT,
+                        content=IM_EXECUTING_TOOL_MESSAGE,
+                    ),
+                ]
+
+                logger.info(f"👉 self.tools_map: {self.tools_map}")
+
+                # Get target tool schema
+                tool_origin_parser_pair: ToolDataParser = self.tools_map[tool_call_name]
+
+                tool_origin, tool = next(iter(tool_origin_parser_pair.items()))
+
+                ToolSchema = PydanticSchemaConverter.load_from_dict(tool.tool_schema)
+
+                tool_call_response = self.llm_provider.structured_completion(
+                    messages=chat_messages, output_schema=ToolSchema
+                )
+                logger.info(
+                    f"Agent Response: {tool_call_response.model_dump_json(indent=2)}"
+                )
+
+            return ChatResponse(content="DONE")
+
+        return ChatResponse(content=agent_response.final_response)
 
     def _build_tools_map(self) -> Dict[str, Dict[str, ToolDataParser]]:
         """
@@ -130,110 +163,3 @@ class Agent(ABC):
             system_prompt=system_prompt,
             api_key=self.llm_provider.api_key,
         )
-
-    def _execute_single_tool(self, tool_call) -> Tuple[str, str]:
-        """
-        Execute a single tool call.
-
-        Args:
-            tool_call: The tool call to execute
-
-        Returns:
-            Tuple[str, str]: (tool_name, execution_result)
-        """
-        try:
-            origin_map = self.tools_map[tool_call.tool_name]
-
-            origin_tool_name, tool = next(iter(origin_map.items()))
-
-            llm_tool_params = tool_call.tool_params
-
-            default_input_values = tool.input_values
-            llm_input_values = {
-                llm_param.name: llm_param.value for llm_param in llm_tool_params
-            }
-
-            # Override default input values with LLM input values
-            final_input_values = {**default_input_values, **llm_input_values}
-
-            node_registry = NodeRegistry()
-            node_instance = node_registry.create_node_instance(name=origin_tool_name)
-
-            result = node_instance.process(final_input_values, tool.parameter_values)
-            logger.info(f"Tool '{tool_call.tool_name}' executed successfully")
-            return tool_call.tool_name, str(result)
-
-        except Exception as e:
-            error_msg = f"Error executing tool '{tool_call.tool_name}': {str(e)}"
-            logger.error(error_msg)
-            return tool_call.tool_name, f"[ERROR] {error_msg}"
-
-    def _execute_tools_parallel(
-        self, tool_calls: List, max_workers: Optional[int] = None
-    ) -> List[Tuple[str, str]]:
-        """
-        Execute multiple tool calls in parallel using ThreadPoolExecutor.
-
-        Args:
-            tool_calls: List of tool calls to execute
-            max_workers: Maximum number of worker threads. Defaults=None (uses default).
-
-        Returns:
-            List[Tuple[str, str]]: List of (tool_name, result) tuples in execution order
-        """
-        if not tool_calls:
-            return []
-
-        if len(tool_calls) == 1:
-            # Single tool, no need for parallelization
-            return [self._execute_single_tool(tool_calls[0])]
-
-        logger.info(f"Executing {len(tool_calls)} tools in parallel")
-
-        results = []
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            # Submit all tool executions
-            future_to_tool = {
-                executor.submit(self._execute_single_tool, tool_call): tool_call
-                for tool_call in tool_calls
-            }
-
-            # Collect results as they complete
-            for future in as_completed(future_to_tool):
-                tool_call = future_to_tool[future]
-                try:
-                    result = future.result()
-                    results.append(result)
-                except Exception as e:
-                    error_msg = (
-                        f"Unexpected error with tool '{tool_call.tool_name}': {str(e)}"
-                    )
-                    logger.error(error_msg)
-                    results.append((tool_call.tool_name, f"[ERROR] {error_msg}"))
-
-        return results
-
-    def _format_multiple_tool_results(self, tool_results: List[Tuple[str, str]]) -> str:
-        """
-        Format multiple tool execution results into a readable response.
-
-        Args:
-            tool_results: List of (tool_name, result) tuples
-
-        Returns:
-            str: Formatted results string
-        """
-        if not tool_results:
-            return "No tools were executed."
-
-        if len(tool_results) == 1:
-            tool_name, result = tool_results[0]
-            return f"Tool '{tool_name}' result:\n{result}"
-
-        formatted_parts = [f"Executed {len(tool_results)} tools:\n"]
-
-        for i, (tool_name, result) in enumerate(tool_results, 1):
-            formatted_parts.append(f"{i}. Tool '{tool_name}':")
-            formatted_parts.append(f"   {result}\n")
-
-        return "\n".join(formatted_parts)

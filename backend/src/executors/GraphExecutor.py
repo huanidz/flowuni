@@ -2,6 +2,7 @@ import copy
 import json
 import threading
 import time
+import traceback
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from typing import Any, Dict, List, Optional
 
@@ -313,11 +314,17 @@ class GraphExecutor:
 
         except Exception as e:
             execution_time = time.time() - start_time
-            logger.error(f"Node {node_id} execution failed: {str(e)}")
+
+            trace = traceback.format_exc()
+            logger.error(
+                f"❌ Node {node_id} execution failed 🛑: {str(e)}\n🔍 Trace: {trace}"
+            )
             self.push_event(
                 node_id=node_id,
                 event=NodeExecutionEvent.FAILED,
-                data={},
+                data={
+                    "error": str(e),
+                },
             )
             return NodeExecutionResult(
                 node_id=node_id,
@@ -374,11 +381,17 @@ class GraphExecutor:
 
         except Exception as e:
             execution_time = time.time() - start_time
-            logger.error(f"Node {node_id} execution failed (parallel): {str(e)}")
+            trace = traceback.format_exc()
+            logger.error(
+                f"❌ Node {node_id} execution failed 🛑: {str(e)}\n🔍 Trace: {trace}"
+            )
+
             self.push_event(
                 node_id=node_id,
                 event=NodeExecutionEvent.FAILED,
-                data={},
+                data={
+                    "error": str(e),
+                },
             )
             return NodeExecutionResult(
                 node_id=node_id,

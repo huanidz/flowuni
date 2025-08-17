@@ -11,6 +11,12 @@ if TYPE_CHECKING:
     from google.genai import types
 
 
+class GeminiRole:
+    SYSTEM = "system"
+    ASSISTANT = "model"
+    USER = "user"
+
+
 class GoogleGeminiProvider(LLMAdapter):
     """
     Google Gemini provider adapter for LLM integration.
@@ -36,6 +42,8 @@ class GoogleGeminiProvider(LLMAdapter):
             timeout: Timeout for API calls in seconds
         """
         super().init(model, system_prompt, api_key)
+
+        self.roles = GeminiRole
 
         self._client: Optional[instructor.Instructor] = None
 

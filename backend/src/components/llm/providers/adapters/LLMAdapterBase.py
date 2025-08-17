@@ -43,6 +43,12 @@ class LLMAdapterBase(ABC):
         raise NotImplementedError("Subclass must implement this method")
 
 
+class DefaultRole:
+    SYSTEM = "system"
+    ASSISTANT = "assistant"
+    USER = "user"
+
+
 class LLMAdapter(LLMAdapterBase):
     def __init__(self) -> None:
         pass
@@ -53,6 +59,8 @@ class LLMAdapter(LLMAdapterBase):
         self.model = model
         self.system_prompt = system_prompt
         self.api_key = api_key
+
+        self.roles = DefaultRole
 
     def chat_completion(
         self,
