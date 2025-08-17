@@ -5,6 +5,9 @@ import type { TypeDetail } from '@/features/nodes/types';
 import { textfieldHandleStyles } from '../../styles/handleStyles';
 import { TEXT_FIELD_FORMAT } from '../consts/TextFieldHandleInputConsts';
 
+// Debug counter to track re-renders
+let renderCount = 0;
+
 interface TextFieldHandleInputProps {
     label: string;
     description?: string;
@@ -27,6 +30,11 @@ export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
     disabled = true,
     isWholeAsToolMode = false,
 }) => {
+    // Debug: Track re-renders
+    renderCount++;
+    console.log(
+        `[TextFieldHandleInput] Render #${renderCount}, label: ${label}, value: "${value}", disabled: ${disabled}`
+    );
     const {
         placeholder: defaultPlaceholder = '',
         multiline: defaultMultiline = false,
@@ -35,9 +43,26 @@ export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
     } = type_detail.defaults;
 
     const [isModalOpen, setIsModalOpen] = React.useState(false);
+    const inputRef = React.useRef<HTMLInputElement>(null);
+    const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+    const lastCursorPosition = React.useRef<number | null>(null);
 
     const handleChange = (newValue: string) => {
+        console.log(
+            `[TextFieldHandleInput] handleChange called with newValue: "${newValue}", disabled: ${disabled}`
+        );
+
+        // Save cursor position before update
+        if (defaultMultiline && textareaRef.current) {
+            lastCursorPosition.current = textareaRef.current.selectionStart;
+        } else if (!defaultMultiline && inputRef.current) {
+            lastCursorPosition.current = inputRef.current.selectionStart;
+        }
+
         if (onChange && !disabled) {
+            console.log(
+                `[TextFieldHandleInput] Calling onChange callback with: "${newValue}"`
+            );
             onChange(newValue);
         }
     };
@@ -77,6 +102,25 @@ export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
         return baseStyles;
     };
 
+    // Restore cursor position after value update
+    React.useEffect(() => {
+        if (lastCursorPosition.current !== null) {
+            if (defaultMultiline && textareaRef.current) {
+                textareaRef.current.setSelectionRange(
+                    lastCursorPosition.current,
+                    lastCursorPosition.current
+                );
+                lastCursorPosition.current = null;
+            } else if (!defaultMultiline && inputRef.current) {
+                inputRef.current.setSelectionRange(
+                    lastCursorPosition.current,
+                    lastCursorPosition.current
+                );
+                lastCursorPosition.current = null;
+            }
+        }
+    }, [value, defaultMultiline]);
+
     return (
         <div style={textfieldHandleStyles.container}>
             {description && (
@@ -92,8 +136,14 @@ export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
             {defaultMultiline ? (
                 <div style={textfieldHandleStyles.jsonEditButtonContainer}>
                     <Textarea
+                        ref={textareaRef}
                         value={disabled ? '' : value || ''}
-                        onChange={e => handleChange(e.target.value)}
+                        onChange={e => {
+                            console.log(
+                                `[TextFieldHandleInput] Textarea onChange event, current value: "${e.target.value}"`
+                            );
+                            handleChange(e.target.value);
+                        }}
                         placeholder={disabled ? '' : defaultPlaceholder}
                         maxLength={defaultMaxLength}
                         disabled={disabled}
@@ -115,9 +165,15 @@ export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
                 </div>
             ) : (
                 <Input
+                    ref={inputRef}
                     type="text"
                     value={disabled ? '' : value || ''}
-                    onChange={e => handleChange(e.target.value)}
+                    onChange={e => {
+                        console.log(
+                            `[TextFieldHandleInput] Input onChange event, current value: "${e.target.value}"`
+                        );
+                        handleChange(e.target.value);
+                    }}
                     placeholder={disabled ? '' : defaultPlaceholder}
                     maxLength={defaultMaxLength}
                     disabled={disabled}

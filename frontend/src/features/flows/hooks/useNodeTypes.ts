@@ -15,60 +15,83 @@ import { useNodeRegistry, type NodeSpec } from '@/features/nodes';
  * @returns Object containing nodeTypes and loading state.
  */
 export const useNodeTypes = (
-  updateNodeInputData?: (nodeId: string, inputName: string, newData: any) => void,
-  updateNodeModeData?: (nodeId: string, newMode: string) => void,
-  updateNodeParameterData?: (nodeId: string, parameterName: string, value: any) => void,
-  updateNodeToolConfigData?: (nodeId: string, toolConfigName: string, value: any) => void,
+    updateNodeInputData?: (
+        nodeId: string,
+        inputName: string,
+        newData: any
+    ) => void,
+    updateNodeModeData?: (nodeId: string, newMode: string) => void,
+    updateNodeParameterData?: (
+        nodeId: string,
+        parameterName: string,
+        value: any
+    ) => void,
+    updateNodeToolConfigData?: (
+        nodeId: string,
+        toolConfigName: string,
+        value: any
+    ) => void
 ) => {
-  const { getAllNodeSpecs, loaded } = useNodeRegistry();
-  const [nodeTypes, setNodeTypes] = useState<Record<string, React.FC<any>>>({});
-  const [nodeTypesLoaded, setNodeTypesLoaded] = useState(false);
+    const { getAllNodeSpecs, loaded } = useNodeRegistry();
+    const [nodeTypes, setNodeTypes] = useState<Record<string, React.FC<any>>>(
+        {}
+    );
+    const [nodeTypesLoaded, setNodeTypesLoaded] = useState(false);
 
-  useEffect(() => {
-    // Wait until the node registry is fully loaded
-    if (!loaded) {
-      setNodeTypesLoaded(false);
-      return;
-    }
+    useEffect(() => {
+        // Wait until the node registry is fully loaded
+        if (!loaded) {
+            setNodeTypesLoaded(false);
+            return;
+        }
 
-    // Fetch all node specifications from the registry
-    const allNodeSpecs = getAllNodeSpecs();
+        // Fetch all node specifications from the registry
+        const allNodeSpecs = getAllNodeSpecs();
 
-    console.log("All node specs:", allNodeSpecs);
+        console.log('All node specs:', allNodeSpecs);
 
-    // Create an object to hold the generated React components for each node
-    const nodeTypeMap: Record<string, React.FC<any>> = {};
+        // Create an object to hold the generated React components for each node
+        const nodeTypeMap: Record<string, React.FC<any>> = {};
 
-    allNodeSpecs.forEach((nodeSpec: NodeSpec) => {
-      // console.log("Node spec:", nodeSpec);
+        allNodeSpecs.forEach((nodeSpec: NodeSpec) => {
+            // console.log("Node spec:", nodeSpec);
 
-      // Use the factory to create a component for each node type
-      // Pass the update handlers directly
-      const CustomNodeComponent = NodeFactory.createNodeComponent(
-        nodeSpec,
+            // Use the factory to create a component for each node type
+            // Pass the update handlers directly
+            const CustomNodeComponent = NodeFactory.createNodeComponent(
+                nodeSpec,
+                updateNodeInputData,
+                updateNodeModeData,
+                updateNodeParameterData,
+                updateNodeToolConfigData
+            );
+
+            // Only add if component was successfully created
+            if (CustomNodeComponent) {
+                nodeTypeMap[nodeSpec.name] = CustomNodeComponent;
+            }
+        });
+
+        // Store the complete set of node components
+        // console.log("Node type map:", nodeTypeMap);
+        setNodeTypes(nodeTypeMap);
+        setNodeTypesLoaded(true);
+    }, [
+        loaded,
+        getAllNodeSpecs,
         updateNodeInputData,
         updateNodeModeData,
         updateNodeParameterData,
         updateNodeToolConfigData,
-      );
+    ]);
 
-      // Only add if component was successfully created
-      if (CustomNodeComponent) {
-        nodeTypeMap[nodeSpec.name] = CustomNodeComponent;
-      }
-    });
-
-    // Store the complete set of node components
-    // console.log("Node type map:", nodeTypeMap);
-    setNodeTypes(nodeTypeMap);
-    setNodeTypesLoaded(true);
-    
-  }, [loaded, getAllNodeSpecs, updateNodeInputData, updateNodeModeData, updateNodeParameterData, updateNodeToolConfigData]);
-
-  // Memoize the return object to prevent unnecessary re-renders
-  return useMemo(() => ({
-    nodeTypes,
-    nodeTypesLoaded,
-    loaded
-  }), [nodeTypes, nodeTypesLoaded, loaded]);
+    // Memoize the return object to prevent unnecessary re-renders
+    return useMemo(
+        () => ({
+            nodeTypes,
+            nodeTypesLoaded,
+            loaded,
+        }),
+        [nodeTypes, nodeTypesLoaded, loaded]
+    );
 };
