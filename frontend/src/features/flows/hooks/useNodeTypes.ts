@@ -1,5 +1,5 @@
 // useNodeTypes.ts
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { NodeFactory } from '@/features/flows/utils/NodeFactory';
 import { useNodeRegistry, type NodeSpec } from '@/features/nodes';
 
@@ -38,6 +38,15 @@ export const useNodeTypes = (
     );
     const [nodeTypesLoaded, setNodeTypesLoaded] = useState(false);
 
+    // Use a ref to track if nodeTypes have been initialized
+    const nodeTypesInitialized = useRef(false);
+
+    // Memoize the nodeTypes object to prevent ReactFlow warning
+    // This ensures the object reference remains stable after initial creation
+    const memoizedNodeTypes = useMemo(() => {
+        return nodeTypes;
+    }, [nodeTypes]);
+
     // Memoize the update handlers to prevent unnecessary re-renders
     const memoizedUpdateHandlers = useMemo(
         () => ({
@@ -58,6 +67,11 @@ export const useNodeTypes = (
         // Wait until the node registry is fully loaded
         if (!loaded) {
             setNodeTypesLoaded(false);
+            return;
+        }
+
+        // Only initialize nodeTypes once to prevent reference changes
+        if (nodeTypesInitialized.current) {
             return;
         }
 
@@ -92,10 +106,8 @@ export const useNodeTypes = (
         // console.log("Node type map:", nodeTypeMap);
         setNodeTypes(nodeTypeMap);
         setNodeTypesLoaded(true);
+        nodeTypesInitialized.current = true;
     }, [loaded, getAllNodeSpecs, memoizedUpdateHandlers]);
-
-    // Memoize the nodeTypes object to prevent ReactFlow warning
-    const memoizedNodeTypes = useMemo(() => nodeTypes, [nodeTypes]);
 
     // Memoize the return object to prevent unnecessary re-renders
     return useMemo(
