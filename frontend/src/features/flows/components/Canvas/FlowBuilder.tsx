@@ -265,9 +265,6 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
             <PlaygroundChatBox
                 isOpen={isPlaygroundOpen}
                 onClose={() => setIsPlaygroundOpen(false)}
-                isNodeSidebarOpen={
-                    !!(selectedNode && nodeSpec && !isSidebarCollapsed)
-                }
             />
         </div>
     );

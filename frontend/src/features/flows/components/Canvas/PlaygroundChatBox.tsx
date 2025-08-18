@@ -8,30 +8,27 @@ interface Position {
 interface PlaygroundChatBoxProps {
     isOpen: boolean;
     onClose: () => void;
-    isNodeSidebarOpen: boolean;
 }
 
 const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
     isOpen,
     onClose,
-    isNodeSidebarOpen,
 }) => {
     const [position, setPosition] = useState<Position>({ x: 0, y: 0 });
     const [isDragging, setIsDragging] = useState(false);
     const [dragOffset, setDragOffset] = useState<Position>({ x: 0, y: 0 });
     const chatBoxRef = useRef<HTMLDivElement>(null);
 
-    // Initialize position based on sidebar state
+    // Initialize position
     useEffect(() => {
         if (isOpen && chatBoxRef.current) {
             const chatBoxWidth = chatBoxRef.current.offsetWidth;
-            const rightPosition = isNodeSidebarOpen ? 80 : 4; // right-80 or right-4 in Tailwind
             setPosition({
-                x: window.innerWidth - chatBoxWidth - rightPosition,
+                x: window.innerWidth - chatBoxWidth - 16, // 16px from right edge
                 y: 16, // top-4 in Tailwind (16px)
             });
         }
-    }, [isOpen, isNodeSidebarOpen]);
+    }, [isOpen]);
 
     const handleMouseDown = (e: React.MouseEvent) => {
         if (chatBoxRef.current) {
