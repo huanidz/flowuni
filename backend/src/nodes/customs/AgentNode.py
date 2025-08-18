@@ -149,3 +149,9 @@ class AgentNode(Node):
         chat_response: ChatResponse = agent.chat(message=chat_message)
 
         return {"response": chat_response.content}
+
+    def build_tool(self):
+        raise NotImplementedError("Subclasses must override build_tool")
+
+    def process_tool(self):
+        raise NotImplementedError("Subclasses must override process_tool")

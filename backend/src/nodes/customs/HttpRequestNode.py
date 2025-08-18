@@ -353,3 +353,6 @@ class HttpRequestNode(Node):
             tool_description=tool_description,
             tool_schema=tool_schema,
         )
+
+    def process_tool(self, inputs_values, parameter_values, tool_inputs):
+        return super().process_tool(inputs_values, parameter_values, tool_inputs)
