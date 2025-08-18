@@ -3,6 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { X, Paperclip, Send } from 'lucide-react';
+import { chatBoxStyles } from '@/features/flows/styles/chatBoxStyles';
 
 interface Position {
     x: number;
@@ -147,33 +148,37 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
             ref={chatBoxRef}
             className={`
                 absolute transition-none z-[1001] cursor-move
-                w-96 h-[500px] shadow-lg
-                ${isDragging ? 'shadow-xl select-none' : ''}
+                w-96 h-[500px] shadow-xl bg-white border border-gray-300 rounded-lg backdrop-blur-sm
+                ${isDragging ? 'shadow-2xl select-none' : ''}
+                flex flex-col overflow-hidden p-0
             `}
             style={{
                 left: `${position.x}px`,
                 top: `${position.y}px`,
             }}
         >
+            {/* Header - Fixed at top with no padding/margin */}
             <CardHeader
-                className="pb-3 cursor-move"
+                style={chatBoxStyles.header}
+                className="cursor-move flex-shrink-0 p-0 m-0 border-b"
                 onMouseDown={handleMouseDown}
             >
-                <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">Playground</CardTitle>
-                    <Button
-                        variant="ghost"
-                        size="icon"
+                <div style={chatBoxStyles.headerTitle}>Chat Playground</div>
+                <div style={chatBoxStyles.headerActions}>
+                    <button
                         onClick={onClose}
-                        className="h-6 w-6"
+                        style={chatBoxStyles.iconButton}
+                        title="Close chat"
+                        aria-label="Close chat"
                     >
-                        <X className="h-4 w-4" />
-                    </Button>
+                        <X size={18} />
+                    </button>
                 </div>
             </CardHeader>
-            <CardContent className="flex flex-col h-full pt-0 p-0">
-                {/* Messages area */}
-                <div className="flex-1 overflow-y-auto p-4 max-h-[380px]">
+
+            {/* Messages area - Flexible content that can scroll */}
+            <div className="flex-1 overflow-hidden flex flex-col">
+                <div className="flex-1 overflow-y-auto p-4">
                     {messages.map(msg => (
                         <div
                             key={msg.id}
@@ -182,7 +187,7 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
                             }`}
                         >
                             <div
-                                className={`inline-block p-3 rounded-lg max-w-[80%] ${
+                                className={`inline-block p-3 rounded-lg max-w-[80%] break-words ${
                                     msg.sender === 'user'
                                         ? 'bg-primary text-primary-foreground'
                                         : 'bg-muted'
@@ -201,20 +206,9 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
                     <div ref={messagesEndRef} />
                 </div>
 
-                {/* Input area */}
-                <div className="border-t p-3">
+                {/* Input area - Fixed at bottom */}
+                <div className="flex-shrink-0 border-t p-3 bg-white">
                     <div className="flex items-center gap-2">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => {
-                                // Dummy functionality for image attachment
-                                alert('Image attachment would open here');
-                            }}
-                        >
-                            <Paperclip className="h-4 w-4" />
-                        </Button>
                         <Input
                             value={message}
                             onChange={e => setMessage(e.target.value)}
@@ -226,13 +220,13 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
                             onClick={handleSendMessage}
                             disabled={!message.trim()}
                             size="icon"
-                            className="h-8 w-8"
+                            className="h-8 w-8 flex-shrink-0"
                         >
                             <Send className="h-4 w-4" />
                         </Button>
                     </div>
                 </div>
-            </CardContent>
+            </div>
         </Card>
     );
 };
