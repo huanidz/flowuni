@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { X, Paperclip, Send } from 'lucide-react';
+import { X, Send } from 'lucide-react';
 import { chatBoxStyles } from '@/features/flows/styles/chatBoxStyles';
 
 interface Position {
@@ -147,7 +147,7 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
         <Card
             ref={chatBoxRef}
             className={`
-                absolute transition-none z-[1001] cursor-move
+                absolute transition-none z-[1001]
                 w-96 h-[500px] shadow-xl bg-white border border-gray-300 rounded-lg backdrop-blur-sm
                 ${isDragging ? 'shadow-2xl select-none' : ''}
                 flex flex-col overflow-hidden p-0
