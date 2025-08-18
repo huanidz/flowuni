@@ -8,27 +8,35 @@ interface Position {
 interface PlaygroundChatBoxProps {
     isOpen: boolean;
     onClose: () => void;
+    position: Position;
+    onPositionChange: (position: Position) => void;
 }
 
 const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
     isOpen,
     onClose,
+    position,
+    onPositionChange,
 }) => {
-    const [position, setPosition] = useState<Position>({ x: 0, y: 0 });
     const [isDragging, setIsDragging] = useState(false);
     const [dragOffset, setDragOffset] = useState<Position>({ x: 0, y: 0 });
     const chatBoxRef = useRef<HTMLDivElement>(null);
 
-    // Initialize position
+    // Initialize position only if it's the default position (0,0)
     useEffect(() => {
-        if (isOpen && chatBoxRef.current) {
+        if (
+            isOpen &&
+            chatBoxRef.current &&
+            position.x === 0 &&
+            position.y === 0
+        ) {
             const chatBoxWidth = chatBoxRef.current.offsetWidth;
-            setPosition({
+            onPositionChange({
                 x: window.innerWidth - chatBoxWidth - 16, // 16px from right edge
                 y: 16, // top-4 in Tailwind (16px)
             });
         }
-    }, [isOpen]);
+    }, [isOpen, position, onPositionChange]);
 
     const handleMouseDown = (e: React.MouseEvent) => {
         if (chatBoxRef.current) {
@@ -50,7 +58,7 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
             const maxX = window.innerWidth - chatBoxRef.current.offsetWidth;
             const maxY = window.innerHeight - chatBoxRef.current.offsetHeight;
 
-            setPosition({
+            onPositionChange({
                 x: Math.max(0, Math.min(newX, maxX)),
                 y: Math.max(0, Math.min(newY, maxY)),
             });

@@ -22,6 +22,7 @@ import { addEdge } from '@xyflow/react';
 import { type Connection } from '@xyflow/react';
 import { NodeConfigSidebar } from '@/features/flows/components/Sidebar/NodeConfigSidebar';
 import PlaygroundChatBox from './PlaygroundChatBox';
+import useFlowStore from '@/features/flows/stores/flow_stores';
 
 interface FlowBuilderContentProps {
     flow_id: string;
@@ -31,8 +32,13 @@ interface FlowBuilderContentProps {
 const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
     const nodePaletteRef = useRef<HTMLDivElement>(null);
 
-    // State for playground chat box
-    const [isPlaygroundOpen, setIsPlaygroundOpen] = useState(false);
+    // Use store for playground chat box state
+    const {
+        isPlaygroundOpen,
+        setPlaygroundOpen,
+        playgroundPosition,
+        setPlaygroundPosition,
+    } = useFlowStore();
 
     // Use consolidated flow state hook (simplified without duplicate state)
     const {
@@ -106,7 +112,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
 
     // Handler for playground button click
     const handlePlaygroundClick = () => {
-        setIsPlaygroundOpen(!isPlaygroundOpen);
+        setPlaygroundOpen(!isPlaygroundOpen);
         onPlaygroundFlow();
     };
 
@@ -264,7 +270,9 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
             {/* Playground Chat Box */}
             <PlaygroundChatBox
                 isOpen={isPlaygroundOpen}
-                onClose={() => setIsPlaygroundOpen(false)}
+                onClose={() => setPlaygroundOpen(false)}
+                position={playgroundPosition}
+                onPositionChange={setPlaygroundPosition}
             />
         </div>
     );
