@@ -19,6 +19,7 @@ from src.components.llm.providers.adapters.LLMAdapterBase import LLMAdapter
 from src.helpers.PydanticChatSchemaConstructor import PydanticChatSchemaConstructor
 from src.helpers.PydanticSchemaConverter import PydanticSchemaConverter
 from src.helpers.ToolHelper import ToolHelper
+from src.nodes.NodeRegistry import NodeRegistry
 from src.schemas.nodes.node_data_parsers import ToolDataParser
 
 
@@ -116,20 +117,47 @@ class Agent(ABC):
                 # Get target tool schema
                 tool_origin_parser_pair: ToolDataParser = self.tools_map[tool_call_name]
 
-                tool_origin, tool = next(iter(tool_origin_parser_pair.items()))
+                origin_tool_name: str
+                tool: ToolDataParser
+                origin_tool_name, tool = next(iter(tool_origin_parser_pair.items()))
+                logger.info(f"👉 origin_tool_name: {origin_tool_name}")
 
-                ToolSchema = PydanticSchemaConverter.load_from_dict(tool.tool_schema)
-
-                logger.info(f"👉 ToolSchema: {ToolSchema.model_json_schema()}")
-
-                tool_call_response = self.llm_provider.structured_completion(
-                    messages=chat_messages, output_schema=ToolSchema
-                )
-                logger.info(
-                    f"Agent Response: {tool_call_response.model_dump_json(indent=2)}"
+                # Run the process_tool()
+                node_registry = NodeRegistry()
+                node_instance = node_registry.create_node_instance(
+                    name=origin_tool_name
                 )
 
-            return ChatResponse(content="DONE")
+                if tool.tool_schema:
+                    ToolSchema = PydanticSchemaConverter.load_from_dict(
+                        tool.tool_schema
+                    )
+
+                    logger.info(f"👉 ToolSchema: {ToolSchema.model_json_schema()}")
+
+                    tool_call_response = self.llm_provider.structured_completion(
+                        messages=chat_messages, output_schema=ToolSchema
+                    )
+                    logger.info(
+                        f"Agent Response: {tool_call_response.model_dump_json(indent=2)}"
+                    )
+
+                    if not node_instance:
+                        raise Exception(f"Node {origin_tool_name} not found.")
+
+                    processed_result = node_instance.process_tool(
+                        inputs_values=tool.input_values,
+                        parameter_values=tool.parameter_values,
+                        tool_inputs=tool_call_response.model_dump(),
+                    )
+                else:
+                    processed_result = node_instance.process_tool(
+                        inputs_values=tool.input_values,
+                        parameter_values=tool.parameter_values,
+                        tool_inputs={},
+                    )
+
+            return ChatResponse(content=str(processed_result))
 
         return ChatResponse(content=agent_response.final_response)
 

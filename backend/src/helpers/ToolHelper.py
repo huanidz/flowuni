@@ -26,7 +26,7 @@ class ToolHelper:
             String representation of all tools concatenated together.
         """
         if not tools:
-            return ""
+            return "<tools>\nNo tool provided\n</tools>"
 
         # Use list comprehension for better performance and readability
         tool_strings = [ToolHelper._format_tool_string(tool) for tool in tools]

@@ -95,5 +95,9 @@ class CalculatorNode(Node):
             Calculator result
         """
         expression = tool_inputs.get("expression", "")
-        result = safe_eval(expression)
-        return {"result": result}
+
+        # Override the inputs_values with the tool inputs
+        inputs_values["expression"] = expression
+
+        processed_result = self.process(inputs_values, parameter_values)
+        return processed_result

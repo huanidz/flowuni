@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Any, Dict, Type
+from typing import Any, Dict, Optional, Type
 
 from json_schema_to_pydantic import create_model as json_schema_to_pydantic
 from pydantic import BaseModel
@@ -12,7 +12,7 @@ class PydanticSchemaConverter:
     """Utility class to serialize and load Pydantic models using JSON Schema strings."""
 
     @staticmethod
-    def serialize(model_cls: Type[BaseModel]) -> str:
+    def serialize(model_cls: Optional[Type[BaseModel]] = None) -> Optional[str]:
         """
         Serialize a Pydantic model's schema to a JSON string.
 
@@ -27,7 +27,8 @@ class PydanticSchemaConverter:
         """
         try:
             if not model_cls:
-                raise ValueError("Model class is required")
+                logger.info("Model class is None. Tool schema will be empty.")
+                return None
 
             schema_dict: Dict[str, Any] = model_cls.model_json_schema(
                 by_alias=False, mode="serialization"
@@ -38,7 +39,9 @@ class PydanticSchemaConverter:
             raise ValueError(f"Failed to serialize model {model_cls}: {str(e)}") from e
 
     @staticmethod
-    def load_from_dict(json_schema_dict: Dict[str, Any]) -> Type[BaseModel]:
+    def load_from_dict(
+        json_schema_dict: Optional[Dict[str, Any]] = None,
+    ) -> Optional[Type[BaseModel]]:
         """
         Load a Pydantic model from a JSON schema dictionary.
 
@@ -52,6 +55,11 @@ class PydanticSchemaConverter:
         Raises:
             ValueError: If the schema dictionary is invalid or cannot be parsed.
         """
+
+        if not json_schema_dict:
+            logger.info("Schema dictionary is None. Tool schema will be empty.")
+            return None
+
         try:
             return json_schema_to_pydantic(json_schema_dict)
         except Exception as e:

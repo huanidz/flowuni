@@ -29,6 +29,7 @@ from src.nodes.utils.http_request_node_utils import (
     build_merged_tool_schema,
     create_body_schema_from_toolable_json,
     create_pydantic_model_from_table_data,
+    deep_merge,
     extract_toolable_items,
 )
 from src.schemas.flowbuilder.flow_graph_schemas import ToolConfig
@@ -267,7 +268,7 @@ class HttpRequestNode(Node):
             # Process response
             result = {
                 "status_code": response.status_code,
-                "headers": dict(response.headers),
+                # "headers": dict(response.headers),
                 "url": response.url,
             }
 
@@ -355,4 +356,24 @@ class HttpRequestNode(Node):
         )
 
     def process_tool(self, inputs_values, parameter_values, tool_inputs):
-        return super().process_tool(inputs_values, parameter_values, tool_inputs)
+        # Get the tools input data
+        headers = tool_inputs.get("headers", [])
+        query_params = tool_inputs.get("query_params", [])
+        body = tool_inputs.get("body", {})
+
+        # Deep merge the inputs_values with the tool inputs
+        if headers:
+            inputs_values["headers"] = deep_merge(
+                inputs_values.get("headers", {}), headers
+            )
+
+        if query_params:
+            inputs_values["query_params"] = deep_merge(
+                inputs_values.get("query_params", {}), query_params
+            )
+
+        if body:
+            inputs_values["body"] = deep_merge(inputs_values.get("body", {}), body)
+
+        res = self.process(inputs_values, parameter_values)
+        return res
