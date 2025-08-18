@@ -24,6 +24,7 @@ class StringTransformNode(Node):
             )
         ],
         parameters={},
+        can_be_tool=False,
     )
 
     def process(self, input_values, parameter_values):
