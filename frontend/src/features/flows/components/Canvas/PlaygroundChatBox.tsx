@@ -1,4 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { X } from 'lucide-react';
 
 interface Position {
     x: number;
@@ -85,12 +88,11 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
     if (!isOpen) return null;
 
     return (
-        <div
+        <Card
             ref={chatBoxRef}
             className={`
-                absolute bg-white border border-gray-200 rounded-lg shadow-lg
-                transition-none z-[1001] cursor-move
-                w-80 h-96
+                absolute transition-none z-[1001] cursor-move
+                w-80 h-96 shadow-lg
                 ${isDragging ? 'shadow-xl select-none' : ''}
             `}
             style={{
@@ -98,40 +100,29 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
                 top: `${position.y}px`,
             }}
         >
-            <div
-                className="flex items-center justify-between p-4 border-b border-gray-200 cursor-move"
+            <CardHeader
+                className="pb-3 cursor-move"
                 onMouseDown={handleMouseDown}
             >
-                <h3 className="text-lg font-medium text-gray-900">
-                    Playground
-                </h3>
-                <button
-                    onClick={onClose}
-                    className="text-gray-400 hover:text-gray-600 focus:outline-none"
-                >
-                    <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
+                <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">Playground</CardTitle>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={onClose}
+                        className="h-6 w-6"
                     >
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M6 18L18 6M6 6l12 12"
-                        />
-                    </svg>
-                </button>
-            </div>
-            <div className="p-4 h-full overflow-auto">
+                        <X className="h-4 w-4" />
+                    </Button>
+                </div>
+            </CardHeader>
+            <CardContent className="h-full overflow-auto pt-0">
                 {/* Empty content for now */}
-                <div className="flex items-center justify-center h-full text-gray-500">
+                <div className="flex items-center justify-center h-full text-muted-foreground">
                     Chat content will appear here
                 </div>
-            </div>
-        </div>
+            </CardContent>
+        </Card>
     );
 };
 
