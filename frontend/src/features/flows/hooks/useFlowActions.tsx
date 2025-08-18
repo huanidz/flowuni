@@ -10,136 +10,152 @@ type SetNodesType = React.Dispatch<React.SetStateAction<Node[]>>;
 type SetEdgesType = React.Dispatch<React.SetStateAction<Edge[]>>;
 
 const handleFlowRequest = async (
-  nodes: Node[],
-  edges: Edge[],
-  requestFn: (nodes: Node[], edges: Edge[]) => Promise<any>,
-  actionLabel: string
+    nodes: Node[],
+    edges: Edge[],
+    requestFn: (nodes: Node[], edges: Edge[]) => Promise<any>,
+    actionLabel: string
 ) => {
-  console.log(`=== ${actionLabel} START ===`);
-  console.log('Raw nodes:', nodes);
-  console.log('Raw edges:', edges);
+    console.log(`=== ${actionLabel} START ===`);
+    console.log('Raw nodes:', nodes);
+    console.log('Raw edges:', edges);
 
-  if (nodes.length === 0) {
-    console.warn(`Cannot ${actionLabel.toLowerCase()}: No nodes in the graph`);
-    return;
-  }
+    if (nodes.length === 0) {
+        console.warn(
+            `Cannot ${actionLabel.toLowerCase()}: No nodes in the graph`
+        );
+        return;
+    }
 
-  const flowGraphData = getFlowGraphData(nodes, edges);
-  console.log('Compiling flow with payload:', flowGraphData);
-  logNodeDetails(nodes);
+    const flowGraphData = getFlowGraphData(nodes, edges);
+    console.log('Compiling flow with payload:', flowGraphData);
+    logNodeDetails(nodes);
 
-  try {
-    const response = await requestFn(nodes, edges);
-    console.log(`${actionLabel} successful:`, response);
-  } catch (error) {
-    console.error(`Error during ${actionLabel.toLowerCase()}:`, error);
-  }
+    try {
+        const response = await requestFn(nodes, edges);
+        console.log(`${actionLabel} successful:`, response);
+    } catch (error) {
+        console.error(`Error during ${actionLabel.toLowerCase()}:`, error);
+    }
 
-  console.log(`=== ${actionLabel} END ===`);
+    console.log(`=== ${actionLabel} END ===`);
 };
 
 export const useFlowActions = (
-  nodes: Node[],
-  edges: Edge[],
-  setNodes: SetNodesType,
-  setEdges: SetEdgesType,
+    nodes: Node[],
+    edges: Edge[],
+    setNodes: SetNodesType,
+    setEdges: SetEdgesType
 ) => {
-  const { current_flow } = useFlowStore();
+    const { current_flow } = useFlowStore();
 
-  const onCompileFlow = useCallback(() => {
-    return handleFlowRequest(nodes, edges, compileFlow, 'COMPILATION');
-  }, [nodes, edges]);
+    const onCompileFlow = useCallback(() => {
+        return handleFlowRequest(nodes, edges, compileFlow, 'COMPILATION');
+    }, [nodes, edges]);
 
-  const onRunFlow = useCallback(async () => {
-    if (!current_flow) {
-      console.warn('Cannot run flow: No current flow');
-      return;
-    }
+    const onRunFlow = useCallback(async () => {
+        if (!current_flow) {
+            console.warn('Cannot run flow: No current flow');
+            return;
+        }
 
-    console.log('[onRunFlow] Running flow...');
-
-    try {
-      const response = await runFlow(nodes, edges);
-      const { task_id } = response;
-
-      console.log('[onRunFlow] Flow run response:', response);
-      console.log('[onRunFlow] Watching execution with task_id:', task_id);
-
-      const eventSource = watchFlowExecution(task_id, (msg) => {
-        console.log('[SSE] Raw message received:', msg);
-
-        let parsed;
+        console.log('[onRunFlow] Running flow...');
 
         try {
-          parsed = JSON.parse(msg);
-          console.log("[SSE] Parsed message:", parsed);
-        } catch (e) {
-          console.error('[SSE] Failed to parse message:', e);
-          return;
-        }
+            const response = await runFlow(nodes, edges);
+            const { task_id } = response;
 
-        const data = parsed?.data;
-        if (!data) {
-          console.warn('[SSE] No data field in parsed message:', parsed);
-          return;
-        }
+            console.log('[onRunFlow] Flow run response:', response);
+            console.log(
+                '[onRunFlow] Watching execution with task_id:',
+                task_id
+            );
 
-        const node_id = parsed?.node_id;
-        const event_status = parsed?.event;
-        const { input_values } = data;
-        console.log('[SSE] Updating node:', node_id, 'with input_values:', input_values);
+            const eventSource = watchFlowExecution(task_id, msg => {
+                console.log('[SSE] Raw message received:', msg);
 
-        // TODO: Handle data update here
-        setNodes((prevNodes: Node[]) =>
-          prevNodes.map((node) =>
-            node.id === node_id
-              ? {
-                  ...node,
-                  data: {
-                    ...node.data,
-                    execution_result: JSON.stringify(parsed, null, 2),
-                    execution_status: event_status,
-                  },
+                let parsed;
+
+                try {
+                    parsed = JSON.parse(msg);
+                    console.log('[SSE] Parsed message:', parsed);
+                } catch (e) {
+                    console.error('[SSE] Failed to parse message:', e);
+                    return;
                 }
-              : node
-          )
-        );
-      });
 
-    } catch (err) {
-      console.error('[onRunFlow] Flow run failed:', err);
-    }
-  }, [nodes, edges, current_flow, setNodes]);
+                const data = parsed?.data;
+                if (!data) {
+                    console.warn(
+                        '[SSE] No data field in parsed message:',
+                        parsed
+                    );
+                    return;
+                }
 
-  const onSaveFlow = useCallback(async () => {
-    if (!current_flow) {
-      console.warn('Cannot save flow: No current flow');
-      return;
-    }
+                const node_id = parsed?.node_id;
+                const event_status = parsed?.event;
+                const { input_values } = data;
+                console.log(
+                    '[SSE] Updating node:',
+                    node_id,
+                    'with input_values:',
+                    input_values
+                );
 
-    await saveFlow({
-      flow_id: current_flow.flow_id,
-      name: current_flow.name,
-      description: current_flow.description,
-      is_active: current_flow.is_active,
-      flow_definition: getFlowGraphData(nodes, edges),
-    });
+                // TODO: Handle data update here
+                setNodes((prevNodes: Node[]) =>
+                    prevNodes.map(node =>
+                        node.id === node_id
+                            ? {
+                                  ...node,
+                                  data: {
+                                      ...node.data,
+                                      execution_result: JSON.stringify(
+                                          parsed,
+                                          null,
+                                          2
+                                      ),
+                                      execution_status: event_status,
+                                  },
+                              }
+                            : node
+                    )
+                );
+            });
+        } catch (err) {
+            console.error('[onRunFlow] Flow run failed:', err);
+        }
+    }, [nodes, edges, current_flow, setNodes]);
 
-    toast.success('Flow saved successfully.', {
-      description: 'Flow has been saved successfully.',
-    });
-  }, [nodes, edges]);
+    const onSaveFlow = useCallback(async () => {
+        if (!current_flow) {
+            console.warn('Cannot save flow: No current flow');
+            return;
+        }
 
-  const onClearFlow = useCallback(() => {
-    setNodes([]);
-    setEdges([]);
-    // Node ID reset is no longer needed as we're using timestamp-based IDs
-  }, [setNodes, setEdges]);
+        await saveFlow({
+            flow_id: current_flow.flow_id,
+            name: current_flow.name,
+            description: current_flow.description,
+            is_active: current_flow.is_active,
+            flow_definition: getFlowGraphData(nodes, edges),
+        });
 
-  return {
-    onCompileFlow,
-    onRunFlow,
-    onClearFlow,
-    onSaveFlow,
-  };
+        toast.success('Flow saved successfully.', {
+            description: 'Flow has been saved successfully.',
+        });
+    }, [nodes, edges]);
+
+    const onClearFlow = useCallback(() => {
+        setNodes([]);
+        setEdges([]);
+        // Node ID reset is no longer needed as we're using timestamp-based IDs
+    }, [setNodes, setEdges]);
+
+    return {
+        onCompileFlow,
+        onRunFlow,
+        onClearFlow,
+        onSaveFlow,
+    };
 };
