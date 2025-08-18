@@ -89,9 +89,9 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
             ref={chatBoxRef}
             className={`
                 absolute bg-white border border-gray-200 rounded-lg shadow-lg
-                transition-none z-10 cursor-move
+                transition-none z-[1001] cursor-move
                 w-80 h-96
-                ${isDragging ? 'shadow-xl' : ''}
+                ${isDragging ? 'shadow-xl select-none' : ''}
             `}
             style={{
                 left: `${position.x}px`,

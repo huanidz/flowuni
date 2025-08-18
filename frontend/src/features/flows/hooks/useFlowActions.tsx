@@ -155,9 +155,6 @@ export const useFlowActions = (
     const onPlaygroundFlow = useCallback(() => {
         // Dummy function for playground action
         console.log('Playground action triggered');
-        toast.info('Playground feature coming soon!', {
-            description: 'This feature is under development.',
-        });
     }, []);
 
     return {
