@@ -21,6 +21,7 @@ import { useSelectedNode } from '@/features/flows/hooks/useSelectedNode';
 import { addEdge } from '@xyflow/react';
 import { type Connection } from '@xyflow/react';
 import { NodeConfigSidebar } from '@/features/flows/components/Sidebar/NodeConfigSidebar';
+import PlaygroundChatBox from './PlaygroundChatBox';
 
 interface FlowBuilderContentProps {
     flow_id: string;
@@ -29,6 +30,9 @@ interface FlowBuilderContentProps {
 // Separate the main flow component to use ReactFlow hooks
 const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
     const nodePaletteRef = useRef<HTMLDivElement>(null);
+
+    // State for playground chat box
+    const [isPlaygroundOpen, setIsPlaygroundOpen] = useState(false);
 
     // Use consolidated flow state hook (simplified without duplicate state)
     const {
@@ -100,6 +104,12 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
         onPlaygroundFlow,
     } = useFlowActions(currentNodes, currentEdges, setNodes, setEdges);
 
+    // Handler for playground button click
+    const handlePlaygroundClick = () => {
+        setIsPlaygroundOpen(!isPlaygroundOpen);
+        onPlaygroundFlow();
+    };
+
     const { isValidConnection } = useConnectionValidation(
         currentNodes,
         currentEdges
@@ -158,7 +168,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
                     onRun={onRunFlow}
                     onClear={onClearFlow}
                     onSave={onSaveFlow}
-                    onPlayground={onPlaygroundFlow}
+                    onPlayground={handlePlaygroundClick}
                 />
 
                 <ReactFlow
@@ -250,6 +260,15 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
                     }}
                 />
             )}
+
+            {/* Playground Chat Box */}
+            <PlaygroundChatBox
+                isOpen={isPlaygroundOpen}
+                onClose={() => setIsPlaygroundOpen(false)}
+                isNodeSidebarOpen={
+                    !!(selectedNode && nodeSpec && !isSidebarCollapsed)
+                }
+            />
         </div>
     );
 };
