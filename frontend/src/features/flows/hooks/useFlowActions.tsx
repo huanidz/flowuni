@@ -152,10 +152,19 @@ export const useFlowActions = (
         // Node ID reset is no longer needed as we're using timestamp-based IDs
     }, [setNodes, setEdges]);
 
+    const onPlaygroundFlow = useCallback(() => {
+        // Dummy function for playground action
+        console.log('Playground action triggered');
+        toast.info('Playground feature coming soon!', {
+            description: 'This feature is under development.',
+        });
+    }, []);
+
     return {
         onCompileFlow,
         onRunFlow,
         onClearFlow,
         onSaveFlow,
+        onPlaygroundFlow,
     };
 };

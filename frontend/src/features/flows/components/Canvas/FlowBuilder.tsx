@@ -92,8 +92,13 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
         nodePaletteRef
     );
 
-    const { onCompileFlow, onRunFlow, onClearFlow, onSaveFlow } =
-        useFlowActions(currentNodes, currentEdges, setNodes, setEdges);
+    const {
+        onCompileFlow,
+        onRunFlow,
+        onClearFlow,
+        onSaveFlow,
+        onPlaygroundFlow,
+    } = useFlowActions(currentNodes, currentEdges, setNodes, setEdges);
 
     const { isValidConnection } = useConnectionValidation(
         currentNodes,
@@ -153,6 +158,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
                     onRun={onRunFlow}
                     onClear={onClearFlow}
                     onSave={onSaveFlow}
+                    onPlayground={onPlaygroundFlow}
                 />
 
                 <ReactFlow
