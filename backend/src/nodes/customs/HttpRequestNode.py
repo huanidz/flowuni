@@ -29,6 +29,7 @@ from src.nodes.utils.http_request_node_utils import (
     build_merged_tool_schema,
     create_body_schema_from_toolable_json,
     create_pydantic_model_from_table_data,
+    deep_merge,
     extract_toolable_items,
 )
 from src.schemas.flowbuilder.flow_graph_schemas import ToolConfig
@@ -267,7 +268,7 @@ class HttpRequestNode(Node):
             # Process response
             result = {
                 "status_code": response.status_code,
-                "headers": dict(response.headers),
+                # "headers": dict(response.headers),
                 "url": response.url,
             }
 
@@ -325,41 +326,54 @@ class HttpRequestNode(Node):
             else "HTTP Request tool that sends HTTP requests with configurable headers, query parameters, and body."  # noqa
         )
 
-        try:
-            # Extract input values
-            headers = inputs_values.get("headers", [])
-            query_params = inputs_values.get("query_params", [])
-            body = inputs_values.get("body", {})
+        # Extract input values
+        headers = inputs_values.get("headers", [])
+        query_params = inputs_values.get("query_params", [])
+        body = inputs_values.get("body", {})
 
-            # Create individual schemas
-            toolable_headers = extract_toolable_items(headers, "headers")
-            HeaderToolSchema = create_pydantic_model_from_table_data(
-                input_list=toolable_headers, model_name="HeaderToolSchema"
+        # Create individual schemas
+        toolable_headers = extract_toolable_items(headers, "headers")
+        HeaderToolSchema = create_pydantic_model_from_table_data(
+            input_list=toolable_headers, model_name="HeaderToolSchema"
+        )
+
+        toolable_query_params = extract_toolable_items(query_params, "query parameters")
+        QueryToolSchema = create_pydantic_model_from_table_data(
+            input_list=toolable_query_params, model_name="QueryToolSchema"
+        )
+
+        BodyJsonSchema = create_body_schema_from_toolable_json(body)
+
+        # Build merged schema
+        tool_schema = build_merged_tool_schema(
+            HeaderToolSchema, QueryToolSchema, BodyJsonSchema, tool_name
+        )
+
+        return BuildToolResult(
+            tool_name=tool_name,
+            tool_description=tool_description,
+            tool_schema=tool_schema,
+        )
+
+    def process_tool(self, inputs_values, parameter_values, tool_inputs):
+        # Get the tools input data
+        headers = tool_inputs.get("headers", [])
+        query_params = tool_inputs.get("query_params", [])
+        body = tool_inputs.get("body", {})
+
+        # Deep merge the inputs_values with the tool inputs
+        if headers:
+            inputs_values["headers"] = deep_merge(
+                inputs_values.get("headers", {}), headers
             )
 
-            toolable_query_params = extract_toolable_items(
-                query_params, "query parameters"
-            )
-            QueryToolSchema = create_pydantic_model_from_table_data(
-                input_list=toolable_query_params, model_name="QueryToolSchema"
+        if query_params:
+            inputs_values["query_params"] = deep_merge(
+                inputs_values.get("query_params", {}), query_params
             )
 
-            BodyJsonSchema = create_body_schema_from_toolable_json(body)
+        if body:
+            inputs_values["body"] = deep_merge(inputs_values.get("body", {}), body)
 
-            # Build merged schema
-            tool_schema = build_merged_tool_schema(
-                HeaderToolSchema, QueryToolSchema, BodyJsonSchema, tool_name
-            )
-
-            return BuildToolResult(
-                tool_name=tool_name,
-                tool_description=tool_description,
-                tool_schema=tool_schema,
-            )
-
-        except ValueError as ve:
-            logger.error(f"Validation error in build_tool: {ve}")
-            raise
-        except Exception as e:
-            logger.error(f"Unexpected error creating tool schema: {e}")
-            raise RuntimeError(f"Failed to create tool schema: {e}") from e
+        res = self.process(inputs_values, parameter_values)
+        return res

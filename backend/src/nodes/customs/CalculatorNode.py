@@ -76,3 +76,28 @@ class CalculatorNode(Node):
             tool_description=tool_description,
             tool_schema=CalculatorSchema,
         )
+
+    def process_tool(
+        self,
+        inputs_values: Dict[str, Any],
+        parameter_values: Dict[str, Any],
+        tool_inputs: Dict[str, Any],
+    ) -> Any:
+        """
+        Process tool inputs for calculator functionality.
+
+        Args:
+            inputs_values: Dictionary containing input values
+            parameter_values: Dictionary of parameter values
+            tool_inputs: Dictionary of tool inputs (expression to evaluate)
+
+        Returns:
+            Calculator result
+        """
+        expression = tool_inputs.get("expression", "")
+
+        # Override the inputs_values with the tool inputs
+        inputs_values["expression"] = expression
+
+        processed_result = self.process(inputs_values, parameter_values)
+        return processed_result

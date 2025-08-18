@@ -24,6 +24,7 @@ class StringTransformNode(Node):
             )
         ],
         parameters={},
+        can_be_tool=False,
     )
 
     def process(self, input_values, parameter_values):
@@ -40,3 +41,9 @@ class StringTransformNode(Node):
         transformed_string = str(input_string).upper()
 
         return {"output": transformed_string}
+
+    def build_tool(self):
+        raise NotImplementedError("Subclasses must override build_tool")
+
+    def process_tool(self):
+        raise NotImplementedError("Subclasses must override process_tool")

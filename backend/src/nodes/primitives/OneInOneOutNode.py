@@ -46,3 +46,9 @@ class OneInOneOutNode(Node):
 
     def _fetch_departments(self):
         return ["IT", "Finance", "Marketing", "Sales"]
+
+    def build_tool(self):
+        raise NotImplementedError("Subclasses must override build_tool")
+
+    def process_tool(self):
+        raise NotImplementedError("Subclasses must override process_tool")

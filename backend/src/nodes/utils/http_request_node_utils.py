@@ -109,12 +109,17 @@ def create_body_schema_from_toolable_json(
     Raises:
         ValueError: If body type is not supported for tools
     """
+
+    if not isinstance(body, Dict):
+        return None
+
     body_type = body.get("selected_type", "")
     if body_type and body_type != ToolableJsonInputHandle.__name__:
-        raise ValueError(
+        logger.warning(
             f"Only body type '{ToolableJsonInputHandle.__name__}' is supported for tools, "
             f"got '{body_type}'"
         )
+        return None
 
     if body_type != ToolableJsonInputHandle.__name__:
         return None
@@ -160,7 +165,7 @@ def build_merged_tool_schema(
     query_schema: Optional[Type[BaseModel]],
     body_schema: Optional[Type[BaseModel]],
     tool_name: str,
-) -> Type[BaseModel]:
+) -> Optional[Type[BaseModel]]:
     """
     Build the final merged schema from individual schemas.
 
@@ -195,10 +200,11 @@ def build_merged_tool_schema(
 
     # Validate that we have at least one toolable field
     if not schema_fields:
-        raise ValueError(
+        logger.warning(
             "No toolable fields found. Enable 'ToolEnable' for at least one field "
             "in headers, query parameters, or configure toolable JSON body."
         )
+        return None
 
     # Create the merged schema with proper field definitions
     merged_fields = {}
@@ -220,3 +226,25 @@ def build_merged_tool_schema(
     )
 
     return tool_schema
+
+
+def deep_merge(base_dict, override_dict):
+    """
+    Recursively merge two dictionaries.
+    Values in override_dict will override values in base_dict.
+    For nested dictionaries, merge recursively.
+    """
+    if not isinstance(base_dict, dict) or not isinstance(override_dict, dict):
+        return override_dict
+
+    result = base_dict.copy()
+
+    for key, value in override_dict.items():
+        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+            # Both are dictionaries, merge recursively
+            result[key] = deep_merge(result[key], value)
+        else:
+            # Override the value (including new keys)
+            result[key] = value
+
+    return result

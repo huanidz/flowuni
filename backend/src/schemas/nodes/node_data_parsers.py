@@ -1,4 +1,4 @@
-from typing import Any, Dict, Type
+from typing import Any, Dict, Optional, Type
 
 from pydantic import BaseModel
 
@@ -6,7 +6,7 @@ from pydantic import BaseModel
 class BuildToolResult(BaseModel):
     tool_name: str
     tool_description: str
-    tool_schema: Type[BaseModel]
+    tool_schema: Optional[Type[BaseModel]] = None
 
 
 class ToolDataParser(BaseModel):
@@ -16,4 +16,4 @@ class ToolDataParser(BaseModel):
     tool_origin: str
     tool_name: str
     tool_description: str
-    tool_schema: Dict[str, Any]
+    tool_schema: Optional[Dict[str, Any]] = None

@@ -1,6 +1,5 @@
 import React from 'react';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { ControlledInput } from '@/features/flows/components/ControlledInput';
 import type { TypeDetail } from '@/features/nodes/types';
 import { textfieldHandleStyles } from '../../styles/handleStyles';
 import { TEXT_FIELD_FORMAT } from '../consts/TextFieldHandleInputConsts';
@@ -35,8 +34,18 @@ export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
     } = type_detail.defaults;
 
     const [isModalOpen, setIsModalOpen] = React.useState(false);
+    const inputRef = React.useRef<HTMLInputElement>(null);
+    const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+    const lastCursorPosition = React.useRef<number | null>(null);
 
     const handleChange = (newValue: string) => {
+        // Save cursor position before update
+        if (defaultMultiline && textareaRef.current) {
+            lastCursorPosition.current = textareaRef.current.selectionStart;
+        } else if (!defaultMultiline && inputRef.current) {
+            lastCursorPosition.current = inputRef.current.selectionStart;
+        }
+
         if (onChange && !disabled) {
             onChange(newValue);
         }
@@ -77,6 +86,25 @@ export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
         return baseStyles;
     };
 
+    // Restore cursor position after value update
+    React.useEffect(() => {
+        if (lastCursorPosition.current !== null) {
+            if (defaultMultiline && textareaRef.current) {
+                textareaRef.current.setSelectionRange(
+                    lastCursorPosition.current,
+                    lastCursorPosition.current
+                );
+                lastCursorPosition.current = null;
+            } else if (!defaultMultiline && inputRef.current) {
+                inputRef.current.setSelectionRange(
+                    lastCursorPosition.current,
+                    lastCursorPosition.current
+                );
+                lastCursorPosition.current = null;
+            }
+        }
+    }, [value, defaultMultiline]);
+
     return (
         <div style={textfieldHandleStyles.container}>
             {description && (
@@ -91,9 +119,12 @@ export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
             )}
             {defaultMultiline ? (
                 <div style={textfieldHandleStyles.jsonEditButtonContainer}>
-                    <Textarea
+                    <ControlledInput
+                        type="textarea"
                         value={disabled ? '' : value || ''}
-                        onChange={e => handleChange(e.target.value)}
+                        onChange={newValue => {
+                            handleChange(newValue);
+                        }}
                         placeholder={disabled ? '' : defaultPlaceholder}
                         maxLength={defaultMaxLength}
                         disabled={disabled}
@@ -114,10 +145,12 @@ export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
                         )}
                 </div>
             ) : (
-                <Input
+                <ControlledInput
                     type="text"
                     value={disabled ? '' : value || ''}
-                    onChange={e => handleChange(e.target.value)}
+                    onChange={newValue => {
+                        handleChange(newValue);
+                    }}
                     placeholder={disabled ? '' : defaultPlaceholder}
                     maxLength={defaultMaxLength}
                     disabled={disabled}

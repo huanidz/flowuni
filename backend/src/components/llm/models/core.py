@@ -6,8 +6,9 @@ from pydantic import BaseModel, Field
 class ChatMessage(BaseModel):
     """Represents a chat message with role and content."""
 
-    role: Literal["system", "user", "assistant"] = Field(
-        ..., description="The role of the message sender"
+    role: Literal["system", "user", "assistant", "model"] = Field(
+        ...,
+        description="The role of the message sender. Normally ('user', 'assistant', 'system' are common used, but for things like Google, 'model' is used instead of 'assistant')",  # noqa
     )
     content: str = Field(..., description="The content of the message")
 

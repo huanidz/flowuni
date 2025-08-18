@@ -1,6 +1,5 @@
 import json
 import uuid
-from collections import defaultdict
 from typing import Any, Dict, List, Optional, Type, Union
 
 from loguru import logger
@@ -230,175 +229,160 @@ class JSONFlattener:
             logger.error(f"Error updating toolable flags: {e}")
             raise
 
-    def _parse_field_path(self, field_path: str) -> Dict[str, Any]:
+    def _build_hierarchy_tree(
+        self, toolable_fields: Dict[str, Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """
-        Parse a field path to extract nesting information.
+        Build a hierarchical tree structure from flat field paths.
 
         Args:
-            field_path: Dot-separated field path (e.g., "user.profile.age")
+            toolable_fields: Fields marked as toolable
 
         Returns:
-            Dictionary with path information
+            Nested dictionary representing the hierarchy
         """
-        parts = field_path.split(".")
-        is_array_item = "[*]" in field_path
+        hierarchy = {}
 
-        if is_array_item:
-            # Handle array paths like "user.accounts[*].balance"
-            clean_path = field_path.replace("[*]", "")
-            parts = clean_path.split(".")
-            array_index = -1
-            for i, part in enumerate(field_path.split(".")):
-                if "[*]" in part:
-                    array_index = i
-                    break
-        else:
-            array_index = -1
+        for field_path, field_info in toolable_fields.items():
+            parts = field_path.split(".")
+            current = hierarchy
 
-        return {
-            "parts": parts,
-            "is_array_item": is_array_item,
-            "array_index": array_index,
-            "depth": len(parts),
-        }
+            # Navigate/create the path
+            for i, part in enumerate(parts):
+                is_array = "[*]" in part
+                clean_part = part.replace("[*]", "")
 
-    def _generate_model_name(self, base_name: str, is_array_item: bool = False) -> str:
+                if i == len(parts) - 1:
+                    # Last part - this is the actual field
+                    if is_array:
+                        # This shouldn't happen for leaf fields in your use case
+                        current[clean_part] = {
+                            "_field_info": field_info,
+                            "_is_array": True,
+                            "_is_leaf": True,
+                        }
+                    else:
+                        current[clean_part] = {
+                            "_field_info": field_info,
+                            "_is_leaf": True,
+                        }
+                else:
+                    # Intermediate part - create nested structure
+                    if clean_part not in current:
+                        current[clean_part] = {"_is_leaf": False, "_is_array": is_array}
+                    elif is_array:
+                        current[clean_part]["_is_array"] = True
+
+                    current = current[clean_part]
+
+        return hierarchy
+
+    def _create_model_from_hierarchy(
+        self, name: str, hierarchy: Dict[str, Any], is_array_item: bool = False
+    ) -> Type[BaseModel]:
         """
-        Generate a unique model name with UUID suffix.
+        Create a Pydantic model from a hierarchy node.
+
+        Args:
+            name: Base name for the model
+            hierarchy: Hierarchy dictionary for this level
+            is_array_item: Whether this model represents an array item
+
+        Returns:
+            Pydantic model class
+        """
+        model_name = self._generate_clean_model_name(name, is_array_item)
+
+        # Check if we already created this model
+        if model_name in self.created_models:
+            return self.created_models[model_name]
+
+        model_fields = {}
+
+        for field_name, field_data in hierarchy.items():
+            if field_name.startswith("_"):
+                continue  # Skip metadata
+
+            safe_field_name = self._make_safe_field_name(field_name)
+
+            if field_data.get("_is_leaf", False):
+                # This is a leaf field - create a simple field
+                field_info = field_data["_field_info"]
+                field_type = self._get_field_type(field_info)
+                default_value = field_info.get("defaultValue")
+
+                if default_value is not None:
+                    model_fields[safe_field_name] = (
+                        field_type,
+                        Field(default=default_value),
+                    )
+                else:
+                    if field_info.get("type") == "null":
+                        if self.allow_any_type:
+                            model_fields[safe_field_name] = (
+                                Optional[Any],
+                                Field(default=None),
+                            )
+                        else:
+                            raise ValueError(
+                                f"Ambiguous null field '{field_name}' and allow_any_type is False"
+                            )
+                    else:
+                        model_fields[safe_field_name] = (
+                            Optional[field_type],
+                            Field(default=None),
+                        )
+            else:
+                # This is a nested object - create a nested model
+                nested_model = self._create_model_from_hierarchy(
+                    field_name, field_data, field_data.get("_is_array", False)
+                )
+
+                if field_data.get("_is_array", False):
+                    model_fields[safe_field_name] = (
+                        List[nested_model],
+                        Field(default_factory=list),
+                    )
+                else:
+                    model_fields[safe_field_name] = (
+                        Optional[nested_model],
+                        Field(default=None),
+                    )
+
+        if not model_fields:
+            model_fields["__empty__"] = (Optional[str], Field(default=None))
+
+        # Create the model
+        model = create_model(model_name, **model_fields)
+        self.created_models[model_name] = model
+
+        logger.info(
+            f"Created model '{model_name}' with fields: {list(model_fields.keys())}"
+        )
+        return model
+
+    def _generate_clean_model_name(
+        self, base_name: str, is_array_item: bool = False
+    ) -> str:
+        """
+        Generate a clean model name without UUID suffix.
 
         Args:
             base_name: Base name for the model
             is_array_item: Whether this is an array item model
 
         Returns:
-            Unique model name
+            Clean model name
         """
-        suffix = "Item" if is_array_item else "Object"
         clean_name = "".join(word.capitalize() for word in base_name.split("_"))
-        base_model_name = f"{clean_name}{suffix}"
+        if not clean_name:
+            clean_name = "Model"
 
-        # Add UUID to ensure uniqueness
-        unique_id = str(uuid.uuid4()).replace("-", "")[:8]
-        unique_name = f"{base_model_name}_{unique_id}"
+        # Don't add "Item" suffix for array items in this case
+        # as we want clean names like "Manager", "Department", "Company"
+        return clean_name
 
-        return unique_name
-
-    def _group_fields_by_nesting(
-        self, toolable_fields: Dict[str, Dict[str, Any]]
-    ) -> Dict[str, Dict[str, Any]]:
-        """
-        Group fields by their nesting level and parent paths.
-
-        Args:
-            toolable_fields: Fields marked as toolable
-
-        Returns:
-            Grouped fields by nesting structure
-        """
-        nested_groups = defaultdict(lambda: defaultdict(dict))
-        primitive_fields = {}
-
-        for field_path, field_info in toolable_fields.items():
-            path_info = self._parse_field_path(field_path)
-            parts = path_info["parts"]
-
-            if len(parts) == 1:
-                # Top-level primitive field
-                primitive_fields[field_path] = field_info
-            else:
-                # Nested field - group by parent path
-                parent_path = ".".join(parts[:-1])
-                field_name = parts[-1]
-
-                if path_info["is_array_item"]:
-                    # Array item field
-                    array_parent = ".".join(parts[: path_info["array_index"]])
-                    nested_groups[f"{array_parent}[*]"]["fields"][field_name] = (
-                        field_info
-                    )
-                    nested_groups[f"{array_parent}[*]"]["is_array"] = True
-                    nested_groups[f"{array_parent}[*]"]["parent_name"] = (
-                        parts[path_info["array_index"] - 1]
-                        if path_info["array_index"] > 0
-                        else "root"
-                    )
-                else:
-                    # Regular nested field
-                    nested_groups[parent_path]["fields"][field_name] = field_info
-                    nested_groups[parent_path]["is_array"] = False
-                    nested_groups[parent_path]["parent_name"] = (
-                        parts[-2] if len(parts) > 1 else "root"
-                    )
-
-        return {"nested": dict(nested_groups), "primitive": primitive_fields}
-
-    def _create_nested_model(
-        self,
-        parent_name: str,
-        fields: Dict[str, Dict[str, Any]],
-        is_array: bool = False,
-    ) -> Type[BaseModel]:
-        """
-        Create a nested Pydantic model.
-
-        Args:
-            parent_name: Name of the parent for model naming
-            fields: Fields to include in the model
-            is_array: Whether this is an array item model
-
-        Returns:
-            Pydantic model class
-        """
-        model_name = self._generate_model_name(parent_name, is_array)
-
-        if model_name in self.created_models:
-            return self.created_models[model_name]
-
-        model_fields = {}
-
-        for field_name, field_info in fields.items():
-            safe_field_name = self._make_safe_field_name(field_name)
-            field_type = self._get_field_type(field_info)
-            default_value = field_info.get("defaultValue")
-
-            if default_value is not None:
-                model_fields[safe_field_name] = (
-                    field_type,
-                    Field(default=default_value),
-                )
-            else:
-                # Handle null values based on allow_any_type
-                if field_info.get("type") == "null":
-                    if self.allow_any_type:
-                        model_fields[safe_field_name] = (
-                            Optional[Any],
-                            Field(default=None),
-                        )
-                    else:
-                        raise ValueError(
-                            f"Ambiguous null field '{field_name}' and allow_any_type is False, can't build the model"  # noqa
-                        )
-                else:
-                    model_fields[safe_field_name] = (
-                        Optional[field_type],
-                        Field(default=None),
-                    )
-
-        if not model_fields:
-            logger.warning(
-                f"No fields found for model {model_name}. Creating empty model."
-            )
-            model_fields["__empty__"] = (Optional[str], Field(default=None))
-
-        model = create_model(model_name, **model_fields)
-        self.created_models[model_name] = model
-
-        logger.info(
-            f"Created nested model '{model_name}' with {len(model_fields)} fields"
-        )
-        return model
-
-    def create_pydantic_model(  # noqa
+    def create_pydantic_model(
         self, model_name: str = "DynamicModel", only_toolable: bool = True
     ) -> Type[BaseModel]:
         """
@@ -434,81 +418,16 @@ class JSONFlattener:
                     __empty__=(Optional[str], Field(default=None)),
                 )
 
-            # Group fields by nesting structure
-            grouped_fields = self._group_fields_by_nesting(toolable_fields)
+            # Build hierarchy tree
+            hierarchy = self._build_hierarchy_tree(toolable_fields)
 
-            # Create nested models first
-            nested_models = {}
-            for parent_path, group_info in grouped_fields["nested"].items():
-                parent_name = group_info["parent_name"]
-                is_array = group_info["is_array"]
-                fields = group_info["fields"]
-
-                nested_model = self._create_nested_model(parent_name, fields, is_array)
-                nested_models[parent_path] = nested_model
-
-            # Create main model fields
-            main_fields = {}
-
-            # Add primitive fields
-            for field_path, field_info in grouped_fields["primitive"].items():
-                safe_field_name = self._make_safe_field_name(field_path)
-                field_type = self._get_field_type(field_info)
-                default_value = field_info.get("defaultValue")
-
-                if default_value is not None:
-                    main_fields[safe_field_name] = (
-                        field_type,
-                        Field(default=default_value),
-                    )
-                else:
-                    if field_info.get("type") == "null":
-                        if self.allow_any_type:
-                            main_fields[safe_field_name] = (
-                                Optional[Any],
-                                Field(default=None),
-                            )
-                        else:
-                            raise ValueError(
-                                f"Ambiguous null field '{field_path}' and allow_any_type is False, can't build the model"  # noqa
-                            )
-                    else:
-                        main_fields[safe_field_name] = (
-                            Optional[field_type],
-                            Field(default=None),
-                        )
-
-            # Add nested model fields
-            for parent_path, nested_model in nested_models.items():
-                safe_field_name = self._make_safe_field_name(
-                    parent_path.replace("[*]", "")
-                )
-
-                if "[*]" in parent_path:
-                    # Array of nested objects
-                    main_fields[safe_field_name] = (
-                        List[nested_model],
-                        Field(default_factory=list),
-                    )
-                else:
-                    # Single nested object
-                    main_fields[safe_field_name] = (
-                        Optional[nested_model],
-                        Field(default=None),
-                    )
-
-            if not main_fields:
-                main_fields["__empty__"] = (Optional[str], Field(default=None))
-
-            # Create main model with unique name
-            unique_model_name = f"{model_name}_{uuid.uuid4().hex[:8]}"
-            main_model = create_model(unique_model_name, **main_fields)
+            # Create the root model from hierarchy
+            root_model = self._create_model_from_hierarchy(model_name, hierarchy)
 
             logger.info(
-                f"Successfully created hierarchical Pydantic model '{unique_model_name}' with {len(main_fields)} fields"  # noqa
+                f"Successfully created hierarchical Pydantic model '{root_model.__name__}'"
             )
-
-            return main_model
+            return root_model
 
         except Exception as e:
             logger.error(f"Error creating Pydantic model: {e}")
@@ -524,30 +443,33 @@ class JSONFlattener:
         Returns:
             Safe field name for Python
         """
-        # Replace dots and special characters with underscores
-        safe_name = (
-            field_name.replace(".", "_")
-            .replace("[*]", "_all")
-            .replace("[", "_")
-            .replace("]", "_")
-        )
+        # For simple field names, just return as is if valid
+        if field_name.replace("_", "").replace("[*]", "").replace(".", "").isalnum():
+            safe_name = field_name.replace(".", "_").replace("[*]", "_all")
 
-        # Remove consecutive underscores
+            # Remove consecutive underscores
+            while "__" in safe_name:
+                safe_name = safe_name.replace("__", "_")
+
+            # Remove leading/trailing underscores
+            safe_name = safe_name.strip("_")
+
+            # Ensure it doesn't start with a number
+            if safe_name and safe_name[0].isdigit():
+                safe_name = f"field_{safe_name}"
+
+            return safe_name if safe_name else "field"
+
+        # Fallback for complex names
+        safe_name = "".join(c if c.isalnum() else "_" for c in field_name)
         while "__" in safe_name:
             safe_name = safe_name.replace("__", "_")
-
-        # Remove leading/trailing underscores
         safe_name = safe_name.strip("_")
 
-        # Ensure it doesn't start with a number
         if safe_name and safe_name[0].isdigit():
             safe_name = f"field_{safe_name}"
 
-        # Handle empty names
-        if not safe_name:
-            safe_name = "field"
-
-        return safe_name
+        return safe_name if safe_name else "field"
 
     def _get_field_type(self, field_info: Dict[str, Any]) -> Type:
         """

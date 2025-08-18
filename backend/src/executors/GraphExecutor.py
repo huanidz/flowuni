@@ -2,6 +2,7 @@ import copy
 import json
 import threading
 import time
+import traceback
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from typing import Any, Dict, List, Optional
 
@@ -313,11 +314,17 @@ class GraphExecutor:
 
         except Exception as e:
             execution_time = time.time() - start_time
-            logger.error(f"Node {node_id} execution failed: {str(e)}")
+
+            trace = traceback.format_exc()
+            logger.error(
+                f"❌ Node {node_id} execution failed 🛑: {str(e)}\n🔍 Trace: {trace}"
+            )
             self.push_event(
                 node_id=node_id,
                 event=NodeExecutionEvent.FAILED,
-                data={},
+                data={
+                    "error": str(e),
+                },
             )
             return NodeExecutionResult(
                 node_id=node_id,
@@ -374,11 +381,17 @@ class GraphExecutor:
 
         except Exception as e:
             execution_time = time.time() - start_time
-            logger.error(f"Node {node_id} execution failed (parallel): {str(e)}")
+            trace = traceback.format_exc()
+            logger.error(
+                f"❌ Node {node_id} execution failed 🛑: {str(e)}\n🔍 Trace: {trace}"
+            )
+
             self.push_event(
                 node_id=node_id,
                 event=NodeExecutionEvent.FAILED,
-                data={},
+                data={
+                    "error": str(e),
+                },
             )
             return NodeExecutionResult(
                 node_id=node_id,
@@ -678,12 +691,19 @@ class GraphExecutor:
 
             # Step 5: Extract tool information from executed data
             raw_tool_schema = executed_data.output_values["tool"]
+            logger.info(f"👉 raw_tool_schema: {raw_tool_schema}")
             tool_name = executed_data.output_values["tool_name"]
+            logger.info(f"👉 tool_name: {tool_name}")
             tool_description = executed_data.output_values["tool_description"]
+            logger.info(f"👉 tool_description: {tool_description}")
 
             # Step 6: Parse the tool schema JSON
             try:
-                parsed_tool_schema = json.loads(raw_tool_schema)
+                if raw_tool_schema is None:
+                    # If raw_tool_schema is None, set parsed_tool_schema to None, This is expected when the tool is no-toolable-param (just execute)
+                    parsed_tool_schema = None
+                else:
+                    parsed_tool_schema = json.loads(raw_tool_schema)
             except json.JSONDecodeError as json_error:
                 error_message = (
                     f"Invalid JSON in tool schema from node '{node_id}': {json_error}"

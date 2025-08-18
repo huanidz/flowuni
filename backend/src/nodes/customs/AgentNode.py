@@ -111,17 +111,27 @@ class AgentNode(Node):
             )
         ],
         parameters={},
+        can_be_tool=False,
     )
 
     def process(self, input_values, parameter_values):
+        from loguru import logger
+
         provider = input_values["provider"]
         model = input_values["model"]
         api_key = input_values["API Key"]
         system_prompt = input_values["system_instruction"]
         input_message = input_values["input_message"]
 
-        tools = json.loads(input_values["tools"])
-        tools = [ToolDataParser(**tool) for tool in tools]
+        tools = []
+        tools_value = input_values["tools"]
+        if not tools_value:
+            tools = []
+        else:
+            tools = json.loads(input_values["tools"])
+            tools = [ToolDataParser(**tool) for tool in tools]
+
+        logger.info(f"👉 tools: {tools}")
 
         llm_provider: LLMAdapter = LLMProvider.get_provider(provider_name=provider)
         llm_provider.init(
@@ -139,3 +149,9 @@ class AgentNode(Node):
         chat_response: ChatResponse = agent.chat(message=chat_message)
 
         return {"response": chat_response.content}
+
+    def build_tool(self):
+        raise NotImplementedError("Subclasses must override build_tool")
+
+    def process_tool(self):
+        raise NotImplementedError("Subclasses must override process_tool")

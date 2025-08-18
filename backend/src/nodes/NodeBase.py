@@ -43,6 +43,7 @@ class Node(ABC):
 
         if spec.can_be_tool:
             cls._validate_tool_requirements(spec)
+            cls._validate_tool_method_requirements()
 
     @classmethod
     def _validate_tool_requirements(cls, spec: NodeSpec) -> None:
@@ -55,6 +56,41 @@ class Node(ABC):
             raise NodeValidationError(
                 f"{cls.__name__} marked as tool but has no inputs or parameters"
             )
+
+    @classmethod
+    def _validate_tool_method_requirements(cls) -> None:
+        """Validate that tool methods are properly implemented based on can_be_tool setting."""
+        spec = getattr(cls, "spec", None)
+        if spec is None:
+            return  # Will be caught by _validate_node_spec
+
+        if spec.can_be_tool:
+            # Check if build_tool method is properly implemented (not inherited from base class)
+            build_tool_method = getattr(cls, "build_tool", None)
+            if build_tool_method is None or build_tool_method is Node.build_tool:
+                raise NodeValidationError(
+                    f"{cls.__name__} marked as tool but missing required 'build_tool' method implementation"
+                )
+
+            # Check if process_tool method is properly implemented (not inherited from base class)
+            process_tool_method = getattr(cls, "process_tool", None)
+            if process_tool_method is None or process_tool_method is Node.process_tool:
+                raise NodeValidationError(
+                    f"{cls.__name__} marked as tool but missing required 'process_tool' method implementation"
+                )
+        else:
+            # For nodes that cannot be tools, ensure they don't have custom tool method implementations
+            # This prevents accidental tool functionality
+            build_tool_method = getattr(cls, "build_tool", None)
+            process_tool_method = getattr(cls, "process_tool", None)
+
+            if build_tool_method not in [
+                None,
+                Node.build_tool,
+            ] or process_tool_method not in [None, Node.process_tool]:
+                raise NodeValidationError(
+                    f"{cls.__name__} marked as cannot_be_tool but has custom tool method implementations"
+                )
 
     # ============================================================================
     # INPUT/OUTPUT HANDLING
@@ -169,7 +205,29 @@ class Node(ABC):
         """
         pass
 
-    # @abstractmethod
+    @abstractmethod
+    def process_tool(
+        self,
+        inputs_values: Dict[str, Any],
+        parameter_values: Dict[str, Any],
+        tool_inputs: Dict[str, Any],
+    ) -> Any:
+        """
+        Process inputs_values and parameter_values and tool_inputs to produce outputs.
+
+        Args:
+            inputs_values: Dictionary of input values
+            parameter_values: Dictionary of parameter values
+            tool_inputs: Dictionary of tool inputs (Structured Output-kind.)
+
+        Returns:
+            Processing result
+            This always gonna comeback to call process(). This is just a wrapper for manipulating and preparing input data for process().
+            (single value for single output, dict for multiple outputs)
+        """  # noqa
+        pass
+
+    @abstractmethod
     def build_tool(
         self, inputs_values: Dict[str, Any], tool_configs: ToolConfig
     ) -> BuildToolResult:

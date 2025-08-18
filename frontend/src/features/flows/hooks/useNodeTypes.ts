@@ -1,5 +1,5 @@
 // useNodeTypes.ts
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { NodeFactory } from '@/features/flows/utils/NodeFactory';
 import { useNodeRegistry, type NodeSpec } from '@/features/nodes';
 
@@ -15,60 +15,107 @@ import { useNodeRegistry, type NodeSpec } from '@/features/nodes';
  * @returns Object containing nodeTypes and loading state.
  */
 export const useNodeTypes = (
-  updateNodeInputData?: (nodeId: string, inputName: string, newData: any) => void,
-  updateNodeModeData?: (nodeId: string, newMode: string) => void,
-  updateNodeParameterData?: (nodeId: string, parameterName: string, value: any) => void,
-  updateNodeToolConfigData?: (nodeId: string, toolConfigName: string, value: any) => void,
+    updateNodeInputData?: (
+        nodeId: string,
+        inputName: string,
+        newData: any
+    ) => void,
+    updateNodeModeData?: (nodeId: string, newMode: string) => void,
+    updateNodeParameterData?: (
+        nodeId: string,
+        parameterName: string,
+        value: any
+    ) => void,
+    updateNodeToolConfigData?: (
+        nodeId: string,
+        toolConfigName: string,
+        value: any
+    ) => void
 ) => {
-  const { getAllNodeSpecs, loaded } = useNodeRegistry();
-  const [nodeTypes, setNodeTypes] = useState<Record<string, React.FC<any>>>({});
-  const [nodeTypesLoaded, setNodeTypesLoaded] = useState(false);
+    const { getAllNodeSpecs, loaded } = useNodeRegistry();
+    const [nodeTypes, setNodeTypes] = useState<Record<string, React.FC<any>>>(
+        {}
+    );
+    const [nodeTypesLoaded, setNodeTypesLoaded] = useState(false);
 
-  useEffect(() => {
-    // Wait until the node registry is fully loaded
-    if (!loaded) {
-      setNodeTypesLoaded(false);
-      return;
-    }
+    // Use a ref to track if nodeTypes have been initialized
+    const nodeTypesInitialized = useRef(false);
 
-    // Fetch all node specifications from the registry
-    const allNodeSpecs = getAllNodeSpecs();
+    // Memoize the nodeTypes object to prevent ReactFlow warning
+    // This ensures the object reference remains stable after initial creation
+    const memoizedNodeTypes = useMemo(() => {
+        return nodeTypes;
+    }, [nodeTypes]);
 
-    console.log("All node specs:", allNodeSpecs);
+    // Memoize the update handlers to prevent unnecessary re-renders
+    const memoizedUpdateHandlers = useMemo(
+        () => ({
+            updateNodeInputData,
+            updateNodeModeData,
+            updateNodeParameterData,
+            updateNodeToolConfigData,
+        }),
+        [
+            updateNodeInputData,
+            updateNodeModeData,
+            updateNodeParameterData,
+            updateNodeToolConfigData,
+        ]
+    );
 
-    // Create an object to hold the generated React components for each node
-    const nodeTypeMap: Record<string, React.FC<any>> = {};
+    useEffect(() => {
+        // Wait until the node registry is fully loaded
+        if (!loaded) {
+            setNodeTypesLoaded(false);
+            return;
+        }
 
-    allNodeSpecs.forEach((nodeSpec: NodeSpec) => {
-      // console.log("Node spec:", nodeSpec);
+        // Only initialize nodeTypes once to prevent reference changes
+        if (nodeTypesInitialized.current) {
+            return;
+        }
 
-      // Use the factory to create a component for each node type
-      // Pass the update handlers directly
-      const CustomNodeComponent = NodeFactory.createNodeComponent(
-        nodeSpec,
-        updateNodeInputData,
-        updateNodeModeData,
-        updateNodeParameterData,
-        updateNodeToolConfigData,
-      );
+        // Fetch all node specifications from the registry
+        const allNodeSpecs = getAllNodeSpecs();
 
-      // Only add if component was successfully created
-      if (CustomNodeComponent) {
-        nodeTypeMap[nodeSpec.name] = CustomNodeComponent;
-      }
-    });
+        console.log('All node specs:', allNodeSpecs);
 
-    // Store the complete set of node components
-    // console.log("Node type map:", nodeTypeMap);
-    setNodeTypes(nodeTypeMap);
-    setNodeTypesLoaded(true);
-    
-  }, [loaded, getAllNodeSpecs, updateNodeInputData, updateNodeModeData, updateNodeParameterData, updateNodeToolConfigData]);
+        // Create an object to hold the generated React components for each node
+        const nodeTypeMap: Record<string, React.FC<any>> = {};
 
-  // Memoize the return object to prevent unnecessary re-renders
-  return useMemo(() => ({
-    nodeTypes,
-    nodeTypesLoaded,
-    loaded
-  }), [nodeTypes, nodeTypesLoaded, loaded]);
+        allNodeSpecs.forEach((nodeSpec: NodeSpec) => {
+            // console.log("Node spec:", nodeSpec);
+
+            // Use the factory to create a component for each node type
+            // Pass the memoized update handlers
+            const CustomNodeComponent = NodeFactory.createNodeComponent(
+                nodeSpec,
+                memoizedUpdateHandlers.updateNodeInputData,
+                memoizedUpdateHandlers.updateNodeModeData,
+                memoizedUpdateHandlers.updateNodeParameterData,
+                memoizedUpdateHandlers.updateNodeToolConfigData
+            );
+
+            // Only add if component was successfully created
+            if (CustomNodeComponent) {
+                nodeTypeMap[nodeSpec.name] = CustomNodeComponent;
+            }
+        });
+
+        // Store the complete set of node components
+        // console.log("Node type map:", nodeTypeMap);
+        setNodeTypes(nodeTypeMap);
+        setNodeTypesLoaded(true);
+        nodeTypesInitialized.current = true;
+    }, [loaded, getAllNodeSpecs, memoizedUpdateHandlers]);
+
+    // Memoize the return object to prevent unnecessary re-renders
+    return useMemo(
+        () => ({
+            nodeTypes: memoizedNodeTypes,
+            nodeTypesLoaded,
+            loaded,
+        }),
+        [memoizedNodeTypes, nodeTypesLoaded, loaded]
+    );
 };
