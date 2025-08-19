@@ -31,6 +31,7 @@ export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
         multiline: defaultMultiline = false,
         maxLength: defaultMaxLength,
         format: defaultFormat = TEXT_FIELD_FORMAT.PLAIN,
+        hidden = false,
     } = type_detail.defaults;
 
     const [isModalOpen, setIsModalOpen] = React.useState(false);

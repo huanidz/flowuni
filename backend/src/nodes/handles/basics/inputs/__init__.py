@@ -2,6 +2,7 @@ from .BooleanInputHandle import BooleanInputHandle
 from .DropdownInputHandle import DropdownInputHandle
 from .DynamicTypeInputHandle import DynamicTypeInputHandle
 from .FileInputHandle import FileInputHandle
+from .ImageInputInputHandle import ImageInputInputHandle
 from .NumberInputHandle import NumberInputHandle
 from .SecretTextInputHandle import SecretTextInputHandle
 from .TableInputHandle import TableInputHandle
@@ -18,6 +19,7 @@ __all__ = [
     "DynamicTypeInputHandle",
     "TableInputHandle",
     "ToolableJsonInputHandle",
+    "ImageInputInputHandle",
 ]
 
 from enum import Enum
@@ -33,3 +35,4 @@ class InputHandleTypeEnum(Enum):
     DYNAMIC_TYPE = DynamicTypeInputHandle
     TABLE = TableInputHandle
     TOOLABLE_JSON = ToolableJsonInputHandle
+    IMAGE = ImageInputInputHandle
