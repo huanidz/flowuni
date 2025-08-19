@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { X, Send } from 'lucide-react';
 import { chatBoxStyles } from '@/features/flows/styles/chatBoxStyles';
+import { useNodes } from '@xyflow/react';
 
 interface Position {
     x: number;
@@ -30,6 +31,11 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
     position,
     onPositionChange,
 }) => {
+    const nodes = useNodes();
+
+    const hasChatInputNode = nodes.some(node => node.type === 'Chat Input');
+    const hasChatOutputNode = nodes.some(node => node.type === 'Chat Output');
+
     const [isDragging, setIsDragging] = useState(false);
     const [dragOffset, setDragOffset] = useState<Position>({ x: 0, y: 0 });
     const [message, setMessage] = useState('');
@@ -41,10 +47,11 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
             timestamp: new Date(),
         },
     ]);
+
     const chatBoxRef = useRef<HTMLDivElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    // Initialize position only if it's the default position (0,0)
+    // Initialize position to bottom-right corner if at default (0,0)
     useEffect(() => {
         if (
             isOpen &&
@@ -54,17 +61,18 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
         ) {
             const chatBoxWidth = chatBoxRef.current.offsetWidth;
             onPositionChange({
-                x: window.innerWidth - chatBoxWidth - 16, // 16px from right edge
-                y: 16, // top-4 in Tailwind (16px)
+                x: window.innerWidth - chatBoxWidth - 16,
+                y: 16,
             });
         }
     }, [isOpen, position, onPositionChange]);
 
-    // Scroll to bottom of messages
+    // Auto-scroll to latest message
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
+    // Dragging event handlers
     const handleMouseDown = (e: React.MouseEvent) => {
         if (chatBoxRef.current) {
             const rect = chatBoxRef.current.getBoundingClientRect();
@@ -81,7 +89,7 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
             const newX = e.clientX - dragOffset.x;
             const newY = e.clientY - dragOffset.y;
 
-            // Keep the chat box within the viewport
+            // Keep chat box within viewport bounds
             const maxX = window.innerWidth - chatBoxRef.current.offsetWidth;
             const maxY = window.innerHeight - chatBoxRef.current.offsetHeight;
 
@@ -96,21 +104,22 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
         setIsDragging(false);
     };
 
-    // Add event listeners for dragging
+    // Attach/detach drag event listeners
     useEffect(() => {
         if (isDragging) {
             document.addEventListener('mousemove', handleMouseMove);
             document.addEventListener('mouseup', handleMouseUp);
-        }
 
-        return () => {
-            document.removeEventListener('mousemove', handleMouseMove);
-            document.removeEventListener('mouseup', handleMouseUp);
-        };
+            return () => {
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', handleMouseUp);
+            };
+        }
     }, [isDragging, dragOffset]);
 
+    // Message handling
     const handleSendMessage = () => {
-        if (message.trim() === '') return;
+        if (!message.trim()) return;
 
         const newMessage: Message = {
             id: Date.now().toString(),
@@ -119,10 +128,10 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
             timestamp: new Date(),
         };
 
-        setMessages([...messages, newMessage]);
+        setMessages(prev => [...prev, newMessage]);
         setMessage('');
 
-        // Simulate a reply after a short delay
+        // Simulate bot response
         setTimeout(() => {
             const replyMessage: Message = {
                 id: (Date.now() + 1).toString(),
@@ -143,6 +152,8 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
 
     if (!isOpen) return null;
 
+    const showWarnings = !hasChatInputNode || !hasChatOutputNode;
+
     return (
         <Card
             ref={chatBoxRef}
@@ -157,7 +168,7 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
                 top: `${position.y}px`,
             }}
         >
-            {/* Header - Fixed at top with no padding/margin */}
+            {/* Draggable Header */}
             <CardHeader
                 style={chatBoxStyles.header}
                 className="cursor-move flex-shrink-0 p-0 m-0 border-b"
@@ -176,56 +187,82 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
                 </div>
             </CardHeader>
 
-            {/* Messages area - Flexible content that can scroll */}
+            {/* Content Area */}
             <div className="flex-1 overflow-hidden flex flex-col">
-                <div className="flex-1 overflow-y-auto p-4">
-                    {messages.map(msg => (
-                        <div
-                            key={msg.id}
-                            className={`mb-4 ${
-                                msg.sender === 'user' ? 'text-right' : ''
-                            }`}
-                        >
-                            <div
-                                className={`inline-block p-3 rounded-lg max-w-[80%] break-words ${
-                                    msg.sender === 'user'
-                                        ? 'bg-primary text-primary-foreground'
-                                        : 'bg-muted'
-                                }`}
-                            >
-                                {msg.text}
-                            </div>
-                            <div className="text-xs text-muted-foreground mt-1">
-                                {msg.timestamp.toLocaleTimeString([], {
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                })}
+                {showWarnings ? (
+                    <div className="flex-1 flex items-center justify-center p-6">
+                        <div className="text-center space-y-4">
+                            {!hasChatInputNode && (
+                                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                    <p className="text-yellow-800 font-medium">
+                                        Need ChatInput Node to start chatting
+                                    </p>
+                                </div>
+                            )}
+                            {!hasChatOutputNode && (
+                                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <p className="text-blue-800 font-medium">
+                                        Need ChatOutput to receive message from
+                                        flow
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                ) : (
+                    <>
+                        {/* Messages Area */}
+                        <div className="flex-1 overflow-y-auto p-4">
+                            {messages.map(msg => (
+                                <div
+                                    key={msg.id}
+                                    className={`mb-4 ${msg.sender === 'user' ? 'text-right' : ''}`}
+                                >
+                                    <div
+                                        className={`
+                                            inline-block p-3 rounded-lg max-w-[80%] break-words
+                                            ${
+                                                msg.sender === 'user'
+                                                    ? 'bg-primary text-primary-foreground'
+                                                    : 'bg-muted'
+                                            }
+                                        `}
+                                    >
+                                        {msg.text}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground mt-1">
+                                        {msg.timestamp.toLocaleTimeString([], {
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
+                            <div ref={messagesEndRef} />
+                        </div>
+
+                        {/* Message Input */}
+                        <div className="flex-shrink-0 border-t p-3 bg-white">
+                            <div className="flex items-center gap-2">
+                                <Input
+                                    value={message}
+                                    onChange={e => setMessage(e.target.value)}
+                                    onKeyDown={handleKeyPress}
+                                    placeholder="Type a message..."
+                                    className="flex-1"
+                                />
+                                <Button
+                                    onClick={handleSendMessage}
+                                    disabled={!message.trim()}
+                                    size="icon"
+                                    className="h-8 w-8 flex-shrink-0"
+                                >
+                                    <Send className="h-4 w-4" />
+                                </Button>
                             </div>
                         </div>
-                    ))}
-                    <div ref={messagesEndRef} />
-                </div>
-
-                {/* Input area - Fixed at bottom */}
-                <div className="flex-shrink-0 border-t p-3 bg-white">
-                    <div className="flex items-center gap-2">
-                        <Input
-                            value={message}
-                            onChange={e => setMessage(e.target.value)}
-                            onKeyDown={handleKeyPress}
-                            placeholder="Type a message..."
-                            className="flex-1"
-                        />
-                        <Button
-                            onClick={handleSendMessage}
-                            disabled={!message.trim()}
-                            size="icon"
-                            className="h-8 w-8 flex-shrink-0"
-                        >
-                            <Send className="h-4 w-4" />
-                        </Button>
-                    </div>
-                </div>
+                    </>
+                )}
             </div>
         </Card>
     );
