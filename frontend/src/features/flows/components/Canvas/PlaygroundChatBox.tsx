@@ -121,7 +121,7 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
                 ws.current = null;
                 setConnectionStatus('disconnected');
             }
-        }, 60000); // 60 seconds
+        }, 10000); // 60 seconds
     };
 
     // WebSocket connection
@@ -418,11 +418,7 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
                                         }
                                     }}
                                     onKeyDown={handleKeyPress}
-                                    placeholder={
-                                        connectionStatus === 'connected'
-                                            ? 'Type a message...'
-                                            : 'Connecting...'
-                                    }
+                                    placeholder={'Type a message...'}
                                     className="flex-1"
                                     disabled={connectionStatus === 'connecting'}
                                 />
@@ -441,7 +437,7 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
                             {connectionStatus !== 'connected' &&
                                 connectionStatus !== 'connecting' && (
                                     <div className="text-xs text-center text-muted-foreground mt-1">
-                                        Disconnected from chat service
+                                        Disconnected from chat service.
                                     </div>
                                 )}
                         </div>
