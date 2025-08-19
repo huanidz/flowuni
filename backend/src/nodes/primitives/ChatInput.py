@@ -11,7 +11,7 @@ class ChatInput(Node):
         inputs=[
             NodeInput(
                 name="message_in",
-                type=TextFieldInputHandle(multiline=True, hidden=True),
+                type=TextFieldInputHandle(multiline=True, hidden=False),
                 description="The message to be sent.",
             )
         ],
@@ -26,7 +26,7 @@ class ChatInput(Node):
     )
 
     def process(self, inputs, parameters):
-        return super().process(inputs, parameters)
+        return {"user_message": inputs["message_in"]}
 
     def build_tool(self, inputs_values, tool_configs):
         raise NotImplementedError("Subclasses must override build_tool")
