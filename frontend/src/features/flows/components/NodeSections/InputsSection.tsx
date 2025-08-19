@@ -53,6 +53,7 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
     const renderInput = (spec_input: NodeInput, index: number) => {
         const InputComponent =
             HandleComponentRegistry[spec_input.type_detail.type];
+
         const hasInputComponent = !!InputComponent;
         const inputValue = input_values[spec_input.name];
         const handleId = `${spec_input.name}-index:${index}`;
@@ -61,6 +62,8 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
             node_mode === NODE_DATA_MODE.TOOL &&
             spec_input.enable_as_whole_for_tool;
         const inputType = spec_input.type_detail.type;
+        const isHidden =
+            (spec_input.type_detail as any)?.defaults?.hidden ?? false;
         const defaultVisibility =
             INPUT_TYPE_DEFAULT_COLLAPSE[inputType] ?? true;
         const [showInputComponent, setShowInputComponent] =
@@ -91,7 +94,10 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
         };
 
         return (
-            <div key={`input-${index}`} style={nodeStyles.inputItem}>
+            <div
+                key={`input-${index}`}
+                style={isHidden ? { display: 'none' } : nodeStyles.inputItem}
+            >
                 <div style={nodeInputSectionStyles.inputItemContainer}>
                     <HandleInfo
                         name={spec_input.name}
