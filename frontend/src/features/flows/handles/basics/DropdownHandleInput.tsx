@@ -30,6 +30,8 @@ export const DropdownHandleInput: React.FC<DropdownHandleInputProps> = ({
     onChange,
     type_detail,
 }) => {
+    const hidden = (type_detail as any)?.defaults?.hidden ?? false;
+    if (hidden) return null;
     const [searchTerm, setSearchTerm] = useState('');
     const [resolvedOptions, setResolvedOptions] = useState<
         Array<{ label: string; value: string }>

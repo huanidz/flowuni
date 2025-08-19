@@ -23,6 +23,9 @@ export const SecretTextHandleInput: React.FC<SecretTextHandleInputProps> = ({
     type_detail,
     disabled = true,
 }) => {
+    const hidden = (type_detail as any)?.defaults?.hidden ?? false;
+    if (hidden) return null;
+
     const { multiline = false, allow_visible_toggle = false } =
         type_detail.defaults;
 

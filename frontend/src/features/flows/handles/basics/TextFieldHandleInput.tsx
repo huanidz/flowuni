@@ -34,6 +34,8 @@ export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
         hidden = false,
     } = type_detail.defaults;
 
+    if (hidden) return null;
+
     const [isModalOpen, setIsModalOpen] = React.useState(false);
     const inputRef = React.useRef<HTMLInputElement>(null);
     const textareaRef = React.useRef<HTMLTextAreaElement>(null);

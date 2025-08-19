@@ -33,6 +33,8 @@ export const ToolableJsonHandleInput: React.FC<
     disabled = true,
     isWholeAsToolMode = false,
 }) => {
+    const hidden = (type_detail as any)?.defaults?.hidden ?? false;
+    if (hidden) return null;
     const [jsonInput, setJsonInput] = useState('');
     const [fields, setFields] = useState<FieldNode[]>([]);
     const [errors, setErrors] = useState<string[]>([]);

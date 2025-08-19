@@ -104,6 +104,8 @@ export const TableHandleInput: React.FC<TableHandleInputProps> = ({
     type_detail,
     disabled = false,
 }) => {
+    const hidden = (type_detail as any)?.defaults?.hidden ?? false;
+    if (hidden) return null;
     const config = {
         columns: type_detail.defaults?.columns || [],
         minRows: type_detail.defaults?.min_rows || MIN_ROWS,
