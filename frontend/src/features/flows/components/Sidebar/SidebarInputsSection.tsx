@@ -1,9 +1,11 @@
 import React, { useMemo } from 'react';
+import { Handle, Position, useEdges } from '@xyflow/react';
 import {
     HandleComponentRegistry,
     NodeInputType,
 } from '@/features/flows/handles/HandleComponentRegistry';
 import { sidebarStyles } from '@/features/flows/styles/sidebarStyles';
+import { nodeStyles } from '@/features/flows/styles/nodeStyles';
 import type { NodeInput } from '@/features/nodes/types';
 import { HandleInfo } from '../NodeUI/HandleInfo';
 import { NODE_DATA_MODE } from '@/features/flows/consts';
@@ -24,9 +26,18 @@ export const SidebarInputsSection: React.FC<SidebarInputsSectionProps> = ({
     onInputValueChange,
     node_mode,
 }) => {
+    const edges = useEdges();
     const [expandedInputs, setExpandedInputs] = React.useState<
         Record<string, boolean>
     >({});
+
+    const targetHandleEdges = useMemo(() => {
+        return new Set(
+            edges
+                .filter(edge => edge.target === nodeId && edge.targetHandle)
+                .map(edge => edge.targetHandle!)
+        );
+    }, [edges, nodeId]);
 
     if (spec_inputs.length === 0) return null;
 
@@ -47,6 +58,9 @@ export const SidebarInputsSection: React.FC<SidebarInputsSectionProps> = ({
             node_mode === NODE_DATA_MODE.TOOL &&
             spec_input.enable_as_whole_for_tool;
 
+        // Note: SidebarInputsSection doesn't have access to edge connections
+        // so we can't check isConnected like in InputsSection
+
         // Handle DynamicTypeInput value format
         const inputType = spec_input.type_detail.type;
         const effectiveValue =
@@ -57,6 +71,9 @@ export const SidebarInputsSection: React.FC<SidebarInputsSectionProps> = ({
                 ? inputValue
                 : (inputValue ?? spec_input.default ?? '');
 
+        const handleId = `${spec_input.name}-index:${index}`;
+        const isConnected = targetHandleEdges.has(handleId);
+
         const inputProps = {
             label: spec_input.name,
             value: effectiveValue,
@@ -64,7 +81,7 @@ export const SidebarInputsSection: React.FC<SidebarInputsSectionProps> = ({
                 onInputValueChange(spec_input.name, value),
             nodeId,
             type_detail: spec_input.type_detail,
-            disabled: isWholeAsToolMode,
+            disabled: isWholeAsToolMode || isConnected,
             isSidebar: true, // Flag to indicate this is being used in the sidebar
         };
 
@@ -103,6 +120,15 @@ export const SidebarInputsSection: React.FC<SidebarInputsSectionProps> = ({
                     <div style={sidebarStyles.inputComponent}>
                         <InputComponent {...inputProps} />
                     </div>
+                )}
+
+                {!isWholeAsToolMode && spec_input.allow_incoming_edges && (
+                    <Handle
+                        type="target"
+                        position={Position.Left}
+                        id={handleId}
+                        style={nodeStyles.handle.input}
+                    />
                 )}
             </div>
         );
