@@ -5,24 +5,13 @@ import { Input } from '@/components/ui/input';
 import { X, Send, Trash2 } from 'lucide-react';
 import { chatBoxStyles } from '@/features/flows/styles/chatBoxStyles';
 import { useNodes } from '@xyflow/react';
-
-interface Position {
-    x: number;
-    y: number;
-}
-
-interface Message {
-    id: string;
-    text: string;
-    sender: 'user' | 'other';
-    timestamp: Date;
-}
+import type { PlaygroundChatBoxPosition, PGMessage } from '../../types';
 
 interface PlaygroundChatBoxProps {
     isOpen: boolean;
     onClose: () => void;
-    position: Position;
-    onPositionChange: (position: Position) => void;
+    position: PlaygroundChatBoxPosition;
+    onPositionChange: (position: PlaygroundChatBoxPosition) => void;
     nodeUpdateHandlers: any;
 }
 
@@ -49,13 +38,17 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
     const outputNodeId = chatOutputNode?.id;
 
     const [isDragging, setIsDragging] = useState(false);
-    const [dragOffset, setDragOffset] = useState<Position>({ x: 0, y: 0 });
+    const [dragOffset, setDragOffset] = useState<PlaygroundChatBoxPosition>({
+        x: 0,
+        y: 0,
+    });
     const [message, setMessage] = useState('');
-    const [messages, setMessages] = useState<Message[]>([
+    const [messages, setMessages] = useState<PGMessage[]>([
         {
             id: '1',
-            text: 'Hello! How can I help you today?',
-            sender: 'other',
+            text: '',
+            user_id: 0,
+            message: 'Hello! How can I help you today?',
             timestamp: new Date(),
         },
     ]);
@@ -65,6 +58,10 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
 
     // updateNodeInputData: (nodeId, inputName, value)
     const { updateNodeInputData } = nodeUpdateHandlers;
+
+    // Websocket
+    const ws = useRef<WebSocket | null>(null);
+    const wsUrl = 'ws://localhost:5002/api/flow_execution/ws/playground_chat';
 
     // Initialize position to bottom-right corner if at default (0,0)
     useEffect(() => {
@@ -140,10 +137,11 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
     const handleSendMessage = () => {
         if (!message.trim()) return;
 
-        const newMessage: Message = {
+        const newMessage: PGMessage = {
             id: Date.now().toString(),
-            text: message,
-            sender: 'user',
+            text: '',
+            user_id: 1, // Assuming 1 represents the current user
+            message: message,
             timestamp: new Date(),
         };
 
@@ -157,10 +155,11 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
 
         // Simulate bot response
         setTimeout(() => {
-            const replyMessage: Message = {
+            const replyMessage: PGMessage = {
                 id: (Date.now() + 1).toString(),
-                text: 'This is a dummy response to your message.',
-                sender: 'other',
+                text: '',
+                user_id: 0, // Assuming 0 represents the bot/system
+                message: 'This is a dummy response to your message.',
                 timestamp: new Date(),
             };
             setMessages(prev => [...prev, replyMessage]);
@@ -249,19 +248,19 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
                             {messages.map(msg => (
                                 <div
                                     key={msg.id}
-                                    className={`mb-4 ${msg.sender === 'user' ? 'text-right' : ''}`}
+                                    className={`mb-4 ${msg.user_id === 1 ? 'text-right' : ''}`}
                                 >
                                     <div
                                         className={`
                                             inline-block p-3 rounded-lg max-w-[80%] break-words
                                             ${
-                                                msg.sender === 'user'
+                                                msg.user_id === 1
                                                     ? 'bg-primary text-primary-foreground'
                                                     : 'bg-muted'
                                             }
                                         `}
                                     >
-                                        {msg.text}
+                                        {msg.message}
                                     </div>
                                     <div className="text-xs text-muted-foreground mt-1">
                                         {msg.timestamp.toLocaleTimeString([], {
