@@ -273,6 +273,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
                 onClose={() => setPlaygroundOpen(false)}
                 position={playgroundPosition}
                 onPositionChange={setPlaygroundPosition}
+                nodeUpdateHandlers={updateHandlers}
             />
         </div>
     );

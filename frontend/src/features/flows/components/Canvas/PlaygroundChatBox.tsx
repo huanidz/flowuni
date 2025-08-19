@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { X, Send } from 'lucide-react';
+import { X, Send, Trash2 } from 'lucide-react';
 import { chatBoxStyles } from '@/features/flows/styles/chatBoxStyles';
 import { useNodes } from '@xyflow/react';
 
@@ -23,6 +23,7 @@ interface PlaygroundChatBoxProps {
     onClose: () => void;
     position: Position;
     onPositionChange: (position: Position) => void;
+    nodeUpdateHandlers: any;
 }
 
 const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
@@ -30,11 +31,22 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
     onClose,
     position,
     onPositionChange,
+    nodeUpdateHandlers,
 }) => {
     const nodes = useNodes();
 
     const hasChatInputNode = nodes.some(node => node.type === 'Chat Input');
     const hasChatOutputNode = nodes.some(node => node.type === 'Chat Output');
+
+    // Get the chat input and output nodes
+    const chatInputNode = nodes.find(node => node.type === 'Chat Input');
+    const chatOutputNode = nodes.find(node => node.type === 'Chat Output');
+
+    console.log('chatInputNode', chatInputNode);
+    console.log('chatOutputNode', chatOutputNode);
+
+    const inputNodeId = chatInputNode?.id;
+    const outputNodeId = chatOutputNode?.id;
 
     const [isDragging, setIsDragging] = useState(false);
     const [dragOffset, setDragOffset] = useState<Position>({ x: 0, y: 0 });
@@ -50,6 +62,9 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
 
     const chatBoxRef = useRef<HTMLDivElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    // updateNodeInputData: (nodeId, inputName, value)
+    const { updateNodeInputData } = nodeUpdateHandlers;
 
     // Initialize position to bottom-right corner if at default (0,0)
     useEffect(() => {
@@ -118,6 +133,10 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
     }, [isDragging, dragOffset]);
 
     // Message handling
+    const handleClearMessages = () => {
+        setMessages([]);
+    };
+
     const handleSendMessage = () => {
         if (!message.trim()) return;
 
@@ -130,6 +149,11 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
 
         setMessages(prev => [...prev, newMessage]);
         setMessage('');
+
+        // Clear the input node data when sending message
+        if (inputNodeId) {
+            updateNodeInputData(inputNodeId, 'message_in', '');
+        }
 
         // Simulate bot response
         setTimeout(() => {
@@ -176,6 +200,15 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
             >
                 <div style={chatBoxStyles.headerTitle}>Chat Playground</div>
                 <div style={chatBoxStyles.headerActions}>
+                    <button
+                        onClick={handleClearMessages}
+                        style={chatBoxStyles.iconButton}
+                        title="Clear messages"
+                        aria-label="Clear messages"
+                        disabled={messages.length <= 1}
+                    >
+                        <Trash2 size={18} />
+                    </button>
                     <button
                         onClick={onClose}
                         style={chatBoxStyles.iconButton}
@@ -246,7 +279,17 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
                             <div className="flex items-center gap-2">
                                 <Input
                                     value={message}
-                                    onChange={e => setMessage(e.target.value)}
+                                    onChange={e => {
+                                        setMessage(e.target.value);
+                                        // Update the input node data when typing
+                                        if (inputNodeId) {
+                                            updateNodeInputData(
+                                                inputNodeId,
+                                                'message_in',
+                                                e.target.value
+                                            );
+                                        }
+                                    }}
                                     onKeyDown={handleKeyPress}
                                     placeholder="Type a message..."
                                     className="flex-1"
