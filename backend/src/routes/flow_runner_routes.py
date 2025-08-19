@@ -3,7 +3,7 @@ import traceback
 from datetime import datetime
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, WebSocket
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, WebSocket, status
 from fastapi.responses import JSONResponse, StreamingResponse
 from loguru import logger
 from redis import Redis
@@ -167,7 +167,8 @@ async def chat_playground(
             f"Failed to establish WebSocket connection {NEW_CONNECTION_ID} for user {_auth_user_id}"
         )
         await websocket.close(
-            code=1011, reason="WebSocket connection establishment failed"
+            code=status.WS_1011_INTERNAL_ERROR,
+            reason="WebSocket connection establishment failed",
         )
         return
 
