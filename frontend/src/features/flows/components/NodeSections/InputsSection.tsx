@@ -49,13 +49,8 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
     const anyVisibleInputs = spec_inputs.some(
         si => !((si.type_detail as any)?.defaults?.hidden ?? false)
     );
-    if (!anyVisibleInputs) return null;
 
     const renderInput = (spec_input: NodeInput, index: number) => {
-        const hidden =
-            (spec_input.type_detail as any)?.defaults?.hidden ?? false;
-        if (hidden) return null;
-
         const InputComponent =
             HandleComponentRegistry[spec_input.type_detail.type];
         const hasInputComponent = !!InputComponent;
@@ -142,7 +137,15 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
 
     return (
         <div style={nodeStyles.inputsSection}>
-            <div style={nodeStyles.sectionTitle}>Inputs</div>
+            <div
+                style={
+                    !anyVisibleInputs
+                        ? { display: 'none' }
+                        : nodeStyles.sectionTitle
+                }
+            >
+                Inputs
+            </div>
             {spec_inputs.map(renderInput)}
         </div>
     );

@@ -105,7 +105,6 @@ export const TableHandleInput: React.FC<TableHandleInputProps> = ({
     disabled = false,
 }) => {
     const hidden = (type_detail as any)?.defaults?.hidden ?? false;
-    if (hidden) return null;
     const config = {
         columns: type_detail.defaults?.columns || [],
         minRows: type_detail.defaults?.min_rows || MIN_ROWS,
@@ -273,7 +272,10 @@ export const TableHandleInput: React.FC<TableHandleInputProps> = ({
     const showActions = canModifyRows;
 
     return (
-        <div className="space-y-2">
+        <div
+            style={hidden ? { display: 'none' } : undefined}
+            className="space-y-2"
+        >
             {description && (
                 <p
                     className={`text-sm text-muted-foreground ${disabled ? 'opacity-50' : ''}`}

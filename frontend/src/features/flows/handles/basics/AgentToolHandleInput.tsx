@@ -20,7 +20,6 @@ export const AgentToolHandleInput: React.FC<AgentToolHandleInputProps> = ({
     disabled = true,
 }) => {
     const hidden = type_detail?.defaults?.hidden ?? false;
-    if (hidden) return null;
 
     const handleChange = (newValue: string) => {
         if (onChange && !disabled) {
@@ -28,5 +27,9 @@ export const AgentToolHandleInput: React.FC<AgentToolHandleInputProps> = ({
         }
     };
 
-    return <div>{description && <span>{/* {description} */}</span>}</div>;
+    return (
+        <div style={hidden ? { display: 'none' } : undefined}>
+            {description && <span>{/* {description} */}</span>}
+        </div>
+    );
 };

@@ -34,8 +34,6 @@ export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
         hidden = false,
     } = type_detail.defaults;
 
-    if (hidden) return null;
-
     const [isModalOpen, setIsModalOpen] = React.useState(false);
     const inputRef = React.useRef<HTMLInputElement>(null);
     const textareaRef = React.useRef<HTMLTextAreaElement>(null);
@@ -109,7 +107,11 @@ export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
     }, [value, defaultMultiline]);
 
     return (
-        <div style={textfieldHandleStyles.container}>
+        <div
+            style={
+                hidden ? { display: 'none' } : textfieldHandleStyles.container
+            }
+        >
             {description && (
                 <span
                     style={{
