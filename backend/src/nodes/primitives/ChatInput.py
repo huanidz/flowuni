@@ -11,7 +11,7 @@ class ChatInput(Node):
         inputs=[
             NodeInput(
                 name="message_in",
-                type=TextFieldInputHandle(multiline=True, hidden=False),
+                type=TextFieldInputHandle(multiline=True, hidden=True),
                 description="The message to be sent.",
             )
         ],

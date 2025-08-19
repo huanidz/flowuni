@@ -46,6 +46,10 @@ class Settings(BaseSettings):
     CELERY_RETRY_BACKOFF: bool = True
     CELERY_RETRY_JITTER: bool = True
 
+    # Websocket
+    WEBSOCKET_HEARTBEAT_SECONDS: int = 30
+    WEBSOCKET_TIMEOUT_SECONDS: int = 30
+
     @field_validator("ENVIRONMENT")
     def validate_environment(cls, v: str) -> str:
         """Validate that the environment is valid."""
