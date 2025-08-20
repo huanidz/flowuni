@@ -25,6 +25,7 @@ export const watchFlowExecution = (
         const data = JSON.parse(event.data);
 
         if (data.event === 'DONE') {
+            // onMessage(event.data); // Not sure if this is needed
             onDone?.();
             eventSource.close();
         } else {

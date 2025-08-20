@@ -65,7 +65,6 @@ export interface PlaygroundChatBoxPosition {
 
 export interface PGMessage {
     id: string;
-    text: string;
     user_id: number;
     message: string;
     timestamp: Date;

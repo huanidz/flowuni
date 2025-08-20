@@ -4,8 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { X, Send, Trash2 } from 'lucide-react';
 import { chatBoxStyles } from '@/features/flows/styles/chatBoxStyles';
-import { useNodes } from '@xyflow/react';
+import { useNodes, useEdges } from '@xyflow/react';
 import type { PlaygroundChatBoxPosition, PGMessage } from '../../types';
+import { runFlow } from '../../api';
+import { watchFlowExecution } from '@/api/sse';
 
 interface PlaygroundChatBoxProps {
     isOpen: boolean;
@@ -23,6 +25,7 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
     nodeUpdateHandlers,
 }) => {
     const nodes = useNodes();
+    const edges = useEdges();
 
     const hasChatInputNode = nodes.some(node => node.type === 'Chat Input');
     const hasChatOutputNode = nodes.some(node => node.type === 'Chat Output');
@@ -40,15 +43,7 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
         y: 0,
     });
     const [message, setMessage] = useState('');
-    const [messages, setMessages] = useState<PGMessage[]>([
-        {
-            id: '1',
-            text: '',
-            user_id: 0,
-            message: 'Hello! How can I help you today?',
-            timestamp: new Date(),
-        },
-    ]);
+    const [messages, setMessages] = useState<PGMessage[]>([]);
     const chatBoxRef = useRef<HTMLDivElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -126,16 +121,64 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
         setMessages([]);
     };
 
+    const getFlowResult = async () => {
+        try {
+            const response = await runFlow(nodes, edges);
+            console.log('[SSE] Flow run response:', response);
+            const { task_id } = response;
+
+            const eventSource = watchFlowExecution(task_id, msg => {
+                let parsed;
+
+                try {
+                    parsed = JSON.parse(msg);
+                    console.log('[SSE] Parsed message:', parsed);
+                } catch (e) {
+                    console.error('[SSE] Failed to parse message:', e);
+                    return;
+                }
+
+                const data = parsed?.data;
+                if (!data) {
+                    console.warn(
+                        '[SSE] No data field in parsed message:',
+                        parsed
+                    );
+                    return;
+                }
+
+                // Update result
+                const { node_type, input_values } = data;
+                if (node_type === 'Chat Output') {
+                    const { message_in } = input_values;
+                    if (message_in) {
+                        const newMessage: PGMessage = {
+                            id: Date.now().toString(),
+                            user_id: 0, // Assuming 0 represents the bot
+                            message: message_in,
+                            timestamp: new Date(),
+                        };
+                        setMessages(prev => [...prev, newMessage]);
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Error running flow:', error);
+        }
+    };
+
     const handleSendMessage = () => {
         if (!message.trim()) return;
 
         const newMessage: PGMessage = {
             id: Date.now().toString(),
-            text: '',
-            user_id: 1, // Assuming 1 represents the current user
+            user_id: 1, // Assuming 1 represents the current user. 0 is bot
             message: message,
             timestamp: new Date(),
         };
+
+        // Run the flow
+        getFlowResult();
 
         setMessages(prev => [...prev, newMessage]);
         setMessage('');
