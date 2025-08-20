@@ -53,3 +53,13 @@ class FlowGraphRequest(BaseModel):
 
     nodes: List[FlowNode]
     edges: List[FlowEdge]
+
+
+class FlowPlaygroundRequest(BaseModel):
+    flow_id: str
+    flow_graph_request: FlowGraphRequest
+
+
+class FlowRunRequest(BaseModel):
+    flow_id: str
+    api_key: str

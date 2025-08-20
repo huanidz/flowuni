@@ -12,7 +12,7 @@ import { NODE_DATA_MODE } from '@/features/flows/consts';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 
 // Configuration for default showInputComponent state by input type
-const INPUT_TYPE_DEFAULT_VISIBILITY: Record<string, boolean> = {
+const INPUT_TYPE_DEFAULT_COLLAPSE: Record<string, boolean> = {
     [NodeInputType.Table]: false,
     [NodeInputType.DynamicType]: true,
     // All other types default to true (not explicitly listed)
@@ -45,9 +45,15 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
 
     if (spec_inputs.length === 0) return null;
 
+    // If all inputs are hidden via type_detail.defaults.hidden, don't render this section
+    const anyVisibleInputs = spec_inputs.some(
+        si => !((si.type_detail as any)?.defaults?.hidden ?? false)
+    );
+
     const renderInput = (spec_input: NodeInput, index: number) => {
         const InputComponent =
             HandleComponentRegistry[spec_input.type_detail.type];
+
         const hasInputComponent = !!InputComponent;
         const inputValue = input_values[spec_input.name];
         const handleId = `${spec_input.name}-index:${index}`;
@@ -56,8 +62,10 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
             node_mode === NODE_DATA_MODE.TOOL &&
             spec_input.enable_as_whole_for_tool;
         const inputType = spec_input.type_detail.type;
+        const isHidden =
+            (spec_input.type_detail as any)?.defaults?.hidden ?? false;
         const defaultVisibility =
-            INPUT_TYPE_DEFAULT_VISIBILITY[inputType] ?? true;
+            INPUT_TYPE_DEFAULT_COLLAPSE[inputType] ?? true;
         const [showInputComponent, setShowInputComponent] =
             React.useState(defaultVisibility);
 
@@ -86,7 +94,10 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
         };
 
         return (
-            <div key={`input-${index}`} style={nodeStyles.inputItem}>
+            <div
+                key={`input-${index}`}
+                style={isHidden ? { display: 'none' } : nodeStyles.inputItem}
+            >
                 <div style={nodeInputSectionStyles.inputItemContainer}>
                     <HandleInfo
                         name={spec_input.name}
@@ -132,7 +143,15 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
 
     return (
         <div style={nodeStyles.inputsSection}>
-            <div style={nodeStyles.sectionTitle}>Inputs</div>
+            <div
+                style={
+                    !anyVisibleInputs
+                        ? { display: 'none' }
+                        : nodeStyles.sectionTitle
+                }
+            >
+                Inputs
+            </div>
             {spec_inputs.map(renderInput)}
         </div>
     );

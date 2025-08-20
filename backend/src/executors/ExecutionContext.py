@@ -9,14 +9,18 @@ class ExecutionContext:
         self.task_id = task_id
         self.redis: redis.Redis = redis_client
 
-    def end(self):
+    def end(self, data: dict = {}):
         # Publish DONE event to Redis
-        event = {"event": "DONE", "timestamp": datetime.utcnow().isoformat()}
-        self.redis.rpush(self.task_id, json.dumps(event))
+        redis_message = {
+            "event": "DONE",
+            "data": data,
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+        self.redis.rpush(self.task_id, json.dumps(redis_message))
 
     def publish_node_event(self, node_id: str, event: str, data: dict):
         # Publish node event to Redis
-        event = {
+        redis_message = {
             "node_id": node_id,
             "event": event,
             "data": data,
@@ -24,4 +28,4 @@ class ExecutionContext:
         }
 
         # Push to a Redis list keyed by task_id
-        self.redis.rpush(self.task_id, json.dumps(event))
+        self.redis.rpush(self.task_id, json.dumps(redis_message))

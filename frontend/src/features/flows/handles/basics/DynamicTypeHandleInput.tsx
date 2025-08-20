@@ -24,6 +24,7 @@ export const DynamicTypeHandleInput: React.FC<DynamicTypeHandleInputProps> = ({
     nodeId,
     isWholeAsToolMode,
 }) => {
+    const hidden = (type_detail as any)?.defaults?.hidden ?? false;
     const typeOptions = type_detail.defaults?.type_options || [];
 
     // Parse the value to extract selected type and type-specific values
@@ -114,7 +115,11 @@ export const DynamicTypeHandleInput: React.FC<DynamicTypeHandleInputProps> = ({
         : null;
 
     return (
-        <div style={dynamicTypeHandleStyles.container}>
+        <div
+            style={
+                hidden ? { display: 'none' } : dynamicTypeHandleStyles.container
+            }
+        >
             {description && (
                 <span
                     style={{

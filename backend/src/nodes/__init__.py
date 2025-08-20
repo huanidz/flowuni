@@ -15,8 +15,8 @@ from src.nodes.primitives import (
 )
 
 __all__ = [
-    # ChatInput,
-    # ChatOutput,
+    ChatInput,
+    ChatOutput,
     # MultiInputNode,
     # MultiOutputNode,
     OneInOneOutNode,

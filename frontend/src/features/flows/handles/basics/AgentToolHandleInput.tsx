@@ -19,11 +19,17 @@ export const AgentToolHandleInput: React.FC<AgentToolHandleInputProps> = ({
     type_detail,
     disabled = true,
 }) => {
+    const hidden = type_detail?.defaults?.hidden ?? false;
+
     const handleChange = (newValue: string) => {
         if (onChange && !disabled) {
             onChange(newValue);
         }
     };
 
-    return <div>{description && <span>{/* {description} */}</span>}</div>;
+    return (
+        <div style={hidden ? { display: 'none' } : undefined}>
+            {description && <span>{/* {description} */}</span>}
+        </div>
+    );
 };

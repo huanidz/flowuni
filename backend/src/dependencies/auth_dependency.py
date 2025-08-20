@@ -1,5 +1,12 @@
 # src/dependencies/auth_dependency.py
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import (
+    Depends,
+    HTTPException,
+    Request,
+    WebSocket,
+    WebSocketException,
+    status,
+)
 from loguru import logger
 from src.configs.config import get_settings
 from src.dependencies.redis_dependency import get_redis_client
@@ -102,4 +109,45 @@ def get_current_user(
         raise credentials_exception
     except Exception as e:
         logger.error(f"Unexpected error during auth: {e}")
+        raise credentials_exception
+
+
+# ================================================================================
+
+
+# WEBSOCKET AUTH
+async def get_current_socket_user(
+    websocket: WebSocket, auth_service: AuthService = Depends(get_auth_service)
+) -> int:
+    """
+    Dependency that extracts and validates JWT from WebSocket query parameters.
+    Returns user_id if valid and not blacklisted.
+    Raises 401 otherwise.
+    """
+    credentials_exception = WebSocketException(
+        code=status.WS_1008_POLICY_VIOLATION, reason="Could not validate credentials"
+    )
+
+    try:
+        # Extract token from WebSocket query parameters
+        token = websocket.query_params.get("token")
+        if not token:
+            raise credentials_exception
+
+        # Verify token (this raises if invalid/expired)
+        user_id = auth_service.verify_token(token)
+
+        # Check if blacklisted
+        if auth_service.is_token_blacklisted(token):
+            raise WebSocketException(
+                code=status.WS_1008_POLICY_VIOLATION,
+                reason="Token has been revoked (logged out)",
+            )
+
+        return user_id  # Can be used in route
+
+    except TokenInvalidError:
+        raise credentials_exception
+    except Exception as e:
+        logger.error(f"Unexpected error during WebSocket auth: {e}")
         raise credentials_exception

@@ -23,6 +23,9 @@ export const SecretTextHandleInput: React.FC<SecretTextHandleInputProps> = ({
     type_detail,
     disabled = true,
 }) => {
+    const hidden = (type_detail as any)?.defaults?.hidden ?? false;
+    if (hidden) return null;
+
     const { multiline = false, allow_visible_toggle = false } =
         type_detail.defaults;
 
@@ -72,7 +75,13 @@ export const SecretTextHandleInput: React.FC<SecretTextHandleInputProps> = ({
     const maskedValue = disabled ? '' : '•'.repeat(displayValue.length || 1);
 
     return (
-        <div style={secretTextHandleStyles.container}>
+        <div
+            style={
+                (type_detail as any)?.defaults?.hidden
+                    ? { display: 'none' }
+                    : secretTextHandleStyles.container
+            }
+        >
             {description && (
                 <span
                     style={{

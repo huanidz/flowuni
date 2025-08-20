@@ -18,6 +18,7 @@ interface DropdownHandleInputProps {
             multiple?: boolean;
             searchable?: boolean;
             options?: Array<{ label: string; value: string }>;
+            hidden?: boolean;
         };
     };
 }
@@ -43,6 +44,7 @@ export const DropdownHandleInput: React.FC<DropdownHandleInputProps> = ({
         multiple: defaultMultiple = false,
         searchable: defaultSearchable = false,
         options: defaultOptions = [],
+        hidden: defaultHidden = false,
     } = type_detail.defaults || {};
 
     // Get current node data for resolver context
@@ -181,7 +183,13 @@ export const DropdownHandleInput: React.FC<DropdownHandleInputProps> = ({
     };
 
     return (
-        <div style={dropdownHandleStyles.container}>
+        <div
+            style={
+                defaultHidden
+                    ? { display: 'none' }
+                    : dropdownHandleStyles.container
+            }
+        >
             {description && (
                 <span style={dropdownHandleStyles.description}>
                     {description}

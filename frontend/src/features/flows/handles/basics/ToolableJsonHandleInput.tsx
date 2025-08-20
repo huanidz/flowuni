@@ -33,6 +33,7 @@ export const ToolableJsonHandleInput: React.FC<
     disabled = true,
     isWholeAsToolMode = false,
 }) => {
+    const hidden = (type_detail as any)?.defaults?.hidden ?? false;
     const [jsonInput, setJsonInput] = useState('');
     const [fields, setFields] = useState<FieldNode[]>([]);
     const [errors, setErrors] = useState<string[]>([]);
@@ -498,7 +499,10 @@ export const ToolableJsonHandleInput: React.FC<
     };
 
     return (
-        <div className="flex flex-col space-y-4 w-full">
+        <div
+            style={hidden ? { display: 'none' } : { display: 'block' }}
+            className="flex flex-col space-y-4 w-full"
+        >
             {description && (
                 <span className="text-xs text-gray-600">{description}</span>
             )}
