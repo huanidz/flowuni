@@ -6,7 +6,6 @@ import { X, Send, Trash2 } from 'lucide-react';
 import { chatBoxStyles } from '@/features/flows/styles/chatBoxStyles';
 import { useNodes } from '@xyflow/react';
 import type { PlaygroundChatBoxPosition, PGMessage } from '../../types';
-import { ACCESS_TOKEN_KEY } from '@/features/auth/consts';
 
 interface PlaygroundChatBoxProps {
     isOpen: boolean;
@@ -50,21 +49,11 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
             timestamp: new Date(),
         },
     ]);
-    const [connectionStatus, setConnectionStatus] = useState<
-        'disconnected' | 'connecting' | 'connected'
-    >('disconnected');
-
     const chatBoxRef = useRef<HTMLDivElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     // updateNodeInputData: (nodeId, inputName, value)
     const { updateNodeInputData } = nodeUpdateHandlers;
-
-    // Websocket
-    const ws = useRef<WebSocket | null>(null);
-    const wsUrl = 'ws://localhost:5002/api/exec/ws/playground_chat';
-    const idleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-    const hasConnectedRef = useRef(false); // Track if we've ever connected
 
     // Initialize position to bottom-right corner if at default (0,0)
     useEffect(() => {
@@ -86,99 +75,6 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
-
-    // WebSocket connection management - only on first open
-    useEffect(() => {
-        if (
-            isOpen &&
-            !hasConnectedRef.current &&
-            hasChatInputNode &&
-            hasChatOutputNode
-        ) {
-            connectWebSocket();
-            hasConnectedRef.current = true;
-        }
-
-        // Cleanup function
-        return () => {
-            if (!isOpen && ws.current) {
-                // Don't close immediately, let idle timeout handle it
-                resetIdleTimeout();
-            }
-        };
-    }, [isOpen, hasChatInputNode, hasChatOutputNode]);
-
-    // Reset idle timeout
-    const resetIdleTimeout = () => {
-        if (idleTimeoutRef.current) {
-            clearTimeout(idleTimeoutRef.current);
-        }
-
-        idleTimeoutRef.current = setTimeout(() => {
-            if (ws.current) {
-                console.log('Closing WebSocket due to inactivity');
-                ws.current.close();
-                ws.current = null;
-                setConnectionStatus('disconnected');
-            }
-        }, 10000); // 60 seconds
-    };
-
-    // WebSocket connection
-    const connectWebSocket = () => {
-        setConnectionStatus('connecting');
-
-        try {
-            const token = sessionStorage.getItem(ACCESS_TOKEN_KEY);
-            const connect_url = `ws://localhost:5002/api/exec/ws/playground_chat?token=${token}`;
-            ws.current = new WebSocket(connect_url);
-
-            ws.current.onopen = () => {
-                console.log('WebSocket connected');
-                setConnectionStatus('connected');
-                resetIdleTimeout();
-            };
-
-            ws.current.onmessage = event => {
-                try {
-                    const data = JSON.parse(event.data);
-                    handleMessageFromWebSocket(data);
-                    resetIdleTimeout();
-                } catch (error) {
-                    console.error('Error parsing WebSocket message:', error);
-                }
-            };
-
-            ws.current.onclose = () => {
-                console.log('WebSocket disconnected');
-                setConnectionStatus('disconnected');
-                ws.current = null;
-            };
-
-            ws.current.onerror = error => {
-                console.error('WebSocket error:', error);
-                setConnectionStatus('disconnected');
-                ws.current = null;
-            };
-        } catch (error) {
-            console.error('Failed to establish WebSocket connection:', error);
-            setConnectionStatus('disconnected');
-        }
-    };
-
-    // Handle messages received from WebSocket
-    const handleMessageFromWebSocket = (data: any) => {
-        if (data.type === 'chat_message' && data.node_id === outputNodeId) {
-            const newMessage: PGMessage = {
-                id: Date.now().toString(),
-                text: '',
-                user_id: 0, // Bot message
-                message: data.message,
-                timestamp: new Date(),
-            };
-            setMessages(prev => [...prev, newMessage]);
-        }
-    };
 
     // Dragging event handlers
     const handleMouseDown = (e: React.MouseEvent) => {
@@ -230,27 +126,8 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
         setMessages([]);
     };
 
-    const handleSendMessage = async () => {
+    const handleSendMessage = () => {
         if (!message.trim()) return;
-
-        // Auto-reconnect if needed
-        if (!ws.current || ws.current.readyState !== WebSocket.OPEN) {
-            console.log('Reconnecting WebSocket before sending message');
-            connectWebSocket();
-
-            // Wait for connection to establish
-            await new Promise(resolve => {
-                const checkConnection = setInterval(() => {
-                    if (
-                        ws.current &&
-                        ws.current.readyState === WebSocket.OPEN
-                    ) {
-                        clearInterval(checkConnection);
-                        resolve(true);
-                    }
-                }, 100);
-            });
-        }
 
         const newMessage: PGMessage = {
             id: Date.now().toString(),
@@ -261,18 +138,6 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
         };
 
         setMessages(prev => [...prev, newMessage]);
-
-        // Send message through WebSocket
-        if (ws.current && inputNodeId) {
-            const messageData = {
-                type: 'chat_message',
-                node_id: inputNodeId,
-                message: message,
-            };
-            ws.current.send(JSON.stringify(messageData));
-            resetIdleTimeout();
-        }
-
         setMessage('');
 
         // Clear the input node data
@@ -314,17 +179,6 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
             >
                 <div className="flex items-center">
                     <div style={chatBoxStyles.headerTitle}>Chat Playground</div>
-                    {connectionStatus !== 'connected' && (
-                        <div className="ml-2">
-                            <span
-                                className={`inline-flex h-2 w-2 rounded-full ${
-                                    connectionStatus === 'connecting'
-                                        ? 'bg-yellow-400'
-                                        : 'bg-red-400'
-                                }`}
-                            ></span>
-                        </div>
-                    )}
                 </div>
                 <div style={chatBoxStyles.headerActions}>
                     <button
@@ -420,26 +274,16 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
                                     onKeyDown={handleKeyPress}
                                     placeholder={'Type a message...'}
                                     className="flex-1"
-                                    disabled={connectionStatus === 'connecting'}
                                 />
                                 <Button
                                     onClick={handleSendMessage}
-                                    disabled={
-                                        !message.trim() ||
-                                        connectionStatus === 'connecting'
-                                    }
+                                    disabled={!message.trim()}
                                     size="icon"
                                     className="h-8 w-8 flex-shrink-0"
                                 >
                                     <Send className="h-4 w-4" />
                                 </Button>
                             </div>
-                            {connectionStatus !== 'connected' &&
-                                connectionStatus !== 'connecting' && (
-                                    <div className="text-xs text-center text-muted-foreground mt-1">
-                                        Disconnected from chat service.
-                                    </div>
-                                )}
                         </div>
                     </>
                 )}
