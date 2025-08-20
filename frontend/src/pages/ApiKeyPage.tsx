@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
-import { MoreHorizontal, Trash2, Plus, AlertCircle, X } from 'lucide-react';
+import {
+    MoreHorizontal,
+    Trash2,
+    Plus,
+    AlertCircle,
+    X,
+    Copy,
+    Check,
+} from 'lucide-react';
 import {
     Table,
     TableBody,
@@ -15,7 +23,6 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -27,21 +34,22 @@ import {
     useCreateApiKey,
 } from '@/features/apikey';
 import { API_KEY_DISPLAY_LENGTH, API_KEY_PREFIX } from '@/features/apikey';
-import {
-    type CreateApiKeyRequest,
-    type ApiKeyInfoResponse,
-} from '@/features/apikey';
+import { type CreateApiKeyRequest } from '@/features/apikey';
 
 const ApiKeyPage: React.FC = () => {
     const [notification, setNotification] = useState<{
         type: 'success' | 'error';
         message: string;
+        apiKey?: string;
     } | null>(null);
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [newApiKey, setNewApiKey] = useState({
         name: '',
         description: '',
     });
+    const [copyButtonState, setCopyButtonState] = useState<'copy' | 'copied'>(
+        'copy'
+    );
 
     // Use the list hook to fetch API keys
     const {
@@ -61,6 +69,27 @@ const ApiKeyPage: React.FC = () => {
 
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString();
+    };
+
+    const copyToClipboard = async (text: string) => {
+        try {
+            await navigator.clipboard.writeText(text);
+            setCopyButtonState('copied');
+            // Reset button after 2 seconds
+            setTimeout(() => {
+                setCopyButtonState('copy');
+            }, 2000);
+        } catch (error) {
+            setNotification(prev =>
+                prev
+                    ? {
+                          ...prev,
+                          message:
+                              'Failed to copy to clipboard. Please copy manually.',
+                      }
+                    : null
+            );
+        }
     };
 
     const handleDelete = async (keyId: string, name: string) => {
@@ -123,7 +152,8 @@ const ApiKeyPage: React.FC = () => {
             // The list will be automatically refetched by the mutation's onSuccess
             setNotification({
                 type: 'success',
-                message: `API key "${response.name}" has been created successfully. Please save the key: ${response.key}`,
+                message: `API key "${response.name}" has been created successfully.`,
+                apiKey: response.key,
             });
 
             // Reset form
@@ -153,12 +183,90 @@ const ApiKeyPage: React.FC = () => {
             </div>
 
             {notification && (
-                <Alert
-                    className={`mt-6 ${notification.type === 'error' ? 'border-red-200 bg-red-50' : 'border-green-200 bg-green-50'}`}
+                <div
+                    className={`mt-6 p-4 rounded-lg border ${
+                        notification.type === 'error'
+                            ? 'border-red-200 bg-red-50'
+                            : 'border-green-200 bg-green-50'
+                    }`}
                 >
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>{notification.message}</AlertDescription>
-                </Alert>
+                    <div className="flex items-start">
+                        <AlertCircle
+                            className={`h-5 w-5 mt-0.5 mr-3 ${
+                                notification.type === 'error'
+                                    ? 'text-red-600'
+                                    : 'text-green-600'
+                            }`}
+                        />
+                        <div className="flex-1">
+                            <div
+                                className={`font-medium ${
+                                    notification.type === 'error'
+                                        ? 'text-red-800'
+                                        : 'text-green-800'
+                                }`}
+                            >
+                                {notification.type === 'success'
+                                    ? 'Success!'
+                                    : 'Error'}
+                            </div>
+                            <div
+                                className={`mt-1 ${
+                                    notification.type === 'error'
+                                        ? 'text-red-700'
+                                        : 'text-green-700'
+                                }`}
+                            >
+                                {notification.message}
+                            </div>
+                            {notification.type === 'success' &&
+                                notification.apiKey && (
+                                    <div className="mt-3 p-3 bg-white rounded border border-green-200">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <div className="text-sm font-medium text-gray-700 mb-1">
+                                                    Your API Key:
+                                                </div>
+                                                <div className="font-mono text-sm bg-gray-100 p-2 rounded border break-all">
+                                                    {notification.apiKey}
+                                                </div>
+                                            </div>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() =>
+                                                    copyToClipboard(
+                                                        notification.apiKey!
+                                                    )
+                                                }
+                                                className="ml-3 flex-shrink-0"
+                                                disabled={
+                                                    copyButtonState === 'copied'
+                                                }
+                                            >
+                                                {copyButtonState ===
+                                                'copied' ? (
+                                                    <>
+                                                        <Check className="h-4 w-4 mr-1" />
+                                                        Copied
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Copy className="h-4 w-4 mr-1" />
+                                                        Copy
+                                                    </>
+                                                )}
+                                            </Button>
+                                        </div>
+                                        <div className="mt-2 text-xs text-gray-600">
+                                            Make sure to copy this key now. You
+                                            won't be able to see it again!
+                                        </div>
+                                    </div>
+                                )}
+                        </div>
+                    </div>
+                </div>
             )}
 
             {showCreateForm && (
