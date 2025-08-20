@@ -3,6 +3,8 @@ from loguru import logger
 from src.dependencies.api_key_dependency import get_api_key_service
 from src.dependencies.auth_dependency import get_current_user
 from src.schemas.api_keys.api_key_schemas import (
+    ApiKeyInfoResponse,
+    ApiKeyListResponse,
     ApiKeyResponse,
     CreateApiKeyRequest,
     ValidateApiKeyRequest,
@@ -153,4 +155,45 @@ async def validate_api_key(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to validate API key.",
+        ) from e
+
+
+@api_key_router.get(
+    "/", response_model=ApiKeyListResponse, status_code=status.HTTP_200_OK
+)
+async def list_api_keys(
+    include_inactive: bool = False,
+    api_key_service: ApiKeyService = Depends(get_api_key_service),
+    auth_user_id: int = Depends(get_current_user),
+):
+    """
+    List all API keys for the authenticated user
+    """
+    try:
+        api_keys = api_key_service.list_api_keys(
+            user_id=auth_user_id, include_inactive=include_inactive
+        )
+
+        # Convert to response format
+        api_key_responses = [
+            ApiKeyInfoResponse(
+                key_id=api_key.key_id,
+                name=api_key.name,
+                description=api_key.description,
+                is_active=api_key.is_active,
+                created_at=api_key.created_at,
+                expires_at=api_key.expires_at,
+                last_used_at=api_key.last_used_at,
+            )
+            for api_key in api_keys
+        ]
+
+        response = ApiKeyListResponse(api_keys=api_key_responses)
+        return response
+
+    except Exception as e:
+        logger.error(f"Error listing API keys for user {auth_user_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to list API keys.",
         ) from e

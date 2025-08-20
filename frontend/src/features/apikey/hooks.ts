@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
     createApiKey,
+    listApiKeys,
     deleteApiKey,
     deactivateApiKey,
     validateApiKey,
@@ -8,6 +9,7 @@ import {
 import type {
     CreateApiKeyRequest,
     ApiKeyResponse,
+    ApiKeyListResponse,
     ValidateApiKeyRequest,
     ValidateApiKeyResponse,
 } from './types';
@@ -71,5 +73,9 @@ export const useValidateApiKey = () => {
     });
 };
 
-// Note: Since backend doesn't have a list endpoint yet, we'll skip the list query for now
-// If needed, we can add it later when the backend provides the endpoint
+export const useListApiKeys = (includeInactive: boolean = false) => {
+    return useQuery<ApiKeyListResponse, Error>({
+        queryKey: API_KEY_QUERY_KEYS.list(),
+        queryFn: () => listApiKeys(includeInactive),
+    });
+};

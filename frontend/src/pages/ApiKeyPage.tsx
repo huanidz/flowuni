@@ -21,24 +21,18 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
+    useListApiKeys,
     useDeleteApiKey,
     useDeactivateApiKey,
     useCreateApiKey,
 } from '@/features/apikey';
 import { API_KEY_DISPLAY_LENGTH, API_KEY_PREFIX } from '@/features/apikey';
-import { type CreateApiKeyRequest } from '@/features/apikey';
-
-interface ApiKey {
-    key_id: string;
-    name: string;
-    description: string;
-    is_active: boolean;
-    created_at: string;
-    last_used_at: string;
-}
+import {
+    type CreateApiKeyRequest,
+    type ApiKeyInfoResponse,
+} from '@/features/apikey';
 
 const ApiKeyPage: React.FC = () => {
-    const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
     const [notification, setNotification] = useState<{
         type: 'success' | 'error';
         message: string;
@@ -48,6 +42,14 @@ const ApiKeyPage: React.FC = () => {
         name: '',
         description: '',
     });
+
+    // Use the list hook to fetch API keys
+    const {
+        data: apiKeyListResponse,
+        isLoading,
+        error,
+    } = useListApiKeys(false);
+    const apiKeys = apiKeyListResponse?.api_keys || [];
 
     const deleteApiKeyMutation = useDeleteApiKey();
     const deactivateApiKeyMutation = useDeactivateApiKey();
@@ -72,7 +74,6 @@ const ApiKeyPage: React.FC = () => {
 
         try {
             await deleteApiKeyMutation.mutateAsync(keyId);
-            setApiKeys(prev => prev.filter(key => key.key_id !== keyId));
             setNotification({
                 type: 'success',
                 message: `API key "${name}" has been deleted successfully.`,
@@ -88,11 +89,6 @@ const ApiKeyPage: React.FC = () => {
     const handleDeactivate = async (keyId: string, name: string) => {
         try {
             await deactivateApiKeyMutation.mutateAsync(keyId);
-            setApiKeys(prev =>
-                prev.map(key =>
-                    key.key_id === keyId ? { ...key, is_active: false } : key
-                )
-            );
             setNotification({
                 type: 'success',
                 message: `API key "${name}" has been deactivated successfully.`,
@@ -124,17 +120,7 @@ const ApiKeyPage: React.FC = () => {
 
             const response = await createApiKeyMutation.mutateAsync(request);
 
-            // Add the new API key to the list
-            const newKey = {
-                key_id: response.key_id,
-                name: response.name,
-                description: response.description || '',
-                is_active: true,
-                created_at: response.created_at,
-                last_used_at: '',
-            };
-
-            setApiKeys(prev => [newKey, ...prev]);
+            // The list will be automatically refetched by the mutation's onSuccess
             setNotification({
                 type: 'success',
                 message: `API key "${response.name}" has been created successfully. Please save the key: ${response.key}`,
@@ -339,7 +325,21 @@ const ApiKeyPage: React.FC = () => {
                     </TableBody>
                 </Table>
 
-                {apiKeys.length === 0 && (
+                {isLoading && (
+                    <div className="text-center py-8">
+                        <p className="text-gray-600">Loading API keys...</p>
+                    </div>
+                )}
+
+                {error && (
+                    <div className="text-center py-8">
+                        <p className="text-red-600">
+                            Error loading API keys: {error.message}
+                        </p>
+                    </div>
+                )}
+
+                {!isLoading && !error && apiKeys.length === 0 && (
                     <div className="text-center py-8">
                         <p className="text-gray-600">
                             No API keys found. Create your first API key to get

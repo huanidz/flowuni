@@ -47,6 +47,15 @@ class ApiKeyServiceInterface(ABC):
         """
         pass
 
+    @abstractmethod
+    def list_api_keys(
+        self, user_id: int, include_inactive: bool = False
+    ) -> list[ApiKeyModel]:
+        """
+        List all API keys for a specific user
+        """
+        pass
+
 
 class ApiKeyService(ApiKeyServiceInterface):
     """
@@ -135,4 +144,27 @@ class ApiKeyService(ApiKeyServiceInterface):
             return api_key_model
         except Exception as e:
             logger.error(f"Error validating API key: {str(e)}")
+            raise
+
+    def list_api_keys(
+        self, user_id: int, include_inactive: bool = False
+    ) -> list[ApiKeyModel]:
+        """
+        List all API keys for a specific user
+        """
+        try:
+            if include_inactive:
+                api_keys = self.api_key_repository.get_api_keys_by_user(user_id)
+                logger.info(
+                    f"Retrieved {len(api_keys)} API keys (including inactive) for user {user_id}"
+                )
+            else:
+                api_keys = self.api_key_repository.get_active_api_keys_by_user(user_id)
+                logger.info(
+                    f"Retrieved {len(api_keys)} active API keys for user {user_id}"
+                )
+
+            return api_keys
+        except Exception as e:
+            logger.error(f"Error listing API keys for user {user_id}: {str(e)}")
             raise

@@ -1,6 +1,7 @@
 import apiClient from '@/api/secureClient';
 import {
     CREATE_API_KEY_ENDPOINT,
+    LIST_API_KEY_ENDPOINT,
     DELETE_API_KEY_ENDPOINT,
     DEACTIVATE_API_KEY_ENDPOINT,
     VALIDATE_API_KEY_ENDPOINT,
@@ -27,6 +28,25 @@ export const createApiKey = async (
         console.error('Failed to create API key:', error);
         throw new Error(
             error.response?.data?.detail || 'Failed to create API key'
+        );
+    }
+};
+
+export const listApiKeys = async (
+    includeInactive: boolean = false
+): Promise<ApiKeyListResponse> => {
+    try {
+        const { data } = await apiClient.get<ApiKeyListResponse>(
+            LIST_API_KEY_ENDPOINT,
+            {
+                params: { include_inactive: includeInactive },
+            }
+        );
+        return data;
+    } catch (error: any) {
+        console.error('Failed to list API keys:', error);
+        throw new Error(
+            error.response?.data?.detail || 'Failed to list API keys'
         );
     }
 };
@@ -75,5 +95,4 @@ export const validateApiKey = async (
     }
 };
 
-// Note: Backend doesn't seem to have a list endpoint, so we'll skip it for now
-// If needed, we can add it later when the backend provides the endpoint
+// List API keys function is now available
