@@ -81,10 +81,10 @@ class GraphExecutor:
                 node_id=node_id, event=event, data=data
             )
 
-    def end_event(self):
+    def end_event(self, data: Dict = {}):
         # Publish DONE event to Redis
         if self.execution_context and self.enable_debug:
-            self.execution_context.end()
+            self.execution_context.end(data=data)
 
     def execute(self) -> Dict[str, Any]:
         """
@@ -148,8 +148,6 @@ class GraphExecutor:
                 f"Processed {completed_nodes} nodes across {len(self.execution_plan)} layers."  # noqa: E501
             )
 
-            self.end_event()
-
             # Collect results from the final layer
             final_layer_results = []
             if layer_results:
@@ -164,9 +162,7 @@ class GraphExecutor:
                     for result in layer_results
                 ]
 
-            logger.info(f"👉 final_layer_results: {final_layer_results}")
-
-            return {
+            execute_result = {
                 "success": True,
                 "total_nodes": total_nodes,
                 "completed_nodes": completed_nodes,
@@ -174,6 +170,12 @@ class GraphExecutor:
                 "execution_time": total_time,
                 "results": final_layer_results,
             }
+
+            logger.info(f"👉 execute_result: {execute_result}")
+
+            self.end_event(data=execute_result)
+
+            return execute_result
 
         except Exception as e:
             raise GraphExecutorError(f"Execution failed: {str(e)}.") from e
