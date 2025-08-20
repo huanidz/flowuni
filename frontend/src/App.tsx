@@ -6,7 +6,7 @@ import {
 } from 'react-router-dom';
 
 import FlowBuilderPage from './pages/FlowBuilderPage';
-import FlowDashboardPage from './pages/FlowDashboardPage';
+import DashboardPage from './pages/DashboardPage';
 import FlowPage from './pages/FlowPage';
 import ApiKeyPage from './pages/ApiKeyPage';
 import AuthenticationPage from './pages/AuthenticationPage';
@@ -28,10 +28,7 @@ function App() {
                             element={<FlowBuilderPage />}
                         />
 
-                        <Route
-                            path="/dashboard"
-                            element={<FlowDashboardPage />}
-                        >
+                        <Route path="/dashboard" element={<DashboardPage />}>
                             <Route
                                 index
                                 element={<Navigate to="flow" replace />}

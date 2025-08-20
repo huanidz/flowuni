@@ -4,7 +4,7 @@ import { Logo } from '@/components/ui/Logo';
 import { useLogout } from '@/features/auth/hooks';
 import { useNavigate, NavLink, Outlet } from 'react-router-dom';
 
-const FlowDashboardPage: React.FC = () => {
+const DashboardPage: React.FC = () => {
     const logout = useLogout();
     const navigate = useNavigate();
 
@@ -48,11 +48,11 @@ const FlowDashboardPage: React.FC = () => {
                     Logout
                 </Button>
             </div>
-            <div className="transition-opacity duration-200 ease-in-out">
+            <div className="flex-1 transition-opacity duration-200 ease-in-out">
                 <Outlet />
             </div>
         </div>
     );
 };
 
-export default FlowDashboardPage;
+export default DashboardPage;
