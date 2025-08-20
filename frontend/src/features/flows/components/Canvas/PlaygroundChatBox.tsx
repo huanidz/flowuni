@@ -62,7 +62,7 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
 
     // Websocket
     const ws = useRef<WebSocket | null>(null);
-    const wsUrl = 'ws://localhost:5002/api/flow_execution/ws/playground_chat';
+    const wsUrl = 'ws://localhost:5002/api/exec/ws/playground_chat';
     const idleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const hasConnectedRef = useRef(false); // Track if we've ever connected
 
@@ -130,7 +130,7 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
 
         try {
             const token = sessionStorage.getItem(ACCESS_TOKEN_KEY);
-            const connect_url = `ws://localhost:5002/api/flow_execution/ws/playground_chat?token=${token}`;
+            const connect_url = `ws://localhost:5002/api/exec/ws/playground_chat?token=${token}`;
             ws.current = new WebSocket(connect_url);
 
             ws.current.onopen = () => {

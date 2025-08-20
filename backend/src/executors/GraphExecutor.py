@@ -150,12 +150,29 @@ class GraphExecutor:
 
             self.end_event()
 
+            # Collect results from the final layer
+            final_layer_results = []
+            if layer_results:
+                final_layer_results = [
+                    {
+                        "node_id": result.node_id,
+                        "success": result.success,
+                        "data": result.data.model_dump() if result.data else None,
+                        "error": result.error,
+                        "execution_time": result.execution_time,
+                    }
+                    for result in layer_results
+                ]
+
+            logger.info(f"👉 final_layer_results: {final_layer_results}")
+
             return {
                 "success": True,
                 "total_nodes": total_nodes,
                 "completed_nodes": completed_nodes,
                 "total_layers": len(self.execution_plan),
                 "execution_time": total_time,
+                "results": final_layer_results,
             }
 
         except Exception as e:

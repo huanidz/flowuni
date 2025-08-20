@@ -12,11 +12,15 @@ from src.dependencies.auth_dependency import (
     get_current_user,
 )
 from src.dependencies.redis_dependency import get_redis_client
-from src.schemas.flowbuilder.flow_graph_schemas import FlowGraphRequest
+from src.schemas.flowbuilder.flow_graph_schemas import (
+    FlowGraphRequest,
+    FlowPlaygroundRequest,
+    FlowRunRequest,
+)
 
 flow_execution_router = APIRouter(
-    prefix="/api/flow_execution",
-    tags=["flow_execution"],
+    prefix="/api/exec",
+    tags=["exec"],
 )
 
 
@@ -144,3 +148,45 @@ async def stream_execution(
         redis_client.delete(queue_name)
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
+# --- Playground Run API ---
+
+
+@flow_execution_router.post("/playground/run")
+async def run_playground_endpoint(
+    request: Request,
+    _auth_user_id: int = Depends(get_current_user),
+    stream: bool = Query(False, description="Whether to stream the response"),
+):
+    request_json = await request.json()
+    flow_pg_request = FlowPlaygroundRequest(**request_json)
+
+    flow_id = flow_pg_request.flow_id
+    flow_graph_request = flow_pg_request.flow_graph_request
+
+    # Run the flow
+    task = run_flow(flow_id, flow_graph_request.model_dump())
+
+    if stream:
+        # Return not support
+        raise HTTPException(
+            status_code=400,
+            detail="Streaming is currently not supported for playground runs.",
+        )
+    else:
+        return run_flow(flow_id, flow_graph_request.model_dump())
+
+
+# --- Main flow Run API ---
+
+
+@flow_execution_router.post("/{flow_id}/run")
+async def run_flow_endpoint(request: Request, stream: bool = Query(False)):
+    request_json = await request.json()
+    flow_run_request = FlowRunRequest(**request_json)
+
+    raise HTTPException(
+        status_code=400,
+        detail="Flow run is not support right now.",
+    )
