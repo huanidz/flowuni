@@ -25,9 +25,10 @@ class ApiKeyRepository(BaseRepository[ApiKeyModel]):
         name: str,
         description: Optional[str] = None,
         expires_at: Optional[datetime] = None,
-    ) -> ApiKeyModel:
+    ) -> tuple[ApiKeyModel, str]:
         """
         Create a new API key for a user with secure key generation
+        Returns the created key model and the full key (shown only once)
         """
         try:
             # Generate a secure API key with key_id, full_key, and key_hash
@@ -45,7 +46,7 @@ class ApiKeyRepository(BaseRepository[ApiKeyModel]):
 
             created_key = self.add(api_key)
             logger.info(f"Created new API key '{name}' for user ID: {user_id}")
-            return created_key
+            return created_key, full_key
 
         except IntegrityError as e:
             self.db_session.rollback()
