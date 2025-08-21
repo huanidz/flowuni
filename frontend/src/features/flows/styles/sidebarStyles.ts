@@ -14,7 +14,7 @@ export const sidebarStyles = {
         overflow: 'hidden',
         border: '4px solid #e0e0e0',
         boxShadow: '-2px 0 8px rgba(0, 0, 0, 0.1)',
-        zIndex: 1000,
+        zIndex: 1,
         display: 'flex',
         flexDirection: 'column' as const,
         transition: 'transform 0.3s ease-in-out',
