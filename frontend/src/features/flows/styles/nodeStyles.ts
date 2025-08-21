@@ -52,13 +52,13 @@ export const nodeStyles = {
 
     inputInfo: {
         paddingLeft: '12px',
-        fontSize: '12px',
+        fontSize: '10px',
         color: '#333',
     },
 
     inputComponent: {
-        paddingLeft: '12px',
         marginTop: '4px',
+        textAlign: 'left' as const,
     },
 
     outputsSection: {
