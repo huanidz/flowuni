@@ -23,11 +23,7 @@ celery_app.conf.update(
     accept_content=["json"],
     timezone="UTC",
     enable_utc=True,
+    result_expires=3600,
 )
 
 celery_app.autodiscover_tasks(["src.celery_worker.tasks.flow_execution_tasks"])
-
-
-# @celery_app.task
-# def ping():
-#     return "pong"
