@@ -14,7 +14,6 @@ from src.dependencies.auth_dependency import (
 )
 from src.dependencies.flow_dep import get_flow_service
 from src.dependencies.redis_dependency import get_redis_client
-from src.exceptions.auth_exceptions import UNAUTHORIZED_EXCEPTION
 from src.schemas.flowbuilder.flow_graph_schemas import (
     FlowGraphRequest,
     FlowRunRequest,
@@ -162,48 +161,28 @@ async def run_flow_endpoint(
     api_key_service: ApiKeyService = Depends(get_api_key_service),
     flow_service: FlowService = Depends(get_flow_service),
 ):
+    """
+    Execute a flow with proper validation and error handling.
+    """
+    # Parse request JSON
     request_json = await request.json()
     flow_run_request = FlowRunRequest(**request_json)
 
-    # Access to headers
+    # Extract API key from Authorization header
     headers = request.headers
-
     authorization_header = headers.get("Authorization")
-    if authorization_header:
-        request_api_key = authorization_header.split(" ")[1]
-    else:
-        request_api_key = None
+    request_api_key = (
+        authorization_header.split(" ")[1] if authorization_header else None
+    )
 
-    # Validate API key
-    if request_api_key:
-        api_key_model = api_key_service.validate_key(request_api_key)
-        if not api_key_model:
-            raise UNAUTHORIZED_EXCEPTION
-    else:
-        raise UNAUTHORIZED_EXCEPTION
-
-    if stream:
-        raise HTTPException(
-            status_code=400,
-            detail="Flow run is not support right now.",
-        )
-
-    # Get flow definition from database
-    flow = flow_service.get_flow_detail_by_id(flow_id=flow_id)
-    if not flow:
-        raise HTTPException(status_code=404, detail="Flow not found")
-
-    # Check if flow is active
-    # if not flow.is_active:
-    #     raise HTTPException(status_code=400, detail="Flow is not active")
-
-    flow_definition = flow.flow_definition
-    if not flow_definition:
-        raise HTTPException(status_code=400, detail="Flow has no definition")
-
+    # Create FlowSyncWorker and execute with validation
     flow_sync_worker = FlowSyncWorker()
-    execution_result = flow_sync_worker.run_sync(
-        flow_id=flow_id, flow_graph_request_dict=flow_definition
+    execution_result = flow_sync_worker.run_flow_with_validation(
+        flow_id=flow_id,
+        request_api_key=request_api_key,
+        api_key_service=api_key_service,
+        flow_service=flow_service,
+        stream=stream,
     )
 
     return JSONResponse(
