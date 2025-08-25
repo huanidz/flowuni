@@ -76,7 +76,7 @@ export const compileFlow = async (nodes: Node[], edges: Edge[]) => {
 
 export const runFlow = async (nodes: Node[], edges: Edge[]) => {
     const payload = getFlowGraphData(nodes, edges);
-    console.log(payload);
+    console.log('Run Flow payload: ', payload);
     const { data } = await apiClient.post(
         `${FLOW_DEFINITION_RUN_ENDPOINT}`,
         payload

@@ -12,6 +12,7 @@ from src.dependencies.auth_dependency import (
     auth_through_url_param,
     get_current_user,
 )
+from src.dependencies.flow_dep import get_flow_service
 from src.dependencies.redis_dependency import get_redis_client
 from src.exceptions.auth_exceptions import UNAUTHORIZED_EXCEPTION
 from src.schemas.flowbuilder.flow_graph_schemas import (
@@ -19,6 +20,7 @@ from src.schemas.flowbuilder.flow_graph_schemas import (
     FlowRunRequest,
 )
 from src.services.ApiKeyService import ApiKeyService
+from src.services.FlowService import FlowService
 
 flow_execution_router = APIRouter(
     prefix="/api/exec",
@@ -157,6 +159,7 @@ async def run_flow_endpoint(
     request: Request,
     stream: bool = Query(False),
     api_key_service: ApiKeyService = Depends(get_api_key_service),
+    flow_service: FlowService = Depends(get_flow_service),
 ):
     request_json = await request.json()
     flow_run_request = FlowRunRequest(**request_json)
@@ -183,6 +186,22 @@ async def run_flow_endpoint(
             status_code=400,
             detail="Flow run is not support right now.",
         )
+
+    # Get flow definition from database
+    flow = flow_service.get_flow_detail_by_id(flow_id=flow_id)
+    if not flow:
+        raise HTTPException(status_code=404, detail="Flow not found")
+
+    # Check if flow is active
+    # if not flow.is_active:
+    #     raise HTTPException(status_code=400, detail="Flow is not active")
+
+    flow_definition = flow.flow_definition
+    if not flow_definition:
+        raise HTTPException(status_code=400, detail="Flow has no definition")
+
+    # Run the flow
+    flow_run_result = flow_service.run(flow, flow_run_request)
 
     raise HTTPException(
         status_code=400,
