@@ -7,6 +7,7 @@ from src.executors.GraphExecutor import GraphExecutor
 from src.nodes.GraphCompiler import GraphCompiler
 from src.nodes.GraphLoader import GraphLoader
 from src.schemas.flowbuilder.flow_graph_schemas import FlowGraphRequest
+from src.schemas.flows.flow_schemas import FlowRunResult
 from src.services.ApiKeyService import ApiKeyService
 from src.services.FlowService import FlowService
 
@@ -17,7 +18,7 @@ class FlowSyncWorker:
 
     def run_sync(
         self, flow_id: str, flow_graph_request_dict: Dict, enable_debug: bool = True
-    ):
+    ) -> FlowRunResult:
         try:
             logger.info(f"Starting flow execution task for flow_id: {flow_id}")
 
@@ -53,7 +54,9 @@ class FlowSyncWorker:
                 f"Flow execution completed successfully for flow_id: {flow_id}"
             )
 
-            return execution_result
+            # Parse execution result into FlowRunResult
+            flow_run_result = FlowRunResult(**execution_result)
+            return flow_run_result
 
         except Exception as e:
             logger.error(f"Flow execution failed for flow_id {flow_id}: {str(e)}")
@@ -67,7 +70,7 @@ class FlowSyncWorker:
         api_key_service: ApiKeyService,
         flow_service: FlowService,
         stream: bool = False,
-    ):
+    ) -> FlowRunResult:
         """
         Complete flow execution with validation and error handling.
         This method handles API key validation, flow retrieval, and execution.

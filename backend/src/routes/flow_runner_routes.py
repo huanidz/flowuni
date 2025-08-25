@@ -187,5 +187,5 @@ async def run_flow_endpoint(
 
     return JSONResponse(
         status_code=200,
-        content={"data": "ok"},
+        content=execution_result.model_dump(),
     )
