@@ -21,6 +21,7 @@ from src.schemas.flowbuilder.flow_graph_schemas import (
 )
 from src.services.ApiKeyService import ApiKeyService
 from src.services.FlowService import FlowService
+from src.workers.FlowSyncWorker import FlowSyncWorker
 
 flow_execution_router = APIRouter(
     prefix="/api/exec",
@@ -200,10 +201,12 @@ async def run_flow_endpoint(
     if not flow_definition:
         raise HTTPException(status_code=400, detail="Flow has no definition")
 
-    # Run the flow
-    flow_run_result = flow_service.run(flow, flow_run_request)
+    flow_sync_worker = FlowSyncWorker()
+    execution_result = flow_sync_worker.run_sync(
+        flow_id=flow_id, flow_graph_request_dict=flow_definition
+    )
 
-    raise HTTPException(
-        status_code=400,
-        detail="Flow run is not support right now.",
+    return JSONResponse(
+        status_code=200,
+        content={"data": "ok"},
     )

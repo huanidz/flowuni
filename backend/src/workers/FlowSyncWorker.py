@@ -1,9 +1,6 @@
 from typing import Dict
 
 from loguru import logger
-from redis import Redis
-from src.configs.config import get_settings
-from src.executors.ExecutionContext import ExecutionContext
 from src.executors.GraphExecutor import GraphExecutor
 from src.nodes.GraphCompiler import GraphCompiler
 from src.nodes.GraphLoader import GraphLoader
@@ -18,8 +15,6 @@ class FlowSyncWorker:
         self, flow_id: str, flow_graph_request_dict: Dict, enable_debug: bool = True
     ):
         try:
-            app_settings = get_settings()
-
             logger.info(f"Starting flow execution task for flow_id: {flow_id}")
 
             # Parse the request
@@ -36,23 +31,12 @@ class FlowSyncWorker:
             )  # Keep standalone nodes
             execution_plan = compiler.compile()
 
-            # Create executor
-            redis_client = Redis(
-                host=app_settings.REDIS_HOST,
-                port=app_settings.REDIS_PORT,
-                db=app_settings.REDIS_DB,
-                decode_responses=True,
-            )
-            exe_context = ExecutionContext(
-                task_id=self.request.id,
-                redis_client=redis_client,
-            )
             logger.info(f"Creating executor with {len(execution_plan)} layers")
             executor = GraphExecutor(
                 graph=G,
                 execution_plan=execution_plan,
-                execution_context=exe_context,
-                enable_debug=enable_debug,
+                execution_context=None,
+                enable_debug=False,
             )
 
             # Run the SYNCHRONOUS execution - NO asyncio needed
@@ -65,11 +49,7 @@ class FlowSyncWorker:
                 f"Flow execution completed successfully for flow_id: {flow_id}"
             )
 
-            return {
-                "status": "executed",
-                "flow_id": flow_id,
-                "execution_stats": execution_result,
-            }
+            return execution_result
 
         except Exception as e:
             logger.error(f"Flow execution failed for flow_id {flow_id}: {str(e)}")

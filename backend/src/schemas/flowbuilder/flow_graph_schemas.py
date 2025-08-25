@@ -69,7 +69,7 @@ class FlowRunMessage(BaseModel):
 
 
 class FlowRunRequest(BaseModel):
-    messages: List[FlowRunMessage] = Field(
+    messages: Optional[List[FlowRunMessage]] = Field(
         default_factory=list,
         description="List of messages to be sent to the flow run.",
     )
