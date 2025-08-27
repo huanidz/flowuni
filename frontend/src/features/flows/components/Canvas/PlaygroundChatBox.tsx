@@ -118,40 +118,66 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
     }, []);
 
     // Handle SSE message data
-    const handleSSEData = useCallback((data: any) => {
-        if (!data) {
-            console.warn('[SSE] No data field in message');
+    const handleSSEData = useCallback((parsed: any) => {
+        if (!parsed) {
+            console.warn('[SSE] No parsed message');
             return;
         }
 
-        const { node_type, input_values } = data;
+        const { event, data } = parsed;
 
-        if (node_type === 'Chat Output' && input_values?.message_in) {
-            // Clear timeout since we got a response
+        // Handle failed events
+        if (event === 'failed' && data?.error) {
+            console.error('[SSE] Flow execution failed:', data.error);
+
+            // Clear timeout since we got a response (even if failed)
             if (flowTimeoutRef.current) {
                 clearTimeout(flowTimeoutRef.current);
                 flowTimeoutRef.current = null;
             }
 
-            const newMessage: PGMessage = {
-                id: `bot-${Date.now()}`,
-                user_id: 0, // Bot message
-                message: input_values.message_in,
-                timestamp: new Date(),
-            };
-
-            setMessages(prev => [...prev, newMessage]);
             setIsFlowRunning(false);
+            setFlowError(data.error);
 
-            // Close the event source since we got our response
+            // Close the event source since the flow failed
             if (eventSourceRef.current) {
                 eventSourceRef.current.close();
                 eventSourceRef.current = null;
             }
+            return;
         }
 
-        // Handle other node types if needed
-        console.log('[SSE] Processed node:', node_type);
+        // Handle successful events
+        if (event === 'success' && data) {
+            const { node_type, input_values } = data;
+
+            if (node_type === 'Chat Output' && input_values?.message_in) {
+                // Clear timeout since we got a response
+                if (flowTimeoutRef.current) {
+                    clearTimeout(flowTimeoutRef.current);
+                    flowTimeoutRef.current = null;
+                }
+
+                const newMessage: PGMessage = {
+                    id: `bot-${Date.now()}`,
+                    user_id: 0, // Bot message
+                    message: input_values.message_in,
+                    timestamp: new Date(),
+                };
+
+                setMessages(prev => [...prev, newMessage]);
+                setIsFlowRunning(false);
+
+                // Close the event source since we got our response
+                if (eventSourceRef.current) {
+                    eventSourceRef.current.close();
+                    eventSourceRef.current = null;
+                }
+            }
+
+            // Handle other node types if needed
+            console.log('[SSE] Processed node:', node_type);
+        }
     }, []);
 
     // Run flow and handle execution
@@ -181,8 +207,8 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
             // Watch flow execution via SSE
             eventSourceRef.current = watchFlowExecution(task_id, message => {
                 const parsed = parseSSEMessage(message);
-                if (parsed?.data) {
-                    handleSSEData(parsed.data);
+                if (parsed) {
+                    handleSSEData(parsed);
                 }
             });
 

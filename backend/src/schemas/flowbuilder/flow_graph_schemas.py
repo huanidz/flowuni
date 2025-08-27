@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Literal, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class Position(BaseModel):
@@ -60,6 +60,17 @@ class FlowPlaygroundRequest(BaseModel):
     flow_graph_request: FlowGraphRequest
 
 
+# --- Flow Run API ---
+
+
+class FlowRunMessage(BaseModel):
+    type: str
+    content: str
+
+
 class FlowRunRequest(BaseModel):
-    flow_id: str
-    api_key: str
+    messages: Optional[List[FlowRunMessage]] = Field(
+        default_factory=list,
+        description="List of messages to be sent to the flow run.",
+    )
+    session_id: Optional[str] = None

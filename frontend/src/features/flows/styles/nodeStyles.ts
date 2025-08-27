@@ -52,13 +52,13 @@ export const nodeStyles = {
 
     inputInfo: {
         paddingLeft: '12px',
-        fontSize: '12px',
+        fontSize: '10px',
         color: '#333',
     },
 
     inputComponent: {
-        paddingLeft: '12px',
         marginTop: '4px',
+        textAlign: 'left' as const,
     },
 
     outputsSection: {
@@ -86,13 +86,13 @@ export const nodeStyles = {
     handle: {
         input: {
             position: 'absolute' as const,
-            left: '-6px',
-            top: '12px',
-            width: 12,
-            height: 12,
+            left: '-8px',
+            top: '9px',
+            width: 13,
+            height: 13,
             borderRadius: '50%',
-            background: '#555',
-            border: '2px solid white',
+            background: '#3e4240ff',
+            border: '2px solid #fafcf6ff',
         },
 
         output: {
@@ -100,11 +100,11 @@ export const nodeStyles = {
             right: '-12px',
             top: '50%',
             transform: 'translateY(-50%)',
-            width: 12,
-            height: 12,
+            width: 13,
+            height: 13,
             borderRadius: '50%',
-            background: '#555',
-            border: '2px solid white',
+            background: '#3e4240ff',
+            border: '2px solid #fafcf6ff',
         },
     },
 

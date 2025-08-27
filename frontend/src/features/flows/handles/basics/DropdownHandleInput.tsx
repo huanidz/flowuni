@@ -1,7 +1,22 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import dropdownHandleStyles from '../../styles/handleStyles';
 import { useNodes } from '@xyflow/react';
 import { runResolver } from '@/api/resolvers/registry';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import {
+    DropdownMenu,
+    DropdownMenuCheckboxItem,
+    DropdownMenuContent,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { ChevronDown, Search } from 'lucide-react';
 
 interface DropdownHandleInputProps {
     label: string;
@@ -51,7 +66,7 @@ export const DropdownHandleInput: React.FC<DropdownHandleInputProps> = ({
     const currentNode = nodes.find(node => node.id === nodeId);
     const node_input_values: any = currentNode?.data?.input_values || {};
 
-    // SOLUTION 1: Create dependency values excluding the current handle
+    // Create dependency values excluding the current handle
     const dependencyValues = useMemo(() => {
         if (!resolver) return {};
 
@@ -61,7 +76,6 @@ export const DropdownHandleInput: React.FC<DropdownHandleInputProps> = ({
         // For conditional resolvers, we need to watch the field_id
         if (resolver.type === 'conditional' && resolver.field_id) {
             if (resolver.field_id !== label) {
-                // Exclude current handle
                 depValues[resolver.field_id] =
                     node_input_values[resolver.field_id];
             }
@@ -70,7 +84,6 @@ export const DropdownHandleInput: React.FC<DropdownHandleInputProps> = ({
         // Also include any explicit dependencies
         deps.forEach((dep: string) => {
             if (dep !== label) {
-                // Exclude current handle
                 depValues[dep] = node_input_values[dep];
             }
         });
@@ -79,7 +92,6 @@ export const DropdownHandleInput: React.FC<DropdownHandleInputProps> = ({
     }, [resolver, node_input_values, label]);
 
     // === RESOLVER HANDLING ===
-
     useEffect(() => {
         const fetchResolvedOptions = async () => {
             if (!resolver) {
@@ -102,7 +114,6 @@ export const DropdownHandleInput: React.FC<DropdownHandleInputProps> = ({
 
                 if (!allDepsReady && relevantDeps.length > 0) {
                     setResolvedOptions([]);
-                    // console.log("Dependencies not ready, skipping resolver");
                     return;
                 }
 
@@ -120,7 +131,6 @@ export const DropdownHandleInput: React.FC<DropdownHandleInputProps> = ({
                     options = [result as { label: string; value: string }];
                 }
 
-                // console.log("Resolved options:", options, "--- LABEL: ", label);
                 setResolvedOptions(options);
             } catch (err) {
                 console.error('Error running resolver:', err);
@@ -129,152 +139,174 @@ export const DropdownHandleInput: React.FC<DropdownHandleInputProps> = ({
         };
 
         fetchResolvedOptions();
-
-        // Use stringified version to avoid reference equality that cause trigger useEffect
     }, [JSON.stringify(dependencyValues)]);
 
     const optionsToUse =
         resolvedOptions.length > 0 ? resolvedOptions : defaultOptions || [];
 
-    // === BASIC HANDLE HANDLING ===
+    // === HANDLE CHANGE LOGIC ===
     const handleChange = (newValue: string | string[]) => {
         if (onChange) {
             onChange(newValue);
         }
     };
 
-    const handleItemClick = (optionValue: string) => {
-        if (defaultMultiple) {
-            const currentValues = Array.isArray(value) ? value : [];
-            const newValues = currentValues.includes(optionValue)
-                ? currentValues.filter(v => v !== optionValue)
-                : [...currentValues, optionValue];
-            handleChange(newValues);
-        } else {
-            handleChange(optionValue);
-            setIsOpen(false);
-        }
+    const handleSingleSelect = (selectedValue: string) => {
+        handleChange(selectedValue);
     };
 
+    const handleMultipleSelect = (optionValue: string, checked: boolean) => {
+        const currentValues = Array.isArray(value) ? value : [];
+        const newValues = checked
+            ? [...currentValues, optionValue]
+            : currentValues.filter(v => v !== optionValue);
+        handleChange(newValues);
+    };
+
+    // Filter options based on search term
     const filteredOptions = (optionsToUse || []).filter(option =>
         option.label.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const displayValue = defaultMultiple
-        ? Array.isArray(value)
-            ? value
-                  .map(
-                      v =>
-                          (optionsToUse || []).find(opt => opt.value === v)
-                              ?.label || v
-                  )
-                  .join(', ')
-            : ''
-        : (optionsToUse || []).find(opt => opt.value === value)?.label ||
-          value ||
-          '';
-
-    const handleFocus = (e: React.FocusEvent<HTMLDivElement>) => {
-        e.target.style.borderColor = '#007bff';
+    // Display value for multiple selection
+    const getMultipleDisplayValue = () => {
+        if (!Array.isArray(value) || value.length === 0)
+            return 'Select items...';
+        if (value.length === 1) {
+            const option = optionsToUse.find(opt => opt.value === value[0]);
+            return option?.label || value[0];
+        }
+        return `${value.length} items selected`;
     };
 
-    const handleBlur = (e: React.FocusEvent<HTMLDivElement>) => {
-        e.target.style.borderColor = '#ccc';
-    };
+    // Don't render if hidden
+    if (defaultHidden) {
+        return null;
+    }
 
-    return (
-        <div
-            style={
-                defaultHidden
-                    ? { display: 'none' }
-                    : dropdownHandleStyles.container
-            }
-        >
-            {description && (
-                <span style={dropdownHandleStyles.description}>
-                    {description}
-                </span>
-            )}
-            <div
-                style={dropdownHandleStyles.common}
-                tabIndex={0}
-                onFocus={handleFocus}
-                onBlur={handleBlur}
-                onClick={() => setIsOpen(!isOpen)}
-                onKeyDown={e => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        setIsOpen(!isOpen);
-                    } else if (e.key === 'Escape') {
-                        setIsOpen(false);
-                    }
-                }}
-            >
-                <div style={dropdownHandleStyles.flexRow}>
-                    <span>{displayValue || 'Select...'}</span>
-                    <span>{isOpen ? '▲' : '▼'}</span>
-                </div>
-
-                {isOpen && (
-                    <div style={dropdownHandleStyles.dropdown}>
+    // Render single select dropdown
+    if (!defaultMultiple) {
+        return (
+            <div className="flex flex-col space-y-2 text-xs w-full">
+                {description && (
+                    <span className="text-xs text-gray-600 mb-1">
+                        {description}
+                    </span>
+                )}
+                <Select value={value || ''} onValueChange={handleSingleSelect}>
+                    <SelectTrigger className="h-8 text-xs w-full">
+                        <SelectValue placeholder="Select..." />
+                    </SelectTrigger>
+                    <SelectContent>
                         {defaultSearchable && (
-                            <div style={dropdownHandleStyles.searchContainer}>
-                                <input
-                                    type="text"
-                                    value={searchTerm}
-                                    onChange={e =>
-                                        setSearchTerm(e.target.value)
-                                    }
-                                    onClick={e => e.stopPropagation()}
-                                    placeholder="Search..."
-                                    style={dropdownHandleStyles.searchInput}
-                                />
+                            <div className="p-2">
+                                <div className="relative">
+                                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        placeholder="Search..."
+                                        value={searchTerm}
+                                        onChange={e =>
+                                            setSearchTerm(e.target.value)
+                                        }
+                                        className="pl-8 h-8 text-xs"
+                                    />
+                                </div>
                             </div>
                         )}
                         {filteredOptions.length === 0 ? (
-                            <div style={dropdownHandleStyles.noOptions}>
+                            <div className="p-2 text-xs text-gray-600 italic">
                                 No options found
                             </div>
                         ) : (
                             filteredOptions.map(option => (
-                                <div
+                                <SelectItem
                                     key={option.value}
-                                    style={{
-                                        ...dropdownHandleStyles.option,
-                                        ...(defaultMultiple &&
-                                        Array.isArray(value) &&
-                                        value.includes(option.value)
-                                            ? dropdownHandleStyles.selectedOption
-                                            : {}),
-                                    }}
-                                    onClick={e => {
-                                        e.stopPropagation();
-                                        handleItemClick(option.value);
-                                    }}
+                                    value={option.value}
+                                    className="text-xs"
                                 >
-                                    {defaultMultiple && (
-                                        <input
-                                            type="checkbox"
-                                            checked={
-                                                Array.isArray(value) &&
-                                                value.includes(option.value)
-                                            }
-                                            onChange={() =>
-                                                handleItemClick(option.value)
-                                            }
-                                            onClick={e => e.stopPropagation()}
-                                            style={
-                                                dropdownHandleStyles.checkbox
-                                            }
-                                        />
-                                    )}
                                     {option.label}
-                                </div>
+                                </SelectItem>
                             ))
                         )}
-                    </div>
-                )}
+                    </SelectContent>
+                </Select>
             </div>
+        );
+    }
+
+    // Render multiple select dropdown
+    return (
+        <div className="flex flex-col space-y-2 text-xs w-full">
+            {description && (
+                <span className="text-xs text-gray-600 mb-1">
+                    {description}
+                </span>
+            )}
+            <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+                <DropdownMenuTrigger asChild>
+                    <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={isOpen}
+                        className="w-100 justify-between h-8 text-xs px-2 border border-gray-300 hover:border-gray-400 focus:border-blue-500"
+                    >
+                        <span className="truncate">
+                            {getMultipleDisplayValue()}
+                        </span>
+                        <ChevronDown className="ml-2 h-3 w-3 shrink-0 opacity-50" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                    className="w-[var(--radix-dropdown-menu-trigger-width)] max-w-[300px] p-0"
+                    align="start"
+                >
+                    {defaultSearchable && (
+                        <div className="p-2 border-b border-gray-100">
+                            <div className="relative">
+                                <Search className="absolute left-2 top-2.5 h-3 w-3 text-gray-400" />
+                                <Input
+                                    placeholder="Search..."
+                                    value={searchTerm}
+                                    onChange={e =>
+                                        setSearchTerm(e.target.value)
+                                    }
+                                    className="pl-7 h-7 text-xs border-gray-200"
+                                    onClick={e => e.stopPropagation()}
+                                />
+                            </div>
+                        </div>
+                    )}
+                    <div className="max-h-48 overflow-y-auto">
+                        {filteredOptions.length === 0 ? (
+                            <div className="p-2 text-xs text-gray-600 italic">
+                                No options found
+                            </div>
+                        ) : (
+                            filteredOptions.map(option => {
+                                const isChecked =
+                                    Array.isArray(value) &&
+                                    value.includes(option.value);
+
+                                return (
+                                    <DropdownMenuCheckboxItem
+                                        key={option.value}
+                                        checked={isChecked}
+                                        onCheckedChange={checked =>
+                                            handleMultipleSelect(
+                                                option.value,
+                                                checked
+                                            )
+                                        }
+                                        className="text-xs cursor-pointer hover:bg-gray-50 focus:bg-gray-50"
+                                    >
+                                        {option.label}
+                                    </DropdownMenuCheckboxItem>
+                                );
+                            })
+                        )}
+                    </div>
+                </DropdownMenuContent>
+            </DropdownMenu>
         </div>
     );
 };

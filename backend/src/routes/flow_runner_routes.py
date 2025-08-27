@@ -7,16 +7,20 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from loguru import logger
 from redis import Redis
 from src.celery_worker.tasks.flow_execution_tasks import compile_flow, run_flow
+from src.dependencies.api_key_dependency import get_api_key_service
 from src.dependencies.auth_dependency import (
     auth_through_url_param,
     get_current_user,
 )
+from src.dependencies.flow_dep import get_flow_service
 from src.dependencies.redis_dependency import get_redis_client
 from src.schemas.flowbuilder.flow_graph_schemas import (
     FlowGraphRequest,
-    FlowPlaygroundRequest,
     FlowRunRequest,
 )
+from src.services.ApiKeyService import ApiKeyService
+from src.services.FlowService import FlowService
+from src.workers.FlowSyncWorker import FlowSyncWorker
 
 flow_execution_router = APIRouter(
     prefix="/api/exec",
@@ -146,43 +150,42 @@ async def stream_execution(
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
-# --- Playground Run API ---
-
-
-@flow_execution_router.post("/playground/run")
-async def run_playground_endpoint(
-    request: Request,
-    _auth_user_id: int = Depends(get_current_user),
-    stream: bool = Query(False, description="Whether to stream the response"),
-):
-    request_json = await request.json()
-    flow_pg_request = FlowPlaygroundRequest(**request_json)
-
-    flow_id = flow_pg_request.flow_id
-    flow_graph_request = flow_pg_request.flow_graph_request
-
-    # Run the flow
-    task = run_flow(flow_id, flow_graph_request.model_dump())
-
-    if stream:
-        # Return not support
-        raise HTTPException(
-            status_code=400,
-            detail="Streaming is currently not supported for playground runs.",
-        )
-    else:
-        return run_flow(flow_id, flow_graph_request.model_dump())
-
-
 # --- Main flow Run API ---
 
 
-@flow_execution_router.post("/{flow_id}/run")
-async def run_flow_endpoint(request: Request, stream: bool = Query(False)):
+@flow_execution_router.post("/{flow_id}")
+async def run_flow_endpoint(
+    flow_id: str,
+    request: Request,
+    stream: bool = Query(False),
+    api_key_service: ApiKeyService = Depends(get_api_key_service),
+    flow_service: FlowService = Depends(get_flow_service),
+):
+    """
+    Execute a flow with proper validation and error handling.
+    """
+    # Parse request JSON
     request_json = await request.json()
     flow_run_request = FlowRunRequest(**request_json)
 
-    raise HTTPException(
-        status_code=400,
-        detail="Flow run is not support right now.",
+    # Extract API key from Authorization header
+    headers = request.headers
+    authorization_header = headers.get("Authorization")
+    request_api_key = (
+        authorization_header.split(" ")[1] if authorization_header else None
+    )
+
+    # Create FlowSyncWorker and execute with validation
+    flow_sync_worker = FlowSyncWorker()
+    execution_result = flow_sync_worker.run_flow_with_validation(
+        flow_id=flow_id,
+        request_api_key=request_api_key,
+        api_key_service=api_key_service,
+        flow_service=flow_service,
+        stream=stream,
+    )
+
+    return JSONResponse(
+        status_code=200,
+        content=execution_result.model_dump(),
     )

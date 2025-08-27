@@ -1,0 +1,463 @@
+import React, { useState } from 'react';
+import {
+    MoreHorizontal,
+    Trash2,
+    Plus,
+    AlertCircle,
+    X,
+    Copy,
+    Check,
+} from 'lucide-react';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    useListApiKeys,
+    useDeleteApiKey,
+    useDeactivateApiKey,
+    useCreateApiKey,
+} from '@/features/apikey';
+import { API_KEY_DISPLAY_LENGTH, API_KEY_PREFIX } from '@/features/apikey';
+import { type CreateApiKeyRequest } from '@/features/apikey';
+
+const ApiKeyPage: React.FC = () => {
+    const [notification, setNotification] = useState<{
+        type: 'success' | 'error';
+        message: string;
+        apiKey?: string;
+    } | null>(null);
+    const [showCreateForm, setShowCreateForm] = useState(false);
+    const [newApiKey, setNewApiKey] = useState({
+        name: '',
+        description: '',
+    });
+    const [copyButtonState, setCopyButtonState] = useState<'copy' | 'copied'>(
+        'copy'
+    );
+
+    // Use the list hook to fetch API keys
+    const {
+        data: apiKeyListResponse,
+        isLoading,
+        error,
+    } = useListApiKeys(false);
+    const apiKeys = apiKeyListResponse?.api_keys || [];
+
+    const deleteApiKeyMutation = useDeleteApiKey();
+    const deactivateApiKeyMutation = useDeactivateApiKey();
+    const createApiKeyMutation = useCreateApiKey();
+
+    const formatKeyId = (keyId: string) => {
+        return `${API_KEY_PREFIX}${keyId.slice(0, API_KEY_DISPLAY_LENGTH)}...`;
+    };
+
+    const formatDate = (dateString: string) => {
+        return new Date(dateString).toLocaleDateString();
+    };
+
+    const copyToClipboard = async (text: string) => {
+        try {
+            await navigator.clipboard.writeText(text);
+            setCopyButtonState('copied');
+            // Reset button after 2 seconds
+            setTimeout(() => {
+                setCopyButtonState('copy');
+            }, 2000);
+        } catch (error) {
+            setNotification(prev =>
+                prev
+                    ? {
+                          ...prev,
+                          message:
+                              'Failed to copy to clipboard. Please copy manually.',
+                      }
+                    : null
+            );
+        }
+    };
+
+    const handleDelete = async (keyId: string, name: string) => {
+        if (
+            !confirm(
+                `Are you sure you want to delete API key "${name}"? This action cannot be undone.`
+            )
+        ) {
+            return;
+        }
+
+        try {
+            await deleteApiKeyMutation.mutateAsync(keyId);
+            setNotification({
+                type: 'success',
+                message: `API key "${name}" has been deleted successfully.`,
+            });
+        } catch (error: any) {
+            setNotification({
+                type: 'error',
+                message: error.message || 'Failed to delete API key.',
+            });
+        }
+    };
+
+    const handleDeactivate = async (keyId: string, name: string) => {
+        try {
+            await deactivateApiKeyMutation.mutateAsync(keyId);
+            setNotification({
+                type: 'success',
+                message: `API key "${name}" has been deactivated successfully.`,
+            });
+        } catch (error: any) {
+            setNotification({
+                type: 'error',
+                message: error.message || 'Failed to deactivate API key.',
+            });
+        }
+    };
+
+    const handleCreate = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!newApiKey.name.trim()) {
+            setNotification({
+                type: 'error',
+                message: 'API key name is required.',
+            });
+            return;
+        }
+
+        try {
+            const request: CreateApiKeyRequest = {
+                name: newApiKey.name.trim(),
+                description: newApiKey.description.trim() || undefined,
+            };
+
+            const response = await createApiKeyMutation.mutateAsync(request);
+
+            // The list will be automatically refetched by the mutation's onSuccess
+            setNotification({
+                type: 'success',
+                message: `API key "${response.name}" has been created successfully.`,
+                apiKey: response.key,
+            });
+
+            // Reset form
+            setNewApiKey({ name: '', description: '' });
+            setShowCreateForm(false);
+        } catch (error: any) {
+            setNotification({
+                type: 'error',
+                message: error.message || 'Failed to create API key.',
+            });
+        }
+    };
+
+    return (
+        <div className="flex-1 p-8">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold">API Keys</h1>
+                    <p className="mt-2 text-gray-600">
+                        Manage your API keys here.
+                    </p>
+                </div>
+                <Button onClick={() => setShowCreateForm(!showCreateForm)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    {showCreateForm ? 'Cancel' : 'Add New API Key'}
+                </Button>
+            </div>
+
+            {notification && (
+                <div
+                    className={`mt-6 p-4 rounded-lg border ${
+                        notification.type === 'error'
+                            ? 'border-red-200 bg-red-50'
+                            : 'border-green-200 bg-green-50'
+                    }`}
+                >
+                    <div className="flex items-start">
+                        <AlertCircle
+                            className={`h-5 w-5 mt-0.5 mr-3 ${
+                                notification.type === 'error'
+                                    ? 'text-red-600'
+                                    : 'text-green-600'
+                            }`}
+                        />
+                        <div className="flex-1">
+                            <div
+                                className={`font-medium ${
+                                    notification.type === 'error'
+                                        ? 'text-red-800'
+                                        : 'text-green-800'
+                                }`}
+                            >
+                                {notification.type === 'success'
+                                    ? 'Success!'
+                                    : 'Error'}
+                            </div>
+                            <div
+                                className={`mt-1 ${
+                                    notification.type === 'error'
+                                        ? 'text-red-700'
+                                        : 'text-green-700'
+                                }`}
+                            >
+                                {notification.message}
+                            </div>
+                            {notification.type === 'success' &&
+                                notification.apiKey && (
+                                    <div className="mt-3 p-3 bg-white rounded border border-green-200">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <div className="text-sm font-medium text-gray-700 mb-1">
+                                                    Your API Key:
+                                                </div>
+                                                <div className="font-mono text-sm bg-gray-100 p-2 rounded border break-all">
+                                                    {notification.apiKey}
+                                                </div>
+                                            </div>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() =>
+                                                    copyToClipboard(
+                                                        notification.apiKey!
+                                                    )
+                                                }
+                                                className="ml-3 flex-shrink-0"
+                                                disabled={
+                                                    copyButtonState === 'copied'
+                                                }
+                                            >
+                                                {copyButtonState ===
+                                                'copied' ? (
+                                                    <>
+                                                        <Check className="h-4 w-4 mr-1" />
+                                                        Copied
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Copy className="h-4 w-4 mr-1" />
+                                                        Copy
+                                                    </>
+                                                )}
+                                            </Button>
+                                        </div>
+                                        <div className="mt-2 text-xs text-gray-600">
+                                            Make sure to copy this key now. You
+                                            won't be able to see it again!
+                                        </div>
+                                    </div>
+                                )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showCreateForm && (
+                <Card className="mt-6">
+                    <CardHeader>
+                        <CardTitle className="flex items-center justify-between">
+                            Create New API Key
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setShowCreateForm(false)}
+                            >
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <form onSubmit={handleCreate} className="space-y-4">
+                            <div>
+                                <Label htmlFor="name">Name *</Label>
+                                <Input
+                                    id="name"
+                                    value={newApiKey.name}
+                                    onChange={e =>
+                                        setNewApiKey(prev => ({
+                                            ...prev,
+                                            name: e.target.value,
+                                        }))
+                                    }
+                                    placeholder="Enter API key name"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="description">Description</Label>
+                                <Textarea
+                                    id="description"
+                                    value={newApiKey.description}
+                                    onChange={e =>
+                                        setNewApiKey(prev => ({
+                                            ...prev,
+                                            description: e.target.value,
+                                        }))
+                                    }
+                                    placeholder="Enter API key description (optional)"
+                                    rows={3}
+                                />
+                            </div>
+                            <div className="flex justify-end space-x-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setShowCreateForm(false)}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    disabled={createApiKeyMutation.isPending}
+                                >
+                                    {createApiKeyMutation.isPending
+                                        ? 'Creating...'
+                                        : 'Create API Key'}
+                                </Button>
+                            </div>
+                        </form>
+                    </CardContent>
+                </Card>
+            )}
+
+            <div className="mt-6">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Description</TableHead>
+                            <TableHead>Key ID</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Created</TableHead>
+                            <TableHead>Last Used</TableHead>
+                            <TableHead className="w-[100px]">Actions</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {apiKeys.map(apiKey => (
+                            <TableRow key={apiKey.key_id}>
+                                <TableCell className="font-medium">
+                                    {apiKey.name}
+                                </TableCell>
+                                <TableCell className="max-w-xs truncate">
+                                    {apiKey.description}
+                                </TableCell>
+                                <TableCell className="font-mono text-sm">
+                                    {formatKeyId(apiKey.key_id)}
+                                </TableCell>
+                                <TableCell>
+                                    <span
+                                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                            apiKey.is_active
+                                                ? 'bg-green-100 text-green-800'
+                                                : 'bg-gray-100 text-gray-800'
+                                        }`}
+                                    >
+                                        {apiKey.is_active
+                                            ? 'Active'
+                                            : 'Inactive'}
+                                    </span>
+                                </TableCell>
+                                <TableCell className="text-sm text-gray-600">
+                                    {formatDate(apiKey.created_at)}
+                                </TableCell>
+                                <TableCell className="text-sm text-gray-600">
+                                    {apiKey.last_used_at
+                                        ? formatDate(apiKey.last_used_at)
+                                        : 'Never'}
+                                </TableCell>
+                                <TableCell>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8"
+                                            >
+                                                <MoreHorizontal className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            {apiKey.is_active && (
+                                                <DropdownMenuItem
+                                                    onClick={() =>
+                                                        handleDeactivate(
+                                                            apiKey.key_id,
+                                                            apiKey.name
+                                                        )
+                                                    }
+                                                    disabled={
+                                                        deactivateApiKeyMutation.isPending
+                                                    }
+                                                >
+                                                    Deactivate
+                                                </DropdownMenuItem>
+                                            )}
+                                            <DropdownMenuItem
+                                                variant="destructive"
+                                                onClick={() =>
+                                                    handleDelete(
+                                                        apiKey.key_id,
+                                                        apiKey.name
+                                                    )
+                                                }
+                                                disabled={
+                                                    deleteApiKeyMutation.isPending
+                                                }
+                                            >
+                                                <Trash2 className="h-4 w-4 mr-2" />
+                                                Delete
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+
+                {isLoading && (
+                    <div className="text-center py-8">
+                        <p className="text-gray-600">Loading API keys...</p>
+                    </div>
+                )}
+
+                {error && (
+                    <div className="text-center py-8">
+                        <p className="text-red-600">
+                            Error loading API keys: {error.message}
+                        </p>
+                    </div>
+                )}
+
+                {!isLoading && !error && apiKeys.length === 0 && (
+                    <div className="text-center py-8">
+                        <p className="text-gray-600">
+                            No API keys found. Create your first API key to get
+                            started.
+                        </p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+export default ApiKeyPage;

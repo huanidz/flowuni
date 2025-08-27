@@ -20,6 +20,36 @@ class FlowServiceInterface(ABC):
         """
         pass
 
+    @abstractmethod
+    def create_empty_flow(self, user_id: int) -> str:
+        """
+        Create an empty flow for a user
+        """
+        pass
+
+    @abstractmethod
+    def get_flow_detail_by_id(self, flow_id: str) -> FlowModel:
+        """
+        Get flow detail by flow id
+        """
+        pass
+
+    @abstractmethod
+    def delete_flow(self, flow_id: str):
+        """
+        Delete a flow by flow id
+        """
+        pass
+
+    @abstractmethod
+    def save_flow_detail(
+        self, flow_request: FlowPatchRequest, user_id: int
+    ) -> Optional[FlowModel]:
+        """
+        Save flow detail
+        """
+        pass
+
 
 class FlowService(FlowServiceInterface):
     """
