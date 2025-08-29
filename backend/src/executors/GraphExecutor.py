@@ -9,7 +9,11 @@ from typing import Any, Dict, List, Optional
 import networkx as nx
 from loguru import logger
 from pydantic import BaseModel
-from src.consts.node_consts import NODE_DATA_MODE
+from src.consts.node_consts import (
+    NODE_DATA_MODE,
+    NODE_LABEL_CONSTS,
+    SPECIAL_NODE_INPUT_CONSTS,
+)
 from src.executors.ExecutionContext import ExecutionContext
 from src.executors.NodeDataFlowAdapter import NodeDataFlowAdapter
 from src.executors.NodeExecution import NodeExecutionEvent
@@ -294,6 +298,14 @@ class GraphExecutor:
                 # Sync mode: fetch from graph and do detailed logging
                 node_data = g_node.get("data", NodeData())
                 logger.info(f"NodeData: {node_data.model_dump_json(indent=2)}")
+
+            # Handling special node that require non-DAG data-flow
+            # But this only used to prepare input values, the whole execution is still in DAG style # noqa: E501
+            node_data = self.prepare_node_data_for_execution(
+                node_id=node_id, node_data=node_data
+            )
+
+            logger.info(f"👉 node_data (After prepare): {node_data}")
 
             # Create node instance
             node_instance: Optional[Node] = self._node_registry.create_node_instance(
@@ -635,11 +647,11 @@ class GraphExecutor:
 
             # Step 5: Extract tool information from executed data
             raw_tool_schema = executed_data.output_values["tool"]
-            logger.info(f"👉 raw_tool_schema: {raw_tool_schema}")
+            # logger.info(f"👉 raw_tool_schema: {raw_tool_schema}")
             tool_name = executed_data.output_values["tool_name"]
-            logger.info(f"👉 tool_name: {tool_name}")
+            # logger.info(f"👉 tool_name: {tool_name}")
             tool_description = executed_data.output_values["tool_description"]
-            logger.info(f"👉 tool_description: {tool_description}")
+            # logger.info(f"👉 tool_description: {tool_description}")
 
             # Step 6: Parse the tool schema JSON
             try:
@@ -719,7 +731,43 @@ class GraphExecutor:
             )
             raise
 
-    def prepare(self):
-        """Prepare method for backward compatibility."""
-        logger.debug("GraphExecutor prepare() called - no preparation needed")
-        pass
+    def prepare_node_data_for_execution(
+        self, node_id: str, node_data: NodeData
+    ) -> NodeData:
+        """Prepare method for node_data before execution."""
+
+        if node_data.label == NODE_LABEL_CONSTS.ROUTER:
+            # First, get the outgoing edges from this node
+            # make a string that contain edge ids separated by comma. e.g. "edge_id_1,edge_id_2,edge_id_3"
+
+            # Get all outgoing edges from this node
+            outgoing_edges = self.graph.out_edges(node_id, data=True)
+
+            # Extract edge IDs and create comma-separated string
+            edge_ids = []
+            for source, target, edge_data in outgoing_edges:
+                # Assuming edge ID is stored in the edge data
+                edge_id = edge_data.get("id", f"{source}-{target}")
+                edge_ids.append(edge_id)
+
+            if not edge_ids:
+                logger.warning(
+                    f"No outgoing edges found for Node {NODE_LABEL_CONSTS.ROUTER} {node_id}"  # noqa E501
+                )
+                return node_data
+
+            # Create the comma-separated string of edge IDs
+            edge_ids_string = ",".join(edge_ids)
+
+            node_data.input_values[SPECIAL_NODE_INPUT_CONSTS.ROUTER_ROUTE_LABELS] = (
+                edge_ids_string
+            )
+
+            logger.debug(
+                f"Router node {node_id} prepared with edge IDs: {edge_ids_string}"
+            )
+
+            return node_data
+
+        else:
+            return node_data

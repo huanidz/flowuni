@@ -1,5 +1,6 @@
 from typing import Any, Dict, Union
 
+from src.consts.node_consts import NODE_LABEL_CONSTS, SPECIAL_NODE_INPUT_CONSTS
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.handles.basics.inputs.TextFieldInputHandle import TextFieldInputHandle
@@ -11,7 +12,7 @@ from src.schemas.nodes.node_data_parsers import BuildToolResult
 
 class RouterNode(Node):
     spec: NodeSpec = NodeSpec(
-        name="Router",
+        name=NODE_LABEL_CONSTS.ROUTER,
         description="Router node that will route input to other nodes.",
         inputs=[
             NodeInput(
@@ -20,7 +21,7 @@ class RouterNode(Node):
                 description="The input need to be routed.",
             ),
             NodeInput(
-                name="route_labels",
+                name=SPECIAL_NODE_INPUT_CONSTS.ROUTER_ROUTE_LABELS,
                 type=TextFieldInputHandle(
                     hidden=True
                 ),  # Not allow user to input into this field, this is for internal use
