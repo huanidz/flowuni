@@ -186,6 +186,14 @@ export class ConnectionValidator {
                 'BooleanInputHandle',
                 'DynamicTypeInputHandle',
             ],
+            RouterOutputHandle: [
+                'TextFieldInputHandle',
+                'DropdownInputHandle',
+                'SecretTextInputHandle',
+                'NumberInputHandle',
+                'BooleanInputHandle',
+                'DynamicTypeInputHandle',
+            ],
         };
 
         const compatibleTargets = compatibilityMatrix[sourceTypeName] || [];

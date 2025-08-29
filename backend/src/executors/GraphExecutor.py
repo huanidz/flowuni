@@ -202,7 +202,7 @@ class GraphExecutor:
         if len(layer_nodes) == 1:
             node_id = layer_nodes[0]
             logger.info(f"Executing single node in layer {layer_index}: {node_id}")
-            return [self._execute_single_node_sync(node_id, layer_index)]
+            return [self._execute_single_node(node_id, layer_index)]
 
         # For multiple nodes, execute in parallel
         logger.info(
@@ -219,7 +219,7 @@ class GraphExecutor:
 
                 # Submit to thread pool
                 future = executor.submit(
-                    self._execute_single_node_thread, node_id, node_data, layer_index
+                    self._execute_single_node, node_id, layer_index, node_data
                 )
                 futures[future] = node_id
 
@@ -265,110 +265,39 @@ class GraphExecutor:
 
         return results
 
-    def _execute_single_node_sync(
-        self, node_id: str, layer_index: int
+    def _execute_single_node(
+        self, node_id: str, layer_index: int, node_data: Optional[NodeData] = None
     ) -> NodeExecutionResult:
         """
-        Execute a single node synchronously (like the old version).
+        Execute a single node (works for both sync and parallel execution).
+
+        Args:
+            node_id: ID of the node to execute
+            layer_index: Current layer index for logging
+            node_data: Pre-fetched node data (for parallel execution) or None (for sync)
         """
         start_time = time.time()
 
         try:
             self.push_event(node_id=node_id, event=NodeExecutionEvent.RUNNING, data={})
-            # Get node configuration (same as old version)
+
+            # Get node configuration
             g_node = self.graph.nodes[node_id]
             node_spec: NodeSpec = g_node.get("spec")
-            node_data: NodeData = g_node.get("data", NodeData())
+            logger.info(f"👉 node_spec: {node_spec}")
 
             if not node_spec:
                 raise GraphExecutorError(f"Node {node_id} missing specification")
 
-            # log nodedata
-            logger.info(f"NodeData: {node_data.model_dump_json(indent=2)}")
-
-            # Create node instance (same as old version)
-            node_instance: Optional[Node] = self._node_registry.create_node_instance(
-                node_spec.name
-            )
-
-            if not node_instance:
-                raise GraphExecutorError(
-                    f"Failed to create node instance: {node_spec.name}"
-                )
-
-            logger.info(f"Executing node [{layer_index}]: {node_spec.name}")
-
-            # Execute the node (same as old version)
-            executed_data: NodeData = node_instance.run(node_data)
-            self.push_event(
-                node_id=node_id,
-                event=NodeExecutionEvent.SUCCESS,
-                data=executed_data.model_dump(),
-            )
-
-            logger.info(f"Node {node_id} executed successfully: {executed_data}")
-
-            execution_time = time.time() - start_time
-
-            # log exec time
-            logger.info(f"Execution time: {execution_time:.3f}s")
-
-            # Log execution results
-            if executed_data and executed_data.output_values:
-                output_keys = list(executed_data.output_values.keys())
-                logger.success(
-                    f"Node {node_id} completed in {execution_time:.3f}s, outputs: {output_keys}"  # noqa: E501
-                )
+            # Get node data - either from parameter (parallel) or from graph (sync)
+            if node_data is None:
+                # Sync mode: fetch from graph and do detailed logging
+                node_data = g_node.get("data", NodeData())
+                logger.info(f"NodeData: {node_data.model_dump_json(indent=2)}")
+                execution_mode = ""
             else:
-                logger.success(
-                    f"Node {node_id} completed in {execution_time:.3f}s, no outputs"
-                )
-
-            return NodeExecutionResult(
-                node_id=node_id,
-                success=True,
-                data=executed_data,
-                execution_time=execution_time,
-            )
-
-        except Exception as e:
-            execution_time = time.time() - start_time
-
-            trace = traceback.format_exc()
-            logger.error(
-                f"❌ Node {node_id} execution failed 🛑: {str(e)}\n🔍 Trace: {trace}"
-            )
-            self.push_event(
-                node_id=node_id,
-                event=NodeExecutionEvent.FAILED,
-                data={
-                    "error": str(e),
-                },
-            )
-            return NodeExecutionResult(
-                node_id=node_id,
-                success=False,
-                error=str(e),
-                execution_time=execution_time,
-            )
-
-    def _execute_single_node_thread(
-        self, node_id: str, node_data: NodeData, layer_index: int
-    ) -> NodeExecutionResult:
-        """
-        Execute a single node in a thread (for parallel execution).
-        """
-        start_time = time.time()
-
-        try:
-            self.push_event(node_id=node_id, event=NodeExecutionEvent.RUNNING, data={})
-
-            # Get node specification
-            g_node = self.graph.nodes[node_id]
-            node_spec: NodeSpec = g_node.get("spec")
-
-            if not node_spec:
-                raise GraphExecutorError(f"Node {node_id} missing specification")
+                # Parallel mode: use provided data, minimal logging
+                execution_mode = " (parallel)"
 
             # Create node instance
             node_instance: Optional[Node] = self._node_registry.create_node_instance(
@@ -380,7 +309,9 @@ class GraphExecutor:
                     f"Failed to create node instance: {node_spec.name}"
                 )
 
-            logger.info(f"Executing node [{layer_index}]: {node_spec.name} (parallel)")
+            logger.info(
+                f"Executing node [{layer_index}]: {node_spec.name}{execution_mode}"
+            )
 
             # Execute the node
             executed_data: NodeData = node_instance.run(node_data)
@@ -389,7 +320,24 @@ class GraphExecutor:
                 event=NodeExecutionEvent.SUCCESS,
                 data=executed_data.model_dump(),
             )
+
             execution_time = time.time() - start_time
+
+            # Only do detailed success logging in sync mode (when node_data was None)
+            if execution_mode == "":
+                logger.info(f"Node {node_id} executed successfully: {executed_data}")
+                logger.info(f"Execution time: {execution_time:.3f}s")
+
+                # Log execution results
+                if executed_data and executed_data.output_values:
+                    output_keys = list(executed_data.output_values.keys())
+                    logger.success(
+                        f"Node {node_id} completed in {execution_time:.3f}s, outputs: {output_keys}"  # noqa E501
+                    )
+                else:
+                    logger.success(
+                        f"Node {node_id} completed in {execution_time:.3f}s, no outputs"
+                    )
 
             return NodeExecutionResult(
                 node_id=node_id,
@@ -408,10 +356,9 @@ class GraphExecutor:
             self.push_event(
                 node_id=node_id,
                 event=NodeExecutionEvent.FAILED,
-                data={
-                    "error": str(e),
-                },
+                data={"error": str(e)},
             )
+
             return NodeExecutionResult(
                 node_id=node_id,
                 success=False,
@@ -719,7 +666,7 @@ class GraphExecutor:
             # Step 6: Parse the tool schema JSON
             try:
                 if raw_tool_schema is None:
-                    # If raw_tool_schema is None, set parsed_tool_schema to None, This is expected when the tool is no-toolable-param (just execute)
+                    # If raw_tool_schema is None, set parsed_tool_schema to None, This is expected when the tool is no-toolable-param (just execute) # noqa E501
                     parsed_tool_schema = None
                 else:
                     parsed_tool_schema = json.loads(raw_tool_schema)

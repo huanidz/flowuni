@@ -19,6 +19,13 @@ class RouterNode(Node):
                 type=TextFieldInputHandle(),
                 description="The input need to be routed.",
             ),
+            NodeInput(
+                name="route_labels",
+                type=TextFieldInputHandle(
+                    hidden=True
+                ),  # Not allow user to input into this field, this is for internal use
+                description="The routing labels.",
+            ),
         ],
         outputs=[
             NodeOutput(
