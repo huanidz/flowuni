@@ -294,10 +294,6 @@ class GraphExecutor:
                 # Sync mode: fetch from graph and do detailed logging
                 node_data = g_node.get("data", NodeData())
                 logger.info(f"NodeData: {node_data.model_dump_json(indent=2)}")
-                execution_mode = ""
-            else:
-                # Parallel mode: use provided data, minimal logging
-                execution_mode = " (parallel)"
 
             # Create node instance
             node_instance: Optional[Node] = self._node_registry.create_node_instance(
@@ -309,9 +305,7 @@ class GraphExecutor:
                     f"Failed to create node instance: {node_spec.name}"
                 )
 
-            logger.info(
-                f"Executing node [{layer_index}]: {node_spec.name}{execution_mode}"
-            )
+            logger.info(f"Executing node [{layer_index}]: {node_spec.name}")
 
             # Execute the node
             executed_data: NodeData = node_instance.run(node_data)
@@ -322,22 +316,6 @@ class GraphExecutor:
             )
 
             execution_time = time.time() - start_time
-
-            # Only do detailed success logging in sync mode (when node_data was None)
-            if execution_mode == "":
-                logger.info(f"Node {node_id} executed successfully: {executed_data}")
-                logger.info(f"Execution time: {execution_time:.3f}s")
-
-                # Log execution results
-                if executed_data and executed_data.output_values:
-                    output_keys = list(executed_data.output_values.keys())
-                    logger.success(
-                        f"Node {node_id} completed in {execution_time:.3f}s, outputs: {output_keys}"  # noqa E501
-                    )
-                else:
-                    logger.success(
-                        f"Node {node_id} completed in {execution_time:.3f}s, no outputs"
-                    )
 
             return NodeExecutionResult(
                 node_id=node_id,
