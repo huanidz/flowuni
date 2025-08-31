@@ -330,4 +330,70 @@ export const nodeStyles = {
         fontSize: '12px',
         color: '#d32f2f',
     },
+
+    // Header content styles
+    headerContent: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        position: 'relative' as const,
+    },
+
+    // Header label styles
+    headerLabel: {
+        fontWeight: 'bold' as const,
+        fontSize: '12px',
+        whiteSpace: 'nowrap' as const,
+        overflow: 'hidden' as const,
+        textOverflow: 'ellipsis' as const,
+        maxWidth: '120px',
+    },
+
+    // Header controls styles
+    headerControls: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '2px',
+    },
+
+    // Mode select styles
+    modeSelect: {
+        padding: '2px 6px',
+        fontSize: '10px',
+        border: '1px solid #ccc',
+        borderRadius: '3px',
+        background: '#fff',
+        cursor: 'pointer',
+        minWidth: '0',
+    },
+
+    // Description text styles
+    descriptionText: {
+        fontSize: '9px',
+        color: '#666',
+        fontWeight: 'normal' as const,
+        textAlign: 'left' as const,
+        display: 'block',
+        marginTop: '2px',
+        paddingLeft: '0',
+        whiteSpace: 'nowrap' as const,
+        overflow: 'hidden' as const,
+        textOverflow: 'ellipsis' as const,
+        maxWidth: '180px',
+    },
+
+    // Node ID text styles
+    nodeIdText: {
+        fontSize: '9px',
+        color: '#666',
+        fontWeight: 'normal' as const,
+        textAlign: 'left' as const,
+        display: 'block',
+        marginTop: '2px',
+        paddingLeft: '0',
+        whiteSpace: 'nowrap' as const,
+        overflow: 'hidden' as const,
+        textOverflow: 'ellipsis' as const,
+        maxWidth: '180px',
+    },
 };

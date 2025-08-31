@@ -5,6 +5,15 @@ class NODE_DATA_MODE:
     TOOL = "ToolMode"
 
 
+class NODE_EXECUTION_STATUS:
+    DRAFT = "draft"
+    QUEUED = "queued"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    SKIPPED = "skipped"
+
+
 class NODE_LABEL_CONSTS:
     ROUTER = "Router"
 

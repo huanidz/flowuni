@@ -90,34 +90,11 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
                 </div>
             )}
 
-            <div
-                style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    position: 'relative',
-                }}
-            >
-                <div
-                    style={{
-                        fontWeight: 'bold',
-                        fontSize: '12px',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        maxWidth: '120px',
-                    }}
-                    title={label}
-                >
+            <div style={nodeStyles.headerContent}>
+                <div style={nodeStyles.headerLabel} title={label}>
                     {label}
                 </div>
-                <div
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '2px',
-                    }}
-                >
+                <div style={nodeStyles.headerControls}>
                     {canBeTool && onModeChange && (
                         <select
                             value={mode}
@@ -125,15 +102,7 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
                                 e.stopPropagation();
                                 handleModeSelect(e.target.value);
                             }}
-                            style={{
-                                padding: '2px 6px',
-                                fontSize: '10px',
-                                border: '1px solid #ccc',
-                                borderRadius: '3px',
-                                background: '#fff',
-                                cursor: 'pointer',
-                                minWidth: '0',
-                            }}
+                            style={nodeStyles.modeSelect}
                             title="Change node mode"
                             aria-label="Change node mode"
                         >
@@ -154,42 +123,12 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
                 </div>
             </div>
             {description && (
-                <div
-                    style={{
-                        fontSize: '9px',
-                        color: '#666',
-                        fontWeight: 'normal',
-                        textAlign: 'left',
-                        display: 'block',
-                        marginTop: '2px',
-                        paddingLeft: '0',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        maxWidth: '180px',
-                    }}
-                    title={description}
-                >
+                <div style={nodeStyles.descriptionText} title={description}>
                     {description}
                 </div>
             )}
             {nodeId && (
-                <div
-                    style={{
-                        fontSize: '9px',
-                        color: '#666',
-                        fontWeight: 'normal',
-                        textAlign: 'left',
-                        display: 'block',
-                        marginTop: '2px',
-                        paddingLeft: '0',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        maxWidth: '180px',
-                    }}
-                    title={`Node ID: ${nodeId}`}
-                >
+                <div style={nodeStyles.nodeIdText} title={`Node ID: ${nodeId}`}>
                     ID: {nodeId}
                 </div>
             )}
