@@ -1,4 +1,4 @@
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 from src.nodes.handles.OutputHandleBase import OutputHandleTypeBase
@@ -6,7 +6,7 @@ from src.nodes.handles.OutputHandleBase import OutputHandleTypeBase
 
 class RouterOutputData(BaseModel):
     route_value: Optional[Any] = Field(default=None)
-    route_label_decisons: List[Any] = Field(default_factory=list)
+    route_label_decisons: str = Field(default_factory="")  # Decision separated by comma
 
 
 class RouterOutputHandle(OutputHandleTypeBase):

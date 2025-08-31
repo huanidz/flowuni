@@ -38,6 +38,7 @@ class GraphLoader:
             logger.debug(f"Loading edge {idx}: {edge}")
 
             G.add_edge(
+                id=edge.id,
                 u_of_edge=edge.source,
                 v_of_edge=edge.target,
                 source_handle=edge.sourceHandle,

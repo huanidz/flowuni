@@ -66,6 +66,7 @@ export const deleteFlow = async (flowId: string) => {
 };
 
 export const compileFlow = async (nodes: Node[], edges: Edge[]) => {
+    console.log('edges: ', edges);
     const payload = getFlowGraphData(nodes, edges);
     const { data } = await apiClient.post(
         `${FLOW_DEFINITION_COMPILE_ENDPOINT}`,
