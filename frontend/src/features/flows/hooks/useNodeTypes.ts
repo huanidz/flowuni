@@ -30,7 +30,9 @@ export const useNodeTypes = (
         nodeId: string,
         toolConfigName: string,
         value: any
-    ) => void
+    ) => void,
+    updateNodeExecutionResult?: (nodeId: string, result: string) => void,
+    updateNodeExecutionStatus?: (nodeId: string, status: string) => void
 ) => {
     const { getAllNodeSpecs, loaded } = useNodeRegistry();
     const [nodeTypes, setNodeTypes] = useState<Record<string, React.FC<any>>>(
@@ -54,12 +56,16 @@ export const useNodeTypes = (
             updateNodeModeData,
             updateNodeParameterData,
             updateNodeToolConfigData,
+            updateNodeExecutionResult,
+            updateNodeExecutionStatus,
         }),
         [
             updateNodeInputData,
             updateNodeModeData,
             updateNodeParameterData,
             updateNodeToolConfigData,
+            updateNodeExecutionResult,
+            updateNodeExecutionStatus,
         ]
     );
 
@@ -93,7 +99,9 @@ export const useNodeTypes = (
                 memoizedUpdateHandlers.updateNodeInputData,
                 memoizedUpdateHandlers.updateNodeModeData,
                 memoizedUpdateHandlers.updateNodeParameterData,
-                memoizedUpdateHandlers.updateNodeToolConfigData
+                memoizedUpdateHandlers.updateNodeToolConfigData,
+                memoizedUpdateHandlers.updateNodeExecutionResult,
+                memoizedUpdateHandlers.updateNodeExecutionStatus
             );
 
             // Only add if component was successfully created

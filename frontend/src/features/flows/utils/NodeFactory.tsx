@@ -10,6 +10,8 @@ import type {
     UpdateNodeModeDataFunction,
     UpdateNodeParameterFunction,
     UpdateNodeToolConfigFunction,
+    UpdateNodeExecutionResultFunction,
+    UpdateNodeExecutionStatusFunction,
 } from '@/features/nodes';
 
 // Constants
@@ -41,7 +43,9 @@ class NodeFactoryClass {
         updateNodeInputData?: UpdateNodeInputDataFunction,
         updateNodeModeData?: UpdateNodeModeDataFunction,
         updateNodeParameter?: UpdateNodeParameterFunction,
-        updateNodeToolConfig?: UpdateNodeToolConfigFunction
+        updateNodeToolConfig?: UpdateNodeToolConfigFunction,
+        updateNodeExecutionResult?: UpdateNodeExecutionResultFunction,
+        updateNodeExecutionStatus?: UpdateNodeExecutionStatusFunction
     ): React.FC<CustomNodeProps> | null {
         if (!nodeSpec) {
             console.error(`Node type "${nodeSpec}" not found in registry`);

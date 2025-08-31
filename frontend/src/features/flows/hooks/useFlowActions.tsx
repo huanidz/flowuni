@@ -44,9 +44,13 @@ export const useFlowActions = (
     nodes: Node[],
     edges: Edge[],
     setNodes: SetNodesType,
-    setEdges: SetEdgesType
+    setEdges: SetEdgesType,
+    nodeUpdateHandlers: any
 ) => {
     const { current_flow } = useFlowStore();
+
+    const { updateNodeExecutionResult, updateNodeExecutionStatus } =
+        nodeUpdateHandlers;
 
     const onCompileFlow = useCallback(() => {
         return handleFlowRequest(nodes, edges, compileFlow, 'COMPILATION');
@@ -102,30 +106,21 @@ export const useFlowActions = (
                     input_values
                 );
 
-                // TODO: Handle data update here
-                setNodes((prevNodes: Node[]) =>
-                    prevNodes.map(node =>
-                        node.id === node_id
-                            ? {
-                                  ...node,
-                                  data: {
-                                      ...node.data,
-                                      execution_result: JSON.stringify(
-                                          parsed,
-                                          null,
-                                          2
-                                      ),
-                                      execution_status: event_status,
-                                  },
-                              }
-                            : node
-                    )
-                );
+                // Update node execution data using the provided handlers
+                if (updateNodeExecutionResult) {
+                    updateNodeExecutionResult(
+                        node_id,
+                        JSON.stringify(parsed, null, 2)
+                    );
+                }
+                if (updateNodeExecutionStatus) {
+                    updateNodeExecutionStatus(node_id, event_status);
+                }
             });
         } catch (err) {
             console.error('[onRunFlow] Flow run failed:', err);
         }
-    }, [nodes, edges, current_flow, setNodes]);
+    }, [nodes, edges, current_flow, nodeUpdateHandlers]);
 
     const onSaveFlow = useCallback(async () => {
         if (!current_flow) {

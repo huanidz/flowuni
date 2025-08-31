@@ -103,3 +103,12 @@ export type UpdateNodeToolConfigFunction = (
     toolConfigName: string,
     value: any
 ) => void;
+
+export type UpdateNodeExecutionResultFunction = (
+    nodeId: string,
+    result: string
+) => void;
+export type UpdateNodeExecutionStatusFunction = (
+    nodeId: string,
+    status: string
+) => void;
