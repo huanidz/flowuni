@@ -11,12 +11,12 @@ from loguru import logger
 from pydantic import BaseModel
 from src.consts.node_consts import (
     NODE_DATA_MODE,
+    NODE_EXECUTION_STATUS,
     NODE_LABEL_CONSTS,
     SPECIAL_NODE_INPUT_CONSTS,
 )
 from src.executors.ExecutionContext import ExecutionContext
 from src.executors.NodeDataFlowAdapter import NodeDataFlowAdapter
-from src.executors.NodeExecution import NodeExecutionEvent
 from src.nodes.core import NodeInput, NodeOutput
 from src.nodes.NodeBase import Node, NodeSpec
 from src.nodes.NodeRegistry import NodeRegistry
@@ -283,7 +283,9 @@ class GraphExecutor:
         start_time = time.time()
 
         try:
-            self.push_event(node_id=node_id, event=NodeExecutionEvent.RUNNING, data={})
+            self.push_event(
+                node_id=node_id, event=NODE_EXECUTION_STATUS.RUNNING, data={}
+            )
 
             # Get node configuration
             g_node = self.graph.nodes[node_id]
@@ -323,7 +325,7 @@ class GraphExecutor:
             executed_data: NodeData = node_instance.run(node_data)
             self.push_event(
                 node_id=node_id,
-                event=NodeExecutionEvent.SUCCESS,
+                event=NODE_EXECUTION_STATUS.COMPLETED,
                 data=executed_data.model_dump(),
             )
 
@@ -345,7 +347,7 @@ class GraphExecutor:
 
             self.push_event(
                 node_id=node_id,
-                event=NodeExecutionEvent.FAILED,
+                event=NODE_EXECUTION_STATUS.FAILED,
                 data={"error": str(e)},
             )
 
