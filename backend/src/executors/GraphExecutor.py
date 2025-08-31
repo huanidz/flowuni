@@ -219,13 +219,13 @@ class GraphExecutor:
                 self.push_event(
                     node_id=node_id,
                     event=NODE_EXECUTION_STATUS.SKIPPED,
-                    data=node_data.model_dump(),
+                    data={},
                 )
                 skipped_results.append(
                     NodeExecutionResult(
                         node_id=node_id,
                         success=True,  # Skipped is considered successful
-                        data=node_data,
+                        data={},
                     )
                 )
 
@@ -652,6 +652,9 @@ class GraphExecutor:
                 output_data_to_transfer=output_value_to_transfer,
                 source_handle_type=type(output_handle_from_current_node.type),
                 target_handle_type=type(input_handle_from_successor_node.type),
+            )
+            logger.info(
+                f"👉 adapted_output_value_to_transfer: {adapted_output_value_to_transfer}"
             )
 
             # Step 7: Assign the copied value to the target handle
