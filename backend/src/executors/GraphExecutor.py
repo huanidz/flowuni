@@ -18,6 +18,9 @@ from src.consts.node_consts import (
 from src.executors.ExecutionContext import ExecutionContext
 from src.executors.NodeDataFlowAdapter import NodeDataFlowAdapter
 from src.nodes.core import NodeInput, NodeOutput
+
+# Special imports
+from src.nodes.handles.basics.outputs.RouterOutputHandle import RouterOutputData
 from src.nodes.NodeBase import Node, NodeSpec
 from src.nodes.NodeRegistry import NodeRegistry
 from src.schemas.flowbuilder.flow_graph_schemas import NodeData
@@ -101,6 +104,16 @@ class GraphExecutor:
         start_time = time.time()
         total_nodes = sum(len(layer) for layer in self.execution_plan)
         completed_nodes = 0
+
+        # Publish the queue event for all nodes in each layer
+        # Except for the first layer because it will be executed immediately
+        for layer_index, layer_nodes in enumerate(self.execution_plan, start=1):
+            for node_id in layer_nodes:
+                self.push_event(
+                    node_id=node_id,
+                    event=NODE_EXECUTION_STATUS.QUEUED,
+                    data={},
+                )
 
         try:
             # Use ThreadPoolExecutor for parallel execution within layers
@@ -422,6 +435,19 @@ class GraphExecutor:
                         )
                         continue
 
+                    successor_node_instance = self.graph.nodes.get(successor_node_id)
+                    successor_node_data: NodeData = successor_node_instance.get("data")
+
+                    # If successor node's exec state is in SKIPPED, then skip this node.
+                    if (
+                        successor_node_data.execution_status
+                        == NODE_EXECUTION_STATUS.SKIPPED
+                    ):
+                        logger.warning(
+                            f"Successor node {successor_node_id} is SKIPPED, skipping in the update."  # noqa E501
+                        )
+                        continue
+
                     source_handle = edge_data.get("source_handle", "")
                     target_handle = edge_data.get("target_handle", "")
 
@@ -484,7 +510,13 @@ class GraphExecutor:
         Raises:
             Exception: Re-raises any exception that occurs during the update process
         """
+
+        logger.info(f"👉 executed_data: {executed_data}")
+
         try:
+            current_node_label: str = executed_data.node_type
+            edge_id = self.graph.get_edge_data(node_id, successor_node_id).get("id")
+
             # Step 0: Retrieve the current_node from the graph
             current_graph_node = self.graph.nodes.get(node_id)
             if current_graph_node is None:
@@ -558,7 +590,22 @@ class GraphExecutor:
                 return  # Exit early if source handle doesn't exist
 
             # Step 5: Extract the output value from the source handle
-            output_value_to_transfer = executed_data.output_values[source_handle]
+            output_value_to_transfer: Dict[str, Any] = executed_data.output_values[
+                source_handle
+            ]
+
+            if current_node_label == NODE_LABEL_CONSTS.ROUTER:
+                parsed_router_output_value = RouterOutputData(
+                    **output_value_to_transfer
+                )
+                # Extract the output route labels.
+                route_label_decisons = parsed_router_output_value.route_label_decisons  # noqa
+
+                # If the edge_id is not in the label decisons, then the exec_status of that succesor node will be set to SKIPPED. # noqa E501
+                if edge_id not in route_label_decisons:
+                    successor_node_data.exec_status = NODE_EXECUTION_STATUS.SKIPPED
+                    self.graph.nodes[successor_node_id]["data"] = successor_node_data
+                    return
 
             # Step 6. Adapt the output value to the target handle type
             adapted_output_value_to_transfer = NodeDataFlowAdapter.adapt(

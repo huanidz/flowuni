@@ -5,6 +5,7 @@ from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.handles.basics.inputs.TextFieldInputHandle import TextFieldInputHandle
 from src.nodes.handles.basics.outputs import RouterOutputHandle
+from src.nodes.handles.basics.outputs.RouterOutputHandle import RouterOutputData
 from src.nodes.NodeBase import Node, NodeSpec
 from src.schemas.flowbuilder.flow_graph_schemas import ToolConfig
 from src.schemas.nodes.node_data_parsers import BuildToolResult
@@ -41,7 +42,12 @@ class RouterNode(Node):
     def process(
         self, inputs: Dict[str, Any], parameters: Dict[str, Any]
     ) -> Dict[str, Union[float, int, str]]:
-        return {"routed_output": inputs["input_text"]}
+        output_data = RouterOutputData(
+            route_value=inputs["input_text"],
+            route_label_decisons=inputs[SPECIAL_NODE_INPUT_CONSTS.ROUTER_ROUTE_LABELS],
+        )
+
+        return {"routed_output": output_data.model_dump()}
 
     def build_tool(
         self, inputs_values: Dict[str, Any], tool_configs: ToolConfig
