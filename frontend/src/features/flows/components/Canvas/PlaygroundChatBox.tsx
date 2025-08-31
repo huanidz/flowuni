@@ -148,7 +148,7 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
         }
 
         // Handle successful events
-        if (event === 'success' && data) {
+        if (event === 'completed' && data) {
             const { node_type, input_values } = data;
 
             if (node_type === 'Chat Output' && input_values?.message_in) {
