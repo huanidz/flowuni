@@ -153,6 +153,60 @@ export const useNodeUpdate = (
     );
 
     /**
+     * Update node execution result
+     */
+    const updateNodeExecutionResult = useCallback(
+        (nodeId: string, result: string) => {
+            setNodes(nodes =>
+                nodes.map(node => {
+                    if (node.id !== nodeId) return node;
+
+                    // Check if the result is actually different to prevent unnecessary re-renders
+                    if (node.data?.execution_result === result) {
+                        return node;
+                    }
+
+                    return {
+                        ...node,
+                        data: {
+                            ...node.data,
+                            execution_result: result,
+                        },
+                    };
+                })
+            );
+        },
+        [setNodes]
+    );
+
+    /**
+     * Update node execution status
+     */
+    const updateNodeExecutionStatus = useCallback(
+        (nodeId: string, status: string) => {
+            setNodes(nodes =>
+                nodes.map(node => {
+                    if (node.id !== nodeId) return node;
+
+                    // Check if the status is actually different to prevent unnecessary re-renders
+                    if (node.data?.execution_status === status) {
+                        return node;
+                    }
+
+                    return {
+                        ...node,
+                        data: {
+                            ...node.data,
+                            execution_status: status,
+                        },
+                    };
+                })
+            );
+        },
+        [setNodes]
+    );
+
+    /**
      * Update node data with complete object (for complex updates)
      */
     const updateNodeData = useCallback(
@@ -181,6 +235,8 @@ export const useNodeUpdate = (
             updateNodeModeData, // Mode data
             updateNodeParameterData, // Parameter data
             updateNodeToolConfigData, // Tool config data
+            updateNodeExecutionResult, // Execution result
+            updateNodeExecutionStatus, // Execution status
             updateNodeData, // General data (Or complete `data` field.)
         }),
         [
@@ -188,6 +244,8 @@ export const useNodeUpdate = (
             updateNodeModeData,
             updateNodeParameterData,
             updateNodeToolConfigData,
+            updateNodeExecutionResult,
+            updateNodeExecutionStatus,
             updateNodeData,
         ]
     );

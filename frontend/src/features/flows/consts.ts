@@ -9,3 +9,12 @@ export const NODE_DATA_MODE = {
     NORMAL: 'NormalMode',
     TOOL: 'ToolMode',
 } as const;
+
+export const NODE_EXECUTION_STATE = {
+    DRAFT: 'draft',
+    QUEUED: 'queued',
+    RUNNING: 'running',
+    COMPLETED: 'completed',
+    FAILED: 'failed',
+    SKIPPED: 'skipped',
+} as const;

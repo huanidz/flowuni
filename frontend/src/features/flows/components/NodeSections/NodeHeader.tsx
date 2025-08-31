@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { MoreVertical } from 'lucide-react';
 import { nodeStyles } from '@/features/flows/styles/nodeStyles';
+import { getStatusBadgeStyles } from '@/features/flows/styles/nodeExecutionStatusHelper';
 
 interface NodeHeaderProps {
     label: string;
@@ -9,6 +10,7 @@ interface NodeHeaderProps {
     onModeChange?: (newMode: string) => void;
     canBeTool?: boolean;
     nodeId?: string;
+    execution_status?: string;
 }
 
 export const NodeHeader: React.FC<NodeHeaderProps> = ({
@@ -18,6 +20,7 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
     onModeChange,
     canBeTool,
     nodeId,
+    execution_status,
 }) => {
     const [showActionsMenu, setShowActionsMenu] = useState(false);
 
@@ -90,34 +93,11 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
                 </div>
             )}
 
-            <div
-                style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    position: 'relative',
-                }}
-            >
-                <div
-                    style={{
-                        fontWeight: 'bold',
-                        fontSize: '12px',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        maxWidth: '120px',
-                    }}
-                    title={label}
-                >
+            <div style={nodeStyles.headerContent}>
+                <div style={nodeStyles.headerLabel} title={label}>
                     {label}
                 </div>
-                <div
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '2px',
-                    }}
-                >
+                <div style={nodeStyles.headerControls}>
                     {canBeTool && onModeChange && (
                         <select
                             value={mode}
@@ -125,15 +105,7 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
                                 e.stopPropagation();
                                 handleModeSelect(e.target.value);
                             }}
-                            style={{
-                                padding: '2px 6px',
-                                fontSize: '10px',
-                                border: '1px solid #ccc',
-                                borderRadius: '3px',
-                                background: '#fff',
-                                cursor: 'pointer',
-                                minWidth: '0',
-                            }}
+                            style={nodeStyles.modeSelect}
                             title="Change node mode"
                             aria-label="Change node mode"
                         >
@@ -153,44 +125,50 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
                     </button>
                 </div>
             </div>
-            {description && (
-                <div
-                    style={{
-                        fontSize: '9px',
-                        color: '#666',
-                        fontWeight: 'normal',
-                        textAlign: 'left',
-                        display: 'block',
-                        marginTop: '2px',
-                        paddingLeft: '0',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        maxWidth: '180px',
-                    }}
-                    title={description}
-                >
-                    {description}
-                </div>
-            )}
-            {nodeId && (
-                <div
-                    style={{
-                        fontSize: '9px',
-                        color: '#666',
-                        fontWeight: 'normal',
-                        textAlign: 'left',
-                        display: 'block',
-                        marginTop: '2px',
-                        paddingLeft: '0',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        maxWidth: '180px',
-                    }}
-                    title={`Node ID: ${nodeId}`}
-                >
-                    ID: {nodeId}
+
+            {/* Badge/Pill Design Implementation */}
+            {(description || nodeId || execution_status) && (
+                <div style={nodeStyles.header.nodeFooter}>
+                    {description && (
+                        <div
+                            style={nodeStyles.header.descriptionText}
+                            title={description}
+                        >
+                            {description}
+                        </div>
+                    )}
+                    {(nodeId || execution_status) && (
+                        <div style={nodeStyles.header.badgeContainer}>
+                            {nodeId && (
+                                <div
+                                    style={nodeStyles.header.infoBadge}
+                                    title={`Node ID: ${nodeId}`}
+                                >
+                                    <span style={nodeStyles.header.badgeLabel}>
+                                        ID
+                                    </span>
+                                    <span style={nodeStyles.header.badgeValue}>
+                                        {nodeId}
+                                    </span>
+                                </div>
+                            )}
+                            {execution_status && (
+                                <div
+                                    style={getStatusBadgeStyles(
+                                        execution_status
+                                    )}
+                                    title={`Execution Status: ${execution_status}`}
+                                >
+                                    <div
+                                        style={
+                                            nodeStyles.header.statusIndicator
+                                        }
+                                    />
+                                    {execution_status.toUpperCase()}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             )}
         </div>

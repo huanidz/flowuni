@@ -28,6 +28,12 @@ class NodeData(BaseModel):
     mode: Optional[Literal["NormalMode", "ToolMode"]] = None
     tool_configs: Optional[ToolConfig] = None
 
+    # Execution information
+    execution_result: Optional[str] = None
+    execution_status: Optional[
+        Literal["draft", "queued", "running", "completed", "failed", "skipped"]
+    ] = None
+
 
 class FlowNode(BaseModel):
     """Represents a node in the flow graph with its ID, type, position, and data."""

@@ -9,11 +9,18 @@ from typing import Any, Dict, List, Optional
 import networkx as nx
 from loguru import logger
 from pydantic import BaseModel
-from src.consts.node_consts import NODE_DATA_MODE
+from src.consts.node_consts import (
+    NODE_DATA_MODE,
+    NODE_EXECUTION_STATUS,
+    NODE_LABEL_CONSTS,
+    SPECIAL_NODE_INPUT_CONSTS,
+)
 from src.executors.ExecutionContext import ExecutionContext
 from src.executors.NodeDataFlowAdapter import NodeDataFlowAdapter
-from src.executors.NodeExecution import NodeExecutionEvent
 from src.nodes.core import NodeInput, NodeOutput
+
+# Special imports
+from src.nodes.handles.basics.outputs.RouterOutputHandle import RouterOutputData
 from src.nodes.NodeBase import Node, NodeSpec
 from src.nodes.NodeRegistry import NodeRegistry
 from src.schemas.flowbuilder.flow_graph_schemas import NodeData
@@ -92,11 +99,20 @@ class GraphExecutor:
 
         This is the synchronous version that matches your old working code structure.
         """
-        # logger.info(f"Starting graph execution with {len(self.execution_plan)} layers")
 
         start_time = time.time()
         total_nodes = sum(len(layer) for layer in self.execution_plan)
         completed_nodes = 0
+
+        # Publish the queue event for all nodes in each layer
+        # Except for the first layer because it will be executed immediately
+        for layer_index, layer_nodes in enumerate(self.execution_plan, start=1):
+            for node_id in layer_nodes:
+                self.push_event(
+                    node_id=node_id,
+                    event=NODE_EXECUTION_STATUS.QUEUED,
+                    data={},
+                )
 
         try:
             # Use ThreadPoolExecutor for parallel execution within layers
@@ -171,7 +187,7 @@ class GraphExecutor:
                 "results": final_layer_results,
             }
 
-            logger.info(f"👉 execute_result: {execute_result}")
+            # logger.info(f"👉 execute_result: {execute_result}")
 
             self.end_event(data=execute_result)
 
@@ -185,190 +201,161 @@ class GraphExecutor:
     ) -> List[NodeExecutionResult]:
         """
         Execute all nodes in a layer in parallel.
-
-        Args:
-            executor: Thread pool executor
-            layer_nodes: List of node IDs to execute
-            layer_index: Current layer index
-
-        Returns:
-            List of execution results for all nodes in the layer
         """
         if not layer_nodes:
             logger.warning(f"Layer {layer_index} is empty")
             return []
 
-        # For single node layers, execute directly (like old version)
-        if len(layer_nodes) == 1:
-            node_id = layer_nodes[0]
-            logger.info(f"Executing single node in layer {layer_index}: {node_id}")
-            return [self._execute_single_node_sync(node_id, layer_index)]
-
-        # For multiple nodes, execute in parallel
-        logger.info(
-            f"Executing {len(layer_nodes)} nodes in parallel for layer {layer_index}"
-        )
-
-        # Submit all nodes to thread pool
-        futures: Dict[Future, str] = {}
+        # Filter out nodes that should be skipped based on their predecessors
+        executable_nodes = []
+        skipped_results = []
 
         for node_id in layer_nodes:
-            try:
-                # Get a deep copy of node data for thread safety
-                node_data = self._get_node_data_copy(node_id)
-
-                # Submit to thread pool
-                future = executor.submit(
-                    self._execute_single_node_thread, node_id, node_data, layer_index
+            if self._validate_node_skip_status_before_execution(node_id):
+                executable_nodes.append(node_id)
+            else:
+                # Create a skipped result for this node
+                node_data = self.graph.nodes[node_id].get("data", NodeData())
+                self.push_event(
+                    node_id=node_id,
+                    event=NODE_EXECUTION_STATUS.SKIPPED,
+                    data={},
                 )
-                futures[future] = node_id
+                skipped_results.append(
+                    NodeExecutionResult(
+                        node_id=node_id,
+                        success=True,  # Skipped is considered successful
+                        data={},
+                    )
+                )
 
-                logger.debug(f"Submitted node {node_id} for parallel execution")
+        logger.info(
+            f"Layer {layer_index}: {len(executable_nodes)} executable, {len(skipped_results)} skipped"
+        )
 
-            except Exception as e:
-                logger.error(f"Failed to submit node {node_id}: {str(e)}")
-                return [
-                    NodeExecutionResult(node_id=node_id, success=False, error=str(e))
-                ]
+        if not executable_nodes:
+            logger.info(f"All nodes in layer {layer_index} are skipped")
+            return skipped_results
 
-        # Collect results as they complete
-        results = []
+        # Execute only the non-skipped nodes
+        if len(executable_nodes) == 1:
+            node_id = executable_nodes[0]
+            logger.info(f"Executing single node in layer {layer_index}: {node_id}")
+            execution_results = [self._execute_single_node(node_id, layer_index)]
+        else:
+            logger.info(
+                f"Executing {len(executable_nodes)} nodes in parallel for layer {layer_index}"
+            )
 
-        try:
-            for future in as_completed(futures.keys()):
-                node_id = futures[future]
+            # Submit all executable nodes to thread pool
+            futures: Dict[Future, str] = {}
+
+            for node_id in executable_nodes:
                 try:
-                    result = future.result()
-                    results.append(result)
-
-                    if result.success:
-                        logger.debug(
-                            f"Node {node_id} completed successfully in {result.execution_time:.3f}s"  # noqa: E501
-                        )
-                    else:
-                        logger.error(f"Node {node_id} failed: {result.error}")
-
+                    node_data = self._get_node_data_copy(node_id)
+                    future = executor.submit(
+                        self._execute_single_node, node_id, layer_index, node_data
+                    )
+                    futures[future] = node_id
+                    logger.debug(f"Submitted node {node_id} for parallel execution")
                 except Exception as e:
-                    logger.error(f"Failed to get result for node {node_id}: {str(e)}")
-                    results.append(
+                    logger.error(f"Failed to submit node {node_id}: {str(e)}")
+                    return [
                         NodeExecutionResult(
                             node_id=node_id, success=False, error=str(e)
                         )
-                    )
+                    ]
 
-        except Exception as e:
-            logger.error(f"Error collecting results for layer {layer_index}: {str(e)}")
-            # Cancel remaining futures
-            for future in futures.keys():
-                future.cancel()
-            raise
+            # Collect results as they complete
+            execution_results = []
+            try:
+                for future in as_completed(futures.keys()):
+                    node_id = futures[future]
+                    try:
+                        result = future.result()
+                        execution_results.append(result)
 
-        return results
+                        if result.success:
+                            logger.debug(
+                                f"Node {node_id} completed successfully in {result.execution_time:.3f}s"
+                            )
+                        else:
+                            logger.error(f"Node {node_id} failed: {result.error}")
 
-    def _execute_single_node_sync(
-        self, node_id: str, layer_index: int
+                    except Exception as e:
+                        logger.error(
+                            f"Failed to get result for node {node_id}: {str(e)}"
+                        )
+                        execution_results.append(
+                            NodeExecutionResult(
+                                node_id=node_id, success=False, error=str(e)
+                            )
+                        )
+            except Exception as e:
+                logger.error(
+                    f"Error collecting results for layer {layer_index}: {str(e)}"
+                )
+                for future in futures.keys():
+                    future.cancel()
+                raise
+
+        # Combine execution results with skipped results
+        all_results = execution_results + skipped_results
+        return all_results
+
+    def _execute_single_node(
+        self, node_id: str, layer_index: int, node_data: Optional[NodeData] = None
     ) -> NodeExecutionResult:
         """
-        Execute a single node synchronously (like the old version).
+        Execute a single node (works for both sync and parallel execution).
+
+        Args:
+            node_id: ID of the node to execute
+            layer_index: Current layer index for logging
+            node_data: Pre-fetched node data (for parallel execution) or None (for sync)
         """
         start_time = time.time()
 
         try:
-            self.push_event(node_id=node_id, event=NodeExecutionEvent.RUNNING, data={})
-            # Get node configuration (same as old version)
+            self.push_event(
+                node_id=node_id, event=NODE_EXECUTION_STATUS.RUNNING, data={}
+            )
+
+            # Get node configuration
             g_node = self.graph.nodes[node_id]
             node_spec: NodeSpec = g_node.get("spec")
-            node_data: NodeData = g_node.get("data", NodeData())
+            # logger.info(f"👉 node_spec: {node_spec}")
 
             if not node_spec:
                 raise GraphExecutorError(f"Node {node_id} missing specification")
 
-            # log nodedata
-            logger.info(f"NodeData: {node_data.model_dump_json(indent=2)}")
+            # Get node data - either from parameter (parallel) or from graph (sync)
+            if node_data is None:
+                # Sync mode: fetch from graph and do detailed logging
+                node_data = g_node.get("data", NodeData())
+                logger.info(f"NodeData: {node_data.model_dump_json(indent=2)}")
 
-            # Create node instance (same as old version)
-            node_instance: Optional[Node] = self._node_registry.create_node_instance(
-                node_spec.name
-            )
-
-            if not node_instance:
-                raise GraphExecutorError(
-                    f"Failed to create node instance: {node_spec.name}"
+            # Check for skipping
+            if node_data.execution_status == NODE_EXECUTION_STATUS.SKIPPED:
+                logger.info(f"Node {node_id} is skipped")
+                self.push_event(
+                    node_id=node_id,
+                    event=NODE_EXECUTION_STATUS.SKIPPED,
+                    data=node_data.model_dump(),
+                )
+                return NodeExecutionResult(
+                    node_id=node_id,
+                    success=True,
+                    data=node_data.model_dump(),
                 )
 
-            logger.info(f"Executing node [{layer_index}]: {node_spec.name}")
-
-            # Execute the node (same as old version)
-            executed_data: NodeData = node_instance.run(node_data)
-            self.push_event(
-                node_id=node_id,
-                event=NodeExecutionEvent.SUCCESS,
-                data=executed_data.model_dump(),
+            # Handling special node that require non-DAG data-flow
+            # But this only used to prepare input values, the whole execution is still in DAG style # noqa: E501
+            node_data = self.prepare_node_data_for_execution(
+                node_id=node_id, node_data=node_data
             )
 
-            logger.info(f"Node {node_id} executed successfully: {executed_data}")
-
-            execution_time = time.time() - start_time
-
-            # log exec time
-            logger.info(f"Execution time: {execution_time:.3f}s")
-
-            # Log execution results
-            if executed_data and executed_data.output_values:
-                output_keys = list(executed_data.output_values.keys())
-                logger.success(
-                    f"Node {node_id} completed in {execution_time:.3f}s, outputs: {output_keys}"  # noqa: E501
-                )
-            else:
-                logger.success(
-                    f"Node {node_id} completed in {execution_time:.3f}s, no outputs"
-                )
-
-            return NodeExecutionResult(
-                node_id=node_id,
-                success=True,
-                data=executed_data,
-                execution_time=execution_time,
-            )
-
-        except Exception as e:
-            execution_time = time.time() - start_time
-
-            trace = traceback.format_exc()
-            logger.error(
-                f"❌ Node {node_id} execution failed 🛑: {str(e)}\n🔍 Trace: {trace}"
-            )
-            self.push_event(
-                node_id=node_id,
-                event=NodeExecutionEvent.FAILED,
-                data={
-                    "error": str(e),
-                },
-            )
-            return NodeExecutionResult(
-                node_id=node_id,
-                success=False,
-                error=str(e),
-                execution_time=execution_time,
-            )
-
-    def _execute_single_node_thread(
-        self, node_id: str, node_data: NodeData, layer_index: int
-    ) -> NodeExecutionResult:
-        """
-        Execute a single node in a thread (for parallel execution).
-        """
-        start_time = time.time()
-
-        try:
-            self.push_event(node_id=node_id, event=NodeExecutionEvent.RUNNING, data={})
-
-            # Get node specification
-            g_node = self.graph.nodes[node_id]
-            node_spec: NodeSpec = g_node.get("spec")
-
-            if not node_spec:
-                raise GraphExecutorError(f"Node {node_id} missing specification")
+            # logger.info(f"👉 node_data (After prepare): {node_data}")
 
             # Create node instance
             node_instance: Optional[Node] = self._node_registry.create_node_instance(
@@ -380,15 +367,16 @@ class GraphExecutor:
                     f"Failed to create node instance: {node_spec.name}"
                 )
 
-            logger.info(f"Executing node [{layer_index}]: {node_spec.name} (parallel)")
+            logger.info(f"Executing node [{layer_index}]: {node_spec.name}")
 
             # Execute the node
             executed_data: NodeData = node_instance.run(node_data)
             self.push_event(
                 node_id=node_id,
-                event=NodeExecutionEvent.SUCCESS,
+                event=NODE_EXECUTION_STATUS.COMPLETED,
                 data=executed_data.model_dump(),
             )
+
             execution_time = time.time() - start_time
 
             return NodeExecutionResult(
@@ -407,11 +395,10 @@ class GraphExecutor:
 
             self.push_event(
                 node_id=node_id,
-                event=NodeExecutionEvent.FAILED,
-                data={
-                    "error": str(e),
-                },
+                event=NODE_EXECUTION_STATUS.FAILED,
+                data={"error": str(e)},
             )
+
             return NodeExecutionResult(
                 node_id=node_id,
                 success=False,
@@ -483,6 +470,19 @@ class GraphExecutor:
                         )
                         continue
 
+                    successor_node_instance = self.graph.nodes.get(successor_node_id)
+                    successor_node_data: NodeData = successor_node_instance.get("data")
+
+                    # If successor node's exec state is in SKIPPED, then skip this node.
+                    if (
+                        successor_node_data.execution_status
+                        == NODE_EXECUTION_STATUS.SKIPPED
+                    ):
+                        logger.warning(
+                            f"Successor node {successor_node_id} is SKIPPED, skipping in the update."  # noqa E501
+                        )
+                        continue
+
                     source_handle = edge_data.get("source_handle", "")
                     target_handle = edge_data.get("target_handle", "")
 
@@ -545,7 +545,13 @@ class GraphExecutor:
         Raises:
             Exception: Re-raises any exception that occurs during the update process
         """
+
+        # logger.info(f"👉 executed_data: {executed_data}")
+
         try:
+            current_node_label: str = executed_data.node_type
+            edge_id = self.graph.get_edge_data(node_id, successor_node_id).get("id")
+
             # Step 0: Retrieve the current_node from the graph
             current_graph_node = self.graph.nodes.get(node_id)
             if current_graph_node is None:
@@ -619,13 +625,36 @@ class GraphExecutor:
                 return  # Exit early if source handle doesn't exist
 
             # Step 5: Extract the output value from the source handle
-            output_value_to_transfer = executed_data.output_values[source_handle]
+            output_value_to_transfer: Dict[str, Any] = executed_data.output_values[
+                source_handle
+            ]
+
+            if current_node_label == NODE_LABEL_CONSTS.ROUTER:
+                parsed_router_output_value = RouterOutputData(
+                    **output_value_to_transfer
+                )
+
+                # Extract the output route labels.
+                route_label_decisons: List[str] = (
+                    parsed_router_output_value.route_label_decisons.split(",")
+                )[:1]
+                logger.info(f"👉 route_label_decisons: {route_label_decisons}")
+
+                # If the edge_id is not in the label decisons, then the exec_status of that succesor node will be set to SKIPPED. # noqa E501
+                logger.info(f"👉 edge_id: {edge_id}")
+                if edge_id not in route_label_decisons:
+                    successor_node_data.execution_status = NODE_EXECUTION_STATUS.SKIPPED
+                    self.graph.nodes[successor_node_id]["data"] = successor_node_data
+                    return
 
             # Step 6. Adapt the output value to the target handle type
             adapted_output_value_to_transfer = NodeDataFlowAdapter.adapt(
                 output_data_to_transfer=output_value_to_transfer,
                 source_handle_type=type(output_handle_from_current_node.type),
                 target_handle_type=type(input_handle_from_successor_node.type),
+            )
+            logger.info(
+                f"👉 adapted_output_value_to_transfer: {adapted_output_value_to_transfer}"
             )
 
             # Step 7: Assign the copied value to the target handle
@@ -710,16 +739,16 @@ class GraphExecutor:
 
             # Step 5: Extract tool information from executed data
             raw_tool_schema = executed_data.output_values["tool"]
-            logger.info(f"👉 raw_tool_schema: {raw_tool_schema}")
+            # logger.info(f"👉 raw_tool_schema: {raw_tool_schema}")
             tool_name = executed_data.output_values["tool_name"]
-            logger.info(f"👉 tool_name: {tool_name}")
+            # logger.info(f"👉 tool_name: {tool_name}")
             tool_description = executed_data.output_values["tool_description"]
-            logger.info(f"👉 tool_description: {tool_description}")
+            # logger.info(f"👉 tool_description: {tool_description}")
 
             # Step 6: Parse the tool schema JSON
             try:
                 if raw_tool_schema is None:
-                    # If raw_tool_schema is None, set parsed_tool_schema to None, This is expected when the tool is no-toolable-param (just execute)
+                    # If raw_tool_schema is None, set parsed_tool_schema to None, This is expected when the tool is no-toolable-param (just execute) # noqa E501
                     parsed_tool_schema = None
                 else:
                     parsed_tool_schema = json.loads(raw_tool_schema)
@@ -794,7 +823,84 @@ class GraphExecutor:
             )
             raise
 
-    def prepare(self):
-        """Prepare method for backward compatibility."""
-        logger.debug("GraphExecutor prepare() called - no preparation needed")
-        pass
+    def prepare_node_data_for_execution(
+        self, node_id: str, node_data: NodeData
+    ) -> NodeData:
+        """Prepare method for node_data before execution."""
+
+        if node_data.label == NODE_LABEL_CONSTS.ROUTER:
+            # First, get the outgoing edges from this node
+            # make a string that contain edge ids separated by comma. e.g. "edge_id_1,edge_id_2,edge_id_3"
+
+            # Get all outgoing edges from this node
+            outgoing_edges = self.graph.out_edges(node_id, data=True)
+
+            # Extract edge IDs and create comma-separated string
+            edge_ids = []
+            for source, target, edge_data in outgoing_edges:
+                # edge ID is stored in the edge data
+                edge_id = edge_data.get("id")
+                edge_ids.append(edge_id)
+
+            if not edge_ids:
+                logger.warning(
+                    f"No outgoing edges found for Node {NODE_LABEL_CONSTS.ROUTER} {node_id}"  # noqa E501
+                )
+                return node_data
+
+            # Create the comma-separated string of edge IDs
+            edge_ids_string = ",".join(edge_ids)
+            logger.info(f"👉 edge_ids_string: {edge_ids_string}")
+
+            node_data.input_values[SPECIAL_NODE_INPUT_CONSTS.ROUTER_ROUTE_LABELS] = (
+                edge_ids_string
+            )
+
+            logger.debug(
+                f"Router node {node_id} prepared with edge IDs: {edge_ids_string}"
+            )
+
+            return node_data
+
+        else:
+            return node_data
+
+    def _validate_node_skip_status_before_execution(self, node_id: str) -> bool:
+        """
+        Validate if a node should be skipped based on its predecessors.
+
+        Args:
+            node_id: The node to validate
+
+        Returns:
+            bool: True if the node should be executed, False if it should be skipped
+        """
+        # Get all predecessors of this node
+        predecessors = list(self.graph.predecessors(node_id))
+
+        if not predecessors:
+            # No predecessors, check the node's own status
+            node_data = self.graph.nodes[node_id].get("data", NodeData())
+            return node_data.execution_status != NODE_EXECUTION_STATUS.SKIPPED
+
+        # Check if any predecessor is SKIPPED
+        for pred_id in predecessors:
+            pred_node = self.graph.nodes[pred_id]
+            pred_data = pred_node.get("data", NodeData())
+
+            if pred_data.execution_status == NODE_EXECUTION_STATUS.SKIPPED:
+                # At least one predecessor is skipped, so this node should be skipped too
+                logger.info(
+                    f"Node {node_id} should be skipped due to skipped predecessor {pred_id}"
+                )
+
+                # Mark this node as SKIPPED
+                current_node_data = self.graph.nodes[node_id].get("data", NodeData())
+                current_node_data.execution_status = NODE_EXECUTION_STATUS.SKIPPED
+                self.graph.nodes[node_id]["data"] = current_node_data
+
+                return False
+
+        # All predecessors are not skipped, check the node's own status
+        node_data = self.graph.nodes[node_id].get("data", NodeData())
+        return node_data.execution_status != NODE_EXECUTION_STATUS.SKIPPED

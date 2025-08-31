@@ -13,14 +13,74 @@ export const nodeStyles = {
 
     header: {
         fontWeight: 'bold' as const,
-        textAlign: 'center' as const,
+        // textAlign: 'center' as const,
         marginBottom: '12px',
         padding: '8px',
         borderBottom: '1px solid #eee',
-        color: '#333',
-        backgroundColor: '#e5ecc2ff',
+        color: '#ebebe7ff',
+        backgroundColor: '#272623ff',
         borderRadius: '6px',
         cursor: 'move' as const,
+
+        nodeFooter: {
+            marginTop: '8px',
+        },
+
+        descriptionText: {
+            fontSize: '11px',
+            color: '#e3e7ecff',
+            marginBottom: '8px',
+            lineHeight: '1.4',
+            padding: '6px 8px',
+            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+            borderRadius: '6px',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+        },
+
+        badgeContainer: {
+            display: 'flex' as const,
+            gap: '6px' as const,
+            flexWrap: 'wrap' as const,
+        },
+
+        infoBadge: {
+            display: 'flex',
+            alignItems: 'center',
+            fontSize: '10px',
+            backgroundColor: '#374151',
+            borderRadius: '14px',
+            overflow: 'hidden',
+            border: '1px solid #4b5563',
+        },
+
+        badgeLabel: {
+            padding: '4px 8px',
+            backgroundColor: '#4b5563',
+            color: '#9ca3af',
+            fontWeight: '500',
+        },
+
+        badgeValue: {
+            padding: '4px 8px',
+            color: '#e5e7eb',
+        },
+
+        statusBadge: {
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            fontSize: '10px',
+            padding: '4px 8px',
+            borderRadius: '14px',
+            fontWeight: '500',
+        },
+
+        statusIndicator: {
+            width: '6px',
+            height: '6px',
+            borderRadius: '50%',
+            backgroundColor: 'currentColor',
+        },
     },
 
     sectionTitle: {
@@ -329,5 +389,57 @@ export const nodeStyles = {
         cursor: 'pointer',
         fontSize: '12px',
         color: '#d32f2f',
+    },
+
+    // Header content styles
+    headerContent: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        position: 'relative' as const,
+    },
+
+    // Header label styles
+    headerLabel: {
+        fontWeight: 'bold' as const,
+        fontSize: '12px',
+        whiteSpace: 'nowrap' as const,
+        overflow: 'hidden' as const,
+        textOverflow: 'ellipsis' as const,
+        maxWidth: '120px',
+    },
+
+    // Header controls styles
+    headerControls: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '2px',
+        color: '#666',
+    },
+
+    // Mode select styles
+    modeSelect: {
+        padding: '2px 6px',
+        fontSize: '10px',
+        border: '1px solid #ccc',
+        borderRadius: '3px',
+        background: '#fff',
+        cursor: 'pointer',
+        minWidth: '0',
+    },
+
+    // Node ID text styles
+    nodeIdText: {
+        fontSize: '9px',
+        color: '#666',
+        fontWeight: 'normal' as const,
+        textAlign: 'left' as const,
+        display: 'block',
+        marginTop: '2px',
+        paddingLeft: '0',
+        whiteSpace: 'nowrap' as const,
+        overflow: 'hidden' as const,
+        textOverflow: 'ellipsis' as const,
+        maxWidth: '180px',
     },
 };

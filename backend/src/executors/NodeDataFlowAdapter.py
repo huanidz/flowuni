@@ -1,8 +1,9 @@
-from typing import Any, Callable, Optional, Type
+from typing import Any, Callable, Dict, Optional, Type
 
 from loguru import logger
 from src.nodes.handles.basics.inputs import InputHandleTypeEnum
 from src.nodes.handles.basics.outputs import OutputHandleTypeEnum
+from src.nodes.handles.basics.outputs.RouterOutputHandle import RouterOutputData
 from src.schemas.flowbuilder.flow_graph_schemas import NodeData
 
 
@@ -12,6 +13,11 @@ class AdapterMatrix:
     @staticmethod
     def _default_adapter(val: Any) -> Any:
         return val
+
+    @staticmethod
+    def _router_default_adapter(val: Dict) -> Any:
+        parsed = RouterOutputData(**val)
+        return parsed.route_value
 
     @staticmethod
     def _number_to_text_field(val: float) -> str:
@@ -56,6 +62,23 @@ class AdapterMatrix:
             OutputHandleTypeEnum.STRING.value,
             InputHandleTypeEnum.DROPDOWN.value,
         ): _default_adapter,
+        # Source: Router
+        (
+            OutputHandleTypeEnum.ROUTER.value,
+            InputHandleTypeEnum.NUMBER.value,
+        ): _router_default_adapter,
+        (
+            OutputHandleTypeEnum.ROUTER.value,
+            InputHandleTypeEnum.TEXT_FIELD.value,
+        ): _router_default_adapter,
+        (
+            OutputHandleTypeEnum.ROUTER.value,
+            InputHandleTypeEnum.BOOLEAN.value,
+        ): _router_default_adapter,
+        (
+            OutputHandleTypeEnum.ROUTER.value,
+            InputHandleTypeEnum.DROPDOWN.value,
+        ): _router_default_adapter,
     }
 
 

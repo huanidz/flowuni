@@ -3,3 +3,20 @@ class NODE_DATA_MODE:
 
     NORMAL = "NormalMode"
     TOOL = "ToolMode"
+
+
+class NODE_EXECUTION_STATUS:
+    DRAFT = "draft"
+    QUEUED = "queued"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    SKIPPED = "skipped"
+
+
+class NODE_LABEL_CONSTS:
+    ROUTER = "Router"
+
+
+class SPECIAL_NODE_INPUT_CONSTS:
+    ROUTER_ROUTE_LABELS = "route_labels"

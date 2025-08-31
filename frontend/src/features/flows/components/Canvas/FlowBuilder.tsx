@@ -77,7 +77,9 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
         updateHandlers.updateNodeInputData,
         updateHandlers.updateNodeModeData,
         updateHandlers.updateNodeParameterData,
-        updateHandlers.updateNodeToolConfigData
+        updateHandlers.updateNodeToolConfigData,
+        updateHandlers.updateNodeExecutionResult,
+        updateHandlers.updateNodeExecutionStatus
     );
 
     // Initialize flow when data is ready
@@ -108,7 +110,13 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
         onClearFlow,
         onSaveFlow,
         onPlaygroundFlow,
-    } = useFlowActions(currentNodes, currentEdges, setNodes, setEdges);
+    } = useFlowActions(
+        currentNodes,
+        currentEdges,
+        setNodes,
+        setEdges,
+        updateHandlers
+    );
 
     // Handler for playground button click
     const handlePlaygroundClick = () => {
