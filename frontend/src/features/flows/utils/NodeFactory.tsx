@@ -78,6 +78,7 @@ class NodeFactoryClass {
                         onModeChange={handleModeChange || (() => {})}
                         canBeTool={can_be_tool}
                         nodeId={id}
+                        execution_status={data.execution_status}
                     />
 
                     {/* Inputs Configuration */}

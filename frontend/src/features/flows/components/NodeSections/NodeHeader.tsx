@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { MoreVertical } from 'lucide-react';
 import { nodeStyles } from '@/features/flows/styles/nodeStyles';
+import { getStatusBadgeStyles } from '@/features/flows/styles/nodeExecutionStatusHelper';
 
 interface NodeHeaderProps {
     label: string;
@@ -9,6 +10,7 @@ interface NodeHeaderProps {
     onModeChange?: (newMode: string) => void;
     canBeTool?: boolean;
     nodeId?: string;
+    execution_status?: string;
 }
 
 export const NodeHeader: React.FC<NodeHeaderProps> = ({
@@ -18,6 +20,7 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
     onModeChange,
     canBeTool,
     nodeId,
+    execution_status,
 }) => {
     const [showActionsMenu, setShowActionsMenu] = useState(false);
 
@@ -122,14 +125,50 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
                     </button>
                 </div>
             </div>
-            {description && (
-                <div style={nodeStyles.descriptionText} title={description}>
-                    {description}
-                </div>
-            )}
-            {nodeId && (
-                <div style={nodeStyles.nodeIdText} title={`Node ID: ${nodeId}`}>
-                    ID: {nodeId}
+
+            {/* Badge/Pill Design Implementation */}
+            {(description || nodeId || execution_status) && (
+                <div style={nodeStyles.header.nodeFooter}>
+                    {description && (
+                        <div
+                            style={nodeStyles.header.descriptionText}
+                            title={description}
+                        >
+                            {description}
+                        </div>
+                    )}
+                    {(nodeId || execution_status) && (
+                        <div style={nodeStyles.header.badgeContainer}>
+                            {nodeId && (
+                                <div
+                                    style={nodeStyles.header.infoBadge}
+                                    title={`Node ID: ${nodeId}`}
+                                >
+                                    <span style={nodeStyles.header.badgeLabel}>
+                                        ID
+                                    </span>
+                                    <span style={nodeStyles.header.badgeValue}>
+                                        {nodeId}
+                                    </span>
+                                </div>
+                            )}
+                            {execution_status && (
+                                <div
+                                    style={getStatusBadgeStyles(
+                                        execution_status
+                                    )}
+                                    title={`Execution Status: ${execution_status}`}
+                                >
+                                    <div
+                                        style={
+                                            nodeStyles.header.statusIndicator
+                                        }
+                                    />
+                                    {execution_status.toUpperCase()}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             )}
         </div>

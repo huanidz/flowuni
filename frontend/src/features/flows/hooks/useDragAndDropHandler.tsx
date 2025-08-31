@@ -4,6 +4,7 @@ import { Position } from '@xyflow/react';
 import { useNodeRegistry } from '@/features/nodes';
 import React from 'react';
 import { NODE_DATA_MODE, NODE_EXECUTION_STATE } from '../consts';
+import { nanoid } from 'nanoid';
 
 export const useDragDropHandler = (
     reactFlowInstance: ReactFlowInstance | null,
@@ -81,7 +82,7 @@ export const useDragDropHandler = (
             );
 
             const customNode: Node = {
-                id: `node_${type}_${Date.now()}`, // Using timestamp for unique ID
+                id: nanoid(10),
                 type,
                 position,
                 data: {
