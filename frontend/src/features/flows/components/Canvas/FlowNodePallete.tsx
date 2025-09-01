@@ -33,7 +33,7 @@ const NodePalette = forwardRef<HTMLDivElement, NodePaletteProps>(
 
         return (
             <div
-                className="absolute top-4 left-4 z-10 bg-white rounded border p-4 max-h-[70vh] overflow-y-auto"
+                className="absolute top-4 left-4 z-10 bg-white rounded border p-4 max-h-[70vh] overflow-y-hidden"
                 ref={ref}
             >
                 <div className="flex justify-between items-center mb-4">
