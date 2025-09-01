@@ -3,7 +3,6 @@ import {
     FLOWS_ENDPOINT,
     FLOW_DEFINITION_COMPILE_ENDPOINT,
     FLOW_DEFINITION_RUN_ENDPOINT,
-    FLOW_EXECUTION_STREAM_ENDPOINT,
 } from './consts';
 import type {
     GetFlowsParams,
