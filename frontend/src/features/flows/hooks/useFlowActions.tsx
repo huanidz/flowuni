@@ -5,6 +5,7 @@ import { getFlowGraphData, logNodeDetails } from '@/features/flows/utils';
 import { saveFlow, compileFlow, runFlow } from '@/features/flows/api';
 import { watchFlowExecution } from '@/api/sse';
 import { toast } from 'sonner';
+import { useSelectedNode } from '@/features/flows/hooks/useSelectedNode';
 
 type SetNodesType = React.Dispatch<React.SetStateAction<Node[]>>;
 type SetEdgesType = React.Dispatch<React.SetStateAction<Edge[]>>;
@@ -48,6 +49,7 @@ export const useFlowActions = (
     nodeUpdateHandlers: any
 ) => {
     const { current_flow } = useFlowStore();
+    const { selectedNode } = useSelectedNode();
 
     const { updateNodeExecutionResult, updateNodeExecutionStatus } =
         nodeUpdateHandlers;
@@ -122,6 +124,97 @@ export const useFlowActions = (
         }
     }, [nodes, edges, current_flow, nodeUpdateHandlers]);
 
+    const onRunFlowFromSelectedNode = useCallback(async () => {
+        if (!current_flow) {
+            console.warn('Cannot run flow: No current flow');
+            return;
+        }
+
+        if (!selectedNode) {
+            toast.warning('No node selected', {
+                description: 'Please select a node to run the flow from.',
+            });
+            return;
+        }
+
+        console.log(
+            '[onRunFlowFromSelectedNode] Running flow from selected node...',
+            selectedNode.id
+        );
+
+        try {
+            // Use the modified runFlow function with start_node and scope parameters
+            const response = await runFlow(
+                nodes,
+                edges,
+                selectedNode.id,
+                'downstream'
+            );
+            const { task_id } = response;
+
+            console.log(
+                '[onRunFlowFromSelectedNode] Flow run response:',
+                response
+            );
+            console.log(
+                '[onRunFlowFromSelectedNode] Watching execution with task_id:',
+                task_id
+            );
+
+            const eventSource = watchFlowExecution(task_id, msg => {
+                console.log('[SSE] Raw message received:', msg);
+
+                let parsed;
+
+                try {
+                    parsed = JSON.parse(msg);
+                    console.log('[SSE] Parsed message:', parsed);
+                } catch (e) {
+                    console.error('[SSE] Failed to parse message:', e);
+                    return;
+                }
+
+                const data = parsed?.data;
+                if (!data) {
+                    console.warn(
+                        '[SSE] No data field in parsed message:',
+                        parsed
+                    );
+                    return;
+                }
+
+                const node_id = parsed?.node_id;
+                const event_status = parsed?.event;
+                const { input_values } = data;
+                console.log(
+                    '[SSE] Updating node:',
+                    node_id,
+                    'with input_values:',
+                    input_values
+                );
+
+                // Update node execution data using the provided handlers
+                if (updateNodeExecutionResult) {
+                    updateNodeExecutionResult(
+                        node_id,
+                        JSON.stringify(parsed, null, 2)
+                    );
+                }
+                if (updateNodeExecutionStatus) {
+                    updateNodeExecutionStatus(node_id, event_status);
+                }
+            });
+        } catch (err) {
+            console.error('[onRunFlowFromSelectedNode] Flow run failed:', err);
+            toast.error('Failed to run flow from selected node', {
+                description:
+                    err instanceof Error
+                        ? err.message
+                        : 'Unknown error occurred',
+            });
+        }
+    }, [nodes, edges, current_flow, selectedNode, nodeUpdateHandlers]);
+
     const onSaveFlow = useCallback(async () => {
         if (!current_flow) {
             console.warn('Cannot save flow: No current flow');
@@ -155,6 +248,7 @@ export const useFlowActions = (
     return {
         onCompileFlow,
         onRunFlow,
+        onRunFlowFromSelectedNode,
         onClearFlow,
         onSaveFlow,
         onPlaygroundFlow,

@@ -60,6 +60,19 @@ class FlowGraphRequest(BaseModel):
     nodes: List[FlowNode]
     edges: List[FlowEdge]
 
+    # Execution controls
+    start_node: Optional[str] = Field(
+        default=None,
+        description="The ID of the node to start the flow from. "
+        "If None, the flow will start from the first node.",
+    )
+    scope: Literal["node_only", "downstream"] = Field(
+        default="downstream",
+        description="The scope of the flow graph execution. "
+        "If 'node_only', the flow will execute only the selected node. "
+        "If 'downstream', the flow will execute the selected node and its downstream nodes.",  # noqa: E501
+    )
+
 
 class FlowPlaygroundRequest(BaseModel):
     flow_id: str

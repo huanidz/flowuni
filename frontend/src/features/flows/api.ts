@@ -74,12 +74,29 @@ export const compileFlow = async (nodes: Node[], edges: Edge[]) => {
     return data;
 };
 
-export const runFlow = async (nodes: Node[], edges: Edge[]) => {
+export const runFlow = async (
+    nodes: Node[],
+    edges: Edge[],
+    startNode: string | null = null,
+    scope: 'node_only' | 'downstream' = 'downstream'
+) => {
     const payload = getFlowGraphData(nodes, edges);
-    console.log('Run Flow payload: ', payload);
+
+    // Create the request payload with optional start_node and scope
+    const requestPayload: any = {
+        ...payload,
+    };
+
+    // Add start_node and scope to the payload if provided
+    if (startNode) {
+        requestPayload.start_node = startNode;
+        requestPayload.scope = scope;
+    }
+
+    console.log('Run Flow payload: ', requestPayload);
     const { data } = await apiClient.post(
         `${FLOW_DEFINITION_RUN_ENDPOINT}`,
-        payload
+        requestPayload
     );
     console.log(data);
     return data;
