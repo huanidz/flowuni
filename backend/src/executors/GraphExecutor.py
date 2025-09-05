@@ -15,7 +15,7 @@ from src.consts.node_consts import (
     NODE_LABEL_CONSTS,
     SPECIAL_NODE_INPUT_CONSTS,
 )
-from src.executors.ExecutionContext import ExecutionContext
+from src.executors.ExecutionContext import ExecutionContext, ExecutionControl
 from src.executors.NodeDataFlowAdapter import NodeDataFlowAdapter
 from src.nodes.core import NodeInput, NodeOutput
 
@@ -55,6 +55,7 @@ class GraphExecutor:
         self,
         graph: nx.DiGraph,
         execution_plan: List[List[str]],
+        execution_control: ExecutionControl,
         max_workers: Optional[int] = None,
         enable_debug: bool = True,
         execution_context: Optional[ExecutionContext] = None,
@@ -69,6 +70,7 @@ class GraphExecutor:
         """  # noqa: E501
         self.graph: nx.DiGraph = graph
         self.execution_plan: List[List[str]] = execution_plan
+        self.execution_control = execution_control
         self.max_workers = max_workers
 
         # Flag and class for execution context

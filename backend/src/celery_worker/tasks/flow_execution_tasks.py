@@ -4,7 +4,7 @@ from loguru import logger
 from redis import Redis
 from src.celery_worker.celery_worker import celery_app
 from src.configs.config import get_settings
-from src.executors.ExecutionContext import ExecutionContext
+from src.executors.ExecutionContext import ExecutionContext, ExecutionControl
 from src.executors.GraphExecutor import GraphExecutor
 from src.nodes.GraphCompiler import GraphCompiler
 from src.nodes.GraphLoader import GraphLoader
@@ -66,11 +66,15 @@ def run_flow(
             task_id=self.request.id,
             redis_client=redis_client,
         )
+        exe_control = ExecutionControl(
+            start_node=flow_graph_request.start_node, scope=flow_graph_request.scope
+        )
         logger.info(f"Creating executor with {len(execution_plan)} layers")
         executor = GraphExecutor(
             graph=G,
             execution_plan=execution_plan,
             execution_context=exe_context,
+            execution_control=exe_control,
             enable_debug=enable_debug,
         )
 
