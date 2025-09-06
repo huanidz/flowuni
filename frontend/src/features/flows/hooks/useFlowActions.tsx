@@ -246,6 +246,107 @@ export const useFlowActions = (
         }
     }, [nodes, edges, current_flow, selectedNode, nodeUpdateHandlers]);
 
+    const onRunSelectedOnly = useCallback(async () => {
+        if (!current_flow) {
+            console.warn('Cannot run flow: No current flow');
+            return;
+        }
+
+        if (!selectedNode) {
+            toast.warning('No node selected', {
+                description: 'Please select a node to run the flow from.',
+            });
+            return;
+        }
+
+        console.log(
+            '[onRunSelectedOnly] Running selected node only...',
+            selectedNode.id
+        );
+
+        try {
+            const response = await runFlow(
+                nodes,
+                edges,
+                selectedNode.id,
+                'node_only' // <- Only different in this value
+            );
+            const { task_id } = response;
+
+            console.log('[onRunSelectedOnly] Flow run response:', response);
+            console.log(
+                '[onRunSelectedOnly] Watching execution with task_id:',
+                task_id
+            );
+
+            const eventSource = watchFlowExecution(task_id, msg => {
+                console.log('[SSE] Raw message received:', msg);
+
+                let parsed;
+
+                try {
+                    parsed = JSON.parse(msg);
+                    console.log('[SSE] Parsed message:', parsed);
+                } catch (e) {
+                    console.error('[SSE] Failed to parse message:', e);
+                    return;
+                }
+
+                const data = parsed?.data;
+                if (!data) {
+                    console.warn(
+                        '[SSE] No data field in parsed message:',
+                        parsed
+                    );
+                    return;
+                }
+
+                const node_id = parsed?.node_id;
+                const event_status = parsed?.event;
+                const { input_values, output_values } = data;
+                console.log(
+                    '[SSE] Updating node:',
+                    node_id,
+                    'with input_values:',
+                    input_values
+                );
+                console.log(
+                    '[SSE] Updating node:',
+                    node_id,
+                    'with output_values:',
+                    output_values
+                );
+
+                // Update node execution data using the provided handlers
+                if (updateNodeExecutionResult) {
+                    updateNodeExecutionResult(
+                        node_id,
+                        JSON.stringify(parsed, null, 2)
+                    );
+                }
+                if (updateNodeExecutionStatus) {
+                    updateNodeExecutionStatus(node_id, event_status);
+                }
+                if (updateNodeOutputData && output_values) {
+                    // Update each output value individually
+                    Object.entries(output_values).forEach(
+                        ([outputName, value]) => {
+                            updateNodeOutputData(node_id, outputName, value);
+                        }
+                    );
+                }
+            });
+        } catch (err) {
+            console.error('[onRunSelectedOnly] Flow run failed:', err);
+            toast.error('Failed to run selected node only', {
+                description:
+                    err instanceof Error
+                        ? err.message
+                        : 'Unknown error occurred',
+            });
+        }
+    }, [nodes, edges, current_flow, selectedNode, nodeUpdateHandlers]);
+
     const onSaveFlow = useCallback(async () => {
         if (!current_flow) {
             console.warn('Cannot save flow: No current flow');
@@ -280,6 +381,7 @@ export const useFlowActions = (
         onCompileFlow,
         onRunFlow,
         onRunFlowFromSelectedNode,
+        onRunSelectedOnly,
         onClearFlow,
         onSaveFlow,
         onPlaygroundFlow,

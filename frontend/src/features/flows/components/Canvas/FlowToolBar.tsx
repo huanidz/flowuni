@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 interface FlowToolbarProps {
     onRun: () => void;
     onRunFromSelected: () => void;
+    onRunSelectedOnly: () => void;
     onClear: () => void;
     onCompile: () => void;
     onSave: () => void;
@@ -19,6 +20,7 @@ interface FlowToolbarProps {
 const FlowToolbar: React.FC<FlowToolbarProps> = ({
     onRun,
     onRunFromSelected,
+    onRunSelectedOnly,
     onClear,
     onCompile,
     onSave,
@@ -88,6 +90,14 @@ const FlowToolbar: React.FC<FlowToolbarProps> = ({
                         className="bg-green-600 hover:bg-green-700"
                     >
                         Run from Selected
+                    </Button>
+
+                    <Button
+                        onClick={onRunSelectedOnly}
+                        size="sm"
+                        className="bg-green-700 hover:bg-green-800"
+                    >
+                        Run selected Only
                     </Button>
 
                     <Button
