@@ -100,8 +100,20 @@ class GraphExecutor:
         Execute the graph with parallel processing within layers.
 
         This is the synchronous version that matches your old working code structure.
+        Checks the execution control to determine if execution should start from a specific node.
         """
 
+        # Check if we should start execution from a specific node
+        if self.execution_control.start_node is not None:
+            return self._run_from_node(self.execution_control.start_node)
+
+        # Otherwise, execute from the beginning
+        return self._execute_full_graph()
+
+    def _execute_full_graph(self) -> Dict[str, Any]:
+        """
+        Execute the full graph from the beginning.
+        """
         start_time = time.time()
         total_nodes = sum(len(layer) for layer in self.execution_plan)
         completed_nodes = 0
@@ -906,3 +918,288 @@ class GraphExecutor:
         # All predecessors are not skipped, check the node's own status
         node_data = self.graph.nodes[node_id].get("data", NodeData())
         return node_data.execution_status != NODE_EXECUTION_STATUS.SKIPPED
+
+    def _run_from_node(self, start_node: str) -> Dict[str, Any]:
+        """
+        Execute the graph starting from a specific node.
+
+        Args:
+            start_node: The node ID to start execution from.
+
+        Returns:
+            Dict containing execution results
+        """
+        # Validate that the start_node exists in the graph
+        if start_node not in self.graph.nodes:
+            raise GraphExecutorError(f"Start node '{start_node}' not found in graph")
+
+        logger.info(f"Starting execution from node: {start_node}")
+
+        # Find all ancestors that need to be executed
+        ancestors_to_execute = self._find_ancestors_to_execute(start_node)
+
+        # Validate that all ancestors have been executed
+        self._validate_ancestors_executed(ancestors_to_execute, start_node)
+
+        # Modify the execution plan to start from the specified node
+        modified_execution_plan = self._create_modified_execution_plan(start_node)
+
+        # Execute the modified plan
+        return self._execute_modified_plan(
+            modified_execution_plan, ancestors_to_execute
+        )
+
+    def _find_ancestors_to_execute(self, start_node: str) -> List[str]:
+        """
+        Find all ancestors of the start node that need to be executed.
+
+        Args:
+            start_node: The node to find ancestors for
+
+        Returns:
+            List of ancestor node IDs that need to be executed
+        """
+        ancestors = set()
+
+        # Use BFS to find all ancestors
+        visited = set()
+        queue = list(self.graph.predecessors(start_node))
+
+        while queue:
+            current_node = queue.pop(0)
+            if current_node in visited:
+                continue
+
+            visited.add(current_node)
+            ancestors.add(current_node)
+
+            # Add predecessors of current node to queue
+            queue.extend(self.graph.predecessors(current_node))
+
+        logger.info(
+            f"Found {len(ancestors)} ancestors for node {start_node}: {list(ancestors)}"
+        )
+        return list(ancestors)
+
+    def _validate_ancestors_executed(
+        self, ancestors: List[str], start_node: str
+    ) -> None:
+        """
+        Validate that all ancestors have been executed and have valid output values.
+
+        Args:
+            ancestors: List of ancestor node IDs to validate
+            start_node: The start node for context
+
+        Raises:
+            GraphExecutorError: If any ancestor is not properly executed
+        """
+        for ancestor_id in ancestors:
+            ancestor_data = self.graph.nodes[ancestor_id].get("data", NodeData())
+
+            # Check if ancestor has been executed
+            if ancestor_data.execution_status != NODE_EXECUTION_STATUS.COMPLETED:
+                raise GraphExecutorError(
+                    f"Ancestor node '{ancestor_id}' has not been executed. "
+                    f"Status: {ancestor_data.execution_status}"
+                )
+
+            # Check if ancestor has valid output values
+            if not ancestor_data.output_values or ancestor_data.output_values is False:
+                raise GraphExecutorError(
+                    f"Ancestor node '{ancestor_id}' has no valid output values. "
+                    f"Cannot start execution from node '{start_node}'"
+                )
+
+            logger.debug(
+                f"Ancestor '{ancestor_id}' is properly executed with valid output values"
+            )
+
+    def _create_modified_execution_plan(self, start_node: str) -> List[List[str]]:
+        """
+        Create a modified execution plan that starts from the specified node.
+
+        Args:
+            start_node: The node to start execution from
+
+        Returns:
+            Modified execution plan
+        """
+        # Find the layer index where the start_node is located
+        start_layer_index = None
+        for i, layer in enumerate(self.execution_plan):
+            if start_node in layer:
+                start_layer_index = i
+                break
+
+        if start_layer_index is None:
+            raise GraphExecutorError(
+                f"Start node '{start_node}' not found in execution plan"
+            )
+
+        logger.info(f"Start node '{start_node}' found in layer {start_layer_index}")
+
+        # Create a new execution plan starting from the found layer
+        modified_plan = []
+
+        # Add all layers from the start layer onwards
+        for i in range(start_layer_index, len(self.execution_plan)):
+            modified_plan.append(self.execution_plan[i])
+
+        # For the start layer, filter to include only the start_node and its descendants in the same layer
+        start_layer = self.execution_plan[start_layer_index]
+        filtered_start_layer = []
+
+        for node_id in start_layer:
+            # Include the start_node itself
+            if node_id == start_node:
+                filtered_start_layer.append(node_id)
+            # Include other nodes in the same layer that are reachable from ancestors
+            else:
+                # Check if this node has all ancestors executed (including the start_node if it's a predecessor)
+                if self._is_node_ready_for_execution(node_id, start_node):
+                    filtered_start_layer.append(node_id)
+
+        modified_plan[0] = filtered_start_layer
+
+        logger.info(
+            f"Modified execution plan starting from layer {start_layer_index}: {modified_plan}"
+        )
+        return modified_plan
+
+    def _is_node_ready_for_execution(self, node_id: str, start_node: str) -> bool:
+        """
+        Check if a node is ready for execution based on its predecessors.
+
+        Args:
+            node_id: The node to check
+            start_node: The start node for this execution
+
+        Returns:
+            True if the node is ready for execution
+        """
+        # Get all predecessors of this node
+        predecessors = list(self.graph.predecessors(node_id))
+
+        if not predecessors:
+            return True
+
+        # Check if all predecessors have been executed
+        for pred_id in predecessors:
+            pred_data = self.graph.nodes[pred_id].get("data", NodeData())
+
+            if pred_data.execution_status != NODE_EXECUTION_STATUS.COMPLETED:
+                return False
+
+            # Check if predecessor has valid output values
+            if not pred_data.output_values or pred_data.output_values is False:
+                return False
+
+        return True
+
+    def _execute_modified_plan(
+        self,
+        execution_plan: List[List[str]],
+        ancestors: List[str],
+    ) -> Dict[str, Any]:
+        """
+        Execute a modified execution plan.
+
+        Args:
+            execution_plan: The modified execution plan
+            execution_control: Execution control for this run
+            ancestors: List of ancestors that were already executed
+
+        Returns:
+            Dict containing execution results
+        """
+        start_time = time.time()
+        total_nodes = sum(len(layer) for layer in execution_plan) + len(
+            ancestors
+        )  # Include ancestors in total
+        completed_nodes = len(ancestors)  # Ancestors are already completed
+
+        # Publish the queue event for all nodes in each layer
+        for layer_index, layer_nodes in enumerate(execution_plan, start=1):
+            for node_id in layer_nodes:
+                self.push_event(
+                    node_id=node_id,
+                    event=NODE_EXECUTION_STATUS.QUEUED,
+                    data={},
+                )
+
+        try:
+            # Use ThreadPoolExecutor for parallel execution within layers
+            with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+                for layer_index, layer_nodes in enumerate(execution_plan, 1):
+                    layer_start_time = time.time()
+
+                    # Execute all nodes in this layer in parallel
+                    layer_results = self._execute_layer_parallel(
+                        executor, layer_nodes, layer_index
+                    )
+
+                    layer_execution_time = time.time() - layer_start_time
+
+                    # Check for failures
+                    failed_nodes = [r for r in layer_results if not r.success]
+                    successful_nodes = [r for r in layer_results if r.success]
+
+                    if failed_nodes:
+                        error_msg = f"Layer {layer_index} execution failed. Failed nodes: {[r.node_id for r in failed_nodes]}"
+                        logger.error(error_msg)
+
+                        for result in failed_nodes:
+                            logger.error(
+                                f"Node {result.node_id} failed: {result.error}"
+                            )
+
+                        raise GraphExecutorError(error_msg)
+
+                    logger.success(
+                        f"Layer {layer_index} completed successfully in {layer_execution_time:.3f}s. "
+                        f"Processed {len(successful_nodes)} nodes."
+                    )
+
+                    completed_nodes += len(successful_nodes)
+
+                    # Update successors for all successful nodes
+                    self._update_all_successors(successful_nodes)
+
+            total_time = time.time() - start_time
+
+            logger.success(
+                f"Graph execution completed successfully in {total_time:.3f}s. "
+                f"Processed {completed_nodes} nodes across {len(execution_plan)} layers."
+            )
+
+            # Collect results from the final layer
+            final_layer_results = []
+            if layer_results:
+                final_layer_results = [
+                    {
+                        "node_id": result.node_id,
+                        "success": result.success,
+                        "data": result.data.model_dump() if result.data else None,
+                        "error": result.error,
+                        "execution_time": result.execution_time,
+                    }
+                    for result in layer_results
+                ]
+
+            execute_result = {
+                "success": True,
+                "total_nodes": total_nodes,
+                "completed_nodes": completed_nodes,
+                "total_layers": len(execution_plan),
+                "execution_time": total_time,
+                "results": final_layer_results,
+                "ancestors": ancestors,  # Include ancestors in the result
+            }
+
+            self.end_event(data=execute_result)
+
+            return execute_result
+
+        except Exception as e:
+            raise GraphExecutorError(f"Execution failed: {str(e)}.") from e
