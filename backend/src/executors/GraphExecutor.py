@@ -15,6 +15,7 @@ from src.consts.node_consts import (
     NODE_LABEL_CONSTS,
     SPECIAL_NODE_INPUT_CONSTS,
 )
+from src.exceptions.execution_exceptions import GraphExecutorError
 from src.executors.ExecutionContext import ExecutionContext, ExecutionControl
 from src.executors.NodeDataFlowAdapter import NodeDataFlowAdapter
 from src.nodes.core import NodeInput, NodeOutput
@@ -25,12 +26,6 @@ from src.nodes.NodeBase import Node, NodeSpec
 from src.nodes.NodeRegistry import NodeRegistry
 from src.schemas.flowbuilder.flow_graph_schemas import NodeData
 from src.schemas.nodes.node_data_parsers import ToolDataParser
-
-
-class GraphExecutorError(Exception):
-    """Custom exception for graph execution errors."""
-
-    pass
 
 
 class NodeExecutionResult(BaseModel):
@@ -70,7 +65,7 @@ class GraphExecutor:
         """  # noqa: E501
         self.graph: nx.DiGraph = graph
         self.execution_plan: List[List[str]] = execution_plan
-        self.execution_control = execution_control
+        self.execution_control: ExecutionControl = execution_control
         self.max_workers = max_workers
 
         # Flag and class for execution context
@@ -939,7 +934,9 @@ class GraphExecutor:
         ancestors = list(self.graph.predecessors(start_node))
         successors = list(self.graph.successors(start_node))
 
-        if not ancestors and not successors:
+        if (not ancestors and not successors) or (
+            self.execution_control.scope == "node_only"
+        ):
             logger.info(f"Node '{start_node}' is a standalone node, executing it only")
             return self._execute_standalone_node(start_node)
 
