@@ -935,6 +935,14 @@ class GraphExecutor:
 
         logger.info(f"Starting execution from node: {start_node}")
 
+        # Check if the start_node is a standalone node (no ancestors and no successors)
+        ancestors = list(self.graph.predecessors(start_node))
+        successors = list(self.graph.successors(start_node))
+
+        if not ancestors and not successors:
+            logger.info(f"Node '{start_node}' is a standalone node, executing it only")
+            return self._execute_standalone_node(start_node)
+
         # Find all ancestors that need to be executed
         ancestors_to_execute = self._find_ancestors_to_execute(start_node)
 
@@ -1195,6 +1203,78 @@ class GraphExecutor:
                 "execution_time": total_time,
                 "results": final_layer_results,
                 "ancestors": ancestors,  # Include ancestors in the result
+            }
+
+            self.end_event(data=execute_result)
+
+            return execute_result
+
+        except Exception as e:
+            raise GraphExecutorError(f"Execution failed: {str(e)}.") from e
+
+    def _execute_standalone_node(self, start_node: str) -> Dict[str, Any]:
+        """
+        Execute a standalone node (no ancestors and no successors).
+
+        Args:
+            start_node: The node ID to execute
+
+        Returns:
+            Dict containing execution results
+        """
+        start_time = time.time()
+
+        # Publish queue event for the standalone node
+        self.push_event(
+            node_id=start_node,
+            event=NODE_EXECUTION_STATUS.QUEUED,
+            data={},
+        )
+
+        try:
+            # Execute the standalone node
+            layer_results = [self._execute_single_node(start_node, 1)]
+
+            # Check for failure
+            failed_nodes = [r for r in layer_results if not r.success]
+            successful_nodes = [r for r in layer_results if r.success]
+
+            if failed_nodes:
+                error_msg = f"Standalone node execution failed. Failed nodes: {[r.node_id for r in failed_nodes]}"
+                logger.error(error_msg)
+
+                for result in failed_nodes:
+                    logger.error(f"Node {result.node_id} failed: {result.error}")
+
+                raise GraphExecutorError(error_msg)
+
+            total_time = time.time() - start_time
+
+            logger.success(
+                f"Standalone node execution completed successfully in {total_time:.3f}s. "
+                f"Processed {len(successful_nodes)} nodes."
+            )
+
+            # Collect results
+            final_layer_results = [
+                {
+                    "node_id": result.node_id,
+                    "success": result.success,
+                    "data": result.data.model_dump() if result.data else None,
+                    "error": result.error,
+                    "execution_time": result.execution_time,
+                }
+                for result in layer_results
+            ]
+
+            execute_result = {
+                "success": True,
+                "total_nodes": 1,
+                "completed_nodes": 1,
+                "total_layers": 1,
+                "execution_time": total_time,
+                "results": final_layer_results,
+                "ancestors": [],  # No ancestors for standalone node
             }
 
             self.end_event(data=execute_result)
