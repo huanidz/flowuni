@@ -51,8 +51,11 @@ export const useFlowActions = (
     const { current_flow } = useFlowStore();
     const { selectedNode } = useSelectedNode();
 
-    const { updateNodeExecutionResult, updateNodeExecutionStatus } =
-        nodeUpdateHandlers;
+    const {
+        updateNodeExecutionResult,
+        updateNodeExecutionStatus,
+        updateNodeOutputData,
+    } = nodeUpdateHandlers;
 
     const onCompileFlow = useCallback(() => {
         return handleFlowRequest(nodes, edges, compileFlow, 'COMPILATION');
@@ -100,12 +103,18 @@ export const useFlowActions = (
 
                 const node_id = parsed?.node_id;
                 const event_status = parsed?.event;
-                const { input_values } = data;
+                const { input_values, output_values } = data;
                 console.log(
                     '[SSE] Updating node:',
                     node_id,
                     'with input_values:',
                     input_values
+                );
+                console.log(
+                    '[SSE] Updating node:',
+                    node_id,
+                    'with output_values:',
+                    output_values
                 );
 
                 // Update node execution data using the provided handlers
@@ -117,6 +126,14 @@ export const useFlowActions = (
                 }
                 if (updateNodeExecutionStatus) {
                     updateNodeExecutionStatus(node_id, event_status);
+                }
+                if (updateNodeOutputData && output_values) {
+                    // Update each output value individually
+                    Object.entries(output_values).forEach(
+                        ([outputName, value]) => {
+                            updateNodeOutputData(node_id, outputName, value);
+                        }
+                    );
                 }
             });
         } catch (err) {
@@ -185,12 +202,18 @@ export const useFlowActions = (
 
                 const node_id = parsed?.node_id;
                 const event_status = parsed?.event;
-                const { input_values } = data;
+                const { input_values, output_values } = data;
                 console.log(
                     '[SSE] Updating node:',
                     node_id,
                     'with input_values:',
                     input_values
+                );
+                console.log(
+                    '[SSE] Updating node:',
+                    node_id,
+                    'with output_values:',
+                    output_values
                 );
 
                 // Update node execution data using the provided handlers
@@ -202,6 +225,14 @@ export const useFlowActions = (
                 }
                 if (updateNodeExecutionStatus) {
                     updateNodeExecutionStatus(node_id, event_status);
+                }
+                if (updateNodeOutputData && output_values) {
+                    // Update each output value individually
+                    Object.entries(output_values).forEach(
+                        ([outputName, value]) => {
+                            updateNodeOutputData(node_id, outputName, value);
+                        }
+                    );
                 }
             });
         } catch (err) {

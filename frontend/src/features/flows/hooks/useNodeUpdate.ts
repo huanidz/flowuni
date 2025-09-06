@@ -47,6 +47,38 @@ export const useNodeUpdate = (
     );
 
     /**
+     * Update node output values with a clean, direct approach
+     */
+    const updateNodeOutputData = useCallback(
+        (nodeId: string, outputName: string, value: any) => {
+            setNodes(nodes =>
+                nodes.map(node => {
+                    if (node.id !== nodeId) return node;
+
+                    // Check if the value is actually different to prevent unnecessary re-renders
+                    const currentOutputValues =
+                        (node.data?.output_values as Record<string, any>) || {};
+                    if (currentOutputValues[outputName] === value) {
+                        return node;
+                    }
+
+                    return {
+                        ...node,
+                        data: {
+                            ...node.data,
+                            output_values: {
+                                ...(node.data.output_values || {}),
+                                [outputName]: value,
+                            },
+                        },
+                    };
+                })
+            );
+        },
+        [setNodes]
+    );
+
+    /**
      * Update node mode data
      */
     const updateNodeModeData = useCallback(
@@ -234,6 +266,7 @@ export const useNodeUpdate = (
     return useMemo(
         () => ({
             updateNodeInputData, // Input data
+            updateNodeOutputData, // Output data
             updateNodeModeData, // Mode data
             updateNodeParameterData, // Parameter data
             updateNodeToolConfigData, // Tool config data
@@ -243,6 +276,7 @@ export const useNodeUpdate = (
         }),
         [
             updateNodeInputData,
+            updateNodeOutputData,
             updateNodeModeData,
             updateNodeParameterData,
             updateNodeToolConfigData,

@@ -82,6 +82,9 @@ async def execute_flow_endpoint(
     try:
         request_json = await request.json()
         flow_graph_request = FlowGraphRequest(**request_json)
+        logger.info(
+            f"👉 flow_graph_request: {flow_graph_request.model_dump_json(indent=4)}"
+        )
 
         # Submit run task to Celery
         task = run_flow.delay("flow-execute", flow_graph_request.model_dump())

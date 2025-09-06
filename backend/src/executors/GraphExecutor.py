@@ -946,7 +946,30 @@ class GraphExecutor:
         # Find all ancestors that need to be executed
         ancestors_to_execute = self._find_ancestors_to_execute(start_node)
 
-        # Validate that all ancestors have been executed
+        # Check if ancestors need to be executed first
+        ancestors_to_run_first = []
+        for ancestor_id in ancestors_to_execute:
+            ancestor_data = self.graph.nodes[ancestor_id].get("data", NodeData())
+            # If ancestor is not completed or has no valid output values, it needs to be executed
+            if (
+                ancestor_data.execution_status != NODE_EXECUTION_STATUS.COMPLETED
+                or not ancestor_data.output_values
+                or ancestor_data.output_values is False
+            ):
+                ancestors_to_run_first.append(ancestor_id)
+
+        if ancestors_to_run_first:
+            logger.info(
+                f"Executing {len(ancestors_to_run_first)} ancestors first: {ancestors_to_run_first}"
+            )
+            # Execute the ancestors first
+            ancestors_execution_result = self._execute_ancestors_first(
+                ancestors_to_run_first
+            )
+            # Update the graph with the execution results
+            self._update_graph_with_ancestor_results(ancestors_execution_result)
+
+        # Now validate that all ancestors have been executed and have valid output values
         self._validate_ancestors_executed(ancestors_to_execute, start_node)
 
         # Modify the execution plan to start from the specified node
@@ -1211,6 +1234,70 @@ class GraphExecutor:
 
         except Exception as e:
             raise GraphExecutorError(f"Execution failed: {str(e)}.") from e
+
+    def _execute_ancestors_first(
+        self, ancestors_to_run: List[str]
+    ) -> List[NodeExecutionResult]:
+        """
+        Execute a list of ancestors first to get their output values.
+
+        Args:
+            ancestors_to_run: List of ancestor node IDs to execute
+
+        Returns:
+            List of execution results for the ancestors
+        """
+        logger.info(f"Executing ancestors first: {ancestors_to_run}")
+
+        # Create a simple execution plan for just the ancestors
+        # This is a simplified version that executes ancestors in sequence
+        results = []
+
+        for ancestor_id in ancestors_to_run:
+            try:
+                # Publish queue event
+                self.push_event(
+                    node_id=ancestor_id,
+                    event=NODE_EXECUTION_STATUS.QUEUED,
+                    data={},
+                )
+
+                # Execute the ancestor
+                result = self._execute_single_node(ancestor_id, 1)
+                results.append(result)
+
+                # Update successors with the ancestor's output
+                if result.success:
+                    self._update_all_successors([result])
+
+            except Exception as e:
+                logger.error(f"Failed to execute ancestor {ancestor_id}: {str(e)}")
+                results.append(
+                    NodeExecutionResult(
+                        node_id=ancestor_id,
+                        success=False,
+                        error=str(e),
+                    )
+                )
+
+        return results
+
+    def _update_graph_with_ancestor_results(
+        self, ancestor_results: List[NodeExecutionResult]
+    ) -> None:
+        """
+        Update the graph with execution results from ancestors.
+
+        Args:
+            ancestor_results: List of execution results for ancestors
+        """
+        for result in ancestor_results:
+            if result.success and result.data:
+                # Update the graph node with the executed data
+                self.graph.nodes[result.node_id]["data"] = result.data
+                logger.debug(
+                    f"Updated graph with ancestor result for node {result.node_id}"
+                )
 
     def _execute_standalone_node(self, start_node: str) -> Dict[str, Any]:
         """
