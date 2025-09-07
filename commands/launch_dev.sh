@@ -11,7 +11,7 @@ sudo docker compose -f "$COMPOSE_FILE" -p "$PROJECT_NAME" up --build -d
 
 echo "🧹 Cleaning Celery result tables..."
 # Wait for database to be ready
-sleep 5
+sleep 1
 
 # Clean celery tables
 sudo docker compose -f "$COMPOSE_FILE" -p "$PROJECT_NAME" exec db_service psql -U postgres -d flowuni-celery-backend-db -c "

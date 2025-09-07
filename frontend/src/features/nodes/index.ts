@@ -1,11 +1,13 @@
 // Export all types
-export type { 
-  NodeSpec, 
-  CustomNodeProps,
-  UpdateNodeInputDataFunction,
-  UpdateNodeModeDataFunction,
-  UpdateNodeParameterFunction,
-  UpdateNodeToolConfigFunction
+export type {
+    NodeSpec,
+    CustomNodeProps,
+    UpdateNodeInputDataFunction,
+    UpdateNodeModeDataFunction,
+    UpdateNodeParameterFunction,
+    UpdateNodeToolConfigFunction,
+    UpdateNodeExecutionResultFunction,
+    UpdateNodeExecutionStatusFunction,
 } from './types';
 export type { NodeParameterSpec, NodeInput, NodeOutput } from './types';
 
@@ -20,8 +22,8 @@ export { useNodes, useNodesWithCache, useNodeRegistry } from './hooks';
 export { getNodes, getNodesWithCache } from './api';
 
 // Export constants
-export { 
-  GET_NODES_ENDPOINT, 
-  NODE_CATALOG_ETAG_KEY, 
-  NODE_CATALOG_DATA_KEY 
+export {
+    GET_NODES_ENDPOINT,
+    NODE_CATALOG_ETAG_KEY,
+    NODE_CATALOG_DATA_KEY,
 } from './consts';

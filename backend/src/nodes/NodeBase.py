@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, Type, Union, get_args
 
 from pydantic import BaseModel
-from src.consts.node_consts import NODE_DATA_MODE
+from src.consts.node_consts import NODE_DATA_MODE, NODE_EXECUTION_STATUS
 from src.exceptions.node_exceptions import NodeValidationError
 from src.helpers.PydanticSchemaConverter import PydanticSchemaConverter
 from src.nodes.core.NodeInput import NodeInput
@@ -296,6 +296,7 @@ class Node(ABC):
             tool_configs=original.tool_configs,
             parameter_values=original.parameter_values,
             mode=original.mode,
+            execution_status=NODE_EXECUTION_STATUS.COMPLETED,
         )
 
     # ============================================================================

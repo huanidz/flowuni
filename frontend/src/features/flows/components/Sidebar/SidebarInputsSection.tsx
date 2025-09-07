@@ -122,14 +122,15 @@ export const SidebarInputsSection: React.FC<SidebarInputsSectionProps> = ({
                     </div>
                 )}
 
-                {!isWholeAsToolMode && spec_input.allow_incoming_edges && (
+                {/* No need to display Handle in sidebar */}
+                {/* {!isWholeAsToolMode && spec_input.allow_incoming_edges && (
                     <Handle
                         type="target"
                         position={Position.Left}
                         id={handleId}
                         style={nodeStyles.handle.input}
                     />
-                )}
+                )} */}
             </div>
         );
     };

@@ -1,7 +1,14 @@
 import json
 from datetime import datetime
+from typing import Literal, Optional
 
 import redis
+from pydantic import BaseModel, Field
+
+
+class ExecutionControl(BaseModel):
+    start_node: Optional[str] = None
+    scope: Optional[Literal["node_only", "downstream"]] = Field(default="downstream")
 
 
 class ExecutionContext:

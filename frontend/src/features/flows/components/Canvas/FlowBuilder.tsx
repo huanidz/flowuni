@@ -64,7 +64,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
         deselectNode,
         toggleSidebarCollapse,
         closeSidebar,
-    } = useSelectedNode();
+    } = useSelectedNode(setNodes);
 
     // Use ReactFlow's instance hook instead of managing state manually
     const reactFlowInstance = useReactFlow();
@@ -107,6 +107,8 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
     const {
         onCompileFlow,
         onRunFlow,
+        onRunFlowFromSelectedNode,
+        onRunSelectedOnly,
         onClearFlow,
         onSaveFlow,
         onPlaygroundFlow,
@@ -180,6 +182,8 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
                 <FlowToolbar
                     onCompile={onCompileFlow}
                     onRun={onRunFlow}
+                    onRunFromSelected={onRunFlowFromSelectedNode}
+                    onRunSelectedOnly={onRunSelectedOnly}
                     onClear={onClearFlow}
                     onSave={onSaveFlow}
                     onPlayground={handlePlaygroundClick}

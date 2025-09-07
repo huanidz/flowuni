@@ -8,6 +8,7 @@ import { useNodes, useEdges } from '@xyflow/react';
 import type { PlaygroundChatBoxPosition, PGMessage } from '../../types';
 import { runFlow } from '../../api';
 import { watchFlowExecution } from '@/api/sse';
+import { NODE_EXECUTION_STATE } from '../../consts';
 
 interface PlaygroundChatBoxProps {
     isOpen: boolean;
@@ -148,7 +149,7 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
         }
 
         // Handle successful events
-        if (event === 'completed' && data) {
+        if (event === NODE_EXECUTION_STATE.COMPLETED && data) {
             const { node_type, input_values } = data;
 
             if (node_type === 'Chat Output' && input_values?.message_in) {

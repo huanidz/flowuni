@@ -47,6 +47,38 @@ export const useNodeUpdate = (
     );
 
     /**
+     * Update node output values with a clean, direct approach
+     */
+    const updateNodeOutputData = useCallback(
+        (nodeId: string, outputName: string, value: any) => {
+            setNodes(nodes =>
+                nodes.map(node => {
+                    if (node.id !== nodeId) return node;
+
+                    // Check if the value is actually different to prevent unnecessary re-renders
+                    const currentOutputValues =
+                        (node.data?.output_values as Record<string, any>) || {};
+                    if (currentOutputValues[outputName] === value) {
+                        return node;
+                    }
+
+                    return {
+                        ...node,
+                        data: {
+                            ...node.data,
+                            output_values: {
+                                ...(node.data.output_values || {}),
+                                [outputName]: value,
+                            },
+                        },
+                    };
+                })
+            );
+        },
+        [setNodes]
+    );
+
+    /**
      * Update node mode data
      */
     const updateNodeModeData = useCallback(
@@ -74,17 +106,19 @@ export const useNodeUpdate = (
             // Handle edge removal in a separate effect or after state update
             // This will fix the bug of node start dragging when switching mode.
             setTimeout(() => {
-                const edgesToRemove = edges.filter(
-                    edge => edge.source === nodeId || edge.target === nodeId
-                );
-                if (edgesToRemove.length > 0) {
-                    setEdges(prevEdges =>
-                        prevEdges.filter(
+                setEdges(prevEdges => {
+                    const edgesToRemove = prevEdges.filter(
+                        edge => edge.source === nodeId || edge.target === nodeId
+                    );
+                    if (edgesToRemove.length > 0) {
+                        const remainingEdges = prevEdges.filter(
                             edge =>
                                 edge.source !== nodeId && edge.target !== nodeId
-                        )
-                    );
-                }
+                        );
+                        return remainingEdges;
+                    }
+                    return prevEdges;
+                });
             }, 0);
         },
         [setNodes, setEdges, edges]
@@ -232,6 +266,7 @@ export const useNodeUpdate = (
     return useMemo(
         () => ({
             updateNodeInputData, // Input data
+            updateNodeOutputData, // Output data
             updateNodeModeData, // Mode data
             updateNodeParameterData, // Parameter data
             updateNodeToolConfigData, // Tool config data
@@ -241,6 +276,7 @@ export const useNodeUpdate = (
         }),
         [
             updateNodeInputData,
+            updateNodeOutputData,
             updateNodeModeData,
             updateNodeParameterData,
             updateNodeToolConfigData,
