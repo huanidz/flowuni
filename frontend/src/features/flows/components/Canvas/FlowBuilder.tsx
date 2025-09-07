@@ -74,6 +74,130 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
     // Use node store for accessing node specifications
     const { getNodeSpecByRFNodeType } = useNodeStore();
 
+    // State for tracking highlighted handles
+    const [highlightedHandles, setHighlightedHandles] = useState<
+        Array<{
+            nodeId: string;
+            handleId: string;
+        }>
+    >([]);
+
+    // Function to highlight handles by CSS class
+    const highlightHandles = useCallback(
+        (handles: Array<{ nodeId: string; handleId: string }>) => {
+            // Remove existing highlights
+            document.querySelectorAll('.node-input-handle').forEach(element => {
+                (element as HTMLElement).classList.remove('highlighted-handle');
+            });
+
+            // Add highlights to compatible handles using multiple strategies
+            handles.forEach(({ nodeId, handleId }) => {
+                let handleElement: Element | null = null;
+
+                // Strategy 1: Try the original selector
+                handleElement = document.querySelector(
+                    `.react-flow__node[data-id="${nodeId}"] .node-input-handle[id="${handleId}"]`
+                );
+
+                // Strategy 2: Try broader selector if first fails
+                if (!handleElement) {
+                    handleElement = document.querySelector(
+                        `.react-flow__node[data-id="${nodeId}"] .node-input-handle`
+                    );
+                }
+
+                // Strategy 3: Try searching all node-input-handle elements and filter by position/index
+                if (!handleElement) {
+                    const nodeElement = document.querySelector(
+                        `.react-flow__node[data-id="${nodeId}"]`
+                    );
+                    if (nodeElement) {
+                        const nodeHandles =
+                            nodeElement.querySelectorAll('.node-input-handle');
+                        if (nodeHandles.length > 0) {
+                            // Try to find the right handle based on the index in the handleId
+                            const handleIndex = parseInt(
+                                handleId.split(':').pop() || '0'
+                            );
+                            if (
+                                !isNaN(handleIndex) &&
+                                handleIndex < nodeHandles.length
+                            ) {
+                                handleElement = nodeHandles[handleIndex];
+                            } else {
+                                // If we can't determine the index, highlight all handles in this node
+                                nodeHandles.forEach(el => {
+                                    (el as HTMLElement).classList.add(
+                                        'highlighted-handle'
+                                    );
+                                });
+                                return; // Skip to next handle
+                            }
+                        }
+                    }
+                }
+
+                // Strategy 4: Use data attributes or other identifying features
+                if (!handleElement) {
+                    const allHandles =
+                        document.querySelectorAll('.node-input-handle');
+                    for (const element of allHandles) {
+                        const parentNode = element.closest('.react-flow__node');
+                        if (
+                            parentNode &&
+                            (parentNode as HTMLElement).getAttribute(
+                                'data-id'
+                            ) === nodeId
+                        ) {
+                            // Check if this might be the right handle based on position or other attributes
+                            handleElement = element;
+                            break;
+                        }
+                    }
+                }
+
+                console.log(
+                    'Highlighting handle:',
+                    handleElement,
+                    'for nodeId:',
+                    nodeId,
+                    'handleId:',
+                    handleId
+                );
+                if (handleElement) {
+                    (handleElement as HTMLElement).classList.add(
+                        'highlighted-handle'
+                    );
+                } else {
+                    console.log(
+                        'Handle element not found for nodeId:',
+                        nodeId,
+                        'handleId:',
+                        handleId
+                    );
+                    // Debug: Log all available node-input-handle elements
+                    const allHandles =
+                        document.querySelectorAll('.node-input-handle');
+                    console.log(
+                        'Available node-input-handle elements:',
+                        allHandles.length
+                    );
+                    allHandles.forEach((el, index) => {
+                        console.log(`Handle ${index}:`, {
+                            id: (el as HTMLElement).id,
+                            class: (el as HTMLElement).className,
+                            nodeId: (
+                                el.closest('.react-flow__node') as HTMLElement
+                            )?.getAttribute('data-id'),
+                            parentNode: el.closest('.react-flow__node'),
+                        });
+                    });
+                }
+            });
+        },
+        []
+    );
+
     // Node state management
     const updateHandlers = useNodeUpdate(setNodes, setEdges, currentEdges);
 
@@ -193,6 +317,9 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
             handleType,
         });
 
+        // Clear previous highlights
+        setHighlightedHandles([]);
+
         // If connection starts from a source handle, determine which target handles are compatible
         if (nodeId && handleType === 'source') {
             const sourceNode = currentNodes.find(node => node.id === nodeId);
@@ -284,7 +411,35 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
                 `Found ${connectableHandles.length} connectable handles:`,
                 connectableHandles.map(h => `${h.nodeName} (${h.inputName})`)
             );
+
+            // Set highlighted handles
+            const handlesToHighlight = connectableHandles.map(h => ({
+                nodeId: h.nodeId,
+                handleId: h.handleId,
+            }));
+            console.log('Highlighted handles:', handlesToHighlight);
+            setHighlightedHandles(handlesToHighlight);
+
+            // Apply highlighting using CSS class
+            setTimeout(() => {
+                highlightHandles(handlesToHighlight);
+            }, 0);
         }
+    };
+
+    const onConnectEnd = () => {
+        // Clear highlights
+        setHighlightedHandles([]);
+
+        // Remove highlighting styles from all handles
+        document.querySelectorAll('.node-input-handle').forEach(element => {
+            (element as HTMLElement).classList.remove('highlighted-handle');
+        });
+
+        // Also remove from any highlighted handles that might have been added
+        document.querySelectorAll('.highlighted-handle').forEach(element => {
+            (element as HTMLElement).classList.remove('highlighted-handle');
+        });
     };
 
     return (
@@ -313,6 +468,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
                     onEdgesChange={onEdgesChange}
                     onConnect={onConnectV2}
                     onConnectStart={onConnectStart}
+                    onConnectEnd={onConnectEnd}
                     isValidConnection={isValidConnection}
                     minZoom={0.88}
                     maxZoom={2}

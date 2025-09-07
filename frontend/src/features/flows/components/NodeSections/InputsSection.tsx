@@ -126,6 +126,7 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
                 {!isWholeAsToolMode && spec_input.allow_incoming_edges && (
                     <Handle
                         type="target"
+                        className="node-input-handle"
                         position={Position.Left}
                         id={handleId}
                         style={nodeStyles.handle.input}
