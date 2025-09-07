@@ -94,53 +94,11 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
             handles.forEach(({ nodeId, handleId }) => {
                 let handleElement: Element | null = null;
 
-                // Strategy 1: Try the original selector
-                handleElement = document.querySelector(
-                    `.react-flow__node[data-id="${nodeId}"] .node-input-handle[id="${handleId}"]`
-                );
-
-                // Strategy 2: Try broader selector if first fails
-                if (!handleElement) {
-                    handleElement = document.querySelector(
-                        `.react-flow__node[data-id="${nodeId}"] .node-input-handle`
-                    );
-                }
-
-                // Strategy 3: Try searching all node-input-handle elements and filter by position/index
-                if (!handleElement) {
-                    const nodeElement = document.querySelector(
-                        `.react-flow__node[data-id="${nodeId}"]`
-                    );
-                    if (nodeElement) {
-                        const nodeHandles =
-                            nodeElement.querySelectorAll('.node-input-handle');
-                        if (nodeHandles.length > 0) {
-                            // Try to find the right handle based on the index in the handleId
-                            const handleIndex = parseInt(
-                                handleId.split(':').pop() || '0'
-                            );
-                            if (
-                                !isNaN(handleIndex) &&
-                                handleIndex < nodeHandles.length
-                            ) {
-                                handleElement = nodeHandles[handleIndex];
-                            } else {
-                                // If we can't determine the index, highlight all handles in this node
-                                nodeHandles.forEach(el => {
-                                    (el as HTMLElement).classList.add(
-                                        'highlighted-handle'
-                                    );
-                                });
-                                return; // Skip to next handle
-                            }
-                        }
-                    }
-                }
-
-                // Strategy 4: Use data attributes or other identifying features
+                // Strategy: Use data attributes or other identifying features
                 if (!handleElement) {
                     const allHandles =
                         document.querySelectorAll('.node-input-handle');
+                    console.log('All handles:', allHandles);
                     for (const element of allHandles) {
                         const parentNode = element.closest('.react-flow__node');
                         if (
@@ -149,6 +107,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
                                 'data-id'
                             ) === nodeId
                         ) {
+                            console.log('Found parent node:', parentNode);
                             // Check if this might be the right handle based on position or other attributes
                             handleElement = element;
                             break;
@@ -391,9 +350,11 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
                         nodeId !== node.id;
 
                     if (isCompatible) {
+                        // Use the actual input name to match the DOM structure
+                        const handleId = `${input.name}-index:${index}`;
                         connectableHandles.push({
                             nodeId: node.id,
-                            handleId: `input:${index}`,
+                            handleId: handleId,
                             handleType: 'target',
                             nodeName: (node.data?.label as string) || node.id,
                             inputName: input.name || `Input ${index}`,
