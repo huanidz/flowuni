@@ -194,14 +194,20 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
         });
 
         // If connection starts from a source handle, determine which target handles are compatible
-        if (nodeId && handleId && handleType === 'source') {
+        if (nodeId && handleType === 'source') {
             const sourceNode = currentNodes.find(node => node.id === nodeId);
-            if (!sourceNode) return;
+            if (!sourceNode) {
+                console.error('Source node not found');
+                return;
+            }
 
             const sourceNodeSpec = getNodeSpecByRFNodeType(
                 sourceNode.type ?? ''
             );
-            if (!sourceNodeSpec) return;
+            if (!sourceNodeSpec) {
+                console.error('Source node spec not found');
+                return;
+            }
 
             // Create a validator instance to access private methods
             const validator = new ConnectionValidator(
@@ -215,7 +221,10 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
                 handleId,
                 sourceNodeSpec
             );
-            if (!sourceOutputHandle) return;
+            if (!sourceOutputHandle) {
+                console.error('Source output handle not found');
+                return;
+            }
 
             // Get source node mode
             const sourceNodeMode = sourceNode.data?.mode as string;
@@ -232,10 +241,16 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
 
             // Check all nodes for compatible input handles
             currentNodes.forEach(node => {
-                if (node.type === undefined) return;
+                if (node.type === undefined) {
+                    console.error('Node type not found');
+                    return;
+                }
 
                 const nodeSpec = getNodeSpecByRFNodeType(node.type);
-                if (!nodeSpec) return;
+                if (!nodeSpec) {
+                    console.error('Node spec not found');
+                    return;
+                }
 
                 // Check each input handle for compatibility
                 nodeSpec.inputs.forEach((input, index) => {
