@@ -23,6 +23,8 @@ import { type Connection } from '@xyflow/react';
 import { NodeConfigSidebar } from '@/features/flows/components/Sidebar/NodeConfigSidebar';
 import PlaygroundChatBox from './PlaygroundChatBox';
 import useFlowStore from '@/features/flows/stores/flow_stores';
+import { ConnectionValidator } from '@/features/flows/utils/NodeConnectionValidator';
+import { useNodeStore } from '@/features/nodes';
 
 interface FlowBuilderContentProps {
     flow_id: string;
@@ -68,6 +70,9 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
 
     // Use ReactFlow's instance hook instead of managing state manually
     const reactFlowInstance = useReactFlow();
+
+    // Use node store for accessing node specifications
+    const { getNodeSpecByRFNodeType } = useNodeStore();
 
     // Node state management
     const updateHandlers = useNodeUpdate(setNodes, setEdges, currentEdges);
@@ -170,6 +175,103 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
         );
     }
 
+    const onConnectStart = (
+        event: MouseEvent | TouchEvent,
+        {
+            nodeId,
+            handleId,
+            handleType,
+        }: {
+            nodeId: string | null;
+            handleId: string | null;
+            handleType: string | null;
+        }
+    ) => {
+        console.log('Connection started from:', {
+            nodeId,
+            handleId,
+            handleType,
+        });
+
+        // If connection starts from a source handle, determine which target handles are compatible
+        if (nodeId && handleId && handleType === 'source') {
+            const sourceNode = currentNodes.find(node => node.id === nodeId);
+            if (!sourceNode) return;
+
+            const sourceNodeSpec = getNodeSpecByRFNodeType(
+                sourceNode.type ?? ''
+            );
+            if (!sourceNodeSpec) return;
+
+            // Create a validator instance to access private methods
+            const validator = new ConnectionValidator(
+                currentEdges,
+                currentNodes,
+                getNodeSpecByRFNodeType
+            );
+
+            // Get the source output handle using private method access
+            const sourceOutputHandle = (validator as any).getSourceOutputHandle(
+                handleId,
+                sourceNodeSpec
+            );
+            if (!sourceOutputHandle) return;
+
+            // Get source node mode
+            const sourceNodeMode = sourceNode.data?.mode as string;
+
+            // Find all connectable target handles
+            const connectableHandles: Array<{
+                nodeId: string;
+                handleId: string;
+                handleType: string;
+                nodeName: string;
+                inputName: string;
+                isCompatible: boolean;
+            }> = [];
+
+            // Check all nodes for compatible input handles
+            currentNodes.forEach(node => {
+                if (node.type === undefined) return;
+
+                const nodeSpec = getNodeSpecByRFNodeType(node.type);
+                if (!nodeSpec) return;
+
+                // Check each input handle for compatibility
+                nodeSpec.inputs.forEach((input, index) => {
+                    const isCompatible =
+                        (validator as any).areTypesCompatible(
+                            sourceNodeMode,
+                            sourceOutputHandle.type_detail,
+                            input.type_detail
+                        ) &&
+                        input.allow_incoming_edges !== false &&
+                        nodeId !== node.id;
+
+                    if (isCompatible) {
+                        connectableHandles.push({
+                            nodeId: node.id,
+                            handleId: `input:${index}`,
+                            handleType: 'target',
+                            nodeName: (node.data?.label as string) || node.id,
+                            inputName: input.name || `Input ${index}`,
+                            isCompatible,
+                        });
+                    }
+                });
+            });
+
+            // Print out all connectable handles
+            console.log('Connectable handles found:', connectableHandles);
+
+            // Also log a summary
+            console.log(
+                `Found ${connectableHandles.length} connectable handles:`,
+                connectableHandles.map(h => `${h.nodeName} (${h.inputName})`)
+            );
+        }
+    };
+
     return (
         <div className="w-full h-screen bg-gray-100 flex">
             <div
@@ -195,6 +297,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
                     onNodesChange={onNodesChange}
                     onEdgesChange={onEdgesChange}
                     onConnect={onConnectV2}
+                    onConnectStart={onConnectStart}
                     isValidConnection={isValidConnection}
                     minZoom={0.88}
                     maxZoom={2}
