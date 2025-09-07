@@ -64,7 +64,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
         deselectNode,
         toggleSidebarCollapse,
         closeSidebar,
-    } = useSelectedNode();
+    } = useSelectedNode(setNodes);
 
     // Use ReactFlow's instance hook instead of managing state manually
     const reactFlowInstance = useReactFlow();
