@@ -666,10 +666,30 @@ class GraphExecutor:
                 f"👉 adapted_output_value_to_transfer: {adapted_output_value_to_transfer}"
             )
 
-            # Step 7: Assign the copied value to the target handle
-            successor_node_data.input_values[target_handle] = (
-                adapted_output_value_to_transfer
-            )
+            # Step 7: Handle assignment based on multiple incoming edges setting
+            if input_handle_from_successor_node.allow_multiple_incoming_edges:
+                # If multiple incoming edges are allowed, maintain a list
+                existing_value = successor_node_data.input_values.get(target_handle)
+
+                if existing_value is None:
+                    # No existing value, create a new list with the current value
+                    successor_node_data.input_values[target_handle] = [
+                        adapted_output_value_to_transfer
+                    ]
+                elif isinstance(existing_value, list):
+                    # Existing value is already a list, append to it
+                    existing_value.append(adapted_output_value_to_transfer)
+                else:
+                    # Existing value is not a list, convert to list and append
+                    successor_node_data.input_values[target_handle] = [
+                        existing_value,
+                        adapted_output_value_to_transfer,
+                    ]
+            else:
+                # Multiple incoming edges not allowed, direct assignment
+                successor_node_data.input_values[target_handle] = (
+                    adapted_output_value_to_transfer
+                )
 
             # Step 8: Update the graph with the modified node data
             self.graph.nodes[successor_node_id]["data"] = successor_node_data

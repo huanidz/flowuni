@@ -20,7 +20,8 @@ class StringAggregatorNode(Node):
             NodeInput(
                 name="strings",
                 type=TextFieldInputHandle(),
-                description="The strings to be aggregated (comma-separated or newline-separated).",  # noqa E501
+                description="The strings to be aggregated (can be a single string with comma/newline separation or a list of strings).",  # noqa E501
+                allow_multiple_incoming_edges=True,
             ),
             NodeInput(
                 name="delimiter",
@@ -74,7 +75,8 @@ class StringAggregatorNode(Node):
         Returns:
             Dictionary containing the aggregated string
         """
-        strings_input = inputs.get("strings", "")
+        strings_input = inputs.get("strings", [])
+        logger.info(f"👉 strings_input: {strings_input}")
         delimiter = inputs.get("delimiter", ", ")
         aggregation_mode = inputs.get("aggregation_mode", "join").lower()
         filter_empty = str(inputs.get("filter_empty", "true")).lower() == "true"
@@ -84,14 +86,18 @@ class StringAggregatorNode(Node):
             f"Aggregating str(s) with mode: {aggregation_mode}, delimiter: '{delimiter}'"  # noqa E501
         )
 
-        # Parse the strings input
+        # Parse the strings input - handle both list and string inputs
         if not strings_input:
             return {"aggregated_string": ""}
 
-        # Split strings by common delimiters (comma, newline, or whitespace)
-        import re
+        # Convert to list if it's a single string (for backward compatibility)
+        if isinstance(strings_input, str):
+            import re
 
-        strings = re.split(r"[,;\n\t]+", str(strings_input))
+            strings = re.split(r"[,;\n\t]+", strings_input)
+        else:
+            # Assume it's already a list of strings
+            strings = strings_input
 
         # Clean up each string
         processed_strings = []
