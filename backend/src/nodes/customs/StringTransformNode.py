@@ -1,7 +1,7 @@
+from loguru import logger
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.core.NodeParameterSpec import ParameterSpec
-from src.nodes.handles.basics.inputs import NumberInputHandle
 from src.nodes.handles.basics.inputs.TextFieldInputHandle import TextFieldInputHandle
 from src.nodes.handles.basics.outputs import StringOutputHandle
 from src.nodes.NodeBase import Node, NodeSpec
@@ -28,8 +28,9 @@ class StringTransformNode(Node):
         parameters=[
             ParameterSpec(
                 name="delay",
-                type=NumberInputHandle(),
+                type=TextFieldInputHandle(),
                 default=0,
+                description="Delay in seconds.",
             )
         ],
         can_be_tool=False,
@@ -37,6 +38,8 @@ class StringTransformNode(Node):
 
     def process(self, input_values, parameter_values):
         input_string = input_values["input"]
+
+        logger.info(f"👉 parameter_values: {parameter_values}")
 
         import time
 

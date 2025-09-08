@@ -9,7 +9,7 @@ export type {
     UpdateNodeExecutionResultFunction,
     UpdateNodeExecutionStatusFunction,
 } from './types';
-export type { NodeParameterSpec, NodeInput, NodeOutput } from './types';
+export type { NodeInput, NodeOutput } from './types';
 
 // Export store
 export { default as useNodeStore } from './stores';

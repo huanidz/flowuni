@@ -125,10 +125,19 @@ class Node(ABC):
     def _extract_parameter_values(self, node_data: "NodeData") -> Dict[str, Any]:
         """Extract parameter values from node data with defaults."""
         param_values = node_data.parameter_values or {}
-        return {
-            name: param_values.get(name, spec.default)
-            for name, spec in self.spec.parameters.items()
-        }
+        extracted_params = {}
+
+        for param_spec in self.spec.parameters:
+            value = param_values.get(param_spec.name, param_spec.default)
+
+            if value is None and param_spec.required:
+                raise NodeValidationError(
+                    f"Missing required parameter: '{param_spec.name}'"
+                )
+
+            extracted_params[param_spec.name] = value
+
+        return extracted_params
 
     def _extract_tool_configs(self, node_data: "NodeData") -> Dict[str, Any]:
         return node_data.tool_configs
