@@ -18,7 +18,7 @@ from src.nodes.primitives import (
 __all__ = [
     ChatInput,
     ChatOutput,
-    # MultiInputNode,
+    MultiInputNode,
     # MultiOutputNode,
     OneInOneOutNode,
     StringTransformNode,

@@ -26,3 +26,9 @@ class MultiInputNode(Node):
 
     def process(self, inputs, parameters):
         return super().process(inputs, parameters)
+
+    def build_tool(self, inputs_values, tool_configs):
+        return
+
+    def process_tool(self, inputs_values, parameter_values, tool_inputs):
+        return

@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, useEffect, useState } from 'react';
+import React, { useRef, useCallback, useEffect } from 'react';
 import FlowToolbar from './FlowToolBar';
 import NodePalette from './FlowNodePallete';
 import {
@@ -17,13 +17,13 @@ import { useDragDropHandler } from '@/features/flows/hooks/useDragAndDropHandler
 import { useFlowActions } from '@/features/flows/hooks/useFlowActions';
 import { useCurrentFlowState } from '../../hooks/useCurrentFlowState';
 import { useConnectionValidation } from '../../hooks/useConnectionValidator';
+import { useConnectionHighlighting } from '../../hooks/useHandleConnectionHighlighting';
 import { useSelectedNode } from '@/features/flows/hooks/useSelectedNode';
 import { addEdge } from '@xyflow/react';
 import { type Connection } from '@xyflow/react';
 import { NodeConfigSidebar } from '@/features/flows/components/Sidebar/NodeConfigSidebar';
 import PlaygroundChatBox from './PlaygroundChatBox';
 import useFlowStore from '@/features/flows/stores/flow_stores';
-import { ConnectionValidator } from '@/features/flows/utils/NodeConnectionValidator';
 import { useNodeStore } from '@/features/nodes';
 
 interface FlowBuilderContentProps {
@@ -73,89 +73,12 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
 
     // Use node store for accessing node specifications
     const { getNodeSpecByRFNodeType } = useNodeStore();
-
-    // State for tracking highlighted handles
-    const [highlightedHandles, setHighlightedHandles] = useState<
-        Array<{
-            nodeId: string;
-            handleId: string;
-        }>
-    >([]);
-
-    // Function to highlight handles by CSS class
-    const highlightHandles = useCallback(
-        (handles: Array<{ nodeId: string; handleId: string }>) => {
-            // Remove existing highlights
-            document.querySelectorAll('.node-input-handle').forEach(element => {
-                (element as HTMLElement).classList.remove('highlighted-handle');
-            });
-
-            // Add highlights to compatible handles using multiple strategies
-            handles.forEach(({ nodeId, handleId }) => {
-                let handleElement: Element | null = null;
-
-                // Strategy: Use data attributes or other identifying features
-                if (!handleElement) {
-                    const allHandles =
-                        document.querySelectorAll('.node-input-handle');
-                    console.log('All handles:', allHandles);
-                    for (const element of allHandles) {
-                        const parentNode = element.closest('.react-flow__node');
-                        if (
-                            parentNode &&
-                            (parentNode as HTMLElement).getAttribute(
-                                'data-id'
-                            ) === nodeId
-                        ) {
-                            console.log('Found parent node:', parentNode);
-                            // Check if this might be the right handle based on position or other attributes
-                            handleElement = element;
-                            break;
-                        }
-                    }
-                }
-
-                console.log(
-                    'Highlighting handle:',
-                    handleElement,
-                    'for nodeId:',
-                    nodeId,
-                    'handleId:',
-                    handleId
-                );
-                if (handleElement) {
-                    (handleElement as HTMLElement).classList.add(
-                        'highlighted-handle'
-                    );
-                } else {
-                    console.log(
-                        'Handle element not found for nodeId:',
-                        nodeId,
-                        'handleId:',
-                        handleId
-                    );
-                    // Debug: Log all available node-input-handle elements
-                    const allHandles =
-                        document.querySelectorAll('.node-input-handle');
-                    console.log(
-                        'Available node-input-handle elements:',
-                        allHandles.length
-                    );
-                    allHandles.forEach((el, index) => {
-                        console.log(`Handle ${index}:`, {
-                            id: (el as HTMLElement).id,
-                            class: (el as HTMLElement).className,
-                            nodeId: (
-                                el.closest('.react-flow__node') as HTMLElement
-                            )?.getAttribute('data-id'),
-                            parentNode: el.closest('.react-flow__node'),
-                        });
-                    });
-                }
-            });
-        },
-        []
-    );
+    const { handleConnectionStart, handleConnectionEnd } =
+        useConnectionHighlighting({
+            currentNodes,
+            currentEdges,
+            getNodeSpecByRFNodeType,
+        });
 
     // Node state management
     const updateHandlers = useNodeUpdate(setNodes, setEdges, currentEdges);
@@ -258,151 +181,6 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
         );
     }
 
-    const onConnectStart = (
-        event: MouseEvent | TouchEvent,
-        {
-            nodeId,
-            handleId,
-            handleType,
-        }: {
-            nodeId: string | null;
-            handleId: string | null;
-            handleType: string | null;
-        }
-    ) => {
-        console.log('Connection started from:', {
-            nodeId,
-            handleId,
-            handleType,
-        });
-
-        // Clear previous highlights
-        setHighlightedHandles([]);
-
-        // If connection starts from a source handle, determine which target handles are compatible
-        if (nodeId && handleType === 'source') {
-            const sourceNode = currentNodes.find(node => node.id === nodeId);
-            if (!sourceNode) {
-                console.error('Source node not found');
-                return;
-            }
-
-            const sourceNodeSpec = getNodeSpecByRFNodeType(
-                sourceNode.type ?? ''
-            );
-            if (!sourceNodeSpec) {
-                console.error('Source node spec not found');
-                return;
-            }
-
-            // Create a validator instance to access private methods
-            const validator = new ConnectionValidator(
-                currentEdges,
-                currentNodes,
-                getNodeSpecByRFNodeType
-            );
-
-            // Get the source output handle using private method access
-            const sourceOutputHandle = (validator as any).getSourceOutputHandle(
-                handleId,
-                sourceNodeSpec
-            );
-            if (!sourceOutputHandle) {
-                console.error('Source output handle not found');
-                return;
-            }
-
-            // Get source node mode
-            const sourceNodeMode = sourceNode.data?.mode as string;
-
-            // Find all connectable target handles
-            const connectableHandles: Array<{
-                nodeId: string;
-                handleId: string;
-                handleType: string;
-                nodeName: string;
-                inputName: string;
-                isCompatible: boolean;
-            }> = [];
-
-            // Check all nodes for compatible input handles
-            currentNodes.forEach(node => {
-                if (node.type === undefined) {
-                    console.error('Node type not found');
-                    return;
-                }
-
-                const nodeSpec = getNodeSpecByRFNodeType(node.type);
-                if (!nodeSpec) {
-                    console.error('Node spec not found');
-                    return;
-                }
-
-                // Check each input handle for compatibility
-                nodeSpec.inputs.forEach((input, index) => {
-                    const isCompatible =
-                        (validator as any).areTypesCompatible(
-                            sourceNodeMode,
-                            sourceOutputHandle.type_detail,
-                            input.type_detail
-                        ) &&
-                        input.allow_incoming_edges !== false &&
-                        nodeId !== node.id;
-
-                    if (isCompatible) {
-                        // Use the actual input name to match the DOM structure
-                        const handleId = `${input.name}-index:${index}`;
-                        connectableHandles.push({
-                            nodeId: node.id,
-                            handleId: handleId,
-                            handleType: 'target',
-                            nodeName: (node.data?.label as string) || node.id,
-                            inputName: input.name || `Input ${index}`,
-                            isCompatible,
-                        });
-                    }
-                });
-            });
-
-            // Print out all connectable handles
-            console.log('Connectable handles found:', connectableHandles);
-
-            // Also log a summary
-            console.log(
-                `Found ${connectableHandles.length} connectable handles:`,
-                connectableHandles.map(h => `${h.nodeName} (${h.inputName})`)
-            );
-
-            // Set highlighted handles
-            const handlesToHighlight = connectableHandles.map(h => ({
-                nodeId: h.nodeId,
-                handleId: h.handleId,
-            }));
-            console.log('Highlighted handles:', handlesToHighlight);
-            setHighlightedHandles(handlesToHighlight);
-
-            // Apply highlighting using CSS class
-            setTimeout(() => {
-                highlightHandles(handlesToHighlight);
-            }, 0);
-        }
-    };
-
-    const onConnectEnd = () => {
-        // Clear highlights
-        setHighlightedHandles([]);
-
-        // Remove highlighting styles from all handles
-        document.querySelectorAll('.node-input-handle').forEach(element => {
-            (element as HTMLElement).classList.remove('highlighted-handle');
-        });
-
-        // Also remove from any highlighted handles that might have been added
-        document.querySelectorAll('.highlighted-handle').forEach(element => {
-            (element as HTMLElement).classList.remove('highlighted-handle');
-        });
-    };
-
     return (
         <div className="w-full h-screen bg-gray-100 flex">
             <div
@@ -428,8 +206,8 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
                     onNodesChange={onNodesChange}
                     onEdgesChange={onEdgesChange}
                     onConnect={onConnectV2}
-                    onConnectStart={onConnectStart}
-                    onConnectEnd={onConnectEnd}
+                    onConnectStart={handleConnectionStart}
+                    onConnectEnd={handleConnectionEnd}
                     isValidConnection={isValidConnection}
                     minZoom={0.88}
                     maxZoom={2}
