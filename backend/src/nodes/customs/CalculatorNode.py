@@ -22,6 +22,7 @@ class CalculatorNode(Node):
                 type=TextFieldInputHandle(),
                 description="The expression need to be evaluated.",
                 enable_as_whole_for_tool=True,
+                required=True,
             ),
         ],
         outputs=[

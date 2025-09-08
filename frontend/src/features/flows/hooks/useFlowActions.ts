@@ -3,9 +3,13 @@ import type { Node, Edge } from '@xyflow/react';
 import useFlowStore from '@/features/flows/stores/flow_stores';
 import { getFlowGraphData, logNodeDetails } from '@/features/flows/utils';
 import { saveFlow, compileFlow, runFlow } from '@/features/flows/api';
-import { watchFlowExecution } from '@/api/sse';
 import { toast } from 'sonner';
 import { useSelectedNode } from '@/features/flows/hooks/useSelectedNode';
+import {
+    createSSEEventHandler,
+    validateFlowExecution,
+    handleFlowExecutionError,
+} from '@/features/flows/utils/FlowActionUtils';
 
 type SetNodesType = React.Dispatch<React.SetStateAction<Node[]>>;
 type SetEdgesType = React.Dispatch<React.SetStateAction<Edge[]>>;
@@ -49,23 +53,17 @@ export const useFlowActions = (
     nodeUpdateHandlers: any
 ) => {
     const { current_flow } = useFlowStore();
-    const { selectedNode } = useSelectedNode();
+    const { selectedNode } = useSelectedNode(setNodes);
 
-    const {
-        updateNodeExecutionResult,
-        updateNodeExecutionStatus,
-        updateNodeOutputData,
-    } = nodeUpdateHandlers;
+    const handleSSEEvent = createSSEEventHandler(nodeUpdateHandlers);
 
     const onCompileFlow = useCallback(() => {
         return handleFlowRequest(nodes, edges, compileFlow, 'COMPILATION');
     }, [nodes, edges]);
 
     const onRunFlow = useCallback(async () => {
-        if (!current_flow) {
-            console.warn('Cannot run flow: No current flow');
-            return;
-        }
+        const validation = validateFlowExecution(current_flow, null, toast);
+        if (!validation.isValid) return;
 
         console.log('[onRunFlow] Running flow...');
 
@@ -79,84 +77,23 @@ export const useFlowActions = (
                 task_id
             );
 
-            const eventSource = watchFlowExecution(task_id, msg => {
-                console.log('[SSE] Raw message received:', msg);
-
-                let parsed;
-
-                try {
-                    parsed = JSON.parse(msg);
-                    console.log('[SSE] Parsed message:', parsed);
-                } catch (e) {
-                    console.error('[SSE] Failed to parse message:', e);
-                    return;
-                }
-
-                const data = parsed?.data;
-                if (!data) {
-                    console.warn(
-                        '[SSE] No data field in parsed message:',
-                        parsed
-                    );
-                    return;
-                }
-
-                const node_id = parsed?.node_id;
-                const event_status = parsed?.event;
-                const { input_values, output_values } = data;
-                console.log(
-                    '[SSE] Updating node:',
-                    node_id,
-                    'with input_values:',
-                    input_values
-                );
-                console.log(
-                    '[SSE] Updating node:',
-                    node_id,
-                    'with output_values:',
-                    output_values
-                );
-
-                // Update node execution data using the provided handlers
-                if (updateNodeExecutionResult) {
-                    updateNodeExecutionResult(
-                        node_id,
-                        JSON.stringify(parsed, null, 2)
-                    );
-                }
-                if (updateNodeExecutionStatus) {
-                    updateNodeExecutionStatus(node_id, event_status);
-                }
-                if (updateNodeOutputData && output_values) {
-                    // Update each output value individually
-                    Object.entries(output_values).forEach(
-                        ([outputName, value]) => {
-                            updateNodeOutputData(node_id, outputName, value);
-                        }
-                    );
-                }
-            });
+            const eventSource = handleSSEEvent(task_id);
         } catch (err) {
-            console.error('[onRunFlow] Flow run failed:', err);
+            handleFlowExecutionError(err, 'onRunFlow', toast);
         }
     }, [nodes, edges, current_flow, nodeUpdateHandlers]);
 
     const onRunFlowFromSelectedNode = useCallback(async () => {
-        if (!current_flow) {
-            console.warn('Cannot run flow: No current flow');
-            return;
-        }
-
-        if (!selectedNode) {
-            toast.warning('No node selected', {
-                description: 'Please select a node to run the flow from.',
-            });
-            return;
-        }
+        const validation = validateFlowExecution(
+            current_flow,
+            selectedNode,
+            toast
+        );
+        if (!validation.isValid) return;
 
         console.log(
             '[onRunFlowFromSelectedNode] Running flow from selected node...',
-            selectedNode.id
+            selectedNode?.id
         );
 
         try {
@@ -164,7 +101,7 @@ export const useFlowActions = (
             const response = await runFlow(
                 nodes,
                 edges,
-                selectedNode.id,
+                selectedNode?.id || '',
                 'downstream'
             );
             const { task_id } = response;
@@ -178,97 +115,30 @@ export const useFlowActions = (
                 task_id
             );
 
-            const eventSource = watchFlowExecution(task_id, msg => {
-                console.log('[SSE] Raw message received:', msg);
-
-                let parsed;
-
-                try {
-                    parsed = JSON.parse(msg);
-                    console.log('[SSE] Parsed message:', parsed);
-                } catch (e) {
-                    console.error('[SSE] Failed to parse message:', e);
-                    return;
-                }
-
-                const data = parsed?.data;
-                if (!data) {
-                    console.warn(
-                        '[SSE] No data field in parsed message:',
-                        parsed
-                    );
-                    return;
-                }
-
-                const node_id = parsed?.node_id;
-                const event_status = parsed?.event;
-                const { input_values, output_values } = data;
-                console.log(
-                    '[SSE] Updating node:',
-                    node_id,
-                    'with input_values:',
-                    input_values
-                );
-                console.log(
-                    '[SSE] Updating node:',
-                    node_id,
-                    'with output_values:',
-                    output_values
-                );
-
-                // Update node execution data using the provided handlers
-                if (updateNodeExecutionResult) {
-                    updateNodeExecutionResult(
-                        node_id,
-                        JSON.stringify(parsed, null, 2)
-                    );
-                }
-                if (updateNodeExecutionStatus) {
-                    updateNodeExecutionStatus(node_id, event_status);
-                }
-                if (updateNodeOutputData && output_values) {
-                    // Update each output value individually
-                    Object.entries(output_values).forEach(
-                        ([outputName, value]) => {
-                            updateNodeOutputData(node_id, outputName, value);
-                        }
-                    );
-                }
-            });
+            const eventSource = handleSSEEvent(task_id);
         } catch (err) {
-            console.error('[onRunFlowFromSelectedNode] Flow run failed:', err);
-            toast.error('Failed to run flow from selected node', {
-                description:
-                    err instanceof Error
-                        ? err.message
-                        : 'Unknown error occurred',
-            });
+            handleFlowExecutionError(err, 'onRunFlowFromSelectedNode', toast);
         }
     }, [nodes, edges, current_flow, selectedNode, nodeUpdateHandlers]);
 
     const onRunSelectedOnly = useCallback(async () => {
-        if (!current_flow) {
-            console.warn('Cannot run flow: No current flow');
-            return;
-        }
-
-        if (!selectedNode) {
-            toast.warning('No node selected', {
-                description: 'Please select a node to run the flow from.',
-            });
-            return;
-        }
+        const validation = validateFlowExecution(
+            current_flow,
+            selectedNode,
+            toast
+        );
+        if (!validation.isValid) return;
 
         console.log(
             '[onRunSelectedOnly] Running selected node only...',
-            selectedNode.id
+            selectedNode?.id
         );
 
         try {
             const response = await runFlow(
                 nodes,
                 edges,
-                selectedNode.id,
+                selectedNode?.id || '',
                 'node_only' // <- Only different in this value
             );
             const { task_id } = response;
@@ -279,71 +149,9 @@ export const useFlowActions = (
                 task_id
             );
 
-            const eventSource = watchFlowExecution(task_id, msg => {
-                console.log('[SSE] Raw message received:', msg);
-
-                let parsed;
-
-                try {
-                    parsed = JSON.parse(msg);
-                    console.log('[SSE] Parsed message:', parsed);
-                } catch (e) {
-                    console.error('[SSE] Failed to parse message:', e);
-                    return;
-                }
-
-                const data = parsed?.data;
-                if (!data) {
-                    console.warn(
-                        '[SSE] No data field in parsed message:',
-                        parsed
-                    );
-                    return;
-                }
-
-                const node_id = parsed?.node_id;
-                const event_status = parsed?.event;
-                const { input_values, output_values } = data;
-                console.log(
-                    '[SSE] Updating node:',
-                    node_id,
-                    'with input_values:',
-                    input_values
-                );
-                console.log(
-                    '[SSE] Updating node:',
-                    node_id,
-                    'with output_values:',
-                    output_values
-                );
-
-                // Update node execution data using the provided handlers
-                if (updateNodeExecutionResult) {
-                    updateNodeExecutionResult(
-                        node_id,
-                        JSON.stringify(parsed, null, 2)
-                    );
-                }
-                if (updateNodeExecutionStatus) {
-                    updateNodeExecutionStatus(node_id, event_status);
-                }
-                if (updateNodeOutputData && output_values) {
-                    // Update each output value individually
-                    Object.entries(output_values).forEach(
-                        ([outputName, value]) => {
-                            updateNodeOutputData(node_id, outputName, value);
-                        }
-                    );
-                }
-            });
+            const eventSource = handleSSEEvent(task_id);
         } catch (err) {
-            console.error('[onRunSelectedOnly] Flow run failed:', err);
-            toast.error('Failed to run selected node only', {
-                description:
-                    err instanceof Error
-                        ? err.message
-                        : 'Unknown error occurred',
-            });
+            handleFlowExecutionError(err, 'onRunSelectedOnly', toast);
         }
     }, [nodes, edges, current_flow, selectedNode, nodeUpdateHandlers]);
 
