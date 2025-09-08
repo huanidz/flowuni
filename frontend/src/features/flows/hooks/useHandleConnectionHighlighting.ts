@@ -36,30 +36,11 @@ export const useConnectionHighlighting = ({
                     (handleElement as HTMLElement).classList.add(
                         'highlighted-handle'
                     );
-                    console.log('Successfully highlighted handle:', {
-                        nodeId,
-                        handleId,
-                    });
                 } else {
                     console.log('Handle element not found for:', {
                         nodeId,
                         handleId,
                     });
-
-                    // Debug: Check what handles are available for this node
-                    const nodeHandles = document.querySelectorAll(
-                        `[data-nodeid="${nodeId}"]`
-                    );
-                    console.log(
-                        `Available handles for node ${nodeId}:`,
-                        Array.from(nodeHandles).map(el => ({
-                            handleId: (el as HTMLElement).getAttribute(
-                                'data-handleid'
-                            ),
-                            id: (el as HTMLElement).getAttribute('data-id'),
-                            classes: (el as HTMLElement).className,
-                        }))
-                    );
                 }
             });
         },
@@ -161,11 +142,110 @@ export const useConnectionHighlighting = ({
                 });
             });
 
-            console.log('Connectable handles found:', connectableHandles);
-            console.log(
-                `Found ${connectableHandles.length} connectable handles:`,
-                connectableHandles.map(h => `${h.nodeName} (${h.inputName})`)
+            return connectableHandles;
+        },
+        [currentNodes, currentEdges, getNodeSpecByRFNodeType]
+    );
+
+    // Function to find compatible source handles for a target
+    const findCompatibleSourceHandles = useCallback(
+        (targetNodeId: string, targetHandleId: string | null) => {
+            const targetNode = currentNodes.find(
+                node => node.id === targetNodeId
             );
+            if (!targetNode) {
+                console.error('Target node not found');
+                return [];
+            }
+
+            const targetNodeSpec = getNodeSpecByRFNodeType(
+                targetNode.type ?? ''
+            );
+            if (!targetNodeSpec) {
+                console.error('Target node spec not found');
+                return [];
+            }
+
+            // Create a validator instance to access private methods
+            const validator = new ConnectionValidator(
+                currentEdges,
+                currentNodes,
+                getNodeSpecByRFNodeType
+            );
+
+            // Parse the target handle ID to find the input
+            let targetInput: any = null;
+            let targetInputIndex = -1;
+
+            if (targetHandleId) {
+                // Handle format: "inputName-index:N"
+                const match = targetHandleId.match(/^(.+)-index:(\d+)$/);
+                if (match) {
+                    const inputName = match[1];
+                    targetInputIndex = parseInt(match[2]);
+                    targetInput = targetNodeSpec.inputs[targetInputIndex];
+
+                    if (!targetInput || targetInput.name !== inputName) {
+                        console.error(
+                            'Target input handle not found or name mismatch'
+                        );
+                        return [];
+                    }
+                } else {
+                    console.error('Invalid target handle ID format');
+                    return [];
+                }
+            } else {
+                console.error('Target handle ID is null');
+                return [];
+            }
+
+            // Find all connectable source handles
+            const connectableHandles: Array<{
+                nodeId: string;
+                handleId: string;
+                handleType: string;
+                nodeName: string;
+                outputName: string;
+                isCompatible: boolean;
+            }> = [];
+
+            // Check all nodes for compatible output handles
+            currentNodes.forEach(node => {
+                if (node.type === undefined || node.id === targetNodeId) {
+                    return;
+                }
+
+                const nodeSpec = getNodeSpecByRFNodeType(node.type);
+                if (!nodeSpec) {
+                    return;
+                }
+
+                const nodeMode = node.data?.mode as string;
+
+                // Check each output handle for compatibility
+                nodeSpec.outputs?.forEach((output: any, index: number) => {
+                    const isCompatible =
+                        (validator as any).areTypesCompatible(
+                            nodeMode,
+                            output.type_detail,
+                            targetInput.type_detail
+                        ) && targetInput.allow_incoming_edges !== false;
+
+                    if (isCompatible) {
+                        // Create handle ID for source output (assuming similar format)
+                        const handleId = `${output.name}-index:${index}`;
+                        connectableHandles.push({
+                            nodeId: node.id,
+                            handleId: handleId,
+                            handleType: 'source',
+                            nodeName: (node.data?.label as string) || node.id,
+                            outputName: output.name || `Output ${index}`,
+                            isCompatible,
+                        });
+                    }
+                });
+            });
 
             return connectableHandles;
         },
@@ -186,34 +266,47 @@ export const useConnectionHighlighting = ({
                 handleType: string | null;
             }
         ) => {
-            console.log('Connection started from:', {
-                nodeId,
-                handleId,
-                handleType,
-            });
+            if (!nodeId) return;
 
-            // If connection starts from a source handle, find and highlight compatible targets
-            if (nodeId && handleType === 'source') {
+            let handlesToHighlight: Array<{
+                nodeId: string;
+                handleId: string;
+            }> = [];
+
+            if (handleType === 'source') {
+                // Starting from source handle - find compatible target handles
                 const compatibleHandles = findCompatibleTargetHandles(
                     nodeId,
                     handleId
                 );
-
-                // Convert to the format expected by highlightHandles
-                const handlesToHighlight = compatibleHandles.map(h => ({
+                handlesToHighlight = compatibleHandles.map(h => ({
                     nodeId: h.nodeId,
                     handleId: h.handleId,
                 }));
+            } else if (handleType === 'target') {
+                // Starting from target handle - find compatible source handles
+                const compatibleHandles = findCompatibleSourceHandles(
+                    nodeId,
+                    handleId
+                );
+                handlesToHighlight = compatibleHandles.map(h => ({
+                    nodeId: h.nodeId,
+                    handleId: h.handleId,
+                }));
+            }
 
-                console.log('Highlighted handles:', handlesToHighlight);
-
-                // Apply highlighting with a small delay to ensure DOM is ready
+            // Apply highlighting with a small delay to ensure DOM is ready
+            if (handlesToHighlight.length > 0) {
                 setTimeout(() => {
                     highlightHandles(handlesToHighlight);
                 }, 0);
             }
         },
-        [findCompatibleTargetHandles, highlightHandles]
+        [
+            findCompatibleTargetHandles,
+            findCompatibleSourceHandles,
+            highlightHandles,
+        ]
     );
 
     // Handler for connection end - clears all highlights
@@ -227,5 +320,6 @@ export const useConnectionHighlighting = ({
         highlightHandles,
         clearHighlights,
         findCompatibleTargetHandles,
+        findCompatibleSourceHandles,
     };
 };
