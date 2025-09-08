@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, useEffect, useState } from 'react';
+import React, { useRef, useCallback, useEffect } from 'react';
 import FlowToolbar from './FlowToolBar';
 import NodePalette from './FlowNodePallete';
 import {
@@ -17,12 +17,14 @@ import { useDragDropHandler } from '@/features/flows/hooks/useDragAndDropHandler
 import { useFlowActions } from '@/features/flows/hooks/useFlowActions';
 import { useCurrentFlowState } from '../../hooks/useCurrentFlowState';
 import { useConnectionValidation } from '../../hooks/useConnectionValidator';
+import { useConnectionHighlighting } from '../../hooks/useHandleConnectionHighlighting';
 import { useSelectedNode } from '@/features/flows/hooks/useSelectedNode';
 import { addEdge } from '@xyflow/react';
 import { type Connection } from '@xyflow/react';
 import { NodeConfigSidebar } from '@/features/flows/components/Sidebar/NodeConfigSidebar';
 import PlaygroundChatBox from './PlaygroundChatBox';
 import useFlowStore from '@/features/flows/stores/flow_stores';
+import { useNodeStore } from '@/features/nodes';
 
 interface FlowBuilderContentProps {
     flow_id: string;
@@ -68,6 +70,15 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
 
     // Use ReactFlow's instance hook instead of managing state manually
     const reactFlowInstance = useReactFlow();
+
+    // Use node store for accessing node specifications
+    const { getNodeSpecByRFNodeType } = useNodeStore();
+    const { handleConnectionStart, handleConnectionEnd } =
+        useConnectionHighlighting({
+            currentNodes,
+            currentEdges,
+            getNodeSpecByRFNodeType,
+        });
 
     // Node state management
     const updateHandlers = useNodeUpdate(setNodes, setEdges, currentEdges);
@@ -195,6 +206,8 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
                     onNodesChange={onNodesChange}
                     onEdgesChange={onEdgesChange}
                     onConnect={onConnectV2}
+                    onConnectStart={handleConnectionStart}
+                    onConnectEnd={handleConnectionEnd}
                     isValidConnection={isValidConnection}
                     minZoom={0.88}
                     maxZoom={2}
