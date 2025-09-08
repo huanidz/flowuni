@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronRight, ChevronDown, AlertTriangle } from 'lucide-react';
-import type { TypeDetail } from '@/features/nodes/types';
+import type { IOTypeDetail } from '@/features/nodes/types';
 
 interface FieldNode {
     path: string;
@@ -17,7 +17,7 @@ interface ToolableJsonHandleInputProps {
     description?: string;
     value: any;
     onChange?: (value: { example_json: any; toolable_config: any }) => void;
-    type_detail: TypeDetail;
+    type_detail: IOTypeDetail;
     disabled: boolean;
     isWholeAsToolMode?: boolean;
 }

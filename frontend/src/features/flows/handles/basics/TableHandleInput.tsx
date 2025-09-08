@@ -9,7 +9,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import type { TypeDetail } from '@/features/nodes/types';
+import type { IOTypeDetail } from '@/features/nodes/types';
 
 interface TableColumn {
     name: string;
@@ -23,7 +23,7 @@ interface TableHandleInputProps {
     description?: string;
     value: any[];
     onChange?: (value: any[]) => void;
-    type_detail: TypeDetail;
+    type_detail: IOTypeDetail;
     disabled?: boolean;
     isWholeAsToolMode?: boolean;
 }

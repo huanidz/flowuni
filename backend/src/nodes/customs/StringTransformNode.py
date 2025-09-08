@@ -1,5 +1,7 @@
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
+from src.nodes.core.NodeParameterSpec import ParameterSpec
+from src.nodes.handles.basics.inputs import NumberInputHandle
 from src.nodes.handles.basics.inputs.TextFieldInputHandle import TextFieldInputHandle
 from src.nodes.handles.basics.outputs import StringOutputHandle
 from src.nodes.NodeBase import Node, NodeSpec
@@ -23,7 +25,13 @@ class StringTransformNode(Node):
                 description="The transformed string.",
             )
         ],
-        parameters={},
+        parameters=[
+            ParameterSpec(
+                name="delay",
+                type=NumberInputHandle(),
+                default=0,
+            )
+        ],
         can_be_tool=False,
     )
 

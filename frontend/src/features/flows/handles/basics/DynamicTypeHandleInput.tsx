@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { TypeDetail, DynamicTypeItem } from '@/features/nodes/types';
+import type { IOTypeDetail, DynamicTypeItem } from '@/features/nodes/types';
 import { HandleComponentRegistry } from '../HandleComponentRegistry';
 import { dynamicTypeHandleStyles } from '../../styles/handleStyles';
 
@@ -8,7 +8,7 @@ interface DynamicTypeHandleInputProps {
     description?: string;
     value: any;
     onChange?: (value: any) => void;
-    type_detail: TypeDetail;
+    type_detail: IOTypeDetail;
     disabled?: boolean;
     nodeId?: string;
     isWholeAsToolMode?: boolean;

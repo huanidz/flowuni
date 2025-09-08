@@ -114,7 +114,7 @@ class AgentNode(Node):
                 description="The response from agent.",
             )
         ],
-        parameters={},
+        parameters=[],
         can_be_tool=False,
     )
 

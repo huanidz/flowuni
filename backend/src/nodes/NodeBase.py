@@ -1,7 +1,7 @@
 # node_base.py
 import json
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, Type, Union, get_args
+from typing import Any, Dict, List, Optional, Type, Union, get_args
 
 from pydantic import BaseModel
 from src.consts.node_consts import NODE_DATA_MODE, NODE_EXECUTION_STATUS
@@ -9,6 +9,7 @@ from src.exceptions.node_exceptions import NodeValidationError
 from src.helpers.PydanticSchemaConverter import PydanticSchemaConverter
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
+from src.nodes.core.NodeParameterSpec import ParameterSpec
 from src.nodes.core.NodeSpec import NodeSpec
 from src.nodes.handles.InputHandleBase import InputHandleTypeBase
 from src.schemas.flowbuilder.flow_graph_schemas import NodeData, ToolConfig
@@ -322,7 +323,7 @@ class Node(ABC):
 
         return raw
 
-    def _serialize_inputs(self) -> list:
+    def _serialize_inputs(self) -> List:
         """Serialize input specifications."""
         serialized_inputs = []
         input_spec: NodeInput
@@ -342,7 +343,7 @@ class Node(ABC):
             )
         return serialized_inputs
 
-    def _serialize_outputs(self) -> list:
+    def _serialize_outputs(self) -> List:
         """Serialize output specifications."""
         serialized_outputs = []
         output_spec: NodeOutput
@@ -359,18 +360,21 @@ class Node(ABC):
             )
         return serialized_outputs
 
-    def _serialize_parameters(self) -> Dict[str, Any]:
+    def _serialize_parameters(self) -> List:
         """Serialize parameter specifications."""
-        params = {}
-        for name, p in self.spec.parameters.items():
-            params[name] = NodeParameterSchema(
-                name=p.name,
-                type_detail=self._serialize_type(p.type),
-                value=p.value,
-                default=p.default,
-                description=p.description,
-            ).model_dump()
-        return params
+        serialized_params = []
+        parameter: ParameterSpec
+        for parameter in self.spec.parameters:
+            serialized_params.append(
+                NodeParameterSchema(
+                    name=parameter.name,
+                    type_detail=self._serialize_type(parameter.type),
+                    value=parameter.value,
+                    default=parameter.default,
+                    description=parameter.description,
+                ).model_dump()
+            )
+        return serialized_params
 
     def _serialize_type(self, t: Union[Type, BaseModel]) -> Dict[str, Any]:
         """

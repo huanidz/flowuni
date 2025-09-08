@@ -33,7 +33,7 @@ class CalculatorNode(Node):
                 enable_for_tool=True,
             ),
         ],
-        parameters={},
+        parameters=[],
         can_be_tool=True,
     )
 

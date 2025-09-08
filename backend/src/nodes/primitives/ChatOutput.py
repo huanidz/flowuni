@@ -15,7 +15,7 @@ class ChatOutput(Node):
             )
         ],
         outputs=[],
-        parameters={},
+        parameters=[],
     )
 
     def process(self, inputs, parameters):

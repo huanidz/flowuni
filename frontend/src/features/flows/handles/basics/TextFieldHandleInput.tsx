@@ -1,6 +1,6 @@
 import React from 'react';
 import { ControlledInput } from '@/features/flows/components/ControlledInput';
-import type { TypeDetail } from '@/features/nodes/types';
+import type { IOTypeDetail } from '@/features/nodes/types';
 import { textfieldHandleStyles } from '../../styles/handleStyles';
 import { TEXT_FIELD_FORMAT } from '../consts/TextFieldHandleInputConsts';
 
@@ -11,7 +11,7 @@ interface TextFieldHandleInputProps {
     onChange?: (value: string) => void;
 
     // Config (NEW)
-    type_detail: TypeDetail;
+    type_detail: IOTypeDetail;
     disabled: boolean;
     isWholeAsToolMode?: boolean;
 }

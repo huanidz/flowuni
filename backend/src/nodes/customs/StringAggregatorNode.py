@@ -58,7 +58,7 @@ class StringAggregatorNode(Node):
                 description="The aggregated result string.",
             ),
         ],
-        parameters={},
+        parameters=[],
         can_be_tool=False,
     )
 
