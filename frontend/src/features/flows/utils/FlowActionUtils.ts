@@ -83,7 +83,6 @@ export const createSSEEventHandler = (nodeUpdateHandlers: any) => {
 export const validateFlowExecution = (
     current_flow: any,
     selectedNode: any,
-    showToast: any,
     allowNoSelection: boolean = false
 ) => {
     if (!current_flow) {
@@ -107,11 +106,7 @@ export const validateFlowExecution = (
  * @param context - Context information (e.g., function name)
  * @param showToast - Function to show toast notifications
  */
-export const handleFlowExecutionError = (
-    error: any,
-    context: string,
-    showToast: any
-) => {
+export const handleFlowExecutionError = (error: any, context: string) => {
     console.error(`[${context}] Flow execution failed:`, error);
 
     const errorMessage =

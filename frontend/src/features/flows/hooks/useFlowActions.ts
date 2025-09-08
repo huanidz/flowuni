@@ -62,7 +62,7 @@ export const useFlowActions = (
     }, [nodes, edges]);
 
     const onRunFlow = useCallback(async () => {
-        const validation = validateFlowExecution(current_flow, null, toast);
+        const validation = validateFlowExecution(current_flow, null);
         if (!validation.isValid) return;
 
         console.log('[onRunFlow] Running flow...');
@@ -79,7 +79,7 @@ export const useFlowActions = (
 
             const eventSource = handleSSEEvent(task_id);
         } catch (err) {
-            handleFlowExecutionError(err, 'onRunFlow', toast);
+            handleFlowExecutionError(err, 'onRunFlow');
         }
     }, [nodes, edges, current_flow, nodeUpdateHandlers]);
 
@@ -87,7 +87,7 @@ export const useFlowActions = (
         const validation = validateFlowExecution(
             current_flow,
             selectedNode,
-            toast
+            true
         );
         if (!validation.isValid) return;
 
@@ -117,16 +117,12 @@ export const useFlowActions = (
 
             const eventSource = handleSSEEvent(task_id);
         } catch (err) {
-            handleFlowExecutionError(err, 'onRunFlowFromSelectedNode', toast);
+            handleFlowExecutionError(err, 'onRunFlowFromSelectedNode');
         }
     }, [nodes, edges, current_flow, selectedNode, nodeUpdateHandlers]);
 
     const onRunSelectedOnly = useCallback(async () => {
-        const validation = validateFlowExecution(
-            current_flow,
-            selectedNode,
-            toast
-        );
+        const validation = validateFlowExecution(current_flow, selectedNode);
         if (!validation.isValid) return;
 
         console.log(
@@ -151,7 +147,7 @@ export const useFlowActions = (
 
             const eventSource = handleSSEEvent(task_id);
         } catch (err) {
-            handleFlowExecutionError(err, 'onRunSelectedOnly', toast);
+            handleFlowExecutionError(err, 'onRunSelectedOnly');
         }
     }, [nodes, edges, current_flow, selectedNode, nodeUpdateHandlers]);
 
