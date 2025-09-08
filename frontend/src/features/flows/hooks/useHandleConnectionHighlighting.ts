@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import type { Node, Edge } from '@xyflow/react';
 import { ConnectionValidator } from '@/features/flows/utils/NodeConnectionValidator';
+import { NODE_DATA_MODE } from '@/features/flows/consts';
 
 interface UseConnectionHighlightingProps {
     currentNodes: Node[];
@@ -27,20 +28,42 @@ export const useConnectionHighlighting = ({
 
             // Add highlights to compatible handles using data attributes
             handles.forEach(({ nodeId, handleId }) => {
-                // Use data-nodeid and data-handleid to find the exact handle
-                const handleElement = document.querySelector(
+                console.log('Highlighting handle:', { nodeId, handleId });
+
+                // First try to find handle with specific handleId
+                let handleElement = document.querySelector(
                     `[data-nodeid="${nodeId}"][data-handleid="${handleId}"]`
                 );
 
-                if (handleElement) {
+                // If not found, this might be a ToolMode handle
+                if (!handleElement && handleId === 'tool-output') {
+                    console.log(
+                        'ToolMode handle not found by ID, searching by node and type...'
+                    );
+                    // Find source handles for this node that don't have a handleId attribute
+                    const nodeHandles = document.querySelectorAll(
+                        `[data-nodeid="${nodeId}"].react-flow__handle.source`
+                    );
+
+                    nodeHandles.forEach(handle => {
+                        const handleElement = handle as HTMLElement;
+                        // ToolMode handles don't have data-handleid attribute
+                        if (
+                            !handleElement.getAttribute('data-handleid') &&
+                            handleElement.classList.contains('connectable')
+                        ) {
+                            console.log(
+                                'Found ToolMode handle for node:',
+                                nodeId
+                            );
+                            handleElement.classList.add('highlighted-handle');
+                        }
+                    });
+                } else if (handleElement) {
+                    // Regular handle with ID found
                     (handleElement as HTMLElement).classList.add(
                         'highlighted-handle'
                     );
-                } else {
-                    console.log('Handle element not found for:', {
-                        nodeId,
-                        handleId,
-                    });
                 }
             });
         },
@@ -223,28 +246,51 @@ export const useConnectionHighlighting = ({
 
                 const nodeMode = node.data?.mode as string;
 
-                // Check each output handle for compatibility
-                nodeSpec.outputs?.forEach((output: any, index: number) => {
+                // Special handling for ToolMode nodes
+                if (nodeMode === NODE_DATA_MODE.TOOL) {
+                    // ToolMode nodes have a single handle without ID
                     const isCompatible =
                         (validator as any).areTypesCompatible(
                             nodeMode,
-                            output.type_detail,
+                            'tool', // ToolMode uses 'tool' as the type
                             targetInput.type_detail
                         ) && targetInput.allow_incoming_edges !== false;
 
                     if (isCompatible) {
-                        // Create handle ID for source output (assuming similar format)
-                        const handleId = `${output.name}-index:${index}`;
                         connectableHandles.push({
                             nodeId: node.id,
-                            handleId: handleId,
+                            handleId: 'tool-output', // Special ID for ToolMode
                             handleType: 'source',
                             nodeName: (node.data?.label as string) || node.id,
-                            outputName: output.name || `Output ${index}`,
+                            outputName: 'Tool',
                             isCompatible,
                         });
                     }
-                });
+                } else {
+                    // Check each output handle for compatibility (Normal mode)
+                    nodeSpec.outputs?.forEach((output: any, index: number) => {
+                        const isCompatible =
+                            (validator as any).areTypesCompatible(
+                                nodeMode,
+                                output.type_detail,
+                                targetInput.type_detail
+                            ) && targetInput.allow_incoming_edges !== false;
+
+                        if (isCompatible) {
+                            // Create handle ID for source output (assuming similar format)
+                            const handleId = `${output.name}-index:${index}`;
+                            connectableHandles.push({
+                                nodeId: node.id,
+                                handleId: handleId,
+                                handleType: 'source',
+                                nodeName:
+                                    (node.data?.label as string) || node.id,
+                                outputName: output.name || `Output ${index}`,
+                                isCompatible,
+                            });
+                        }
+                    });
+                }
             });
 
             return connectableHandles;
@@ -284,11 +330,16 @@ export const useConnectionHighlighting = ({
                     handleId: h.handleId,
                 }));
             } else if (handleType === 'target') {
+                console.log('Finding sources for target handle', {
+                    nodeId,
+                    handleId,
+                });
                 // Starting from target handle - find compatible source handles
                 const compatibleHandles = findCompatibleSourceHandles(
                     nodeId,
                     handleId
                 );
+                console.log(compatibleHandles);
                 handlesToHighlight = compatibleHandles.map(h => ({
                     nodeId: h.nodeId,
                     handleId: h.handleId,
