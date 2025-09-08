@@ -61,6 +61,8 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
         const isWholeAsToolMode =
             node_mode === NODE_DATA_MODE.TOOL &&
             spec_input.enable_as_whole_for_tool;
+        const allow_multiple_incoming_edges =
+            spec_input.allow_multiple_incoming_edges;
         const inputType = spec_input.type_detail.type;
         const isHidden =
             (spec_input.type_detail as any)?.defaults?.hidden ?? false;
@@ -104,6 +106,9 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
                         description={spec_input.description}
                         required={spec_input.required}
                         helperText={isWholeAsToolMode ? 'Tool Parameter' : ''}
+                        allow_multiple_incoming_edges={
+                            allow_multiple_incoming_edges
+                        }
                     />
                     {hasInputComponent && (
                         <button
