@@ -62,7 +62,7 @@ export const useFlowActions = (
     }, [nodes, edges]);
 
     const onRunFlow = useCallback(async () => {
-        const validation = validateFlowExecution(current_flow, null);
+        const validation = validateFlowExecution(current_flow, null, true);
         if (!validation.isValid) return;
 
         console.log('[onRunFlow] Running flow...');
