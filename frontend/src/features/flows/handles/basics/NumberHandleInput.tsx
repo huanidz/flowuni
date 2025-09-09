@@ -36,13 +36,23 @@ export const NumberHandleInput: React.FC<NumberHandleInputProps> = ({
         value?.toString() || ''
     );
 
+    // Determine effective step (ensure it's 1 for integer-only mode)
+    const effectiveStep = defaultIntegerOnly ? 1 : defaultStep || 1;
+
     // Update internal value when prop changes
     useEffect(() => {
         if (value !== undefined && value !== null) {
-            setInternalValue(value);
-            setInputValue(value.toString());
+            let processedValue = value;
+
+            // Apply integer constraint if needed
+            if (defaultIntegerOnly) {
+                processedValue = Math.round(processedValue);
+            }
+
+            setInternalValue(processedValue);
+            setInputValue(processedValue.toString());
         }
-    }, [value]);
+    }, [value, defaultIntegerOnly]);
 
     const clampValue = (val: number): number => {
         let clampedValue = val;
@@ -61,8 +71,20 @@ export const NumberHandleInput: React.FC<NumberHandleInputProps> = ({
     };
 
     const handleChange = (newValue: string) => {
-        // Only allow numbers, decimal point, negative sign, and empty string
-        if (newValue === '' || /^-?\d*\.?\d*$/.test(newValue)) {
+        // Create appropriate regex pattern based on integer-only mode
+        let pattern: RegExp;
+
+        if (defaultIntegerOnly) {
+            // For integer-only: allow digits, negative sign, and empty string
+            // Don't allow decimal points
+            pattern = /^-?\d*$/;
+        } else {
+            // For decimal numbers: allow numbers, decimal point, negative sign, and empty string
+            pattern = /^-?\d*\.?\d*$/;
+        }
+
+        // Only allow input that matches the pattern
+        if (newValue === '' || pattern.test(newValue)) {
             setInputValue(newValue);
         }
     };
@@ -100,7 +122,7 @@ export const NumberHandleInput: React.FC<NumberHandleInputProps> = ({
     const increment = () => {
         if (disabled) return;
 
-        const newValue = clampValue(internalValue + (defaultStep || 1));
+        const newValue = clampValue(internalValue + effectiveStep);
 
         setInternalValue(newValue);
         setInputValue(newValue.toString());
@@ -113,7 +135,7 @@ export const NumberHandleInput: React.FC<NumberHandleInputProps> = ({
     const decrement = () => {
         if (disabled) return;
 
-        const newValue = clampValue(internalValue - (defaultStep || 1));
+        const newValue = clampValue(internalValue - effectiveStep);
 
         setInternalValue(newValue);
         setInputValue(newValue.toString());
@@ -138,6 +160,28 @@ export const NumberHandleInput: React.FC<NumberHandleInputProps> = ({
         // Apply constraints when user presses Enter
         if (e.key === 'Enter') {
             processAndApplyValue(inputValue);
+        }
+
+        // For integer-only mode, prevent decimal point input
+        if (defaultIntegerOnly && e.key === '.') {
+            e.preventDefault();
+        }
+    };
+
+    const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+        // Get pasted content
+        const pastedText = e.clipboardData.getData('text');
+
+        // For integer-only mode, prevent pasting content with decimal points
+        if (defaultIntegerOnly && pastedText.includes('.')) {
+            e.preventDefault();
+
+            // Optionally, process the pasted content by removing decimal part
+            const integerPart = pastedText.split('.')[0];
+            if (/^-?\d*$/.test(integerPart)) {
+                // Simulate typing the integer part
+                handleChange(integerPart);
+            }
         }
     };
 
@@ -167,10 +211,16 @@ export const NumberHandleInput: React.FC<NumberHandleInputProps> = ({
                     onFocus={handleFocus}
                     onBlur={handleBlur}
                     onKeyDown={handleKeyDown}
+                    onPaste={handlePaste}
                     disabled={disabled}
-                    placeholder={disabled ? '' : '0'}
+                    placeholder={
+                        disabled ? '' : defaultIntegerOnly ? '0' : '0.0'
+                    }
                     style={numberHandleStyles.input}
                     className="nodrag"
+                    title={
+                        defaultIntegerOnly ? 'Integer values only' : undefined
+                    }
                 />
 
                 {!disabled && (
@@ -186,6 +236,7 @@ export const NumberHandleInput: React.FC<NumberHandleInputProps> = ({
                             }
                             style={numberHandleStyles.button}
                             className="h-6 w-6 p-0 nodrag"
+                            title={`Increment by ${effectiveStep}`}
                         >
                             ▲
                         </Button>
@@ -200,6 +251,7 @@ export const NumberHandleInput: React.FC<NumberHandleInputProps> = ({
                             }
                             style={numberHandleStyles.button}
                             className="h-6 w-6 p-0 nodrag"
+                            title={`Decrement by ${effectiveStep}`}
                         >
                             ▼
                         </Button>
