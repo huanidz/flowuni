@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import type { IOTypeDetail } from '@/features/nodes/types';
@@ -12,6 +12,7 @@ interface NumberHandleInputProps {
     type_detail: IOTypeDetail;
     disabled: boolean;
     isWholeAsToolMode?: boolean;
+    debounceMs?: number;
 }
 
 export const NumberHandleInput: React.FC<NumberHandleInputProps> = ({
@@ -22,7 +23,10 @@ export const NumberHandleInput: React.FC<NumberHandleInputProps> = ({
     type_detail,
     disabled = true,
     isWholeAsToolMode = false,
+    debounceMs = 300,
 }) => {
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const [isFocused, setIsFocused] = useState(false);
     const {
         min_value: defaultMinValue,
         max_value: defaultMaxValue,
@@ -53,6 +57,15 @@ export const NumberHandleInput: React.FC<NumberHandleInputProps> = ({
             setInputValue(processedValue.toString());
         }
     }, [value, defaultIntegerOnly]);
+
+    // Clean up timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+        };
+    }, []);
 
     const clampValue = (val: number): number => {
         let clampedValue = val;
@@ -86,6 +99,16 @@ export const NumberHandleInput: React.FC<NumberHandleInputProps> = ({
         // Only allow input that matches the pattern
         if (newValue === '' || pattern.test(newValue)) {
             setInputValue(newValue);
+
+            // Clear any existing timeout
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+
+            // Set a new timeout to debounce the value processing
+            timeoutRef.current = setTimeout(() => {
+                processAndApplyValue(newValue);
+            }, debounceMs);
         }
     };
 
@@ -148,10 +171,19 @@ export const NumberHandleInput: React.FC<NumberHandleInputProps> = ({
     const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
         if (!disabled) {
             e.target.select();
+            setIsFocused(true);
         }
     };
 
     const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+        setIsFocused(false);
+
+        // Clear any existing timeout and immediately process the value
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+            timeoutRef.current = null;
+        }
+
         // Process and apply constraints when input loses focus
         processAndApplyValue(e.target.value);
     };
