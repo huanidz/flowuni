@@ -44,59 +44,63 @@ export const NumberHandleInput: React.FC<NumberHandleInputProps> = ({
         }
     }, [value]);
 
-    const handleChange = (newValue: string) => {
-        setInputValue(newValue);
+    const clampValue = (val: number): number => {
+        let clampedValue = val;
 
+        // Apply min constraint
+        if (defaultMinValue !== undefined && clampedValue < defaultMinValue) {
+            clampedValue = defaultMinValue;
+        }
+
+        // Apply max constraint
+        if (defaultMaxValue !== undefined && clampedValue > defaultMaxValue) {
+            clampedValue = defaultMaxValue;
+        }
+
+        return clampedValue;
+    };
+
+    const handleChange = (newValue: string) => {
+        // Only allow numbers, decimal point, negative sign, and empty string
+        if (newValue === '' || /^-?\d*\.?\d*$/.test(newValue)) {
+            setInputValue(newValue);
+        }
+    };
+
+    const processAndApplyValue = (inputStr: string) => {
         // Parse the value
-        let parsedValue: number | null = null;
-        if (newValue.trim() === '') {
-            parsedValue = defaultIntegerOnly ? 0 : 0;
+        let parsedValue: number = 0;
+
+        if (inputStr.trim() === '' || inputStr === '-') {
+            parsedValue = 0;
         } else {
-            parsedValue = parseFloat(newValue);
+            parsedValue = parseFloat(inputStr);
             if (isNaN(parsedValue)) {
-                parsedValue = defaultIntegerOnly ? 0 : 0;
+                parsedValue = 0;
             }
         }
 
         // Apply integer constraint if needed
-        if (defaultIntegerOnly && parsedValue !== null) {
+        if (defaultIntegerOnly) {
             parsedValue = Math.round(parsedValue);
         }
 
         // Apply min/max constraints
-        if (parsedValue !== null) {
-            if (
-                defaultMinValue !== undefined &&
-                parsedValue < defaultMinValue
-            ) {
-                parsedValue = defaultMinValue;
-            }
-            if (
-                defaultMaxValue !== undefined &&
-                parsedValue !== null &&
-                parsedValue > defaultMaxValue
-            ) {
-                parsedValue = defaultMaxValue;
-            }
-        }
+        const clampedValue = clampValue(parsedValue);
 
-        setInternalValue(parsedValue || 0);
+        setInternalValue(clampedValue);
+        setInputValue(clampedValue.toString());
 
         // Emit change to parent
         if (onChange && !disabled) {
-            onChange(parsedValue || 0);
+            onChange(clampedValue);
         }
     };
 
     const increment = () => {
         if (disabled) return;
 
-        let newValue = internalValue + (defaultStep || 1);
-
-        // Apply constraints
-        if (defaultMaxValue !== undefined && newValue > defaultMaxValue) {
-            newValue = defaultMaxValue;
-        }
+        const newValue = clampValue(internalValue + (defaultStep || 1));
 
         setInternalValue(newValue);
         setInputValue(newValue.toString());
@@ -109,12 +113,7 @@ export const NumberHandleInput: React.FC<NumberHandleInputProps> = ({
     const decrement = () => {
         if (disabled) return;
 
-        let newValue = internalValue - (defaultStep || 1);
-
-        // Apply constraints
-        if (defaultMinValue !== undefined && newValue < defaultMinValue) {
-            newValue = defaultMinValue;
-        }
+        const newValue = clampValue(internalValue - (defaultStep || 1));
 
         setInternalValue(newValue);
         setInputValue(newValue.toString());
@@ -131,8 +130,15 @@ export const NumberHandleInput: React.FC<NumberHandleInputProps> = ({
     };
 
     const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-        // Ensure value is within bounds when input loses focus
-        handleChange(e.target.value);
+        // Process and apply constraints when input loses focus
+        processAndApplyValue(e.target.value);
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        // Apply constraints when user presses Enter
+        if (e.key === 'Enter') {
+            processAndApplyValue(inputValue);
+        }
     };
 
     // Don't render if hidden
@@ -160,6 +166,7 @@ export const NumberHandleInput: React.FC<NumberHandleInputProps> = ({
                     onChange={e => handleChange(e.target.value)}
                     onFocus={handleFocus}
                     onBlur={handleBlur}
+                    onKeyDown={handleKeyDown}
                     disabled={disabled}
                     placeholder={disabled ? '' : '0'}
                     style={numberHandleStyles.input}
