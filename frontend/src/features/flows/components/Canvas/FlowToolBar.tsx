@@ -4,8 +4,27 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuTrigger,
+    DropdownMenuItem,
 } from '@/components/ui/dropdown-menu';
-import { toast } from 'sonner';
+import { ChevronDown } from 'lucide-react';
+import {
+    toolbarContainer,
+    toolbarWrapper,
+    splitRunButtonContainer,
+    runButton,
+    runButtonHover,
+    dropdownTriggerButton,
+    dropdownTriggerButtonHover,
+    compileButton,
+    compileButtonHover,
+    saveButton,
+    saveButtonHover,
+    rightAlignedButtonsContainer,
+    playgroundButton,
+    playgroundButtonHover,
+    clearButton,
+    clearButtonHover,
+} from '@/features/flows/styles/flowToolBarStyles';
 
 interface FlowToolbarProps {
     onRun: () => void;
@@ -26,35 +45,33 @@ const FlowToolbar: React.FC<FlowToolbarProps> = ({
     onSave,
     onPlayground,
 }) => {
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [isRunDropdownOpen, setIsRunDropdownOpen] = useState(false);
+    const [isClearDropdownOpen, setIsClearDropdownOpen] = useState(false);
 
     const handleConfirmClear = () => {
         onClear();
-        toast.success('Flow cleared successfully.', {
-            description: 'Flow has been cleared successfully.',
-        });
-        setIsDropdownOpen(false);
+        console.log('Flow cleared successfully.');
+        setIsClearDropdownOpen(false);
     };
 
     const handleCancelClear = () => {
-        setIsDropdownOpen(false);
+        setIsClearDropdownOpen(false);
     };
 
     const handlePlayground = () => {
-        // Dummy handle function for playground button
         console.log('Playground button clicked');
         onPlayground();
     };
 
-    // Auto-dismiss after 3000ms
+    // Auto-dismiss clear dropdown after 3000ms
     useEffect(() => {
-        if (isDropdownOpen) {
+        if (isClearDropdownOpen) {
             const timer = setTimeout(() => {
-                setIsDropdownOpen(false);
+                setIsClearDropdownOpen(false);
             }, 3000);
             return () => clearTimeout(timer);
         }
-    }, [isDropdownOpen]);
+    }, [isClearDropdownOpen]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -73,67 +90,138 @@ const FlowToolbar: React.FC<FlowToolbarProps> = ({
     }, [onSave]);
 
     return (
-        <div className="absolute top-4 right-4 z-10">
-            <div className="bg-white rounded-lg shadow-lg p-2 border">
-                <div className="flex gap-2">
-                    <Button
+        <div style={toolbarContainer}>
+            <div style={toolbarWrapper}>
+                {/* Split Run Button */}
+                <div style={splitRunButtonContainer}>
+                    <button
                         onClick={onRun}
-                        size="sm"
-                        className="bg-green-500 hover:bg-green-600"
+                        style={runButton}
+                        onMouseEnter={e => {
+                            e.currentTarget.style.backgroundColor =
+                                runButtonHover.backgroundColor;
+                        }}
+                        onMouseLeave={e => {
+                            e.currentTarget.style.backgroundColor =
+                                runButton.backgroundColor;
+                        }}
                     >
-                        Run Flow
-                    </Button>
-
-                    <Button
-                        onClick={onRunFromSelected}
-                        size="sm"
-                        className="bg-green-600 hover:bg-green-700"
-                    >
-                        Run from Selected
-                    </Button>
-
-                    <Button
-                        onClick={onRunSelectedOnly}
-                        size="sm"
-                        className="bg-green-700 hover:bg-green-800"
-                    >
-                        Run selected Only
-                    </Button>
-
-                    <Button
-                        onClick={onCompile}
-                        size="sm"
-                        className="bg-blue-500 hover:bg-blue-600"
-                    >
-                        Compile Flow
-                    </Button>
-
-                    <Button
-                        onClick={onSave}
-                        size="sm"
-                        className="bg-yellow-500 hover:bg-yellow-600"
-                    >
-                        Save Flow
-                    </Button>
-
-                    <Button
-                        onClick={handlePlayground}
-                        size="sm"
-                        className="bg-purple-500 hover:bg-purple-600"
-                    >
-                        Playground
-                    </Button>
+                        ▶ Run Flow
+                    </button>
 
                     <DropdownMenu
-                        open={isDropdownOpen}
-                        onOpenChange={setIsDropdownOpen}
+                        open={isRunDropdownOpen}
+                        onOpenChange={setIsRunDropdownOpen}
                     >
                         <DropdownMenuTrigger asChild>
-                            <Button size="sm" variant="destructive">
-                                Clear
-                            </Button>
+                            <button
+                                style={dropdownTriggerButton}
+                                onMouseEnter={e => {
+                                    e.currentTarget.style.backgroundColor =
+                                        dropdownTriggerButtonHover.backgroundColor;
+                                    setIsRunDropdownOpen(true);
+                                }}
+                                onMouseLeave={e => {
+                                    e.currentTarget.style.backgroundColor =
+                                        dropdownTriggerButton.backgroundColor;
+                                }}
+                            >
+                                <ChevronDown size={16} />
+                            </button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent className="w-48" align="end">
+                        <DropdownMenuContent
+                            align="end"
+                            className="w-48"
+                            onMouseEnter={() => setIsRunDropdownOpen(true)}
+                            onMouseLeave={() => setIsRunDropdownOpen(false)}
+                        >
+                            <DropdownMenuItem onClick={onRunFromSelected}>
+                                Run from Selected
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={onRunSelectedOnly}>
+                                Run Selected Only
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+
+                {/* Compile Button */}
+                <button
+                    onClick={onCompile}
+                    style={compileButton}
+                    onMouseEnter={e => {
+                        e.currentTarget.style.backgroundColor =
+                            compileButtonHover.backgroundColor;
+                    }}
+                    onMouseLeave={e => {
+                        e.currentTarget.style.backgroundColor =
+                            compileButton.backgroundColor;
+                    }}
+                >
+                    Compile
+                </button>
+
+                {/* Save Button */}
+                <button
+                    onClick={onSave}
+                    style={saveButton}
+                    onMouseEnter={e => {
+                        e.currentTarget.style.backgroundColor =
+                            saveButtonHover.backgroundColor;
+                    }}
+                    onMouseLeave={e => {
+                        e.currentTarget.style.backgroundColor =
+                            saveButton.backgroundColor;
+                    }}
+                >
+                    Save
+                </button>
+
+                {/* Right-aligned buttons */}
+                <div style={rightAlignedButtonsContainer}>
+                    {/* Playground Button */}
+                    <button
+                        onClick={handlePlayground}
+                        style={playgroundButton}
+                        onMouseEnter={e => {
+                            e.currentTarget.style.backgroundColor =
+                                playgroundButtonHover.backgroundColor;
+                        }}
+                        onMouseLeave={e => {
+                            e.currentTarget.style.backgroundColor =
+                                playgroundButton.backgroundColor;
+                        }}
+                    >
+                        Playground
+                    </button>
+
+                    {/* Clear Button with Confirmation */}
+                    <DropdownMenu
+                        open={isClearDropdownOpen}
+                        onOpenChange={setIsClearDropdownOpen}
+                    >
+                        <DropdownMenuTrigger asChild>
+                            <button
+                                style={clearButton}
+                                onMouseEnter={e => {
+                                    e.currentTarget.style.backgroundColor =
+                                        clearButtonHover.backgroundColor;
+                                    setIsClearDropdownOpen(true);
+                                }}
+                                onMouseLeave={e => {
+                                    e.currentTarget.style.backgroundColor =
+                                        clearButton.backgroundColor;
+                                }}
+                            >
+                                Clear
+                            </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                            className="w-48"
+                            align="end"
+                            onMouseEnter={() => setIsClearDropdownOpen(true)}
+                            onMouseLeave={() => setIsClearDropdownOpen(false)}
+                        >
                             <div className="p-2">
                                 <p className="text-sm text-muted-foreground mb-3">
                                     Clear the flow?

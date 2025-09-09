@@ -52,16 +52,6 @@ class ComparisonRouterNode(Node):
                 description="The value to compare against.",
                 required=True,
             ),
-            NodeInput(
-                name="true_output_value",
-                type=TextFieldInputHandle(),
-                description="The value to output if the comparison is True.",
-            ),
-            NodeInput(
-                name="false_output_value",
-                type=TextFieldInputHandle(),
-                description="The value to output if the comparison is False.",
-            ),
         ],
         outputs=[
             NodeOutput(
@@ -152,9 +142,9 @@ class ComparisonRouterNode(Node):
         logger.info(f"Comparison result: {result}")
 
         if result:
-            return {"True": inputs.get("true_output_value", ""), "False": ""}
+            return {"True": inputs.get("input", ""), "False": ""}
         else:
-            return {"True": "", "False": inputs.get("false_output_value", "")}
+            return {"True": "", "False": inputs.get("input", "")}
 
     def build_tool(self, inputs_values: Dict[str, Any], tool_configs):
         raise NotImplementedError("Subclasses must override build_tool")
