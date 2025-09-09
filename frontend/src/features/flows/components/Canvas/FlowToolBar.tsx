@@ -24,6 +24,10 @@ import {
     playgroundButtonHover,
     clearButton,
     clearButtonHover,
+    runFromSelectedMenuItem,
+    runFromSelectedMenuItemHover,
+    runSelectedOnlyMenuItem,
+    runSelectedOnlyMenuItemHover,
 } from '@/features/flows/styles/flowToolBarStyles';
 
 interface FlowToolbarProps {
@@ -135,10 +139,40 @@ const FlowToolbar: React.FC<FlowToolbarProps> = ({
                             onMouseEnter={() => setIsRunDropdownOpen(true)}
                             onMouseLeave={() => setIsRunDropdownOpen(false)}
                         >
-                            <DropdownMenuItem onClick={onRunFromSelected}>
+                            <DropdownMenuItem
+                                onClick={onRunFromSelected}
+                                style={runFromSelectedMenuItem}
+                                onMouseEnter={e => {
+                                    e.currentTarget.style.backgroundColor =
+                                        runFromSelectedMenuItemHover.backgroundColor;
+                                    e.currentTarget.style.color =
+                                        runFromSelectedMenuItemHover.color;
+                                }}
+                                onMouseLeave={e => {
+                                    e.currentTarget.style.backgroundColor =
+                                        runFromSelectedMenuItem.backgroundColor;
+                                    e.currentTarget.style.color =
+                                        runFromSelectedMenuItem.color;
+                                }}
+                            >
                                 Run from Selected
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={onRunSelectedOnly}>
+                            <DropdownMenuItem
+                                onClick={onRunSelectedOnly}
+                                style={runSelectedOnlyMenuItem}
+                                onMouseEnter={e => {
+                                    e.currentTarget.style.backgroundColor =
+                                        runSelectedOnlyMenuItemHover.backgroundColor;
+                                    e.currentTarget.style.color =
+                                        runSelectedOnlyMenuItemHover.color;
+                                }}
+                                onMouseLeave={e => {
+                                    e.currentTarget.style.backgroundColor =
+                                        runSelectedOnlyMenuItem.backgroundColor;
+                                    e.currentTarget.style.color =
+                                        runSelectedOnlyMenuItem.color;
+                                }}
+                            >
                                 Run Selected Only
                             </DropdownMenuItem>
                         </DropdownMenuContent>

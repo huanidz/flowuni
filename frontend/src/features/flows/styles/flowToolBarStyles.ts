@@ -141,3 +141,40 @@ export const clearButton = {
 export const clearButtonHover = {
     backgroundColor: '#c82333',
 };
+
+// Dropdown menu item styles
+export const dropdownMenuItem = {
+    padding: '8px 12px',
+    borderRadius: '4px',
+    margin: '2px 0',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: '500',
+    transition: 'all 0.2s ease',
+};
+
+// Colorful styles for "Run from Selected" menu item
+export const runFromSelectedMenuItem = {
+    ...dropdownMenuItem,
+    backgroundColor: '#e3f2fd',
+    color: '#0d47a1',
+};
+
+// Hover state for "Run from Selected" menu item
+export const runFromSelectedMenuItemHover = {
+    backgroundColor: '#bbdefb',
+    color: '#01579b',
+};
+
+// Colorful styles for "Run Selected Only" menu item
+export const runSelectedOnlyMenuItem = {
+    ...dropdownMenuItem,
+    backgroundColor: '#e8f5e9',
+    color: '#1b5e20',
+};
+
+// Hover state for "Run Selected Only" menu item
+export const runSelectedOnlyMenuItemHover = {
+    backgroundColor: '#c8e6c9',
+    color: '#2e7d32',
+};
