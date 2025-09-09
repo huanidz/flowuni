@@ -8,6 +8,7 @@ from src.components.llm.models.core import (
 from src.components.llm.providers.adapters.LLMAdapterBase import LLMAdapter
 from src.components.llm.providers.LLMProvider import LLMProvider
 from src.components.llm.providers.LLMProviderConsts import LLMProviderName
+from src.consts.node_consts import NODE_GROUP_CONSTS
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.handles.agents.AgentToolInputHandle import AgentToolInputHandle
@@ -116,6 +117,7 @@ class AgentNode(Node):
         ],
         parameters=[],
         can_be_tool=False,
+        group=NODE_GROUP_CONSTS.AGENT,
     )
 
     def process(self, input_values, parameter_values):

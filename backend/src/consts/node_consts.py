@@ -24,4 +24,5 @@ class SPECIAL_NODE_INPUT_CONSTS:
 
 class NODE_GROUP_CONSTS:
     DEFAULT = "default"
+    AGENT = "agent"
     GROUP_TEST = "test"
