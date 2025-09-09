@@ -1,5 +1,6 @@
 from .AgentNode import AgentNode
 from .CalculatorNode import CalculatorNode
+from .ComparisonRouterNode import ComparisonRouterNode
 from .HttpRequestNode import HttpRequestNode
 from .ResolverTestNode import ResolverTestNode
 from .RouterNode import RouterNode
