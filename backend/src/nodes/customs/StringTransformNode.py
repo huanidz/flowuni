@@ -2,6 +2,7 @@ from loguru import logger
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.core.NodeParameterSpec import ParameterSpec
+from src.nodes.handles.basics.inputs import NumberInputHandle
 from src.nodes.handles.basics.inputs.TextFieldInputHandle import TextFieldInputHandle
 from src.nodes.handles.basics.outputs import StringOutputHandle
 from src.nodes.NodeBase import Node, NodeSpec
@@ -16,7 +17,12 @@ class StringTransformNode(Node):
                 name="input",
                 type=TextFieldInputHandle(),
                 description="The string to be transformed.",
-            )
+            ),
+            NodeInput(
+                name="num_input",
+                type=NumberInputHandle(),
+                description="The string to be transformed.",
+            ),
         ],
         outputs=[
             NodeOutput(
