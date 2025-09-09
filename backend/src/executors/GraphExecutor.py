@@ -17,6 +17,7 @@ from src.consts.node_consts import (
 from src.exceptions.execution_exceptions import GraphExecutorError
 from src.executors.DataClass import NodeExecutionResult
 from src.executors.ExecutionContext import ExecutionContext, ExecutionControl
+from src.executors.GraphExecutionUtil import GraphExecutionUtil
 from src.executors.NodeDataFlowAdapter import NodeDataFlowAdapter
 from src.executors.strategies.RunFromNodeStrategy import RunFromNodeStrategy
 from src.executors.strategies.RunFullStrategy import RunFullStrategy
@@ -118,7 +119,9 @@ class GraphExecutor:
         skipped_results = []
 
         for node_id in layer_nodes:
-            if self._validate_node_skip_status_before_execution(node_id):
+            if GraphExecutionUtil.validate_node_skip_status_before_execution(
+                self.graph, node_id
+            ):
                 executable_nodes.append(node_id)
             else:
                 # Create a skipped result for this node
@@ -159,7 +162,9 @@ class GraphExecutor:
 
             for node_id in executable_nodes:
                 try:
-                    node_data = self._get_node_data_copy(node_id)
+                    node_data = GraphExecutionUtil.get_node_data_copy(
+                        self.graph, node_id
+                    )
                     future = executor.submit(
                         self._execute_single_node, node_id, layer_index, node_data
                     )
@@ -231,7 +236,6 @@ class GraphExecutor:
             # Get node configuration
             g_node = self.graph.nodes[node_id]
             node_spec: NodeSpec = g_node.get("spec")
-            # logger.info(f"👉 node_spec: {node_spec}")
 
             if not node_spec:
                 raise GraphExecutorError(f"Node {node_id} missing specification")
@@ -258,11 +262,9 @@ class GraphExecutor:
 
             # Handling special node that require non-DAG data-flow
             # But this only used to prepare input values, the whole execution is still in DAG style # noqa: E501
-            node_data = self.prepare_node_data_for_execution(
-                node_id=node_id, node_data=node_data
+            node_data = GraphExecutionUtil.prepare_node_data_for_execution(
+                self.graph, node_id, node_data
             )
-
-            # logger.info(f"👉 node_data (After prepare): {node_data}")
 
             # Create node instance
             node_instance: Optional[Node] = self._node_registry.create_node_instance(
@@ -312,21 +314,6 @@ class GraphExecutor:
                 error=str(e),
                 execution_time=execution_time,
             )
-
-    def _get_node_data_copy(self, node_id: str) -> NodeData:
-        """
-        Get a deep copy of node data for thread safety.
-        """
-        try:
-            g_node = self.graph.nodes[node_id]
-            node_data = g_node.get("data", NodeData())
-
-            # Return deep copy for thread safety
-            return copy.deepcopy(node_data)
-
-        except Exception as e:
-            logger.error(f"Failed to get data for node {node_id}: {str(e)}")
-            return NodeData()
 
     def _update_all_successors(self, successful_results: List[NodeExecutionResult]):
         """
@@ -453,8 +440,6 @@ class GraphExecutor:
             Exception: Re-raises any exception that occurs during the update process
         """
 
-        # logger.info(f"👉 executed_data: {executed_data}")
-
         try:
             current_node_label: str = executed_data.node_type
             edge_id = self.graph.get_edge_data(node_id, successor_node_id).get("id")
@@ -545,10 +530,8 @@ class GraphExecutor:
                 route_label_decisons: List[str] = (
                     parsed_router_output_value.route_label_decisons.split(",")
                 )[:1]
-                logger.info(f"👉 route_label_decisons: {route_label_decisons}")
 
                 # If the edge_id is not in the label decisons, then the exec_status of that succesor node will be set to SKIPPED. # noqa E501
-                logger.info(f"👉 edge_id: {edge_id}")
                 if edge_id not in route_label_decisons:
                     successor_node_data.execution_status = NODE_EXECUTION_STATUS.SKIPPED
                     self.graph.nodes[successor_node_id]["data"] = successor_node_data
@@ -559,9 +542,6 @@ class GraphExecutor:
                 output_data_to_transfer=output_value_to_transfer,
                 source_handle_type=type(output_handle_from_current_node.type),
                 target_handle_type=type(input_handle_from_successor_node.type),
-            )
-            logger.info(
-                f"👉 adapted_output_value_to_transfer: {adapted_output_value_to_transfer}"
             )
 
             # Step 7: Handle assignment based on multiple incoming edges setting
@@ -666,11 +646,8 @@ class GraphExecutor:
 
             # Step 5: Extract tool information from executed data
             raw_tool_schema = executed_data.output_values["tool"]
-            # logger.info(f"👉 raw_tool_schema: {raw_tool_schema}")
             tool_name = executed_data.output_values["tool_name"]
-            # logger.info(f"👉 tool_name: {tool_name}")
             tool_description = executed_data.output_values["tool_description"]
-            # logger.info(f"👉 tool_description: {tool_description}")
 
             # Step 6: Parse the tool schema JSON
             try:
@@ -749,85 +726,3 @@ class GraphExecutor:
                 f"Failed to update tool mode successor {successor_node_id}: {str(exception)}"  # noqa
             )
             raise
-
-    def prepare_node_data_for_execution(
-        self, node_id: str, node_data: NodeData
-    ) -> NodeData:
-        """Prepare method for node_data before execution."""
-
-        if node_data.label == NODE_LABEL_CONSTS.ROUTER:
-            # First, get the outgoing edges from this node
-            # make a string that contain edge ids separated by comma. e.g. "edge_id_1,edge_id_2,edge_id_3"
-
-            # Get all outgoing edges from this node
-            outgoing_edges = self.graph.out_edges(node_id, data=True)
-
-            # Extract edge IDs and create comma-separated string
-            edge_ids = []
-            for source, target, edge_data in outgoing_edges:
-                # edge ID is stored in the edge data
-                edge_id = edge_data.get("id")
-                edge_ids.append(edge_id)
-
-            if not edge_ids:
-                logger.warning(
-                    f"No outgoing edges found for Node {NODE_LABEL_CONSTS.ROUTER} {node_id}"  # noqa E501
-                )
-                return node_data
-
-            # Create the comma-separated string of edge IDs
-            edge_ids_string = ",".join(edge_ids)
-            logger.info(f"👉 edge_ids_string: {edge_ids_string}")
-
-            node_data.input_values[SPECIAL_NODE_INPUT_CONSTS.ROUTER_ROUTE_LABELS] = (
-                edge_ids_string
-            )
-
-            logger.debug(
-                f"Router node {node_id} prepared with edge IDs: {edge_ids_string}"
-            )
-
-            return node_data
-
-        else:
-            return node_data
-
-    def _validate_node_skip_status_before_execution(self, node_id: str) -> bool:
-        """
-        Validate if a node should be skipped based on its predecessors.
-
-        Args:
-            node_id: The node to validate
-
-        Returns:
-            bool: True if the node should be executed, False if it should be skipped
-        """
-        # Get all predecessors of this node
-        predecessors = list(self.graph.predecessors(node_id))
-
-        if not predecessors:
-            # No predecessors, check the node's own status
-            node_data = self.graph.nodes[node_id].get("data", NodeData())
-            return node_data.execution_status != NODE_EXECUTION_STATUS.SKIPPED
-
-        # Check if any predecessor is SKIPPED
-        for pred_id in predecessors:
-            pred_node = self.graph.nodes[pred_id]
-            pred_data = pred_node.get("data", NodeData())
-
-            if pred_data.execution_status == NODE_EXECUTION_STATUS.SKIPPED:
-                # At least one predecessor is skipped, so this node should be skipped too
-                logger.info(
-                    f"Node {node_id} should be skipped due to skipped predecessor {pred_id}"
-                )
-
-                # Mark this node as SKIPPED
-                current_node_data = self.graph.nodes[node_id].get("data", NodeData())
-                current_node_data.execution_status = NODE_EXECUTION_STATUS.SKIPPED
-                self.graph.nodes[node_id]["data"] = current_node_data
-
-                return False
-
-        # All predecessors are not skipped, check the node's own status
-        node_data = self.graph.nodes[node_id].get("data", NodeData())
-        return node_data.execution_status != NODE_EXECUTION_STATUS.SKIPPED
