@@ -20,3 +20,8 @@ class NODE_LABEL_CONSTS:
 
 class SPECIAL_NODE_INPUT_CONSTS:
     ROUTER_ROUTE_LABELS = "route_labels"
+
+
+class NODE_GROUP_CONSTS:
+    DEFAULT = "default"
+    GROUP_TEST = "test"

@@ -48,6 +48,9 @@ export interface NodeSpec {
     parameters: NodeInput[];
 
     can_be_tool?: boolean;
+
+    // metadata fields
+    group: string;
 }
 
 // --- Node Data ---
