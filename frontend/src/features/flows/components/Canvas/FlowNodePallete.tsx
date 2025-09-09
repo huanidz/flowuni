@@ -4,6 +4,7 @@ import { useNodeRegistry } from '@/features/nodes';
 
 interface NodePaletteProps {
     onDragStart: (event: React.DragEvent, node_type: string) => void;
+    searchDelay?: number; // Configurable delay in milliseconds (default: 1000ms)
 }
 
 interface NodeSpec {
@@ -36,7 +37,7 @@ const fuzzyMatch = (query: string, text: string): boolean => {
 };
 
 const NodePalette = forwardRef<HTMLDivElement, NodePaletteProps>(
-    ({ onDragStart }, ref) => {
+    ({ onDragStart, searchDelay = 300 }, ref) => {
         const [nodeGroups, setNodeGroups] = useState<
             Record<string, NodeSpec[]>
         >({});
@@ -44,6 +45,7 @@ const NodePalette = forwardRef<HTMLDivElement, NodePaletteProps>(
             new Set()
         );
         const [searchQuery, setSearchQuery] = useState<string>('');
+        const [debouncedQuery, setDebouncedQuery] = useState<string>('');
         const { nodes, getAllNodeSpecs } = useNodeRegistry();
 
         useEffect(() => {
@@ -70,6 +72,17 @@ const NodePalette = forwardRef<HTMLDivElement, NodePaletteProps>(
             loadPaletteNodes();
         }, [nodes]);
 
+        // Debounce the search query
+        useEffect(() => {
+            const timerId = setTimeout(() => {
+                setDebouncedQuery(searchQuery);
+            }, searchDelay);
+
+            return () => {
+                clearTimeout(timerId);
+            };
+        }, [searchQuery, searchDelay]);
+
         const toggleGroupCollapse = (groupName: string) => {
             setCollapsedGroups(prev => {
                 const newSet = new Set(prev);
@@ -82,9 +95,9 @@ const NodePalette = forwardRef<HTMLDivElement, NodePaletteProps>(
             });
         };
 
-        // Filter nodes based on search query
+        // Filter nodes based on debounced search query
         const filteredNodeGroups = useMemo(() => {
-            if (!searchQuery.trim()) {
+            if (!debouncedQuery.trim()) {
                 return nodeGroups;
             }
 
@@ -92,7 +105,7 @@ const NodePalette = forwardRef<HTMLDivElement, NodePaletteProps>(
 
             Object.entries(nodeGroups).forEach(([groupName, groupNodes]) => {
                 const filteredNodes = groupNodes.filter(node =>
-                    fuzzyMatch(searchQuery, node.name)
+                    fuzzyMatch(debouncedQuery, node.name)
                 );
 
                 if (filteredNodes.length > 0) {
@@ -101,7 +114,7 @@ const NodePalette = forwardRef<HTMLDivElement, NodePaletteProps>(
             });
 
             return filteredGroups;
-        }, [nodeGroups, searchQuery]);
+        }, [nodeGroups, debouncedQuery]);
 
         return (
             <div
@@ -124,6 +137,12 @@ const NodePalette = forwardRef<HTMLDivElement, NodePaletteProps>(
                             size={16}
                             className="absolute left-3 top-2.5 text-gray-400"
                         />
+                        {/* SPINNER (disable for now) */}
+                        {/* {searchQuery !== debouncedQuery && (
+                            <div className="absolute right-3 top-2.5">
+                                <div className="w-5 h-5 border-2 border-t-transparent border-blue-500 rounded-full animate-spin"></div>
+                            </div>
+                        )} */}
                     </div>
                 </div>
                 <div className="p-3 w-96">
@@ -181,9 +200,9 @@ const NodePalette = forwardRef<HTMLDivElement, NodePaletteProps>(
                     )}
                     {Object.keys(filteredNodeGroups).length === 0 && (
                         <div className="py-8 text-center">
-                            {searchQuery ? (
+                            {debouncedQuery ? (
                                 <p className="text-sm text-gray-500">
-                                    No nodes found matching "{searchQuery}"
+                                    No nodes found matching "{debouncedQuery}"
                                 </p>
                             ) : (
                                 <p className="text-sm text-gray-500">
