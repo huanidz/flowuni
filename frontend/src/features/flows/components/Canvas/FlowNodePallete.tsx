@@ -1,5 +1,5 @@
 import React, { useEffect, useState, forwardRef, useMemo } from 'react';
-import { ChevronUp, ChevronDown, Search } from 'lucide-react';
+import { ChevronUp, ChevronDown, Search, Wrench } from 'lucide-react';
 import { useNodeRegistry } from '@/features/nodes';
 
 interface NodePaletteProps {
@@ -11,16 +11,34 @@ interface NodeSpec {
     name: string;
     description: string;
     group: string;
+    can_be_tool?: boolean; // Added can_be_tool property
 }
+
+// Component to display node name with icons
+const NodeNameWithIcons = ({
+    name,
+    canBeTool,
+}: {
+    name: string;
+    canBeTool?: boolean;
+}) => {
+    return (
+        <div className="flex justify-between items-center">
+            <div className="font-medium text-sm text-gray-800">{name}</div>
+            <div className="flex space-x-1">
+                {canBeTool && <Wrench size={14} className="text-gray-500" />}
+                {/* Additional icons can be added here in the future */}
+            </div>
+        </div>
+    );
+};
 
 // Simple fuzzy search function
 const fuzzyMatch = (query: string, text: string): boolean => {
     if (!query) return true;
-
     // Convert both to lowercase for case-insensitive search
     const lowerQuery = query.toLowerCase();
     const lowerText = text.toLowerCase();
-
     // Check if all characters in query appear in order in text
     let queryIndex = 0;
     for (
@@ -32,7 +50,6 @@ const fuzzyMatch = (query: string, text: string): boolean => {
             queryIndex++;
         }
     }
-
     return queryIndex === lowerQuery.length;
 };
 
@@ -62,6 +79,7 @@ const NodePalette = forwardRef<HTMLDivElement, NodePaletteProps>(
                             name: node.name,
                             description: node.description || '',
                             group: group,
+                            can_be_tool: node.can_be_tool || false, // Include the can_be_tool property
                         });
                     });
                     setNodeGroups(groupedNodes);
@@ -77,7 +95,6 @@ const NodePalette = forwardRef<HTMLDivElement, NodePaletteProps>(
             const timerId = setTimeout(() => {
                 setDebouncedQuery(searchQuery);
             }, searchDelay);
-
             return () => {
                 clearTimeout(timerId);
             };
@@ -100,19 +117,15 @@ const NodePalette = forwardRef<HTMLDivElement, NodePaletteProps>(
             if (!debouncedQuery.trim()) {
                 return nodeGroups;
             }
-
             const filteredGroups: Record<string, NodeSpec[]> = {};
-
             Object.entries(nodeGroups).forEach(([groupName, groupNodes]) => {
                 const filteredNodes = groupNodes.filter(node =>
                     fuzzyMatch(debouncedQuery, node.name)
                 );
-
                 if (filteredNodes.length > 0) {
                     filteredGroups[groupName] = filteredNodes;
                 }
             });
-
             return filteredGroups;
         }, [nodeGroups, debouncedQuery]);
 
@@ -183,11 +196,12 @@ const NodePalette = forwardRef<HTMLDivElement, NodePaletteProps>(
                                                     onDragStart(e, node.name)
                                                 }
                                             >
-                                                <div className="font-medium text-sm mb-1 text-gray-800">
-                                                    {node.name}
-                                                </div>
+                                                <NodeNameWithIcons
+                                                    name={node.name}
+                                                    canBeTool={node.can_be_tool}
+                                                />
                                                 {node.description && (
-                                                    <div className="text-xs text-gray-500 leading-relaxed">
+                                                    <div className="text-xs text-gray-500 leading-relaxed mt-1">
                                                         {node.description}
                                                     </div>
                                                 )}
