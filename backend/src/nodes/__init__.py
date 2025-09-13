@@ -1,9 +1,11 @@
 from src.nodes.customs import (
     AgentNode,
     CalculatorNode,
+    ComparisonRouterNode,
     HttpRequestNode,
     ResolverTestNode,
     RouterNode,
+    StringAggregatorNode,
     StringTransformNode,
     ToolNode,
 )
@@ -28,4 +30,6 @@ __all__ = [
     CalculatorNode,
     HttpRequestNode,
     RouterNode,
+    StringAggregatorNode,
+    ComparisonRouterNode,
 ]

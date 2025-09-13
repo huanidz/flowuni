@@ -24,7 +24,7 @@ class MultiOutputNode(Node):
             NodeOutput(name="message_out_1", type=str, description="The output."),
             NodeOutput(name="message_out_2", type=str, description="The output 2."),
         ],
-        parameters={},
+        parameters=[],
     )
 
     def process(self, inputs, parameters):

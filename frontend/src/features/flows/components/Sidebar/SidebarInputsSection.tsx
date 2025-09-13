@@ -96,6 +96,9 @@ export const SidebarInputsSection: React.FC<SidebarInputsSectionProps> = ({
                             helperText={
                                 isWholeAsToolMode ? 'Tool Parameter' : ''
                             }
+                            allow_multiple_incoming_edges={
+                                spec_input.allow_multiple_incoming_edges
+                            }
                         />
                     </div>
                     {hasInputComponent && (

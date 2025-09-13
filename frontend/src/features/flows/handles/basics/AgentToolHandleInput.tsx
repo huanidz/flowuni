@@ -1,12 +1,12 @@
 import React from 'react';
-import type { TypeDetail } from '@/features/nodes/types';
+import type { IOTypeDetail } from '@/features/nodes/types';
 
 interface AgentToolHandleInputProps {
     label: string;
     description?: string;
     value: any;
     onChange?: (value: string) => void;
-    type_detail: TypeDetail;
+    type_detail: IOTypeDetail;
     disabled: boolean;
     isWholeAsToolMode?: boolean;
 }

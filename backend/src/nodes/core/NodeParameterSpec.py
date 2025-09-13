@@ -1,13 +1,16 @@
-from typing import Any, Type
+from typing import Literal
 
-from pydantic import BaseModel, Field
+from src.nodes.core.NodeInput import NodeInput
 
 
-class ParameterSpec(BaseModel):
+class ParameterSpec(NodeInput):
     """Specification for a node parameter with type, default value, and description."""
 
-    name: str = Field(..., description="Parameter name")
-    type: Type = Field(..., description="Expected parameter type")
-    value: Any = Field(..., description="Current parameter value")
-    default: Any = Field(..., description="Default parameter value")
-    description: str = Field(default="", description="Parameter description")
+    required: Literal[False] = False
+
+    # Helper fields
+    allow_incoming_edges: Literal[False] = False
+    allow_multiple_incoming_edges: Literal[False] = False
+
+    # Tool related
+    enable_as_whole_for_tool: Literal[False] = False

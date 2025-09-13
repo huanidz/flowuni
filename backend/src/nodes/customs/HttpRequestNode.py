@@ -45,6 +45,7 @@ class HttpRequestNode(Node):
                 name="url",
                 type=TextFieldInputHandle(),
                 description="The URL of the request.",
+                required=True,
             ),
             NodeInput(
                 name="method",
@@ -60,6 +61,7 @@ class HttpRequestNode(Node):
                 description="The method of the request.",
                 default="GET",
                 allow_incoming_edges=False,
+                required=True,
             ),
             NodeInput(
                 name="headers",
@@ -155,7 +157,7 @@ class HttpRequestNode(Node):
                 enable_for_tool=True,
             ),
         ],
-        parameters={},
+        parameters=[],
         can_be_tool=True,
     )
 

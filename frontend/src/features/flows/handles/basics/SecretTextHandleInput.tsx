@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import type { TypeDetail } from '@/features/nodes/types';
+import type { IOTypeDetail } from '@/features/nodes/types';
 import { secretTextHandleStyles } from '../../styles/handleStyles';
 
 interface SecretTextHandleInputProps {
@@ -10,7 +10,7 @@ interface SecretTextHandleInputProps {
     description?: string;
     value: any;
     onChange?: (value: string) => void;
-    type_detail: TypeDetail;
+    type_detail: IOTypeDetail;
     disabled: boolean;
     isWholeAsToolMode?: boolean;
 }

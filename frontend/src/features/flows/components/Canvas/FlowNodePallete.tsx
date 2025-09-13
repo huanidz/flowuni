@@ -1,29 +1,88 @@
-import React, { useEffect, useState, forwardRef } from 'react';
-import { ChevronUp, ChevronDown } from 'lucide-react';
+import React, { useEffect, useState, forwardRef, useMemo } from 'react';
+import { ChevronUp, ChevronDown, Search, Wrench } from 'lucide-react';
 import { useNodeRegistry } from '@/features/nodes';
 
 interface NodePaletteProps {
     onDragStart: (event: React.DragEvent, node_type: string) => void;
+    searchDelay?: number; // Configurable delay in milliseconds (default: 1000ms)
 }
 
-const NodePalette = forwardRef<HTMLDivElement, NodePaletteProps>(
-    ({ onDragStart }, ref) => {
-        const [nodeOptions, setNodeOptions] = useState<
-            Array<{ name: string; description: string }>
-        >([]);
-        const [isCollapsed, setIsCollapsed] = useState(false);
+interface NodeSpec {
+    name: string;
+    description: string;
+    group: string;
+    can_be_tool?: boolean; // Added can_be_tool property
+}
 
+// Component to display node name with icons
+const NodeNameWithIcons = ({
+    name,
+    canBeTool,
+}: {
+    name: string;
+    canBeTool?: boolean;
+}) => {
+    return (
+        <div className="flex justify-between items-center">
+            <div className="font-medium text-sm text-gray-800">{name}</div>
+            <div className="flex space-x-1">
+                {canBeTool && <Wrench size={14} className="text-gray-500" />}
+                {/* Additional icons can be added here in the future */}
+            </div>
+        </div>
+    );
+};
+
+// Simple fuzzy search function
+const fuzzyMatch = (query: string, text: string): boolean => {
+    if (!query) return true;
+    // Convert both to lowercase for case-insensitive search
+    const lowerQuery = query.toLowerCase();
+    const lowerText = text.toLowerCase();
+    // Check if all characters in query appear in order in text
+    let queryIndex = 0;
+    for (
+        let i = 0;
+        i < lowerText.length && queryIndex < lowerQuery.length;
+        i++
+    ) {
+        if (lowerText[i] === lowerQuery[queryIndex]) {
+            queryIndex++;
+        }
+    }
+    return queryIndex === lowerQuery.length;
+};
+
+const NodePalette = forwardRef<HTMLDivElement, NodePaletteProps>(
+    ({ onDragStart, searchDelay = 300 }, ref) => {
+        const [nodeGroups, setNodeGroups] = useState<
+            Record<string, NodeSpec[]>
+        >({});
+        const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
+            new Set()
+        );
+        const [searchQuery, setSearchQuery] = useState<string>('');
+        const [debouncedQuery, setDebouncedQuery] = useState<string>('');
         const { nodes, getAllNodeSpecs } = useNodeRegistry();
 
         useEffect(() => {
             const loadPaletteNodes = async () => {
                 try {
                     const allNodes = getAllNodeSpecs();
-                    const paletteNodes = allNodes.map(node => ({
-                        name: node.name,
-                        description: node.description || '',
-                    }));
-                    setNodeOptions(paletteNodes);
+                    const groupedNodes: Record<string, NodeSpec[]> = {};
+                    allNodes.forEach(node => {
+                        const group = node.group || 'Ungrouped';
+                        if (!groupedNodes[group]) {
+                            groupedNodes[group] = [];
+                        }
+                        groupedNodes[group].push({
+                            name: node.name,
+                            description: node.description || '',
+                            group: group,
+                            can_be_tool: node.can_be_tool || false, // Include the can_be_tool property
+                        });
+                    });
+                    setNodeGroups(groupedNodes);
                 } catch (error) {
                     console.error('Failed to load nodes for palette:', error);
                 }
@@ -31,53 +90,139 @@ const NodePalette = forwardRef<HTMLDivElement, NodePaletteProps>(
             loadPaletteNodes();
         }, [nodes]);
 
+        // Debounce the search query
+        useEffect(() => {
+            const timerId = setTimeout(() => {
+                setDebouncedQuery(searchQuery);
+            }, searchDelay);
+            return () => {
+                clearTimeout(timerId);
+            };
+        }, [searchQuery, searchDelay]);
+
+        const toggleGroupCollapse = (groupName: string) => {
+            setCollapsedGroups(prev => {
+                const newSet = new Set(prev);
+                if (newSet.has(groupName)) {
+                    newSet.delete(groupName);
+                } else {
+                    newSet.add(groupName);
+                }
+                return newSet;
+            });
+        };
+
+        // Filter nodes based on debounced search query
+        const filteredNodeGroups = useMemo(() => {
+            if (!debouncedQuery.trim()) {
+                return nodeGroups;
+            }
+            const filteredGroups: Record<string, NodeSpec[]> = {};
+            Object.entries(nodeGroups).forEach(([groupName, groupNodes]) => {
+                const filteredNodes = groupNodes.filter(node =>
+                    fuzzyMatch(debouncedQuery, node.name)
+                );
+                if (filteredNodes.length > 0) {
+                    filteredGroups[groupName] = filteredNodes;
+                }
+            });
+            return filteredGroups;
+        }, [nodeGroups, debouncedQuery]);
+
         return (
             <div
-                className="absolute top-4 left-4 z-10 bg-white rounded border p-4 max-h-[70vh] overflow-y-hidden"
+                className="absolute top-4 left-4 z-10 bg-white rounded-lg shadow-lg border border-gray-200 max-h-[70vh] overflow-y-auto"
                 ref={ref}
             >
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className="font-semibold">Node Library</h3>
-                    <button
-                        onClick={() => setIsCollapsed(!isCollapsed)}
-                        className="p-1 hover:bg-gray-100 rounded transition-colors"
-                    >
-                        {isCollapsed ? (
-                            <ChevronUp size={16} />
-                        ) : (
-                            <ChevronDown size={16} />
-                        )}
-                    </button>
+                <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 rounded-t-lg">
+                    <h3 className="font-semibold text-gray-800 mb-2">
+                        Node Library
+                    </h3>
+                    <div className="relative">
+                        <input
+                            type="text"
+                            placeholder="Search nodes..."
+                            className="w-full px-3 py-2 pl-9 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                        />
+                        <Search
+                            size={16}
+                            className="absolute left-3 top-2.5 text-gray-400"
+                        />
+                        {/* SPINNER (disable for now) */}
+                        {/* {searchQuery !== debouncedQuery && (
+                            <div className="absolute right-3 top-2.5">
+                                <div className="w-5 h-5 border-2 border-t-transparent border-blue-500 rounded-full animate-spin"></div>
+                            </div>
+                        )} */}
+                    </div>
                 </div>
-
-                <div
-                    className={`transition-all duration-300 ease-in-out ${isCollapsed ? 'max-h-0 overflow-hidden opacity-0' : 'max-h-screen opacity-100'}`}
-                >
-                    <div className="grid grid-cols-2 gap-2 w-80">
-                        {nodeOptions.map(node => (
-                            <div
-                                key={node.name}
-                                className="p-2 rounded border cursor-move hover:bg-gray-50"
-                                draggable
-                                onDragStart={e => onDragStart(e, node.name)}
-                            >
-                                <div className="font-medium text-sm mb-1">
-                                    {node.name}
+                <div className="p-3 w-96">
+                    {Object.entries(filteredNodeGroups).map(
+                        ([groupName, groupNodes]) => (
+                            <div key={groupName} className="mb-4 last:mb-2">
+                                <div
+                                    className="flex justify-between items-center px-3 py-2 bg-gray-50 hover:bg-gray-100 cursor-pointer rounded-md transition-colors border border-gray-200 mb-2"
+                                    onClick={() =>
+                                        toggleGroupCollapse(groupName)
+                                    }
+                                >
+                                    <h4 className="font-medium text-sm text-gray-700 capitalize">
+                                        {groupName}
+                                    </h4>
+                                    <button className="p-1 hover:bg-gray-200 rounded transition-colors">
+                                        {collapsedGroups.has(groupName) ? (
+                                            <ChevronDown
+                                                size={14}
+                                                className="text-gray-600"
+                                            />
+                                        ) : (
+                                            <ChevronUp
+                                                size={14}
+                                                className="text-gray-600"
+                                            />
+                                        )}
+                                    </button>
                                 </div>
-                                {node.description && (
-                                    <div className="text-xs text-gray-600">
-                                        {node.description}
+                                {!collapsedGroups.has(groupName) && (
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {groupNodes.map(node => (
+                                            <div
+                                                key={node.name}
+                                                className="p-3 rounded-md border border-gray-200 cursor-move hover:border-blue-300 hover:bg-blue-50 transition-all duration-150 bg-white shadow-sm"
+                                                draggable
+                                                onDragStart={e =>
+                                                    onDragStart(e, node.name)
+                                                }
+                                            >
+                                                <NodeNameWithIcons
+                                                    name={node.name}
+                                                    canBeTool={node.can_be_tool}
+                                                />
+                                                {node.description && (
+                                                    <div className="text-xs text-gray-500 leading-relaxed mt-1">
+                                                        {node.description}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
                                     </div>
                                 )}
                             </div>
-                        ))}
-                    </div>
-
-                    {nodeOptions.length === 0 && (
+                        )
+                    )}
+                    {Object.keys(filteredNodeGroups).length === 0 && (
                         <div className="py-8 text-center">
-                            <p className="text-sm text-gray-500">
-                                Loading nodes...
-                            </p>
+                            {debouncedQuery ? (
+                                <p className="text-sm text-gray-500">
+                                    No nodes found matching "{debouncedQuery}"
+                                </p>
+                            ) : (
+                                <p className="text-sm text-gray-500">
+                                    Loading nodes...
+                                </p>
+                            )}
                         </div>
                     )}
                 </div>

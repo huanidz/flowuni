@@ -19,6 +19,7 @@ import { NODE_DATA_MODE } from '../consts';
 
 // UI Sections
 import { InputsSection } from '../components/NodeSections/InputsSection';
+import { ParametersSection } from '../components/NodeSections/ParametersSection';
 import { OutputsSection } from '../components/NodeSections/OutputsSection';
 import { NodeExecutionResult } from '../components/NodeSections/NodeExecutionResult';
 import { NodeHeader } from '../components/NodeSections/NodeHeader';
@@ -68,6 +69,11 @@ class NodeFactoryClass {
                       updateNodeInputData(id, inputName, value)
                 : undefined;
 
+            const handleParameterChange = updateNodeParameter
+                ? (paramName: string, value: any) =>
+                      updateNodeParameter(id, paramName, value)
+                : undefined;
+
             const handleModeChange = updateNodeModeData
                 ? (newMode: string) => updateNodeModeData(id, newMode)
                 : undefined;
@@ -95,6 +101,18 @@ class NodeFactoryClass {
                         }
                         node_mode={mode}
                     />
+
+                    {/* Parameters Configuration */}
+                    <div style={{ display: 'none' }}>
+                        <ParametersSection
+                            spec_parameters={nodeSpec.parameters}
+                            parameter_values={data.parameter_values || {}}
+                            nodeId={id}
+                            onParameterChange={
+                                handleParameterChange || (() => {})
+                            }
+                        />
+                    </div>
 
                     {/* Outputs Display */}
                     <OutputsSection

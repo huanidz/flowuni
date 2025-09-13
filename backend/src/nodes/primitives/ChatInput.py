@@ -22,7 +22,7 @@ class ChatInput(Node):
                 description="The message received.",
             )
         ],
-        parameters={},
+        parameters=[],
     )
 
     def process(self, inputs, parameters):

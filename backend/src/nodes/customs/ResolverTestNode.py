@@ -70,7 +70,7 @@ class ResolverTestNode(Node):
                 name="response", type=str, description="The response from agent."
             )
         ],
-        parameters={},
+        parameters=[],
     )
 
     def process(self, input_values, parameter_values):

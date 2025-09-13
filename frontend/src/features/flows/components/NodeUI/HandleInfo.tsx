@@ -7,6 +7,7 @@ interface HandleInfoProps {
     helperText?: string;
     required?: boolean;
     style?: React.CSSProperties;
+    allow_multiple_incoming_edges?: boolean;
 }
 
 export const HandleInfo: React.FC<HandleInfoProps> = ({
@@ -15,6 +16,7 @@ export const HandleInfo: React.FC<HandleInfoProps> = ({
     helperText,
     required,
     style = {},
+    allow_multiple_incoming_edges = false,
 }) => {
     const [showTooltip, setShowTooltip] = useState(false);
 
@@ -38,7 +40,7 @@ export const HandleInfo: React.FC<HandleInfoProps> = ({
                     color: '#26271eff',
                 }}
             >
-                {name}
+                {allow_multiple_incoming_edges ? `${name} (list)` : name}
             </span>
             {required && (
                 <span style={{ color: '#ef4444', fontSize: '12px' }}>*</span>

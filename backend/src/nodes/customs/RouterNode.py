@@ -37,7 +37,7 @@ class RouterNode(Node):
                 description="The routing output from the node.",
             ),
         ],
-        parameters={},
+        parameters=[],
     )
 
     def process(

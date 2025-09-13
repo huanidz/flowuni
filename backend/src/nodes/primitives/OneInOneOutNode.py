@@ -38,7 +38,7 @@ class OneInOneOutNode(Node):
                 name="message_out", type=str, description="The message received."
             )
         ],
-        parameters={},
+        parameters=[],
     )
 
     def process(self, input_values, parameter_values):

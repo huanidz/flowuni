@@ -349,3 +349,47 @@ export const dynamicTypeHandleStyles = {
         marginTop: '12px',
     } as CSSProperties,
 } as const;
+
+// Number handle styles
+export const numberHandleStyles = {
+    container: {
+        display: 'flex',
+        flexDirection: 'column',
+        fontSize: '12px',
+        width: '100%',
+    } as CSSProperties,
+    description: {
+        marginBottom: '4px',
+        color: '#666',
+        fontSize: '11px',
+    } as CSSProperties,
+    inputContainer: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '4px',
+        width: '100%',
+    } as CSSProperties,
+    input: {
+        flex: 1,
+        padding: '6px 8px',
+        fontSize: '12px',
+        border: '1px solid #ccc',
+        borderRadius: '4px',
+        outline: 'none',
+        transition: 'border-color 0.2s',
+    } as CSSProperties,
+    buttonContainer: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '2px',
+    } as CSSProperties,
+    button: {
+        minWidth: '24px',
+        minHeight: '24px',
+        padding: '0',
+        fontSize: '10px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+    } as CSSProperties,
+} as const;

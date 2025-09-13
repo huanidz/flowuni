@@ -1,21 +1,12 @@
 import { type Node as RFNode, type NodeProps } from '@xyflow/react';
 
-export interface NodeParameterSpec {
-    name: string;
-    value: string;
-    default: any;
-    type_detail?: string;
-    description?: string;
-    [key: string]: any;
-}
-
 export interface DynamicTypeItem {
     type_label: string;
     type_name: string;
     details: any;
 }
 
-export interface TypeDetail {
+export interface IOTypeDetail {
     type: string;
     schema?: {
         description: string;
@@ -28,7 +19,7 @@ export interface TypeDetail {
 
 export interface NodeInput {
     name: string;
-    type_detail: TypeDetail;
+    type_detail: IOTypeDetail;
     value: any;
     default: any;
     description: string;
@@ -41,7 +32,7 @@ export interface NodeInput {
 
 export interface NodeOutput {
     name: string;
-    type_detail: TypeDetail;
+    type_detail: IOTypeDetail;
     value: any;
     default: any;
     description: string;
@@ -54,9 +45,12 @@ export interface NodeSpec {
     description?: string;
     inputs: NodeInput[];
     outputs: NodeOutput[];
-    parameters: NodeParameterSpec[];
+    parameters: NodeInput[];
 
     can_be_tool?: boolean;
+
+    // metadata fields
+    group: string;
 }
 
 // --- Node Data ---

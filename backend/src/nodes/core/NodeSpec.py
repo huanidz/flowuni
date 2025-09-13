@@ -1,6 +1,7 @@
-from typing import Dict, List
+from typing import List
 
 from pydantic import BaseModel, Field, model_validator
+from src.consts.node_consts import NODE_GROUP_CONSTS
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.core.NodeParameterSpec import ParameterSpec
@@ -13,12 +14,20 @@ class NodeSpec(BaseModel):
     description: str = Field(..., description="Node description")
     inputs: List[NodeInput] = Field(default_factory=list, description="Node inputs")
     outputs: List[NodeOutput] = Field(default_factory=list, description="Node outputs")
-    parameters: Dict[str, ParameterSpec] = Field(
-        default_factory=dict, description="Node parameters"
+    parameters: List[ParameterSpec] = Field(
+        default_factory=list, description="Node parameters"
     )
     can_be_tool: bool = Field(
         default=False, description="Whether node can be used as a tool"
     )
+
+    # Metadata fields (Mostly for decorational purposes)
+    group: str = Field(
+        default=NODE_GROUP_CONSTS.DEFAULT,
+        description="Node's group. This will be used to group nodes in the UI.",
+    )
+
+    # --- Validators ---
 
     # TODO: Disable validation for now, this will need to be enable to ensure the fetching methods is properly implemented
 
@@ -87,5 +96,33 @@ class NodeSpec(BaseModel):
             name = out.name
             if name in seen_names:
                 raise ValueError(f"Duplicate output name detected: {name}")
+            seen_names.add(name)
+        return values
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_unique_parameter_names(cls, values):
+        """Validate that all parameter names are unique within the node specification.
+
+        This validator ensures that no two parameters have the same name, which would
+        cause ambiguity in the node's interface. The validation occurs during
+        model instantiation.
+
+        Args:
+            values: Dictionary of field values being validated
+
+        Returns:
+            The input values if validation passes
+
+        Raises:
+            ValueError: If duplicate parameter names are found
+        """
+        parameters = values.get("parameters", [])
+        seen_names = set()
+        param: ParameterSpec
+        for param in parameters:
+            name = param.name
+            if name in seen_names:
+                raise ValueError(f"Duplicate parameter name detected: {name}")
             seen_names.add(name)
         return values

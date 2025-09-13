@@ -1,6 +1,6 @@
 import type { Edge, Node, Connection } from '@xyflow/react';
 import type { NodeSpec } from '@/features/nodes';
-import type { TypeDetail, NodeInput } from '@/features/nodes/types';
+import type { IOTypeDetail, NodeInput } from '@/features/nodes/types';
 import { NODE_DATA_MODE } from '../consts';
 
 export class ConnectionValidator {
@@ -149,11 +149,11 @@ export class ConnectionValidator {
 
     private areTypesCompatible(
         sourceNodeMode: string,
-        sourceTypeDetail: TypeDetail,
-        targetTypeDetail: TypeDetail
+        sourceIOTypeDetail: IOTypeDetail,
+        targetIOTypeDetail: IOTypeDetail
     ): boolean {
-        let sourceTypeName = sourceTypeDetail.type;
-        const targetTypeName = targetTypeDetail.type;
+        let sourceTypeName = sourceIOTypeDetail.type;
+        const targetTypeName = targetIOTypeDetail.type;
 
         // Override source type for tool nodes
         if (sourceNodeMode === NODE_DATA_MODE.TOOL) {
