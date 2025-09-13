@@ -1,3 +1,3 @@
-from src.components.llm.providers.LLMProvider import LLMProvider
+from src.components.llm.providers.LLMProviderFactory import LLMProviderFactory
 
-__all__ = ["LLMProvider"]
+__all__ = ["LLMProviderFactory"]

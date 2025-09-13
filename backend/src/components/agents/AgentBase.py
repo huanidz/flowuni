@@ -10,7 +10,7 @@ from typing import Dict, List, Optional
 
 from loguru import logger
 from src.components.llm.models.core import ChatMessage, ChatResponse
-from src.components.llm.providers.adapters.LLMAdapterBase import LLMAdapter
+from src.components.llm.providers.adapters.LLMProviderInterface import LLMProviderBase
 from src.helpers.PydanticChatSchemaConstructor import PydanticChatSchemaConstructor
 from src.helpers.PydanticSchemaConverter import PydanticSchemaConverter
 from src.helpers.ToolHelper import ToolHelper
@@ -26,7 +26,7 @@ class Agent(ABC):
     with tool integration capabilities.
 
     Attributes:
-        llm_provider (LLMAdapter): The LLM provider adapter for handling completions
+        llm_provider (LLMProviderBase): The LLM provider adapter for handling completions
         system_prompt (str): The system prompt for the agent
         tools (List[ToolDataParser]): List of available tools for the agent
         tools_map (Dict[str, Dict[str, ToolDataParser]]): Mapping of tool names to tool parsers
@@ -34,7 +34,7 @@ class Agent(ABC):
 
     def __init__(
         self,
-        llm_provider: LLMAdapter,
+        llm_provider: LLMProviderBase,
         system_prompt: str = "",
         tools: Optional[List[ToolDataParser]] = None,
     ) -> None:
@@ -42,7 +42,7 @@ class Agent(ABC):
         Initialize the Agent with the given configuration.
 
         Args:
-            llm_provider (LLMAdapter): The LLM provider adapter
+            llm_provider (LLMProviderBase): The LLM provider adapter
             system_prompt (str, optional): The system prompt. Defaults to "".
             tools (List[ToolDataParser], optional): List of tools. Defaults to None.
         """
