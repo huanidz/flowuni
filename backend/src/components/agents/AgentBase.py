@@ -182,12 +182,28 @@ class Agent(ABC):
                         tool_inputs={},  # No additional inputs needed
                     )
 
+                # Append the tool result to the conversation (as user's message)
+                tool_result_message = (
+                    f"Tool '{tool_call_name}' executed with result: {processed_result}"  # noqa
+                )
+                chat_messages.append(
+                    ChatMessage(
+                        role=self.llm_provider.roles.USER,
+                        content=tool_result_message,
+                    )
+                )
+
+                # Perform another LLM call to get the agent's response after tool execution
+                agent_response = self.llm_provider.structured_completion(
+                    messages=chat_messages, output_schema=agent_response_schema
+                )
+
                 logger.info(
                     f"✨ Tool execution completed with result: {processed_result}"
                 )
 
             # Return the result of the last tool execution
-            return ChatResponse(content=str(processed_result))
+            return ChatResponse(content=agent_response.final_response)
 
         # Step 8: If no tools were used, just return the agent's direct response
         logger.info("💬 Returning direct response (no tools used)")
