@@ -5,9 +5,9 @@ from src.components.llm.models.core import (
     ChatMessage,
     ChatResponse,
 )
-from src.components.llm.providers.adapters.LLMAdapterBase import LLMAdapter
-from src.components.llm.providers.LLMProvider import LLMProvider
+from src.components.llm.providers.adapters.LLMProviderInterface import LLMProviderBase
 from src.components.llm.providers.LLMProviderConsts import LLMProviderName
+from src.components.llm.providers.LLMProviderFactory import LLMProviderFactory
 from src.consts.node_consts import NODE_GROUP_CONSTS
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
@@ -139,7 +139,9 @@ class AgentNode(Node):
 
         logger.info(f"👉 tools: {tools}")
 
-        llm_provider: LLMAdapter = LLMProvider.get_provider(provider_name=provider)
+        llm_provider: LLMProviderBase = LLMProviderFactory.get_provider(
+            provider_name=provider
+        )
         llm_provider.init(
             model=model,
             system_prompt=system_prompt,

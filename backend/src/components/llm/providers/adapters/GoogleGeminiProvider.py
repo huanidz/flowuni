@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, List, Optional
 
 from loguru import logger
 from src.components.llm.models.core import ChatMessage, GenerationParams
-from src.components.llm.providers.adapters.LLMAdapterBase import LLMAdapter
+from src.components.llm.providers.adapters.LLMProviderInterface import LLMProviderBase
 
 if TYPE_CHECKING:
     import instructor
@@ -17,7 +17,7 @@ class GeminiRole:
     USER = "user"
 
 
-class GoogleGeminiProvider(LLMAdapter):
+class GoogleGeminiProvider(LLMProviderBase):
     """
     Google Gemini provider adapter for LLM integration.
 

@@ -10,7 +10,7 @@ from typing import Dict, List, Optional
 
 from loguru import logger
 from src.components.llm.models.core import ChatMessage, ChatResponse
-from src.components.llm.providers.adapters.LLMAdapterBase import LLMAdapter
+from src.components.llm.providers.adapters.LLMProviderInterface import LLMProviderBase
 from src.helpers.PydanticChatSchemaConstructor import PydanticChatSchemaConstructor
 from src.helpers.PydanticSchemaConverter import PydanticSchemaConverter
 from src.helpers.ToolHelper import ToolHelper
@@ -26,7 +26,7 @@ class Agent(ABC):
     with tool integration capabilities.
 
     Attributes:
-        llm_provider (LLMAdapter): The LLM provider adapter for handling completions
+        llm_provider (LLMProviderBase): The LLM provider adapter for handling completions
         system_prompt (str): The system prompt for the agent
         tools (List[ToolDataParser]): List of available tools for the agent
         tools_map (Dict[str, Dict[str, ToolDataParser]]): Mapping of tool names to tool parsers
@@ -34,7 +34,7 @@ class Agent(ABC):
 
     def __init__(
         self,
-        llm_provider: LLMAdapter,
+        llm_provider: LLMProviderBase,
         system_prompt: str = "",
         tools: Optional[List[ToolDataParser]] = None,
     ) -> None:
@@ -42,7 +42,7 @@ class Agent(ABC):
         Initialize the Agent with the given configuration.
 
         Args:
-            llm_provider (LLMAdapter): The LLM provider adapter
+            llm_provider (LLMProviderBase): The LLM provider adapter
             system_prompt (str, optional): The system prompt. Defaults to "".
             tools (List[ToolDataParser], optional): List of tools. Defaults to None.
         """
@@ -67,130 +67,24 @@ class Agent(ABC):
 
         Returns:
             ChatResponse: The agent's response
-        """  # noqa
-        # Step 1: Prepare the system prompt with available tools
-        system_prompt = self._prepare_system_prompt()
-        logger.info(f"System Prompt: {system_prompt}")
+        """
+        # Setup the conversation
+        agent_response_schema, chat_messages = self._setup_agent_conversation(message)
 
-        # Step 2: Initialize the LLM provider with our system prompt
-        self._initialize_llm_provider(system_prompt)
-
-        # Step 3: Configure agent capabilities - these flags control what the agent can do # noqa
-        enable_reasoning = True  # Allow the agent to show its reasoning process
-        enable_tool_use = True  # Allow the agent to use tools
-
-        # Step 4: Create the response schema based on our configuration
-        agent_response_schema = (
-            PydanticChatSchemaConstructor.create_agent_response_model(
-                enable_reasoning=enable_reasoning, enable_tool_use=enable_tool_use
-            )
-        )
-
-        # Step 5: Start our conversation with the initial message
-        chat_messages = [message]
-
-        # Step 6: Get the agent's initial response (this might include planned tool calls) # noqa
+        # Get the agent's initial response
         agent_response = self.llm_provider.structured_completion(
             messages=chat_messages, output_schema=agent_response_schema
         )
         logger.info(f"Agent Response: {agent_response.model_dump_json(indent=2)}")
 
-        # Step 7: Handle tool execution if the agent wants to use tools
-        if enable_tool_use and agent_response.planned_tool_calls:
-            logger.info(
-                f"Agent wants to execute {len(agent_response.planned_tool_calls)} tool(s)"  # noqa
+        # Handle tool execution if needed
+        if agent_response.planned_tool_calls:
+            agent_response = self._handle_tool_execution(
+                agent_response, chat_messages, agent_response_schema
             )
 
-            # Process each tool call one by one
-            processed_result = None
-            for tool_call in agent_response.planned_tool_calls:
-                tool_call_name = tool_call.tool_name
-                logger.info(f"🔧 Processing tool call: {tool_call_name}")
-
-                # Let the conversation know we're executing a tool
-                execution_message = f"Executing tool: {tool_call_name}"
-                chat_messages.append(
-                    ChatMessage(
-                        role=self.llm_provider.roles.ASSISTANT,
-                        content=execution_message,
-                    )
-                )
-
-                # Find the tool in our available tools
-                if tool_call_name not in self.tools_map:
-                    logger.error(
-                        f"❌ Tool '{tool_call_name}' not found in available tools"
-                    )
-                    continue
-
-                # Get the tool configuration
-                tool_origin_parser_pair = self.tools_map[tool_call_name]
-                origin_tool_name, tool_parser = next(
-                    iter(tool_origin_parser_pair.items())
-                )
-                logger.info(f"✅ Found tool: {origin_tool_name}")
-
-                # Create an instance of the node that will execute our tool
-                node_registry = NodeRegistry()
-                node_instance = node_registry.create_node_instance(
-                    name=origin_tool_name
-                )
-
-                if not node_instance:
-                    logger.error(
-                        f"❌ Could not create node instance for {origin_tool_name}"
-                    )
-                    raise ValueError(f"Node {origin_tool_name} not found in registry")
-
-                # Execute the tool - there are two scenarios:
-                # 1. Tool has a schema (needs LLM to fill out parameters)
-                # 2. Tool has no schema (can run directly with existing parameters)
-
-                if tool_parser.tool_schema:
-                    # Scenario 1: Tool needs the LLM to provide structured input
-                    logger.info("🧠 Tool requires LLM to generate structured input")
-
-                    # Convert the tool schema to a Pydantic model
-                    tool_schema_model = PydanticSchemaConverter.load_from_dict(
-                        tool_parser.tool_schema
-                    )
-                    logger.info(
-                        f"📋 Tool Schema: {tool_schema_model.model_json_schema()}"
-                    )
-
-                    # Ask the LLM to fill out the tool parameters based on the conversation # noqa
-                    tool_call_response = self.llm_provider.structured_completion(
-                        messages=chat_messages, output_schema=tool_schema_model
-                    )
-                    logger.info(
-                        f"🎯 LLM provided tool inputs: {tool_call_response.model_dump_json(indent=2)}"  # noqa
-                    )
-
-                    # Execute the tool with LLM-generated inputs
-                    processed_result = node_instance.process_tool(
-                        inputs_values=tool_parser.input_values,
-                        parameter_values=tool_parser.parameter_values,
-                        tool_inputs=tool_call_response.model_dump(),
-                    )
-                else:
-                    # Scenario 2: Tool can run with pre-configured parameters
-                    logger.info("⚡ Tool can run directly with existing parameters")
-
-                    processed_result = node_instance.process_tool(
-                        inputs_values=tool_parser.input_values,
-                        parameter_values=tool_parser.parameter_values,
-                        tool_inputs={},  # No additional inputs needed
-                    )
-
-                logger.info(
-                    f"✨ Tool execution completed with result: {processed_result}"
-                )
-
-            # Return the result of the last tool execution
-            return ChatResponse(content=str(processed_result))
-
-        # Step 8: If no tools were used, just return the agent's direct response
-        logger.info("💬 Returning direct response (no tools used)")
+        # Return the final response
+        logger.info("💬 Returning final response")
         return ChatResponse(content=agent_response.final_response)
 
     def _build_tools_map(self) -> Dict[str, Dict[str, ToolDataParser]]:
@@ -241,3 +135,155 @@ class Agent(ABC):
             system_prompt=system_prompt,
             api_key=self.llm_provider.api_key,
         )
+
+    def _setup_agent_conversation(self, message: ChatMessage) -> tuple:
+        """
+        Set up the agent for conversation by preparing system prompt and response schema.
+
+        Args:
+            message (ChatMessage): The initial message to process
+
+        Returns:
+            tuple: (agent_response_schema, chat_messages list)
+        """
+        # Step 1: Prepare the system prompt with available tools
+        system_prompt = self._prepare_system_prompt()
+        logger.info(f"System Prompt: {system_prompt}")
+
+        # Step 2: Initialize the LLM provider with our system prompt
+        self._initialize_llm_provider(system_prompt)
+
+        # Step 3: Configure agent capabilities
+        enable_reasoning = True
+        enable_tool_use = True
+
+        # Step 4: Create the response schema based on our configuration
+        agent_response_schema = (
+            PydanticChatSchemaConstructor.create_agent_response_model(
+                enable_reasoning=enable_reasoning, enable_tool_use=enable_tool_use
+            )
+        )
+
+        # Step 5: Start our conversation with the initial message
+        chat_messages = [message]
+
+        return agent_response_schema, chat_messages
+
+    def _execute_single_tool(self, tool_call, chat_messages: List[ChatMessage]):
+        """
+        Execute a single tool call and return the result.
+
+        Args:
+            tool_call: The tool call to execute
+            chat_messages: The conversation history to update
+
+        Returns:
+            The result of the tool execution
+        """
+        tool_call_name = tool_call.tool_name
+        logger.info(f"🔧 Processing tool call: {tool_call_name}")
+
+        # Let the conversation know we're executing a tool
+        execution_message = f"Executing tool: {tool_call_name}"
+        chat_messages.append(
+            ChatMessage(
+                role=self.llm_provider.roles.ASSISTANT,
+                content=execution_message,
+            )
+        )
+
+        # Find the tool in our available tools
+        if tool_call_name not in self.tools_map:
+            logger.error(f"❌ Tool '{tool_call_name}' not found in available tools")
+            return None
+
+        # Get the tool configuration
+        tool_origin_parser_pair = self.tools_map[tool_call_name]
+        origin_tool_name, tool_parser = next(iter(tool_origin_parser_pair.items()))
+        logger.info(f"✅ Found tool: {origin_tool_name}")
+
+        # Create an instance of the node that will execute our tool
+        node_registry = NodeRegistry()
+        node_instance = node_registry.create_node_instance(name=origin_tool_name)
+
+        if not node_instance:
+            logger.error(f"❌ Could not create node instance for {origin_tool_name}")
+            raise ValueError(f"Node {origin_tool_name} not found in registry")
+
+        # Execute the tool based on whether it has a schema or not
+        if tool_parser.tool_schema:
+            # Tool needs the LLM to provide structured input
+            logger.info("🧠 Tool requires LLM to generate structured input")
+
+            tool_schema_model = PydanticSchemaConverter.load_from_dict(
+                tool_parser.tool_schema
+            )
+            logger.info(f"📋 Tool Schema: {tool_schema_model.model_json_schema()}")
+
+            tool_call_response = self.llm_provider.structured_completion(
+                messages=chat_messages, output_schema=tool_schema_model
+            )
+            logger.info(
+                f"🎯 LLM provided tool inputs: {tool_call_response.model_dump_json(indent=2)}"
+            )
+
+            processed_result = node_instance.process_tool(
+                inputs_values=tool_parser.input_values,
+                parameter_values=tool_parser.parameter_values,
+                tool_inputs=tool_call_response.model_dump(),
+            )
+        else:
+            # Tool can run with pre-configured parameters
+            logger.info("⚡ Tool can run directly with existing parameters")
+            processed_result = node_instance.process_tool(
+                inputs_values=tool_parser.input_values,
+                parameter_values=tool_parser.parameter_values,
+                tool_inputs={},
+            )
+
+        logger.info(f"✨ Tool execution completed with result: {processed_result}")
+        return processed_result
+
+    def _handle_tool_execution(
+        self, agent_response, chat_messages: List[ChatMessage], agent_response_schema
+    ):
+        """
+        Handle the execution of all planned tool calls and return the final response.
+
+        Args:
+            agent_response: The initial agent response with planned tool calls
+            chat_messages: The conversation history
+            agent_response_schema: The schema for agent responses
+
+        Returns:
+            The result of the tool execution process
+        """
+        logger.info(
+            f"Agent wants to execute {len(agent_response.planned_tool_calls)} tool(s)"
+        )
+
+        processed_result = None
+        for tool_call in agent_response.planned_tool_calls:
+            # Execute the individual tool
+            processed_result = self._execute_single_tool(tool_call, chat_messages)
+
+            if processed_result is None:
+                continue
+
+            # Append the tool result to the conversation
+            tool_result_message = (
+                f"Tool '{tool_call.tool_name}' executed with result: {processed_result}"
+            )
+            chat_messages.append(
+                ChatMessage(
+                    role=self.llm_provider.roles.USER,
+                    content=tool_result_message,
+                )
+            )
+
+            # Get the agent's response after tool execution
+            agent_response = self.llm_provider.structured_completion(
+                messages=chat_messages, output_schema=agent_response_schema
+            )
+
+        return agent_response

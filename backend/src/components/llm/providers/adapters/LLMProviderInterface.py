@@ -9,10 +9,10 @@ from src.components.llm.models.core import (
     GenerationParams,
 )
 
-# === LLMAdapterBase ===
+# === LLMProviderInterface ===
 
 
-class LLMAdapterBase(ABC):
+class LLMProviderInterface(ABC):
     @abstractmethod
     def __init__(self) -> None:
         pass
@@ -49,7 +49,7 @@ class DefaultRole:
     USER = "user"
 
 
-class LLMAdapter(LLMAdapterBase):
+class LLMProviderBase(LLMProviderInterface):
     def __init__(self) -> None:
         pass
 
