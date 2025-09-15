@@ -11,7 +11,9 @@ from src.components.llm.providers.LLMProviderFactory import LLMProviderFactory
 from src.consts.node_consts import NODE_GROUP_CONSTS
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
+from src.nodes.core.NodeParameterSpec import ParameterSpec
 from src.nodes.handles.agents.AgentToolInputHandle import AgentToolInputHandle
+from src.nodes.handles.basics.inputs.BooleanInputHandle import BooleanInputHandle
 from src.nodes.handles.basics.inputs.DropdownInputHandle import (
     DropdownInputHandle,
     DropdownOption,
@@ -115,7 +117,22 @@ class AgentNode(Node):
                 description="The response from agent.",
             )
         ],
-        parameters=[],
+        parameters=[
+            ParameterSpec(
+                name="streaming",
+                type=BooleanInputHandle(),
+                description="Whether to stream the response.",
+                default=False,
+                allow_incoming_edges=False,
+            ),
+            ParameterSpec(
+                name="enable_memory",
+                type=BooleanInputHandle(),
+                description="Whether to enable memory (chat history) for the agent.",
+                default=True,
+                allow_incoming_edges=False,
+            ),
+        ],
         can_be_tool=False,
         group=NODE_GROUP_CONSTS.AGENT,
     )

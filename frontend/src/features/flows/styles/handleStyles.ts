@@ -393,3 +393,54 @@ export const numberHandleStyles = {
         justifyContent: 'center',
     } as CSSProperties,
 } as const;
+
+// Boolean handle styles
+export const booleanHandleStyles = {
+    container: {
+        display: 'flex',
+        flexDirection: 'column',
+        fontSize: '12px',
+        width: '100%',
+    } as CSSProperties,
+    description: {
+        marginBottom: '4px',
+        color: '#666',
+        fontSize: '11px',
+    } as CSSProperties,
+    toggleContainer: {
+        display: 'flex',
+        alignItems: 'center',
+        width: '100%',
+    } as CSSProperties,
+    toggleLabel: {
+        display: 'flex',
+        alignItems: 'center',
+        cursor: 'pointer',
+        position: 'relative',
+    } as CSSProperties,
+    toggleInput: {
+        position: 'absolute',
+        opacity: 0,
+        width: 0,
+        height: 0,
+    } as CSSProperties,
+    toggleSwitch: {
+        position: 'relative',
+        display: 'inline-block',
+        width: '36px',
+        height: '18px',
+        backgroundColor: '#ccc',
+        borderRadius: '18px',
+        transition: 'background-color 0.2s',
+        marginRight: '8px',
+    } as CSSProperties,
+    disabledToggle: {
+        backgroundColor: '#e9ecef',
+        cursor: 'not-allowed',
+    } as CSSProperties,
+    toggleText: {
+        fontSize: '12px',
+        color: '#333',
+        userSelect: 'none',
+    } as CSSProperties,
+} as const;
