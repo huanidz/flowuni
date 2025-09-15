@@ -7,6 +7,7 @@ import { TableHandleInput } from './basics/TableHandleInput';
 import { DynamicTypeHandleInput } from './basics/DynamicTypeHandleInput';
 import { ToolableJsonHandleInput } from './basics/ToolableJsonHandleInput';
 import { NumberHandleInput } from './basics/NumberHandleInput';
+import { BooleanHandleInput } from './basics/BooleanHandleInput';
 
 export type NodeInputType =
     | 'TextFieldInputHandle'
@@ -16,7 +17,8 @@ export type NodeInputType =
     | 'TableInputHandle'
     | 'DynamicTypeInputHandle'
     | 'ToolableJsonInputHandle'
-    | 'NumberInputHandle' /* etc. */;
+    | 'NumberInputHandle'
+    | 'BooleanInputHandle' /* etc. */;
 
 export const NodeInputType = {
     TextField: 'TextFieldInputHandle',
@@ -27,6 +29,7 @@ export const NodeInputType = {
     DynamicType: 'DynamicTypeInputHandle',
     ToolableJson: 'ToolableJsonInputHandle',
     Number: 'NumberInputHandle',
+    Boolean: 'BooleanInputHandle',
 } as const;
 
 export const HandleComponentRegistry: {
@@ -40,6 +43,7 @@ export const HandleComponentRegistry: {
     [NodeInputType.DynamicType]: DynamicTypeHandleInput,
     [NodeInputType.ToolableJson]: ToolableJsonHandleInput,
     [NodeInputType.Number]: NumberHandleInput,
+    [NodeInputType.Boolean]: BooleanHandleInput,
 };
 
 // ===========================================================================
