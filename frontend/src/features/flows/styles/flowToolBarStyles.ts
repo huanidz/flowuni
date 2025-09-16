@@ -178,3 +178,54 @@ export const runSelectedOnlyMenuItemHover = {
     backgroundColor: '#c8e6c9',
     color: '#2e7d32',
 };
+
+// Session panel styles
+export const sessionPanel = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '8px 12px',
+    backgroundColor: '#f0f0f0',
+    borderRadius: '6px',
+    border: '1px solid #ddd',
+    fontSize: '12px',
+};
+
+export const sessionCheckbox = {
+    marginRight: '4px',
+};
+
+export const sessionLabel = {
+    fontSize: '12px',
+    color: '#666',
+    cursor: 'pointer',
+};
+
+export const sessionIdText = {
+    fontFamily: 'monospace',
+    fontSize: '11px',
+    color: '#333',
+    backgroundColor: '#fff',
+    padding: '2px 6px',
+    borderRadius: '3px',
+    border: '1px solid #ccc',
+    maxWidth: '120px',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+};
+
+export const resetButton = {
+    backgroundColor: '#6c757d',
+    color: 'white',
+    border: 'none',
+    padding: '4px 8px',
+    borderRadius: '3px',
+    cursor: 'pointer',
+    fontSize: '11px',
+    minWidth: '50px',
+};
+
+export const resetButtonHover = {
+    backgroundColor: '#5a6268',
+};
