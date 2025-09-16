@@ -9,7 +9,6 @@ import CompileButton from './FlowToolBarComponents/CompileButton';
 import SaveButton from './FlowToolBarComponents/SaveButton';
 import PlaygroundButton from './FlowToolBarComponents/PlaygroundButton';
 import ClearButton from './FlowToolBarComponents/ClearButton';
-import SessionPanel from './FlowToolBarComponents/SessionPanel';
 
 interface FlowToolbarProps {
     onRun: () => void;
@@ -31,8 +30,6 @@ const FlowToolbar: React.FC<FlowToolbarProps> = ({
     onPlayground,
 }) => {
     const [isRunDropdownOpen, setIsRunDropdownOpen] = useState(false);
-
-    // Execution store hooks - moved to SessionPanel component
 
     const handlePlayground = () => {
         console.log('Playground button clicked');
@@ -77,9 +74,6 @@ const FlowToolbar: React.FC<FlowToolbarProps> = ({
                     <ClearButton onClear={onClear} />
                 </div>
             </div>
-
-            {/* Session Panel */}
-            <SessionPanel />
         </div>
     );
 };
