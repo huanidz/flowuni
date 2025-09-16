@@ -226,70 +226,6 @@ const FlowToolbar: React.FC<FlowToolbarProps> = ({
 
                 {/* Right-aligned buttons */}
                 <div style={rightAlignedButtonsContainer}>
-                    {/* Session Panel */}
-                    <div style={sessionPanel}>
-                        <div
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                            }}
-                        >
-                            <Checkbox
-                                id="session-checkbox"
-                                checked={isSessionEnabled}
-                                onCheckedChange={checked =>
-                                    setSessionEnabled(checked as boolean)
-                                }
-                                style={sessionCheckbox}
-                            />
-                            <Label
-                                htmlFor="session-checkbox"
-                                style={sessionLabel}
-                            >
-                                Session
-                            </Label>
-                            <div
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    cursor: 'help',
-                                    color: '#666',
-                                    fontSize: '12px',
-                                }}
-                                title="Session will preserve ChatInput and ChatOutput as messages, it will affect some nodes like MemoryNode"
-                            >
-                                <Info size={12} />
-                            </div>
-                        </div>
-                        <div
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                            }}
-                        >
-                            <span style={sessionIdText} title={sessionId}>
-                                {sessionId}
-                            </span>
-                            <button
-                                onClick={resetSessionId}
-                                style={resetButton}
-                                onMouseEnter={e => {
-                                    e.currentTarget.style.backgroundColor =
-                                        resetButtonHover.backgroundColor;
-                                }}
-                                onMouseLeave={e => {
-                                    e.currentTarget.style.backgroundColor =
-                                        resetButton.backgroundColor;
-                                }}
-                                title="Reset session ID"
-                            >
-                                Reset
-                            </button>
-                        </div>
-                    </div>
-
                     {/* Playground Button */}
                     <button
                         onClick={handlePlayground}
@@ -358,6 +294,66 @@ const FlowToolbar: React.FC<FlowToolbarProps> = ({
                             </div>
                         </DropdownMenuContent>
                     </DropdownMenu>
+                </div>
+            </div>
+            {/* Session Panel */}
+            <div style={sessionPanel}>
+                <div
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                    }}
+                >
+                    <Checkbox
+                        id="session-checkbox"
+                        checked={isSessionEnabled}
+                        onCheckedChange={checked =>
+                            setSessionEnabled(checked as boolean)
+                        }
+                        style={sessionCheckbox}
+                    />
+                    <Label htmlFor="session-checkbox" style={sessionLabel}>
+                        Session
+                    </Label>
+                    <div
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            cursor: 'help',
+                            color: '#666',
+                            fontSize: '12px',
+                        }}
+                        title="Session will preserve ChatInput and ChatOutput as messages, it will affect some nodes like MemoryNode"
+                    >
+                        <Info size={12} />
+                    </div>
+                </div>
+                <div
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                    }}
+                >
+                    <span style={sessionIdText} title={sessionId}>
+                        {sessionId}
+                    </span>
+                    <button
+                        onClick={resetSessionId}
+                        style={resetButton}
+                        onMouseEnter={e => {
+                            e.currentTarget.style.backgroundColor =
+                                resetButtonHover.backgroundColor;
+                        }}
+                        onMouseLeave={e => {
+                            e.currentTarget.style.backgroundColor =
+                                resetButton.backgroundColor;
+                        }}
+                        title="Reset session ID"
+                    >
+                        Reset
+                    </button>
                 </div>
             </div>
         </div>

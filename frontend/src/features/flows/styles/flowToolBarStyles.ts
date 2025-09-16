@@ -183,49 +183,61 @@ export const runSelectedOnlyMenuItemHover = {
 export const sessionPanel = {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
-    padding: '8px 12px',
-    backgroundColor: '#f0f0f0',
-    borderRadius: '6px',
-    border: '1px solid #ddd',
+    justifyContent: 'flex-end', // Right align the content
+    gap: '12px',
+    padding: '10px 16px',
+    backgroundColor: '#f8f9fa',
+    borderRadius: '8px',
+    border: '1px solid #e9ecef',
     fontSize: '12px',
+    marginTop: '8px', // Space from buttons above
+    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
 };
 
 export const sessionCheckbox = {
-    marginRight: '4px',
+    marginRight: '0px', // Remove margin as gap handles spacing
+    accentColor: '#007bff', // Better checkbox color
 };
 
 export const sessionLabel = {
-    fontSize: '12px',
-    color: '#666',
+    fontSize: '13px',
+    color: '#495057',
     cursor: 'pointer',
+    fontWeight: '500',
+    userSelect: 'none',
 };
 
 export const sessionIdText = {
-    fontFamily: 'monospace',
+    fontFamily:
+        'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Menlo, monospace',
     fontSize: '11px',
-    color: '#333',
-    backgroundColor: '#fff',
-    padding: '2px 6px',
-    borderRadius: '3px',
-    border: '1px solid #ccc',
-    maxWidth: '120px',
+    color: '#212529',
+    backgroundColor: '#ffffff',
+    padding: '4px 8px',
+    borderRadius: '4px',
+    border: '1px solid #dee2e6',
+    maxWidth: '140px',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
+    boxShadow: 'inset 0 1px 2px rgba(0, 0, 0, 0.05)',
 };
 
 export const resetButton = {
     backgroundColor: '#6c757d',
     color: 'white',
     border: 'none',
-    padding: '4px 8px',
-    borderRadius: '3px',
+    padding: '5px 10px',
+    borderRadius: '4px',
     cursor: 'pointer',
     fontSize: '11px',
-    minWidth: '50px',
+    minWidth: '55px',
+    fontWeight: '500',
+    transition: 'background-color 0.15s ease-in-out',
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
 };
 
 export const resetButtonHover = {
     backgroundColor: '#5a6268',
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)',
 };
