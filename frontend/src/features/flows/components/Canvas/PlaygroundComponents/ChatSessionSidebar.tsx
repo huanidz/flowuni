@@ -1,8 +1,27 @@
 import React from 'react';
-import { ChevronLeft, ChevronRight, MoreVertical, Plus } from 'lucide-react';
+import { Plus, Loader2 } from 'lucide-react';
 import ChatSessionItem from './ChatSessionItem';
 import { useCreatePlaygroundSession } from '@/features/playground/hooks';
 import type { CreatePlaygroundSessionRequest } from '@/features/playground/types';
+
+// Add CSS animation styles
+const zoomAnimationStyles = `
+  @keyframes zoomInOut {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.05);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  
+  .zoom-animation {
+    animation: zoomInOut 0.8s ease-in-out;
+  }
+`;
 
 interface ChatSession {
     id: string;
@@ -32,6 +51,9 @@ const ChatSessionSidebar: React.FC<ChatSessionSidebarProps> = ({
 }) => {
     const createSessionMutation = useCreatePlaygroundSession();
     const [isCreating, setIsCreating] = React.useState(false);
+    const [newlyCreatedSessionId, setNewlyCreatedSessionId] = React.useState<
+        string | null
+    >(null);
 
     const handleCreateSession = async () => {
         if (isCreating || createSessionMutation.isPending) return;
@@ -49,13 +71,31 @@ const ChatSessionSidebar: React.FC<ChatSessionSidebarProps> = ({
                     title: `Session ${new Date().toLocaleDateString()}`,
                 },
             };
-            await createSessionMutation.mutateAsync(request);
+            const newSession = await createSessionMutation.mutateAsync(request);
+            if (newSession && newSession.user_defined_session_id) {
+                setNewlyCreatedSessionId(newSession.user_defined_session_id);
+                // Clear the newly created session ID after animation completes
+                setTimeout(() => {
+                    setNewlyCreatedSessionId(null);
+                }, 1000); // Animation duration + a bit extra
+            }
         } catch (error) {
             console.error('Error creating session:', error);
         } finally {
             setIsCreating(false);
         }
     };
+    // Inject styles into document head
+    React.useEffect(() => {
+        const styleElement = document.createElement('style');
+        styleElement.textContent = zoomAnimationStyles;
+        document.head.appendChild(styleElement);
+
+        return () => {
+            document.head.removeChild(styleElement);
+        };
+    }, []);
+
     return (
         <div
             className={`bg-gray-50 border-r border-gray-200 flex flex-col transition-all duration-300 ${
@@ -73,7 +113,11 @@ const ChatSessionSidebar: React.FC<ChatSessionSidebarProps> = ({
                     title="Create new session"
                     disabled={createSessionMutation.isPending || isCreating}
                 >
-                    <Plus size={16} />
+                    {isCreating || createSessionMutation.isPending ? (
+                        <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                        <Plus size={16} />
+                    )}
                 </button>
                 {/* Collapse/expand button disabled but kept for future use */}
                 {/* <button
@@ -129,6 +173,7 @@ const ChatSessionSidebar: React.FC<ChatSessionSidebarProps> = ({
                                 key={session.id}
                                 session={session}
                                 onDelete={onDeleteSession}
+                                isNew={session.id === newlyCreatedSessionId}
                             />
                         ))
                     )}
