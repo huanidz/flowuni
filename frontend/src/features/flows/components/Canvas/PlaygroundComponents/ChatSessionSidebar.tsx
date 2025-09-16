@@ -1,7 +1,11 @@
 import React from 'react';
 import { Plus, Loader2 } from 'lucide-react';
 import ChatSessionItem from './ChatSessionItem';
-import { useCreatePlaygroundSession } from '@/features/playground/hooks';
+import {
+    useCreatePlaygroundSession,
+    useChatHistory,
+} from '@/features/playground/hooks';
+import { usePlaygroundStore } from '@/features/playground/stores';
 import type { CreatePlaygroundSessionRequest } from '@/features/playground/types';
 
 // Add CSS animation styles
@@ -54,6 +58,47 @@ const ChatSessionSidebar: React.FC<ChatSessionSidebarProps> = ({
     const [newlyCreatedSessionId, setNewlyCreatedSessionId] = React.useState<
         string | null
     >(null);
+
+    // Get store actions and state
+    const {
+        currentSession,
+        setCurrentSession,
+        setChatMessages,
+        setIsLoadingChat,
+    } = usePlaygroundStore();
+
+    // Hook to fetch chat history
+    const { data: chatHistoryData, isLoading: isChatHistoryLoading } =
+        useChatHistory(
+            currentSession?.user_defined_session_id || '',
+            50 // Number of messages to fetch
+        );
+
+    const handleSessionClick = async (session: ChatSession) => {
+        // Set the current session in the store
+        setCurrentSession({
+            user_defined_session_id: session.id,
+            flow_id: flowId,
+            session_metadata: {
+                title: session.title,
+            },
+            is_playground: true,
+            created_at: session.timestamp.toISOString(),
+            modified_at: session.timestamp.toISOString(),
+        });
+
+        // Clear existing chat messages
+        setChatMessages([]);
+        setIsLoadingChat(true);
+    };
+
+    // Effect to update chat messages when chat history data changes
+    React.useEffect(() => {
+        if (chatHistoryData && chatHistoryData.messages) {
+            setChatMessages(chatHistoryData.messages);
+            setIsLoadingChat(false);
+        }
+    }, [chatHistoryData, setChatMessages, setIsLoadingChat]);
 
     const handleCreateSession = async () => {
         if (isCreating || createSessionMutation.isPending) return;
@@ -174,6 +219,11 @@ const ChatSessionSidebar: React.FC<ChatSessionSidebarProps> = ({
                                 session={session}
                                 onDelete={onDeleteSession}
                                 isNew={session.id === newlyCreatedSessionId}
+                                isSelected={
+                                    currentSession?.user_defined_session_id ===
+                                    session.id
+                                }
+                                onClick={handleSessionClick}
                             />
                         ))
                     )}

@@ -12,12 +12,16 @@ interface ChatSessionItemProps {
     session: ChatSession;
     onDelete: (id: string) => void;
     isNew?: boolean;
+    isSelected?: boolean;
+    onClick?: (session: ChatSession) => void;
 }
 
 const ChatSessionItem: React.FC<ChatSessionItemProps> = ({
     session,
     onDelete,
     isNew = false,
+    isSelected = false,
+    onClick,
 }) => {
     const [showMenu, setShowMenu] = useState(false);
 
@@ -36,7 +40,8 @@ const ChatSessionItem: React.FC<ChatSessionItemProps> = ({
 
     return (
         <div
-            className={`group relative p-3 hover:bg-gray-100 rounded-lg cursor-pointer transition-colors ${isNew ? 'zoom-animation' : ''}`}
+            className={`group relative p-3 hover:bg-gray-100 rounded-lg cursor-pointer transition-colors ${isNew ? 'zoom-animation' : ''} ${isSelected ? 'bg-blue-50 border-l-4 border-blue-500' : ''}`}
+            onClick={() => onClick?.(session)}
         >
             <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-1">
