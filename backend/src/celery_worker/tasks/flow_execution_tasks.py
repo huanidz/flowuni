@@ -4,7 +4,10 @@ from loguru import logger
 from redis import Redis
 from src.celery_worker.celery_worker import celery_app
 from src.configs.config import get_settings
-from src.executors.ExecutionContext import ExecutionContext, ExecutionControl
+from src.executors.ExecutionEventPublisher import (
+    ExecutionControl,
+    ExecutionEventPublisher,
+)
 from src.executors.GraphExecutor import GraphExecutor
 from src.nodes.GraphCompiler import GraphCompiler
 from src.nodes.GraphLoader import GraphLoader
@@ -62,7 +65,7 @@ def run_flow(
             db=app_settings.REDIS_DB,
             decode_responses=True,
         )
-        exe_context = ExecutionContext(
+        exe_context = ExecutionEventPublisher(
             task_id=self.request.id,
             redis_client=redis_client,
         )

@@ -16,7 +16,11 @@ from src.consts.node_consts import (
 )
 from src.exceptions.execution_exceptions import GraphExecutorError
 from src.executors.DataClass import NodeExecutionResult
-from src.executors.ExecutionContext import ExecutionContext, ExecutionControl
+from src.executors.ExecutionContext import ExecutionContext
+from src.executors.ExecutionEventPublisher import (
+    ExecutionControl,
+    ExecutionEventPublisher,
+)
 from src.executors.GraphExecutionUtil import GraphExecutionUtil
 from src.executors.NodeDataFlowAdapter import NodeDataFlowAdapter
 from src.executors.strategies.RunFromNodeStrategy import RunFromNodeStrategy
@@ -47,6 +51,7 @@ class GraphExecutor:
         max_workers: Optional[int] = None,
         enable_debug: bool = True,
         execution_context: Optional[ExecutionContext] = None,
+        execution_event_publisher: Optional[ExecutionEventPublisher] = None,
     ):
         """
         Initialize the GraphExecutor.
@@ -57,13 +62,14 @@ class GraphExecutor:
             max_workers: Maximum number of threads for parallel execution
         """  # noqa: E501
         self.graph: nx.DiGraph = graph
+        self.execution_context: Optional[ExecutionContext] = execution_context
         self.execution_plan: List[List[str]] = execution_plan
         self.execution_control: ExecutionControl = execution_control
         self.max_workers = max_workers
 
         # Flag and class for execution context
         self.enable_debug = enable_debug
-        self.execution_context = execution_context
+        self.execution_event_publisher = execution_event_publisher
 
         # Thread safety for updating graph
         self._update_lock = threading.Lock()
@@ -77,15 +83,15 @@ class GraphExecutor:
 
     def push_event(self, node_id: str, event: str, data: Any = {}):
         # Publish node event to Redis
-        if self.execution_context and self.enable_debug:
-            self.execution_context.publish_node_event(
+        if self.execution_event_publisher and self.enable_debug:
+            self.execution_event_publisher.publish_node_event(
                 node_id=node_id, event=event, data=data
             )
 
     def end_event(self, data: Dict = {}):
         # Publish DONE event to Redis
-        if self.execution_context and self.enable_debug:
-            self.execution_context.end(data=data)
+        if self.execution_event_publisher and self.enable_debug:
+            self.execution_event_publisher.end(data=data)
 
     def execute(self) -> Dict[str, Any]:
         """
@@ -279,7 +285,9 @@ class GraphExecutor:
             logger.info(f"Executing node [{layer_index}]: {node_spec.name}")
 
             # Execute the node
-            executed_data: NodeData = node_instance.run(node_data)
+            executed_data: NodeData = node_instance.run(
+                node_data=node_data, exec_context=self.execution_context
+            )
             self.push_event(
                 node_id=node_id,
                 event=NODE_EXECUTION_STATUS.COMPLETED,

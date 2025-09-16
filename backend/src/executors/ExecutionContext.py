@@ -1,38 +1,20 @@
-import json
-from datetime import datetime
-from typing import Literal, Optional
+from typing import Any, Dict, Optional
 
-import redis
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
-class ExecutionControl(BaseModel):
-    start_node: Optional[str] = None
-    scope: Optional[Literal["node_only", "downstream"]] = Field(default="downstream")
+class ExecutionContext(BaseModel):
+    """Immutable run-level context, plus a handle to shared state."""
 
+    run_id: str
+    flow_id: str
+    session_id: Optional[str] = (
+        None  # Optional, this will control the whole execution session, if this value is None, then a flow will be treated as single execution request. # noqa
+    )
+    user_id: Optional[str] = None
 
-class ExecutionContext:
-    def __init__(self, task_id: str, redis_client: redis.Redis):
-        self.task_id = task_id
-        self.redis: redis.Redis = redis_client
+    # Small metadata to carry around (safe to serialize if needed)
+    metadata: Dict[str, Any] = {}
 
-    def end(self, data: dict = {}):
-        # Publish DONE event to Redis
-        redis_message = {
-            "event": "DONE",
-            "data": data,
-            "timestamp": datetime.utcnow().isoformat(),
-        }
-        self.redis.rpush(self.task_id, json.dumps(redis_message))
-
-    def publish_node_event(self, node_id: str, event: str, data: dict):
-        # Publish node event to Redis
-        redis_message = {
-            "node_id": node_id,
-            "event": event,
-            "data": data,
-            "timestamp": datetime.utcnow().isoformat(),
-        }
-
-        # Push to a Redis list keyed by task_id
-        self.redis.rpush(self.task_id, json.dumps(redis_message))
+    class Config:
+        arbitrary_types_allowed = True
