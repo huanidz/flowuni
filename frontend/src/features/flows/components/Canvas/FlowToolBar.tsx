@@ -1,13 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
 import {
     toolbarContainer,
     toolbarWrapper,
     rightAlignedButtonsContainer,
 } from '@/features/flows/styles/flowToolBarStyles';
-import useExecutionStore from '@/features/flows/stores/execution_store';
 import RunButton from './FlowToolBarComponents/RunButton';
 import CompileButton from './FlowToolBarComponents/CompileButton';
 import SaveButton from './FlowToolBarComponents/SaveButton';
@@ -35,34 +31,13 @@ const FlowToolbar: React.FC<FlowToolbarProps> = ({
     onPlayground,
 }) => {
     const [isRunDropdownOpen, setIsRunDropdownOpen] = useState(false);
-    const [isClearDropdownOpen, setIsClearDropdownOpen] = useState(false);
 
     // Execution store hooks - moved to SessionPanel component
-
-    const handleConfirmClear = () => {
-        onClear();
-        console.log('Flow cleared successfully.');
-        setIsClearDropdownOpen(false);
-    };
-
-    const handleCancelClear = () => {
-        setIsClearDropdownOpen(false);
-    };
 
     const handlePlayground = () => {
         console.log('Playground button clicked');
         onPlayground();
     };
-
-    // Auto-dismiss clear dropdown after 3000ms
-    useEffect(() => {
-        if (isClearDropdownOpen) {
-            const timer = setTimeout(() => {
-                setIsClearDropdownOpen(false);
-            }, 3000);
-            return () => clearTimeout(timer);
-        }
-    }, [isClearDropdownOpen]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -99,11 +74,7 @@ const FlowToolbar: React.FC<FlowToolbarProps> = ({
                 <div style={rightAlignedButtonsContainer}>
                     <PlaygroundButton onPlayground={handlePlayground} />
 
-                    <ClearButton
-                        onClear={onClear}
-                        isDropdownOpen={isClearDropdownOpen}
-                        onDropdownOpenChange={setIsClearDropdownOpen}
-                    />
+                    <ClearButton onClear={onClear} />
                 </div>
             </div>
 

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { nanoid } from 'nanoid';
+import { v4 as uuidv4 } from 'uuid';
 
 interface ExecutionStore {
     sessionId: string;
@@ -10,12 +10,12 @@ interface ExecutionStore {
 }
 
 const useExecutionStore = create<ExecutionStore>((set, get) => ({
-    sessionId: nanoid(),
+    sessionId: uuidv4(),
     isSessionEnabled: false,
 
     setSessionId: (sessionId: string) => set({ sessionId }),
 
-    resetSessionId: () => set({ sessionId: nanoid() }),
+    resetSessionId: () => set({ sessionId: uuidv4() }),
 
     setSessionEnabled: (enabled: boolean) => set({ isSessionEnabled: enabled }),
 }));

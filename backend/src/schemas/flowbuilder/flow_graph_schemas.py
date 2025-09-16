@@ -73,6 +73,11 @@ class CanvasFlowRunRequest(BaseModel):
         "If 'downstream', the flow will execute the selected node and its downstream nodes.",  # noqa: E501
     )
 
+    session_id: Optional[str] = Field(
+        default=None,
+        description="The session ID for the flow run. If None, a new session will be created.",  # noqa: E501
+    )
+
 
 # --- Flow Run API ---
 

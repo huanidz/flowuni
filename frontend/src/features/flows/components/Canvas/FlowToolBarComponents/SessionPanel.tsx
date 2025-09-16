@@ -1,7 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Info } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import useExecutionStore from '@/features/flows/stores/execution_store';
 import {
     sessionPanel,
@@ -15,6 +24,16 @@ import {
 const SessionPanel: React.FC = () => {
     const { sessionId, isSessionEnabled, setSessionEnabled, resetSessionId } =
         useExecutionStore();
+    const [confirmResetOpen, setConfirmResetOpen] = useState(false);
+
+    const handleResetClick = () => {
+        setConfirmResetOpen(true);
+    };
+
+    const handleConfirmReset = () => {
+        resetSessionId();
+        setConfirmResetOpen(false);
+    };
 
     return (
         <div style={sessionPanel}>
@@ -60,7 +79,7 @@ const SessionPanel: React.FC = () => {
                     {sessionId}
                 </span>
                 <button
-                    onClick={resetSessionId}
+                    onClick={handleResetClick}
                     style={resetButton}
                     onMouseEnter={e => {
                         e.currentTarget.style.backgroundColor =
@@ -74,6 +93,35 @@ const SessionPanel: React.FC = () => {
                 >
                     Reset
                 </button>
+                <Dialog
+                    open={confirmResetOpen}
+                    onOpenChange={setConfirmResetOpen}
+                >
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Reset Session ID</DialogTitle>
+                            <DialogDescription>
+                                Are you sure you want to reset the session ID?
+                                This will start a new session and clear any
+                                existing session data.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                            <Button
+                                variant="outline"
+                                onClick={() => setConfirmResetOpen(false)}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                variant="destructive"
+                                onClick={handleConfirmReset}
+                            >
+                                Reset
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
         </div>
     );

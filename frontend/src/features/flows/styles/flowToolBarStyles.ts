@@ -221,7 +221,6 @@ export const sessionIdText = {
     padding: '4px 8px',
     borderRadius: '4px',
     border: '1px solid #dee2e6',
-    maxWidth: '140px',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',

@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import {
     clearButton,
     clearButtonHover,
@@ -12,74 +15,67 @@ import {
 
 interface ClearButtonProps {
     onClear: () => void;
-    isDropdownOpen: boolean;
-    onDropdownOpenChange: (open: boolean) => void;
 }
 
-const ClearButton: React.FC<ClearButtonProps> = ({
-    onClear,
-    isDropdownOpen,
-    onDropdownOpenChange,
-}) => {
+const ClearButton: React.FC<ClearButtonProps> = ({ onClear }) => {
+    const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+
+    const handleClearClick = () => {
+        setConfirmDialogOpen(true);
+    };
+
     const handleConfirmClear = () => {
         onClear();
         console.log('Flow cleared successfully.');
-        onDropdownOpenChange(false);
-    };
-
-    const handleCancelClear = () => {
-        onDropdownOpenChange(false);
+        setConfirmDialogOpen(false);
     };
 
     return (
-        <DropdownMenu open={isDropdownOpen} onOpenChange={onDropdownOpenChange}>
-            <DropdownMenuTrigger asChild>
-                <button
-                    style={clearButton}
-                    onMouseEnter={e => {
-                        e.currentTarget.style.backgroundColor =
-                            clearButtonHover.backgroundColor;
-                        onDropdownOpenChange(true);
-                    }}
-                    onMouseLeave={e => {
-                        e.currentTarget.style.backgroundColor =
-                            clearButton.backgroundColor;
-                    }}
-                >
-                    Clear
-                </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-                className="w-48"
-                align="end"
-                onMouseEnter={() => onDropdownOpenChange(true)}
-                onMouseLeave={() => onDropdownOpenChange(false)}
+        <>
+            <button
+                style={clearButton}
+                onMouseEnter={e => {
+                    e.currentTarget.style.backgroundColor =
+                        clearButtonHover.backgroundColor;
+                }}
+                onMouseLeave={e => {
+                    e.currentTarget.style.backgroundColor =
+                        clearButton.backgroundColor;
+                }}
+                onClick={handleClearClick}
             >
-                <div className="p-2">
-                    <p className="text-sm text-muted-foreground mb-3">
-                        Clear the flow?
-                    </p>
-                    <div className="flex gap-2">
+                Clear
+            </button>
+            <Dialog
+                open={confirmDialogOpen}
+                onOpenChange={setConfirmDialogOpen}
+            >
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Clear Flow</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to clear the flow? This action
+                            will remove all nodes and connections and cannot be
+                            undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
                         <Button
-                            onClick={handleConfirmClear}
-                            size="sm"
-                            variant="destructive"
-                            className="flex-1"
-                        >
-                            Yes
-                        </Button>
-                        <Button
-                            onClick={handleCancelClear}
-                            size="sm"
                             variant="outline"
-                            className="flex-1"
+                            onClick={() => setConfirmDialogOpen(false)}
                         >
-                            No
+                            Cancel
                         </Button>
-                    </div>
-                </div>
-            </DropdownMenuContent>
-        </DropdownMenu>
+                        <Button
+                            variant="destructive"
+                            onClick={handleConfirmClear}
+                        >
+                            Clear
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </>
     );
 };
 
