@@ -5,12 +5,14 @@ import {
     CHAT_ENDPOINT,
     SESSION_CHAT_ENDPOINT,
     SESSION_METADATA_ENDPOINT,
+    SESSIONS_WITH_LAST_MESSAGE_ENDPOINT,
 } from './consts';
 import type {
     CreatePlaygroundSessionRequest,
     PlaygroundSession,
     GetPlaygroundSessionsRequest,
     GetPlaygroundSessionsResponse,
+    GetSessionsWithLastMessageResponse,
     AddChatMessageRequest,
     ChatMessageResponse,
     GetChatHistoryRequest,
@@ -58,6 +60,20 @@ export const addChatMessage = async (
     request: AddChatMessageRequest
 ): Promise<ChatMessageResponse> => {
     const { data } = await apiClient.post(CHAT_ENDPOINT, request);
+    return data;
+};
+
+// Sessions with last message API function
+export const getSessionsWithLastMessage = async (
+    request: GetPlaygroundSessionsRequest
+): Promise<GetSessionsWithLastMessageResponse> => {
+    const { data } = await apiClient.get(SESSIONS_WITH_LAST_MESSAGE_ENDPOINT, {
+        params: {
+            flow_id: request.flow_id,
+            page: request.page || 1,
+            per_page: request.per_page || 10,
+        },
+    });
     return data;
 };
 

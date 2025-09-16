@@ -1,6 +1,6 @@
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from loguru import logger
 from src.dependencies.auth_dependency import get_current_user
 from src.dependencies.playground_dependency import get_playground_service
@@ -11,15 +11,16 @@ from src.schemas.playground.playground_schemas import (
     GetChatHistoryResponse,
     GetPlaygroundSessionsRequest,
     GetPlaygroundSessionsResponse,
+    GetSessionsWithLastMessageResponse,
     PlaygroundSessionResponse,
     UpdateSessionMetadataRequest,
     UpdateSessionMetadataResponse,
 )
 
-router = APIRouter(prefix="/api/playground", tags=["playground"])
+playground_router = APIRouter(prefix="/api/playground", tags=["playground"])
 
 
-@router.post(
+@playground_router.post(
     "/sessions",
     response_model=PlaygroundSessionResponse,
     status_code=status.HTTP_201_CREATED,
@@ -51,14 +52,14 @@ def create_playground_session(
         )
 
 
-@router.get(
+@playground_router.get(
     "/sessions",
     response_model=GetPlaygroundSessionsResponse,
 )
 def get_playground_sessions(
-    flow_id: str,
-    page: int = 1,
-    per_page: int = 10,
+    flow_id: str = Query(..., description="Flow ID"),
+    page: int = Query(1, description="Page number", ge=1),
+    per_page: int = Query(10, description="Number of items per page", ge=1, le=100),
     user_id: int = Depends(get_current_user),
     playground_service=Depends(get_playground_service),
 ):
@@ -81,7 +82,7 @@ def get_playground_sessions(
         )
 
 
-@router.get(
+@playground_router.get(
     "/sessions/{session_id}",
     response_model=PlaygroundSessionResponse,
 )
@@ -114,7 +115,7 @@ def get_playground_session(
         )
 
 
-@router.delete(
+@playground_router.delete(
     "/sessions/{session_id}",
     status_code=status.HTTP_204_NO_CONTENT,
 )
@@ -147,7 +148,7 @@ def delete_playground_session(
         )
 
 
-@router.post(
+@playground_router.post(
     "/chat",
     response_model=ChatMessageResponse,
     status_code=status.HTTP_201_CREATED,
@@ -179,7 +180,7 @@ def add_chat_message(
         )
 
 
-@router.get(
+@playground_router.get(
     "/sessions/{session_id}/chat",
     response_model=GetChatHistoryResponse,
 )
@@ -209,7 +210,7 @@ def get_chat_history(
         )
 
 
-@router.put(
+@playground_router.put(
     "/sessions/{session_id}/metadata",
     response_model=UpdateSessionMetadataResponse,
 )
@@ -237,4 +238,36 @@ def update_session_metadata(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update session metadata",
+        )
+
+
+@playground_router.get(
+    "/sessions-with-last-message",
+    response_model=GetSessionsWithLastMessageResponse,
+)
+def get_sessions_with_last_message(
+    flow_id: str = Query(..., description="Flow ID"),
+    page: int = Query(1, description="Page number", ge=1),
+    per_page: int = Query(10, description="Number of items per page", ge=1, le=100),
+    user_id: int = Depends(get_current_user),
+    playground_service=Depends(get_playground_service),
+):
+    """
+    Get playground sessions for a flow with their last messages
+    """
+    try:
+        logger.info(
+            f"User {user_id} retrieving playground sessions with last messages for flow {flow_id}"
+        )
+        request = GetPlaygroundSessionsRequest(
+            flow_id=flow_id, page=page, per_page=per_page
+        )
+        return playground_service.get_sessions_with_last_message(request)
+    except Exception as e:
+        logger.error(
+            f"Error retrieving playground sessions with last messages for flow {flow_id}: {str(e)}"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve playground sessions with last messages",
         )

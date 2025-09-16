@@ -1,4 +1,4 @@
-export const PLAYGROUND_ENDPOINT = '/api/playground';
+export const PLAYGROUND_ENDPOINT = '/playground';
 
 // Session endpoints
 export const SESSIONS_ENDPOINT = `${PLAYGROUND_ENDPOINT}/sessions`;
@@ -11,3 +11,6 @@ export const SESSION_METADATA_ENDPOINT = (sessionId: string) =>
 export const CHAT_ENDPOINT = `${PLAYGROUND_ENDPOINT}/chat`;
 export const SESSION_CHAT_ENDPOINT = (sessionId: string) =>
     `${SESSION_ENDPOINT(sessionId)}/chat`;
+
+// Sessions with last message endpoint
+export const SESSIONS_WITH_LAST_MESSAGE_ENDPOINT = `${PLAYGROUND_ENDPOINT}/sessions-with-last-message`;

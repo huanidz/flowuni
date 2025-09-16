@@ -81,3 +81,16 @@ export interface UpdateSessionMetadataResponse {
     created_at: string;
     modified_at: string;
 }
+
+// Session with Last Message Types
+export interface SessionWithLastMessage {
+    id: string;
+    title: string;
+    last_message: string;
+    timestamp: string;
+}
+
+export interface GetSessionsWithLastMessageResponse {
+    data: SessionWithLastMessage[];
+    pagination: Pagination;
+}

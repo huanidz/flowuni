@@ -123,3 +123,24 @@ class UpdateSessionMetadataResponse(BaseModel):
     )
     created_at: str = Field(..., description="Creation timestamp")
     modified_at: str = Field(..., description="Last modification timestamp")
+
+
+# --- Session with Last Message Schema ---
+
+
+class SessionWithLastMessage(BaseModel):
+    """Schema for a session with its last message"""
+
+    id: str = Field(..., description="Session ID")
+    title: str = Field(..., description="Session title")
+    last_message: str = Field(..., description="Last message in the session")
+    timestamp: str = Field(..., description="Session timestamp")
+
+
+class GetSessionsWithLastMessageResponse(BaseModel):
+    """Response schema for getting playground sessions with their last messages"""
+
+    data: List[SessionWithLastMessage] = Field(
+        ..., description="List of playground sessions with last messages"
+    )
+    pagination: Pagination = Field(..., description="Pagination metadata")

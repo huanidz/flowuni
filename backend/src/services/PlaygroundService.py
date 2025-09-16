@@ -14,6 +14,7 @@ from src.schemas.playground.playground_schemas import (
     GetChatHistoryResponse,
     GetPlaygroundSessionsRequest,
     GetPlaygroundSessionsResponse,
+    GetSessionsWithLastMessageResponse,
     Pagination,
     PlaygroundSessionResponse,
     UpdateSessionMetadataRequest,
@@ -80,6 +81,15 @@ class PlaygroundServiceInterface(ABC):
     ) -> UpdateSessionMetadataResponse:
         """
         Update session metadata
+        """
+        pass
+
+    @abstractmethod
+    def get_sessions_with_last_message(
+        self, request: GetPlaygroundSessionsRequest
+    ) -> GetSessionsWithLastMessageResponse:
+        """
+        Get playground sessions for a flow with their last messages
         """
         pass
 
@@ -349,6 +359,85 @@ class PlaygroundService(PlaygroundServiceInterface):
         except Exception as e:
             logger.error(
                 f"Error updating metadata for playground session {request.session_id}: {str(e)}"
+            )
+            raise
+
+    def get_sessions_with_last_message(
+        self, request: GetPlaygroundSessionsRequest
+    ) -> GetSessionsWithLastMessageResponse:
+        """
+        Get playground sessions for a flow with their last messages
+        """
+        try:
+            # Verify the flow exists
+            flow = self.flow_repository.get_by_id(request.flow_id)
+            if not flow:
+                logger.info(f"Flow with ID {request.flow_id} not found")
+                return GetSessionsWithLastMessageResponse(
+                    data=[],
+                    pagination=Pagination(
+                        page=request.page,
+                        page_size=request.per_page,
+                        total_pages=0,
+                        total_items=0,
+                    ),
+                )
+
+            # Get all playground sessions for this flow
+            all_sessions = self.session_repository.get_by_flow_id(
+                flow_id=request.flow_id, is_playground=True
+            )
+
+            # Sort by creation time (newest first)
+            all_sessions.sort(key=lambda x: x.created_at, reverse=True)
+
+            # Apply pagination
+            start_idx = (request.page - 1) * request.per_page
+            end_idx = start_idx + request.per_page
+            paginated_sessions = all_sessions[start_idx:end_idx]
+
+            # Map to response format with last message
+            session_responses = []
+            for session in paginated_sessions:
+                # Get the last message for this session
+                chat_histories = self.session_repository.get_chat_history(
+                    session_id=session.user_defined_session_id, num_messages=1
+                )
+
+                last_message = "No messages yet"
+                if chat_histories and len(chat_histories) > 0:
+                    last_message = chat_histories[0].message
+
+                session_responses.append(
+                    {
+                        "id": session.user_defined_session_id,
+                        "title": f"Session {session.user_defined_session_id[:8]}",
+                        "last_message": last_message,
+                        "timestamp": session.modified_at.isoformat(),
+                    }
+                )
+
+            # Calculate pagination metadata
+            total_items = len(all_sessions)
+            total_pages = (total_items + request.per_page - 1) // request.per_page
+
+            logger.info(
+                f"Retrieved {len(session_responses)} playground sessions with last messages for flow {request.flow_id}"
+            )
+
+            return GetSessionsWithLastMessageResponse(
+                data=session_responses,
+                pagination=Pagination(
+                    page=request.page,
+                    page_size=request.per_page,
+                    total_pages=total_pages,
+                    total_items=total_items,
+                ),
+            )
+
+        except Exception as e:
+            logger.error(
+                f"Error retrieving playground sessions with last messages for flow {request.flow_id}: {str(e)}"
             )
             raise
 

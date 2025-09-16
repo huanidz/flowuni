@@ -7,6 +7,7 @@ import {
     addChatMessage,
     getChatHistory,
     updateSessionMetadata,
+    getSessionsWithLastMessage,
 } from './api';
 import type {
     CreatePlaygroundSessionRequest,
@@ -15,6 +16,7 @@ import type {
     AddChatMessageRequest,
     GetChatHistoryResponse,
     UpdateSessionMetadataResponse,
+    GetSessionsWithLastMessageResponse,
 } from './types';
 
 // Session hooks
@@ -94,6 +96,22 @@ export const useChatHistory = (sessionId: string, numMessages?: number) => {
         queryKey: ['chat-history', sessionId, numMessages],
         queryFn: () => getChatHistory(sessionId, numMessages),
         enabled: !!sessionId,
+    });
+};
+
+// Sessions with last message hook
+export const useSessionsWithLastMessage = (
+    request: GetPlaygroundSessionsRequest
+) => {
+    return useQuery({
+        queryKey: [
+            'sessions-with-last-message',
+            request.flow_id,
+            request.page,
+            request.per_page,
+        ],
+        queryFn: () => getSessionsWithLastMessage(request),
+        enabled: !!request.flow_id,
     });
 };
 
