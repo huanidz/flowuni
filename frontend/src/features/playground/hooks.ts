@@ -31,6 +31,10 @@ export const useCreatePlaygroundSession = () => {
             queryClient.invalidateQueries({
                 queryKey: ['playground-sessions', variables.flow_id],
             });
+            // Invalidate sessions with last message query for the specific flow
+            queryClient.invalidateQueries({
+                queryKey: ['sessions-with-last-message', variables.flow_id],
+            });
         },
     });
 };

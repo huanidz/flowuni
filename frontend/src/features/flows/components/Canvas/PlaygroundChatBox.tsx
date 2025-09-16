@@ -5,18 +5,9 @@ import type { PlaygroundChatBoxPosition, PGMessage } from '../../types';
 import { runFlow } from '../../api';
 import { watchFlowExecution } from '@/api/sse';
 import { NODE_EXECUTION_STATE } from '../../consts';
+import type { GetPlaygroundSessionsRequest } from '@/features/playground/types';
 import {
-    getPlaygroundSessions,
-    getChatHistory,
-} from '@/features/playground/api';
-import type {
-    GetPlaygroundSessionsRequest,
-    PlaygroundSession,
-} from '@/features/playground/types';
-import {
-    usePlaygroundSessions,
     useDeletePlaygroundSession,
-    useChatHistory,
     useSessionsWithLastMessage,
 } from '@/features/playground/hooks';
 
@@ -487,6 +478,7 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
                         onDeleteSession={handleDeleteSession}
                         isLoading={isLoadingSessions}
                         error={sessionsError ? sessionsError.message : null}
+                        flowId={flowId}
                     />
 
                     {/* Chat Content */}

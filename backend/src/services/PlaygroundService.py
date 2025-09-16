@@ -119,7 +119,7 @@ class PlaygroundService(PlaygroundServiceInterface):
             session_id = str(uuid4())
 
             # Verify the flow exists
-            flow = self.flow_repository.get_by_user_define_session_id(request.flow_id)
+            flow = self.flow_repository.get_by_id(request.flow_id)
             if not flow:
                 logger.warning(f"Flow with ID {request.flow_id} not found")
                 raise ValueError(f"Flow with ID {request.flow_id} not found")
