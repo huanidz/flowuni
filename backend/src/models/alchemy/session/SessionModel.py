@@ -9,6 +9,7 @@ class SessionModel(AppBaseModel):
     __tablename__ = "sessions"
 
     flow_id = Column(String(64), nullable=True, index=True)
+    user_defined_session_id = Column(String, index=True)
     session_metadata = Column(JSONB, nullable=True)
 
     chat_histories = relationship(
@@ -18,4 +19,7 @@ class SessionModel(AppBaseModel):
         cascade="all, delete-orphan",
     )
 
-    __table_args__ = (Index("idx_sessions_flow_id", "flow_id"),)
+    __table_args__ = (
+        Index("idx_sessions_flow_id", "flow_id"),
+        Index("idx_sessions_user_defined_session_id", "user_defined_session_id"),
+    )

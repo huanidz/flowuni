@@ -1,5 +1,5 @@
 # SessionChatHistoryModel.py
-from sqlalchemy import BigInteger, Column, Enum, ForeignKey, Index, Text
+from sqlalchemy import BigInteger, Column, Enum, ForeignKey, Index, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from src.models.alchemy.shared.AppBaseModel import AppBaseModel
@@ -9,7 +9,10 @@ class SessionChatHistoryModel(AppBaseModel):
     __tablename__ = "sessions_chat_histories"
 
     session_id = Column(
-        BigInteger, ForeignKey("sessions.id"), nullable=False, index=True
+        String,
+        ForeignKey("sessions.user_defined_session_id"),
+        nullable=False,
+        index=True,
     )
     role = Column(
         Enum("user", "assistant", name="sender_type"), nullable=False, index=True
