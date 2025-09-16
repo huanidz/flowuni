@@ -1,3 +1,5 @@
+import { Columns } from 'lucide-react';
+
 // Main toolbar container styles
 export const toolbarContainer = {
     position: 'absolute' as const,
@@ -186,17 +188,21 @@ export const sessionPanel = {
     justifyContent: 'flex-end', // Right align the content
     gap: '12px',
     padding: '10px 16px',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#bebebeff',
     borderRadius: '8px',
     border: '1px solid #e9ecef',
     fontSize: '12px',
     marginTop: '8px', // Space from buttons above
     boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+    width: 'fit-content',
+    marginLeft: 'auto',
 };
 
 export const sessionCheckbox = {
     marginRight: '0px', // Remove margin as gap handles spacing
-    accentColor: '#007bff', // Better checkbox color
+    accentColor: '#010f1dff', // Better checkbox color
+    backgroundColor: '#ffffffff',
+    color: 'black',
 };
 
 export const sessionLabel = {
@@ -204,7 +210,6 @@ export const sessionLabel = {
     color: '#495057',
     cursor: 'pointer',
     fontWeight: '500',
-    userSelect: 'none',
 };
 
 export const sessionIdText = {
@@ -233,7 +238,7 @@ export const resetButton = {
     fontSize: '11px',
     minWidth: '55px',
     fontWeight: '500',
-    transition: 'background-color 0.15s ease-in-out',
+    transition: 'background-color 0.1s ease-in-out',
     boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
 };
 
