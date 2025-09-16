@@ -11,6 +11,7 @@ import ChatHeader from './PlaygroundComponents/ChatHeader';
 import ChatWarnings from './PlaygroundComponents/ChatWarnings';
 import MessagesArea from './PlaygroundComponents/MessagesArea';
 import MessageInput from './PlaygroundComponents/MessageInput';
+import ChatSessionSidebar from './PlaygroundComponents/ChatSessionSidebar';
 
 // Constants
 import {
@@ -69,6 +70,29 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
     const [messages, setMessages] = useState<PGMessage[]>([]);
     const [isFlowRunning, setIsFlowRunning] = useState(false);
     const [flowError, setFlowError] = useState<string | null>(null);
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+    // Mock chat sessions data
+    const [chatSessions, setChatSessions] = useState([
+        {
+            id: '1',
+            title: 'Session 1',
+            lastMessage: 'Hello, how are you?',
+            timestamp: new Date(Date.now() - 3600000), // 1 hour ago
+        },
+        {
+            id: '2',
+            title: 'Session 2',
+            lastMessage: 'Can you help me with this?',
+            timestamp: new Date(Date.now() - 7200000), // 2 hours ago
+        },
+        {
+            id: '3',
+            title: 'Session 3',
+            lastMessage: 'Thanks for your help!',
+            timestamp: new Date(Date.now() - 86400000), // 1 day ago
+        },
+    ]);
 
     // Refs
     const chatBoxRef = useRef<HTMLDivElement>(null);
@@ -327,6 +351,16 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
         setFlowError(null);
     }, []);
 
+    // ===== SIDEBAR LOGIC =====
+    const handleToggleSidebar = useCallback(() => {
+        setIsSidebarCollapsed(prev => !prev);
+    }, []);
+
+    const handleDeleteSession = useCallback((id: string) => {
+        // Empty function for now as requested
+        console.log(`Delete session with id: ${id}`);
+    }, []);
+
     const handleSendMessage = useCallback(async () => {
         const trimmedMessage = message.trim();
         if (!trimmedMessage || isFlowRunning) return;
@@ -392,50 +426,64 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
             ref={chatBoxRef}
             className={`
                 absolute transition-none z-[${CHAT_BOX_Z_INDEX}]
-                w-96 h-[${CHAT_BOX_HEIGHT}px] shadow-xl bg-white border border-gray-300 rounded-lg backdrop-blur-sm
+                ${isSidebarCollapsed ? 'w-96' : 'w-[672px]'} h-[${CHAT_BOX_HEIGHT}px] shadow-xl bg-white border border-gray-300 rounded-lg backdrop-blur-sm
                 ${isDragging ? 'shadow-2xl select-none' : ''}
-                flex flex-col overflow-hidden p-0
+                flex overflow-hidden p-0
             `}
             style={{
                 left: `${position.x}px`,
                 top: `${position.y}px`,
             }}
         >
-            {/* Draggable Header */}
-            <ChatHeader
-                isFlowRunning={isFlowRunning}
-                onClearMessages={handleClearMessages}
-                onClose={onClose}
-                onMouseDown={handleMouseDown}
-                messagesLength={messages.length}
-            />
+            {/* Main Chat Area */}
+            <div className="flex-1 flex flex-col overflow-hidden">
+                {/* Draggable Header */}
+                <ChatHeader
+                    isFlowRunning={isFlowRunning}
+                    onClearMessages={handleClearMessages}
+                    onClose={onClose}
+                    onMouseDown={handleMouseDown}
+                    messagesLength={messages.length}
+                />
 
-            {/* Content Area */}
-            <div className="flex-1 overflow-hidden flex flex-col">
-                {!hasChatNodes ? (
-                    <ChatWarnings
-                        hasChatInputNode={hasChatInputNode}
-                        hasChatOutputNode={hasChatOutputNode}
+                {/* Content Area with Sidebar */}
+                <div className="flex-1 overflow-hidden flex">
+                    {/* Sidebar */}
+                    <ChatSessionSidebar
+                        isCollapsed={isSidebarCollapsed}
+                        onToggle={handleToggleSidebar}
+                        sessions={chatSessions}
+                        onDeleteSession={handleDeleteSession}
                     />
-                ) : (
-                    <>
-                        {/* Messages Area */}
-                        <MessagesArea
-                            messages={messages}
-                            flowError={flowError}
-                            isFlowRunning={isFlowRunning}
-                        />
 
-                        {/* Message Input */}
-                        <MessageInput
-                            message={message}
-                            isFlowRunning={isFlowRunning}
-                            onMessageChange={handleMessageChange}
-                            onKeyPress={handleKeyPress}
-                            onSendMessage={handleSendMessage}
-                        />
-                    </>
-                )}
+                    {/* Chat Content */}
+                    <div className="flex-1 flex flex-col overflow-hidden">
+                        {!hasChatNodes ? (
+                            <ChatWarnings
+                                hasChatInputNode={hasChatInputNode}
+                                hasChatOutputNode={hasChatOutputNode}
+                            />
+                        ) : (
+                            <>
+                                {/* Messages Area */}
+                                <MessagesArea
+                                    messages={messages}
+                                    flowError={flowError}
+                                    isFlowRunning={isFlowRunning}
+                                />
+
+                                {/* Message Input */}
+                                <MessageInput
+                                    message={message}
+                                    isFlowRunning={isFlowRunning}
+                                    onMessageChange={handleMessageChange}
+                                    onKeyPress={handleKeyPress}
+                                    onSendMessage={handleSendMessage}
+                                />
+                            </>
+                        )}
+                    </div>
+                </div>
             </div>
         </Card>
     );
