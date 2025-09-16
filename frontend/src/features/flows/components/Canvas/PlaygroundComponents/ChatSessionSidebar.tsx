@@ -30,12 +30,11 @@ const ChatSessionSidebar: React.FC<ChatSessionSidebarProps> = ({
         >
             {/* Header */}
             <div className="flex items-center justify-between p-3 border-b border-gray-200">
-                {!isCollapsed && (
-                    <h3 className="text-sm font-medium text-gray-700">
-                        Chat Sessions
-                    </h3>
-                )}
-                <button
+                <h3 className="text-sm font-medium text-gray-700">
+                    Chat Sessions
+                </h3>
+                {/* Collapse/expand button disabled but kept for future use */}
+                {/* <button
                     onClick={onToggle}
                     className="p-1 hover:bg-gray-200 rounded transition-colors"
                     title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
@@ -45,12 +44,13 @@ const ChatSessionSidebar: React.FC<ChatSessionSidebarProps> = ({
                     ) : (
                         <ChevronLeft size={16} />
                     )}
-                </button>
+                </button> */}
             </div>
 
             {/* Sessions List */}
             <div className="flex-1 overflow-y-auto">
-                {isCollapsed ? (
+                {/* Collapse/expand feature disabled but kept for future use */}
+                {/* {isCollapsed ? (
                     <div className="flex flex-col items-center py-2 space-y-2">
                         {sessions.map(session => (
                             <div
@@ -62,17 +62,17 @@ const ChatSessionSidebar: React.FC<ChatSessionSidebarProps> = ({
                             </div>
                         ))}
                     </div>
-                ) : (
-                    <div className="p-2 space-y-1">
-                        {sessions.map(session => (
-                            <ChatSessionItem
-                                key={session.id}
-                                session={session}
-                                onDelete={onDeleteSession}
-                            />
-                        ))}
-                    </div>
-                )}
+                ) : ( */}
+                <div className="p-2 space-y-1">
+                    {sessions.map(session => (
+                        <ChatSessionItem
+                            key={session.id}
+                            session={session}
+                            onDelete={onDeleteSession}
+                        />
+                    ))}
+                </div>
+                {/* )} */}
             </div>
         </div>
     );

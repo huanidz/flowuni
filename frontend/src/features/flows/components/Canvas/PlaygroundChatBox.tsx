@@ -70,7 +70,9 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
     const [messages, setMessages] = useState<PGMessage[]>([]);
     const [isFlowRunning, setIsFlowRunning] = useState(false);
     const [flowError, setFlowError] = useState<string | null>(null);
-    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+    // Collapse/expand feature disabled but kept for future use
+    // const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+    const isSidebarCollapsed = false;
 
     // Mock chat sessions data
     const [chatSessions, setChatSessions] = useState([
@@ -352,8 +354,10 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
     }, []);
 
     // ===== SIDEBAR LOGIC =====
+    // Collapse/expand feature disabled but kept for future use
     const handleToggleSidebar = useCallback(() => {
-        setIsSidebarCollapsed(prev => !prev);
+        // setIsSidebarCollapsed(prev => !prev);
+        console.log('Collapse/expand feature disabled');
     }, []);
 
     const handleDeleteSession = useCallback((id: string) => {
@@ -426,7 +430,7 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
             ref={chatBoxRef}
             className={`
                 absolute transition-none z-[${CHAT_BOX_Z_INDEX}]
-                ${isSidebarCollapsed ? 'w-96' : 'w-[672px]'} h-[${CHAT_BOX_HEIGHT}px] shadow-xl bg-white border border-gray-300 rounded-lg backdrop-blur-sm
+                w-[672px] h-[${CHAT_BOX_HEIGHT}px] shadow-xl bg-white border border-gray-300 rounded-lg backdrop-blur-sm
                 ${isDragging ? 'shadow-2xl select-none' : ''}
                 flex overflow-hidden p-0
             `}
