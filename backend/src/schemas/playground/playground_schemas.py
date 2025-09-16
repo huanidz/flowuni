@@ -32,7 +32,7 @@ class PlaygroundSessionResponse(BaseModel):
 class GetPlaygroundSessionsRequest(BaseModel):
     """Request schema for getting playground sessions"""
 
-    user_id: int = Field(..., description="User ID")
+    flow_id: str = Field(..., description="Flow ID")
     page: int = Field(1, description="Page number")
     per_page: int = Field(10, description="Number of items per page")
 

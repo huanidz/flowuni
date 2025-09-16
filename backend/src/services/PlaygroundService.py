@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional, Tuple
+from typing import Optional
 from uuid import uuid4
 
 from loguru import logger
@@ -40,7 +40,7 @@ class PlaygroundServiceInterface(ABC):
         self, request: GetPlaygroundSessionsRequest
     ) -> GetPlaygroundSessionsResponse:
         """
-        Get playground sessions for a user with pagination
+        Get playground sessions for a flow with pagination
         """
         pass
 
@@ -109,7 +109,7 @@ class PlaygroundService(PlaygroundServiceInterface):
             session_id = str(uuid4())
 
             # Verify the flow exists
-            flow = self.flow_repository.get_by_id(request.flow_id)
+            flow = self.flow_repository.get_by_user_define_session_id(request.flow_id)
             if not flow:
                 logger.warning(f"Flow with ID {request.flow_id} not found")
                 raise ValueError(f"Flow with ID {request.flow_id} not found")
@@ -138,15 +138,13 @@ class PlaygroundService(PlaygroundServiceInterface):
         self, request: GetPlaygroundSessionsRequest
     ) -> GetPlaygroundSessionsResponse:
         """
-        Get playground sessions for a user with pagination
+        Get playground sessions for a flow with pagination
         """
         try:
-            # First, get all flows for the user
-            flows = self.flow_repository.get_by_user_id(request.user_id)
-            flow_ids = [flow.flow_id for flow in flows]
-
-            if not flow_ids:
-                logger.info(f"No flows found for user {request.user_id}")
+            # Verify the flow exists
+            flow = self.flow_repository.get_by_id(request.flow_id)
+            if not flow:
+                logger.info(f"Flow with ID {request.flow_id} not found")
                 return GetPlaygroundSessionsResponse(
                     data=[],
                     pagination=Pagination(
@@ -157,13 +155,10 @@ class PlaygroundService(PlaygroundServiceInterface):
                     ),
                 )
 
-            # Get all playground sessions for these flows
-            all_sessions = []
-            for flow_id in flow_ids:
-                sessions = self.session_repository.get_by_flow_id(
-                    flow_id=flow_id, is_playground=True
-                )
-                all_sessions.extend(sessions)
+            # Get all playground sessions for this flow
+            all_sessions = self.session_repository.get_by_flow_id(
+                flow_id=request.flow_id, is_playground=True
+            )
 
             # Sort by creation time (newest first)
             all_sessions.sort(key=lambda x: x.created_at, reverse=True)
@@ -183,7 +178,7 @@ class PlaygroundService(PlaygroundServiceInterface):
             total_pages = (total_items + request.per_page - 1) // request.per_page
 
             logger.info(
-                f"Retrieved {len(session_responses)} playground sessions for user {request.user_id}"
+                f"Retrieved {len(session_responses)} playground sessions for flow {request.flow_id}"
             )
 
             return GetPlaygroundSessionsResponse(
@@ -198,7 +193,7 @@ class PlaygroundService(PlaygroundServiceInterface):
 
         except Exception as e:
             logger.error(
-                f"Error retrieving playground sessions for user {request.user_id}: {str(e)}"
+                f"Error retrieving playground sessions for flow {request.flow_id}: {str(e)}"
             )
             raise
 
@@ -207,7 +202,7 @@ class PlaygroundService(PlaygroundServiceInterface):
         Get a playground session by ID
         """
         try:
-            session = self.session_repository.get_by_id(session_id)
+            session = self.session_repository.get_by_user_define_session_id(session_id)
             if not session or not session.is_playground:
                 logger.warning(f"Playground session with ID {session_id} not found")
                 return None
@@ -225,7 +220,7 @@ class PlaygroundService(PlaygroundServiceInterface):
         """
         try:
             # Verify it's a playground session
-            session = self.session_repository.get_by_id(session_id)
+            session = self.session_repository.get_by_user_define_session_id(session_id)
             if not session or not session.is_playground:
                 logger.warning(f"Playground session with ID {session_id} not found")
                 return False
@@ -247,7 +242,9 @@ class PlaygroundService(PlaygroundServiceInterface):
         """
         try:
             # Verify the session exists and is a playground session
-            session = self.session_repository.get_by_id(request.session_id)
+            session = self.session_repository.get_by_user_define_session_id(
+                request.session_id
+            )
             if not session or not session.is_playground:
                 logger.warning(
                     f"Playground session with ID {request.session_id} not found"
@@ -284,7 +281,7 @@ class PlaygroundService(PlaygroundServiceInterface):
         """
         try:
             # Verify the session exists and is a playground session
-            session = self.session_repository.get_by_id(session_id)
+            session = self.session_repository.get_by_user_define_session_id(session_id)
             if not session or not session.is_playground:
                 logger.warning(f"Playground session with ID {session_id} not found")
                 raise ValueError(f"Playground session with ID {session_id} not found")
@@ -321,7 +318,9 @@ class PlaygroundService(PlaygroundServiceInterface):
         """
         try:
             # Verify the session exists and is a playground session
-            session = self.session_repository.get_by_id(request.session_id)
+            session = self.session_repository.get_by_user_define_session_id(
+                request.session_id
+            )
             if not session or not session.is_playground:
                 logger.warning(
                     f"Playground session with ID {request.session_id} not found"

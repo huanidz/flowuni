@@ -51,7 +51,7 @@ class SessionRepository(BaseRepository[SessionModel]):
             logger.error(f"Error creating session: {e}")
             raise e
 
-    def get_by_id(self, session_id: str) -> Optional[SessionModel]:
+    def get_by_user_define_session_id(self, session_id: str) -> Optional[SessionModel]:
         """
         Get session by ID
         """
@@ -95,7 +95,7 @@ class SessionRepository(BaseRepository[SessionModel]):
         Update session metadata
         """
         try:
-            session = self.get_by_id(session_id)
+            session = self.get_by_user_define_session_id(session_id)
             if not session:
                 logger.warning(
                     f"Session with ID {session_id} not found for metadata update"
@@ -185,7 +185,7 @@ class SessionRepository(BaseRepository[SessionModel]):
         Delete a session and all its chat history
         """
         try:
-            session = self.get_by_id(session_id)
+            session = self.get_by_user_define_session_id(session_id)
             if not session:
                 logger.warning(
                     f"Attempted to delete non-existent session with ID: {session_id}"

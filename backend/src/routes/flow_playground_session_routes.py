@@ -8,7 +8,6 @@ from src.schemas.playground.playground_schemas import (
     AddChatMessageRequest,
     ChatMessageResponse,
     CreatePlaygroundSessionRequest,
-    GetChatHistoryRequest,
     GetChatHistoryResponse,
     GetPlaygroundSessionsRequest,
     GetPlaygroundSessionsResponse,
@@ -57,22 +56,25 @@ def create_playground_session(
     response_model=GetPlaygroundSessionsResponse,
 )
 def get_playground_sessions(
+    flow_id: str,
     page: int = 1,
     per_page: int = 10,
     user_id: int = Depends(get_current_user),
     playground_service=Depends(get_playground_service),
 ):
     """
-    Get playground sessions for the current user with pagination
+    Get playground sessions for a flow with pagination
     """
     try:
-        logger.info(f"User {user_id} retrieving playground sessions")
+        logger.info(f"User {user_id} retrieving playground sessions for flow {flow_id}")
         request = GetPlaygroundSessionsRequest(
-            user_id=user_id, page=page, per_page=per_page
+            flow_id=flow_id, page=page, per_page=per_page
         )
         return playground_service.get_playground_sessions(request)
     except Exception as e:
-        logger.error(f"Error retrieving playground sessions: {str(e)}")
+        logger.error(
+            f"Error retrieving playground sessions for flow {flow_id}: {str(e)}"
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve playground sessions",
