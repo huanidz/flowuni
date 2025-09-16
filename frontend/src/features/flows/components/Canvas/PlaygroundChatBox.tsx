@@ -5,6 +5,11 @@ import type { PlaygroundChatBoxPosition, PGMessage } from '../../types';
 import { runFlow } from '../../api';
 import { watchFlowExecution } from '@/api/sse';
 import { NODE_EXECUTION_STATE } from '../../consts';
+import { getPlaygroundSessions } from '@/features/playground/api';
+import type {
+    GetPlaygroundSessionsRequest,
+    PlaygroundSession,
+} from '@/features/playground/types';
 
 // Extracted components
 import ChatHeader from './PlaygroundComponents/ChatHeader';
@@ -37,6 +42,7 @@ interface PlaygroundChatBoxProps {
     position: PlaygroundChatBoxPosition;
     onPositionChange: (position: PlaygroundChatBoxPosition) => void;
     nodeUpdateHandlers: any;
+    flowId: string;
 }
 
 const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
@@ -45,6 +51,7 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
     position,
     onPositionChange,
     nodeUpdateHandlers,
+    flowId,
 }) => {
     const nodes = useNodes();
     const edges = useEdges();
@@ -74,27 +81,17 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
     // const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const isSidebarCollapsed = false;
 
-    // Mock chat sessions data
-    const [chatSessions, setChatSessions] = useState([
-        {
-            id: '1',
-            title: 'Session 1',
-            lastMessage: 'Hello, how are you?',
-            timestamp: new Date(Date.now() - 3600000), // 1 hour ago
-        },
-        {
-            id: '2',
-            title: 'Session 2',
-            lastMessage: 'Can you help me with this?',
-            timestamp: new Date(Date.now() - 7200000), // 2 hours ago
-        },
-        {
-            id: '3',
-            title: 'Session 3',
-            lastMessage: 'Thanks for your help!',
-            timestamp: new Date(Date.now() - 86400000), // 1 day ago
-        },
-    ]);
+    // Chat sessions state
+    const [chatSessions, setChatSessions] = useState<
+        Array<{
+            id: string;
+            title: string;
+            lastMessage: string;
+            timestamp: Date;
+        }>
+    >([]);
+    const [isLoadingSessions, setIsLoadingSessions] = useState(false);
+    const [sessionsError, setSessionsError] = useState<string | null>(null);
 
     // Refs
     const chatBoxRef = useRef<HTMLDivElement>(null);
@@ -347,6 +344,81 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
         cleanupTimeout,
     ]);
 
+    // ===== SESSION FETCHING LOGIC =====
+    const fetchChatSessions = useCallback(async () => {
+        if (!flowId) return;
+
+        setIsLoadingSessions(true);
+        setSessionsError(null);
+
+        try {
+            const request: GetPlaygroundSessionsRequest = {
+                flow_id: flowId,
+                page: 1,
+                per_page: 20,
+            };
+
+            const response = await getPlaygroundSessions(request);
+
+            // Transform the API response to match the expected format
+            const transformedSessions = await Promise.all(
+                response.data.map(async (session: PlaygroundSession) => {
+                    // Fetch chat history for this session to get the last message
+                    try {
+                        const chatHistoryResponse = await fetch(
+                            `/api/playground/sessions/${session.user_defined_session_id}/chat?num_messages=1`
+                        );
+
+                        if (chatHistoryResponse.ok) {
+                            const chatData = await chatHistoryResponse.json();
+                            const lastMessage =
+                                chatData.messages &&
+                                chatData.messages.length > 0
+                                    ? chatData.messages[0].message
+                                    : 'No messages yet';
+
+                            return {
+                                id: session.user_defined_session_id,
+                                title: `Session ${session.user_defined_session_id.substring(0, 8)}`,
+                                lastMessage,
+                                timestamp: new Date(session.modified_at),
+                            };
+                        } else {
+                            return {
+                                id: session.user_defined_session_id,
+                                title: `Session ${session.user_defined_session_id.substring(0, 8)}`,
+                                lastMessage: 'No messages yet',
+                                timestamp: new Date(session.modified_at),
+                            };
+                        }
+                    } catch (error) {
+                        console.error('Error fetching chat history:', error);
+                        return {
+                            id: session.user_defined_session_id,
+                            title: `Session ${session.user_defined_session_id.substring(0, 8)}`,
+                            lastMessage: 'No messages yet',
+                            timestamp: new Date(session.modified_at),
+                        };
+                    }
+                })
+            );
+
+            setChatSessions(transformedSessions);
+        } catch (error) {
+            console.error('Error fetching chat sessions:', error);
+            setSessionsError('Failed to load chat sessions');
+        } finally {
+            setIsLoadingSessions(false);
+        }
+    }, [flowId]);
+
+    // Fetch sessions when the component opens or flowId changes
+    useEffect(() => {
+        if (isOpen && flowId) {
+            fetchChatSessions();
+        }
+    }, [isOpen, flowId, fetchChatSessions]);
+
     // ===== MESSAGE HANDLING LOGIC =====
     const handleClearMessages = useCallback(() => {
         setMessages([]);
@@ -360,9 +432,23 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
         console.log('Collapse/expand feature disabled');
     }, []);
 
-    const handleDeleteSession = useCallback((id: string) => {
-        // Empty function for now as requested
-        console.log(`Delete session with id: ${id}`);
+    const handleDeleteSession = useCallback(async (id: string) => {
+        try {
+            const response = await fetch(`/api/playground/sessions/${id}`, {
+                method: 'DELETE',
+            });
+
+            if (response.ok) {
+                // Remove the session from the local state
+                setChatSessions(prev =>
+                    prev.filter(session => session.id !== id)
+                );
+            } else {
+                console.error('Failed to delete session');
+            }
+        } catch (error) {
+            console.error('Error deleting session:', error);
+        }
     }, []);
 
     const handleSendMessage = useCallback(async () => {
@@ -458,6 +544,8 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
                         onToggle={handleToggleSidebar}
                         sessions={chatSessions}
                         onDeleteSession={handleDeleteSession}
+                        isLoading={isLoadingSessions}
+                        error={sessionsError}
                     />
 
                     {/* Chat Content */}

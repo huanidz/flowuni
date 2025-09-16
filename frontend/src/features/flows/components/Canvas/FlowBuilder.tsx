@@ -299,6 +299,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
                 position={playgroundPosition}
                 onPositionChange={setPlaygroundPosition}
                 nodeUpdateHandlers={updateHandlers}
+                flowId={flow_id}
             />
         </div>
     );

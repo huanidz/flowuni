@@ -14,6 +14,8 @@ interface ChatSessionSidebarProps {
     onToggle: () => void;
     sessions: ChatSession[];
     onDeleteSession: (id: string) => void;
+    isLoading?: boolean;
+    error?: string | null;
 }
 
 const ChatSessionSidebar: React.FC<ChatSessionSidebarProps> = ({
@@ -21,6 +23,8 @@ const ChatSessionSidebar: React.FC<ChatSessionSidebarProps> = ({
     onToggle,
     sessions,
     onDeleteSession,
+    isLoading = false,
+    error = null,
 }) => {
     return (
         <div
@@ -64,13 +68,32 @@ const ChatSessionSidebar: React.FC<ChatSessionSidebarProps> = ({
                     </div>
                 ) : ( */}
                 <div className="p-2 space-y-1">
-                    {sessions.map(session => (
-                        <ChatSessionItem
-                            key={session.id}
-                            session={session}
-                            onDelete={onDeleteSession}
-                        />
-                    ))}
+                    {isLoading ? (
+                        <div className="flex items-center justify-center py-4">
+                            <div className="animate-spin rounded-full border-2 border-gray-300 border-t-blue-500 w-4 h-4 mr-2"></div>
+                            <span className="text-xs text-gray-500">
+                                Loading sessions...
+                            </span>
+                        </div>
+                    ) : error ? (
+                        <div className="text-center py-4">
+                            <p className="text-xs text-red-500">{error}</p>
+                        </div>
+                    ) : sessions.length === 0 ? (
+                        <div className="text-center py-4">
+                            <p className="text-xs text-gray-500">
+                                No sessions yet
+                            </p>
+                        </div>
+                    ) : (
+                        sessions.map(session => (
+                            <ChatSessionItem
+                                key={session.id}
+                                session={session}
+                                onDelete={onDeleteSession}
+                            />
+                        ))
+                    )}
                 </div>
                 {/* )} */}
             </div>
