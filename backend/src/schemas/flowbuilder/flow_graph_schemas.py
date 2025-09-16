@@ -54,7 +54,7 @@ class FlowEdge(BaseModel):
     targetHandle: Optional[str] = None  # corresponds to 'targetHandle'
 
 
-class FlowGraphRequest(BaseModel):
+class CanvasFlowRunRequest(BaseModel):
     """Top-level request model representing the entire flow graph."""
 
     nodes: List[FlowNode]
@@ -74,21 +74,16 @@ class FlowGraphRequest(BaseModel):
     )
 
 
-class FlowPlaygroundRequest(BaseModel):
-    flow_id: str
-    flow_graph_request: FlowGraphRequest
-
-
 # --- Flow Run API ---
 
 
-class FlowRunMessage(BaseModel):
+class ApiFlowRunMessage(BaseModel):
     type: str
     content: str
 
 
-class FlowRunRequest(BaseModel):
-    messages: Optional[List[FlowRunMessage]] = Field(
+class ApiFlowRunRequest(BaseModel):
+    messages: Optional[List[ApiFlowRunMessage]] = Field(
         default_factory=list,
         description="List of messages to be sent to the flow run.",
     )

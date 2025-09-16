@@ -8,7 +8,7 @@ from src.models.alchemy.flows.FlowExecutionModel import (
     FlowExecutionStatus,
 )
 from src.repositories.FlowRepositories import FlowRepository
-from src.schemas.flowbuilder.flow_graph_schemas import FlowRunRequest
+from src.schemas.flowbuilder.flow_graph_schemas import ApiFlowRunRequest
 
 
 class FlowRunServiceInterface(ABC):
@@ -18,7 +18,7 @@ class FlowRunServiceInterface(ABC):
 
     @abstractmethod
     def run_sync(
-        self, flow_id: str, run_request: FlowRunRequest, user_id: int
+        self, flow_id: str, run_request: ApiFlowRunRequest, user_id: int
     ) -> Dict[str, Any]:
         """
         Execute a flow synchronously
@@ -56,7 +56,7 @@ class FlowRunService(FlowRunServiceInterface):
         self.graph_executor = graph_executor
 
     def run_sync(
-        self, flow_id: str, run_request: FlowRunRequest, user_id: int
+        self, flow_id: str, run_request: ApiFlowRunRequest, user_id: int
     ) -> Dict[str, Any]:
         """
         Execute a flow synchronously

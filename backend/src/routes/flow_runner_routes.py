@@ -15,8 +15,8 @@ from src.dependencies.auth_dependency import (
 from src.dependencies.flow_dep import get_flow_service
 from src.dependencies.redis_dependency import get_redis_client
 from src.schemas.flowbuilder.flow_graph_schemas import (
-    FlowGraphRequest,
-    FlowRunRequest,
+    ApiFlowRunRequest,
+    CanvasFlowRunRequest,
 )
 from src.services.ApiKeyService import ApiKeyService
 from src.services.FlowService import FlowService
@@ -41,7 +41,7 @@ async def compile_flow_endpoint(
 
         logger.info(f"Compilation request received: {request_json}")
 
-        flow_graph_request = FlowGraphRequest(**request_json)
+        flow_graph_request = CanvasFlowRunRequest(**request_json)
 
         # Submit compile task to Celery
         task = compile_flow.delay("flow-compile", flow_graph_request.model_dump())
@@ -81,7 +81,7 @@ async def execute_flow_endpoint(
     """
     try:
         request_json = await request.json()
-        flow_graph_request = FlowGraphRequest(**request_json)
+        flow_graph_request = CanvasFlowRunRequest(**request_json)
         logger.info(
             f"👉 flow_graph_request: {flow_graph_request.model_dump_json(indent=4)}"
         )
@@ -169,7 +169,7 @@ async def run_flow_endpoint(
     """
     # Parse request JSON
     request_json = await request.json()
-    flow_run_request = FlowRunRequest(**request_json)
+    flow_run_request = ApiFlowRunRequest(**request_json)
 
     # Extract API key from Authorization header
     headers = request.headers

@@ -8,7 +8,10 @@ from src.executors.ExecutionContext import ExecutionContext
 from src.executors.GraphExecutor import GraphExecutor
 from src.nodes.GraphCompiler import GraphCompiler
 from src.nodes.GraphLoader import GraphLoader
-from src.schemas.flowbuilder.flow_graph_schemas import FlowGraphRequest, FlowRunRequest
+from src.schemas.flowbuilder.flow_graph_schemas import (
+    ApiFlowRunRequest,
+    CanvasFlowRunRequest,
+)
 from src.schemas.flows.flow_schemas import FlowRunResult
 from src.services.ApiKeyService import ApiKeyService
 from src.services.FlowService import FlowService
@@ -29,7 +32,7 @@ class FlowSyncWorker:
             logger.info(f"Starting flow execution task for flow_id: {flow_id}")
 
             # Parse the request
-            flow_graph_request = FlowGraphRequest(**flow_graph_request_dict)
+            flow_graph_request = CanvasFlowRunRequest(**flow_graph_request_dict)
 
             # Load the graph
             logger.info("Loading graph from request")
@@ -75,7 +78,7 @@ class FlowSyncWorker:
     def run_flow_with_validation(
         self,
         flow_id: str,
-        flow_run_request: FlowRunRequest,
+        flow_run_request: ApiFlowRunRequest,
         request_api_key: Optional[str],
         api_key_service: ApiKeyService,
         flow_service: FlowService,

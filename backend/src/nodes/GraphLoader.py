@@ -3,14 +3,14 @@ from typing import List
 import networkx as nx
 from loguru import logger
 from src.nodes.NodeRegistry import NodeRegistry
-from src.schemas.flowbuilder.flow_graph_schemas import FlowGraphRequest, FlowNode
+from src.schemas.flowbuilder.flow_graph_schemas import CanvasFlowRunRequest, FlowNode
 
 
 class GraphLoader:
     @staticmethod
-    def from_request(flow: FlowGraphRequest) -> nx.DiGraph:
+    def from_request(flow: CanvasFlowRunRequest) -> nx.DiGraph:
         """
-        Load a flow graph from FlowGraphRequest and return a NetworkX DiGraph.
+        Load a flow graph from CanvasFlowRunRequest and return a NetworkX DiGraph.
         Each node is enriched with spec and runtime class (if available).
         """
         G = nx.DiGraph()

@@ -12,12 +12,12 @@ from src.executors.ExecutionEventPublisher import (
 from src.executors.GraphExecutor import GraphExecutor
 from src.nodes.GraphCompiler import GraphCompiler
 from src.nodes.GraphLoader import GraphLoader
-from src.schemas.flowbuilder.flow_graph_schemas import FlowGraphRequest
+from src.schemas.flowbuilder.flow_graph_schemas import CanvasFlowRunRequest
 
 
 @celery_app.task
 def compile_flow(flow_id: str, flow_graph_request_dict: Dict):
-    flow_graph_request = FlowGraphRequest(**flow_graph_request_dict)
+    flow_graph_request = CanvasFlowRunRequest(**flow_graph_request_dict)
     G = GraphLoader.from_request(flow_graph_request)
 
     compiler = GraphCompiler(graph=G)
@@ -46,7 +46,7 @@ def run_flow(
         logger.info(f"Starting flow execution task for flow_id: {flow_id}")
 
         # Parse the request
-        flow_graph_request = FlowGraphRequest(**flow_graph_request_dict)
+        flow_graph_request = CanvasFlowRunRequest(**flow_graph_request_dict)
 
         # Load the graph
         logger.info("Loading graph from request")
