@@ -9,7 +9,9 @@ import type { GetPlaygroundSessionsRequest } from '@/features/playground/types';
 import {
     useDeletePlaygroundSession,
     useSessionsWithLastMessage,
+    useAddChatMessage,
 } from '@/features/playground/hooks';
+import { usePlaygroundStore } from '@/features/playground/stores';
 
 // Extracted components
 import ChatHeader from './PlaygroundComponents/ChatHeader';
@@ -34,6 +36,8 @@ import {
     FLOW_RUN_ERROR,
     SSE_LOG_PREFIX,
     FLOW_LOG_PREFIX,
+    ROLE_USER,
+    ROLE_ASSISTANT,
 } from './PlaygroundComponents/constants';
 
 interface PlaygroundChatBoxProps {
@@ -74,7 +78,6 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
         y: 0,
     });
     const [message, setMessage] = useState('');
-    const [messages, setMessages] = useState<PGMessage[]>([]);
     const [isFlowRunning, setIsFlowRunning] = useState(false);
     const [flowError, setFlowError] = useState<string | null>(null);
     // Collapse/expand feature disabled but kept for future use
@@ -93,6 +96,29 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
         isLoading: isLoadingSessions,
         error: sessionsError,
     } = useSessionsWithLastMessage(request);
+
+    // Playground store state
+    const {
+        currentSession,
+        setCurrentSession,
+        chatMessages,
+        isLoadingChat,
+        addChatMessage,
+        clearChatMessages,
+    } = usePlaygroundStore();
+
+    // Add chat message mutation
+    const addChatMessageMutation = useAddChatMessage();
+
+    // Transform ChatMessage to PGMessage for display
+    const transformedMessages: PGMessage[] = React.useMemo(() => {
+        return chatMessages.map(msg => ({
+            id: msg.id,
+            user_id: msg.role === ROLE_USER ? USER_ID : BOT_ID,
+            message: msg.message,
+            timestamp: new Date(msg.created_at),
+        }));
+    }, [chatMessages]);
 
     // Refs
     const chatBoxRef = useRef<HTMLDivElement>(null);
@@ -205,7 +231,7 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
     // ===== SCROLLING LOGIC =====
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
+    }, [transformedMessages]);
 
     // ===== SSE LOGIC =====
     const parseSSEMessage = useCallback((message: string) => {
@@ -257,14 +283,23 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
                 ) {
                     cleanupTimeout();
 
-                    const newMessage: PGMessage = {
-                        id: `bot-${Date.now()}`,
-                        user_id: BOT_ID,
-                        message: input_values.message_in,
-                        timestamp: new Date(),
-                    };
-
-                    setMessages(prev => [...prev, newMessage]);
+                    // Add to store
+                    if (currentSession) {
+                        addChatMessageMutation.mutateAsync({
+                            session_id: currentSession.user_defined_session_id,
+                            role: ROLE_ASSISTANT,
+                            message: input_values.message_in,
+                        });
+                    } else {
+                        // If no session, just add to local state
+                        addChatMessage({
+                            id: `bot-${Date.now()}`,
+                            session_id: 'temp',
+                            role: ROLE_ASSISTANT,
+                            message: input_values.message_in,
+                            created_at: new Date().toISOString(),
+                        });
+                    }
                     setIsFlowRunning(false);
                     cleanupEventSource();
                 }
@@ -357,9 +392,9 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
 
     // ===== MESSAGE HANDLING LOGIC =====
     const handleClearMessages = useCallback(() => {
-        setMessages([]);
+        clearChatMessages();
         setFlowError(null);
-    }, []);
+    }, [clearChatMessages]);
 
     // ===== SIDEBAR LOGIC =====
     // Collapse/expand feature disabled but kept for future use
@@ -375,27 +410,45 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
         async (id: string) => {
             try {
                 await deleteSessionMutation.mutateAsync(id);
-                // The mutation will automatically update the cache and UI
+                // If the deleted session is the current session, clear it from state
+                if (currentSession?.user_defined_session_id === id) {
+                    setCurrentSession(null);
+                    clearChatMessages();
+                }
             } catch (error) {
                 console.error('Error deleting session:', error);
             }
         },
-        [deleteSessionMutation]
+        [
+            deleteSessionMutation,
+            currentSession,
+            setCurrentSession,
+            clearChatMessages,
+        ]
     );
 
     const handleSendMessage = useCallback(async () => {
         const trimmedMessage = message.trim();
         if (!trimmedMessage || isFlowRunning) return;
 
-        const userMessage: PGMessage = {
-            id: `user-${Date.now()}`,
-            user_id: USER_ID,
-            message: trimmedMessage,
-            timestamp: new Date(),
-        };
+        // Add user message to store
+        if (currentSession) {
+            await addChatMessageMutation.mutateAsync({
+                session_id: currentSession.user_defined_session_id,
+                role: ROLE_USER,
+                message: trimmedMessage,
+            });
+        } else {
+            // If no session, just add to local state
+            addChatMessage({
+                id: `user-${Date.now()}`,
+                session_id: 'temp',
+                role: ROLE_USER,
+                message: trimmedMessage,
+                created_at: new Date().toISOString(),
+            });
+        }
 
-        // Add user message immediately
-        setMessages(prev => [...prev, userMessage]);
         setMessage('');
 
         // Update input node with the message
@@ -416,6 +469,9 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
         chatInputNode?.id,
         updateNodeInputData,
         executeFlow,
+        currentSession,
+        addChatMessageMutation,
+        addChatMessage,
     ]);
 
     const handleKeyPress = useCallback(
@@ -465,7 +521,7 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
                     onClearMessages={handleClearMessages}
                     onClose={onClose}
                     onMouseDown={handleMouseDown}
-                    messagesLength={messages.length}
+                    messagesLength={transformedMessages.length}
                 />
 
                 {/* Content Area with Sidebar */}
@@ -483,18 +539,21 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
 
                     {/* Chat Content */}
                     <div className="flex-1 flex flex-col overflow-hidden">
-                        {!hasChatNodes ? (
+                        {!hasChatNodes || !currentSession ? (
                             <ChatWarnings
                                 hasChatInputNode={hasChatInputNode}
                                 hasChatOutputNode={hasChatOutputNode}
+                                hasCurrentSession={!!currentSession}
                             />
                         ) : (
                             <>
                                 {/* Messages Area */}
                                 <MessagesArea
-                                    messages={messages}
+                                    messages={transformedMessages}
                                     flowError={flowError}
-                                    isFlowRunning={isFlowRunning}
+                                    isFlowRunning={
+                                        isFlowRunning || isLoadingChat
+                                    }
                                 />
 
                                 {/* Message Input */}

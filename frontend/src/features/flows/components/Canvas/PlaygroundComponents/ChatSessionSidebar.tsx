@@ -38,7 +38,7 @@ interface ChatSessionSidebarProps {
     isCollapsed: boolean;
     onToggle: () => void;
     sessions: ChatSession[];
-    onDeleteSession: (id: string) => void;
+    onDeleteSession: (id: string) => Promise<void>;
     isLoading?: boolean;
     error?: string | null;
     flowId: string;
@@ -65,6 +65,7 @@ const ChatSessionSidebar: React.FC<ChatSessionSidebarProps> = ({
         setCurrentSession,
         setChatMessages,
         setIsLoadingChat,
+        clearChatMessages,
     } = usePlaygroundStore();
 
     // Hook to fetch chat history
@@ -73,6 +74,21 @@ const ChatSessionSidebar: React.FC<ChatSessionSidebarProps> = ({
             currentSession?.user_defined_session_id || '',
             50 // Number of messages to fetch
         );
+
+    // Handle session deletion with current session check
+    const handleDeleteSession = async (sessionId: string) => {
+        try {
+            await onDeleteSession(sessionId);
+
+            // If the deleted session is the current session, clear it from state
+            if (currentSession?.user_defined_session_id === sessionId) {
+                setCurrentSession(null);
+                clearChatMessages();
+            }
+        } catch (error) {
+            console.error('Error deleting session:', error);
+        }
+    };
 
     const handleSessionClick = async (session: ChatSession) => {
         // Set the current session in the store
@@ -217,7 +233,7 @@ const ChatSessionSidebar: React.FC<ChatSessionSidebarProps> = ({
                             <ChatSessionItem
                                 key={session.id}
                                 session={session}
-                                onDelete={onDeleteSession}
+                                onDelete={handleDeleteSession}
                                 isNew={session.id === newlyCreatedSessionId}
                                 isSelected={
                                     currentSession?.user_defined_session_id ===

@@ -37,3 +37,7 @@ export const NEED_CHAT_OUTPUT_WARNING =
 // Console log prefixes
 export const SSE_LOG_PREFIX = '[SSE]';
 export const FLOW_LOG_PREFIX = '[Flow]';
+
+// ROLE constants
+export const ROLE_USER = 'user';
+export const ROLE_ASSISTANT = 'assistant';
