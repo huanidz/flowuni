@@ -1,14 +1,34 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Card, CardHeader } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { X, Send, Trash2 } from 'lucide-react';
-import { chatBoxStyles } from '@/features/flows/styles/chatBoxStyles';
+import { Card } from '@/components/ui/card';
 import { useNodes, useEdges } from '@xyflow/react';
 import type { PlaygroundChatBoxPosition, PGMessage } from '../../types';
 import { runFlow } from '../../api';
 import { watchFlowExecution } from '@/api/sse';
 import { NODE_EXECUTION_STATE } from '../../consts';
+
+// Extracted components
+import ChatHeader from './PlaygroundComponents/ChatHeader';
+import ChatWarnings from './PlaygroundComponents/ChatWarnings';
+import MessagesArea from './PlaygroundComponents/MessagesArea';
+import MessageInput from './PlaygroundComponents/MessageInput';
+
+// Constants
+import {
+    CHAT_BOX_HEIGHT,
+    CHAT_BOX_MARGIN,
+    CHAT_BOX_Z_INDEX,
+    FLOW_EXECUTION_TIMEOUT,
+    USER_ID,
+    BOT_ID,
+    CHAT_INPUT_NODE_TYPE,
+    CHAT_OUTPUT_NODE_TYPE,
+    FLOW_TIMEOUT_ERROR,
+    CONNECTION_ERROR,
+    NO_TASK_ID_ERROR,
+    FLOW_RUN_ERROR,
+    SSE_LOG_PREFIX,
+    FLOW_LOG_PREFIX,
+} from './PlaygroundComponents/constants';
 
 interface PlaygroundChatBoxProps {
     isOpen: boolean;
@@ -29,10 +49,15 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
     const edges = useEdges();
 
     // Node validation
-    const chatInputNode = nodes.find(node => node.type === 'Chat Input');
-    const chatOutputNode = nodes.find(node => node.type === 'Chat Output');
+    const chatInputNode = nodes.find(
+        node => node.type === CHAT_INPUT_NODE_TYPE
+    );
+    const chatOutputNode = nodes.find(
+        node => node.type === CHAT_OUTPUT_NODE_TYPE
+    );
     const hasChatInputNode = !!chatInputNode;
     const hasChatOutputNode = !!chatOutputNode;
+    const hasChatNodes = hasChatInputNode && hasChatOutputNode;
 
     // State
     const [isDragging, setIsDragging] = useState(false);
@@ -53,8 +78,8 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
 
     const { updateNodeInputData } = nodeUpdateHandlers;
 
-    // Initialize position
-    useEffect(() => {
+    // ===== POSITION LOGIC =====
+    const initializePosition = useCallback(() => {
         if (
             isOpen &&
             chatBoxRef.current &&
@@ -63,53 +88,110 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
         ) {
             const chatBoxWidth = chatBoxRef.current.offsetWidth;
             onPositionChange({
-                x: window.innerWidth - chatBoxWidth - 16,
-                y: 16,
+                x: window.innerWidth - chatBoxWidth - CHAT_BOX_MARGIN,
+                y: CHAT_BOX_MARGIN,
             });
         }
     }, [isOpen, position, onPositionChange]);
 
-    // Auto-scroll to latest message
+    useEffect(() => {
+        initializePosition();
+    }, [initializePosition]);
+
+    // ===== DRAGGING LOGIC =====
+    const handleMouseDown = useCallback((e: React.MouseEvent) => {
+        if (chatBoxRef.current) {
+            const rect = chatBoxRef.current.getBoundingClientRect();
+            setIsDragging(true);
+            setDragOffset({
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top,
+            });
+        }
+    }, []);
+
+    const handleMouseMove = useCallback(
+        (e: MouseEvent) => {
+            if (isDragging && chatBoxRef.current) {
+                const newX = e.clientX - dragOffset.x;
+                const newY = e.clientY - dragOffset.y;
+
+                const maxX = window.innerWidth - chatBoxRef.current.offsetWidth;
+                const maxY =
+                    window.innerHeight - chatBoxRef.current.offsetHeight;
+
+                onPositionChange({
+                    x: Math.max(0, Math.min(newX, maxX)),
+                    y: Math.max(0, Math.min(newY, maxY)),
+                });
+            }
+        },
+        [isDragging, dragOffset, onPositionChange]
+    );
+
+    const handleMouseUp = useCallback(() => {
+        setIsDragging(false);
+    }, []);
+
+    useEffect(() => {
+        if (isDragging) {
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+
+            return () => {
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', handleMouseUp);
+            };
+        }
+    }, [isDragging, handleMouseMove, handleMouseUp]);
+
+    // ===== CLEANUP LOGIC =====
+    const cleanupEventSource = useCallback(() => {
+        if (eventSourceRef.current) {
+            eventSourceRef.current.close();
+            eventSourceRef.current = null;
+        }
+    }, []);
+
+    const cleanupTimeout = useCallback(() => {
+        if (flowTimeoutRef.current) {
+            clearTimeout(flowTimeoutRef.current);
+            flowTimeoutRef.current = null;
+        }
+    }, []);
+
+    const cleanupAll = useCallback(() => {
+        cleanupEventSource();
+        cleanupTimeout();
+        setIsFlowRunning(false);
+    }, [cleanupEventSource, cleanupTimeout]);
+
+    useEffect(() => {
+        return () => {
+            cleanupAll();
+        };
+    }, [cleanupAll]);
+
+    useEffect(() => {
+        if (!isOpen) {
+            cleanupAll();
+        }
+    }, [isOpen, cleanupAll]);
+
+    // ===== SCROLLING LOGIC =====
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
-    // Cleanup event source on unmount or close
-    useEffect(() => {
-        return () => {
-            if (eventSourceRef.current) {
-                eventSourceRef.current.close();
-                eventSourceRef.current = null;
-            }
-            if (flowTimeoutRef.current) {
-                clearTimeout(flowTimeoutRef.current);
-                flowTimeoutRef.current = null;
-            }
-        };
-    }, []);
-
-    // Close event source when chat closes
-    useEffect(() => {
-        if (!isOpen && eventSourceRef.current) {
-            eventSourceRef.current.close();
-            eventSourceRef.current = null;
-            setIsFlowRunning(false);
-            if (flowTimeoutRef.current) {
-                clearTimeout(flowTimeoutRef.current);
-                flowTimeoutRef.current = null;
-            }
-        }
-    }, [isOpen]);
-
-    // Parse SSE message safely
+    // ===== SSE LOGIC =====
     const parseSSEMessage = useCallback((message: string) => {
         try {
             const parsed = JSON.parse(message);
-            console.log('[SSE] Parsed message:', parsed);
+            console.log(`${SSE_LOG_PREFIX} Parsed message:`, parsed);
             return parsed;
         } catch (error) {
             console.error(
-                '[SSE] Failed to parse message:',
+                `${SSE_LOG_PREFIX} Failed to parse message:`,
                 error,
                 'Raw message:',
                 message
@@ -118,70 +200,58 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
         }
     }, []);
 
-    // Handle SSE message data
-    const handleSSEData = useCallback((parsed: any) => {
-        if (!parsed) {
-            console.warn('[SSE] No parsed message');
-            return;
-        }
-
-        const { event, data } = parsed;
-
-        // Handle failed events
-        if (event === 'failed' && data?.error) {
-            console.error('[SSE] Flow execution failed:', data.error);
-
-            // Clear timeout since we got a response (even if failed)
-            if (flowTimeoutRef.current) {
-                clearTimeout(flowTimeoutRef.current);
-                flowTimeoutRef.current = null;
+    const handleSSEData = useCallback(
+        (parsed: any) => {
+            if (!parsed) {
+                console.warn(`${SSE_LOG_PREFIX} No parsed message`);
+                return;
             }
 
-            setIsFlowRunning(false);
-            setFlowError(data.error);
+            const { event, data } = parsed;
 
-            // Close the event source since the flow failed
-            if (eventSourceRef.current) {
-                eventSourceRef.current.close();
-                eventSourceRef.current = null;
-            }
-            return;
-        }
+            // Handle failed events
+            if (event === 'failed' && data?.error) {
+                console.error(
+                    `${SSE_LOG_PREFIX} Flow execution failed:`,
+                    data.error
+                );
 
-        // Handle successful events
-        if (event === NODE_EXECUTION_STATE.COMPLETED && data) {
-            const { node_type, input_values } = data;
-
-            if (node_type === 'Chat Output' && input_values?.message_in) {
-                // Clear timeout since we got a response
-                if (flowTimeoutRef.current) {
-                    clearTimeout(flowTimeoutRef.current);
-                    flowTimeoutRef.current = null;
-                }
-
-                const newMessage: PGMessage = {
-                    id: `bot-${Date.now()}`,
-                    user_id: 0, // Bot message
-                    message: input_values.message_in,
-                    timestamp: new Date(),
-                };
-
-                setMessages(prev => [...prev, newMessage]);
+                cleanupTimeout();
                 setIsFlowRunning(false);
-
-                // Close the event source since we got our response
-                if (eventSourceRef.current) {
-                    eventSourceRef.current.close();
-                    eventSourceRef.current = null;
-                }
+                setFlowError(data.error);
+                cleanupEventSource();
+                return;
             }
 
-            // Handle other node types if needed
-            console.log('[SSE] Processed node:', node_type);
-        }
-    }, []);
+            // Handle successful events
+            if (event === NODE_EXECUTION_STATE.COMPLETED && data) {
+                const { node_type, input_values } = data;
 
-    // Run flow and handle execution
+                if (
+                    node_type === CHAT_OUTPUT_NODE_TYPE &&
+                    input_values?.message_in
+                ) {
+                    cleanupTimeout();
+
+                    const newMessage: PGMessage = {
+                        id: `bot-${Date.now()}`,
+                        user_id: BOT_ID,
+                        message: input_values.message_in,
+                        timestamp: new Date(),
+                    };
+
+                    setMessages(prev => [...prev, newMessage]);
+                    setIsFlowRunning(false);
+                    cleanupEventSource();
+                }
+
+                console.log(`${SSE_LOG_PREFIX} Processed node:`, node_type);
+            }
+        },
+        [cleanupTimeout, cleanupEventSource]
+    );
+
+    // ===== FLOW EXECUTION LOGIC =====
     const executeFlow = useCallback(async () => {
         if (isFlowRunning) {
             console.warn('Flow is already running');
@@ -192,17 +262,14 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
         setFlowError(null);
 
         try {
-            // Close any existing event source
-            if (eventSourceRef.current) {
-                eventSourceRef.current.close();
-            }
+            cleanupEventSource();
 
             const response = await runFlow(nodes, edges);
-            console.log('[Flow] Run response:', response);
+            console.log(`${FLOW_LOG_PREFIX} Run response:`, response);
 
             const { task_id } = response;
             if (!task_id) {
-                throw new Error('No task_id received from flow execution');
+                throw new Error(NO_TASK_ID_ERROR);
             }
 
             // Watch flow execution via SSE
@@ -215,50 +282,46 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
 
             // Set a timeout to handle cases where we don't get a response
             flowTimeoutRef.current = setTimeout(() => {
-                console.warn('[Flow] Timeout waiting for response');
-                setFlowError('Flow execution timed out');
+                console.warn(`${FLOW_LOG_PREFIX} Timeout waiting for response`);
+                setFlowError(FLOW_TIMEOUT_ERROR);
                 setIsFlowRunning(false);
-
-                if (eventSourceRef.current) {
-                    eventSourceRef.current.close();
-                    eventSourceRef.current = null;
-                }
-            }, 30000); // 30 second timeout
+                cleanupEventSource();
+            }, FLOW_EXECUTION_TIMEOUT);
 
             // Handle SSE connection errors
             if (eventSourceRef.current) {
                 eventSourceRef.current.onerror = error => {
-                    console.error('[SSE] Connection error:', error);
-                    setFlowError('Connection to flow execution failed');
+                    console.error(`${SSE_LOG_PREFIX} Connection error:`, error);
+                    setFlowError(CONNECTION_ERROR);
                     setIsFlowRunning(false);
-
-                    if (flowTimeoutRef.current) {
-                        clearTimeout(flowTimeoutRef.current);
-                        flowTimeoutRef.current = null;
-                    }
-
-                    if (eventSourceRef.current) {
-                        eventSourceRef.current.close();
-                        eventSourceRef.current = null;
-                    }
+                    cleanupTimeout();
+                    cleanupEventSource();
                 };
 
                 eventSourceRef.current.close = () => {
-                    console.log('[SSE] Connection closed');
+                    console.log(`${SSE_LOG_PREFIX} Connection closed`);
                     // Don't automatically set running to false here
                     // Let the timeout or successful response handle it
                 };
             }
         } catch (error) {
-            console.error('[Flow] Error running flow:', error);
+            console.error(`${FLOW_LOG_PREFIX} Error running flow:`, error);
             setFlowError(
-                error instanceof Error ? error.message : 'Failed to run flow'
+                error instanceof Error ? error.message : FLOW_RUN_ERROR
             );
             setIsFlowRunning(false);
         }
-    }, [nodes, edges, isFlowRunning, parseSSEMessage, handleSSEData]);
+    }, [
+        nodes,
+        edges,
+        isFlowRunning,
+        parseSSEMessage,
+        handleSSEData,
+        cleanupEventSource,
+        cleanupTimeout,
+    ]);
 
-    // Message handling
+    // ===== MESSAGE HANDLING LOGIC =====
     const handleClearMessages = useCallback(() => {
         setMessages([]);
         setFlowError(null);
@@ -270,7 +333,7 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
 
         const userMessage: PGMessage = {
             id: `user-${Date.now()}`,
-            user_id: 1, // User message
+            user_id: USER_ID,
             message: trimmedMessage,
             timestamp: new Date(),
         };
@@ -322,64 +385,14 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
         [chatInputNode?.id, updateNodeInputData]
     );
 
-    // Dragging handlers
-    const handleMouseDown = useCallback((e: React.MouseEvent) => {
-        if (chatBoxRef.current) {
-            const rect = chatBoxRef.current.getBoundingClientRect();
-            setIsDragging(true);
-            setDragOffset({
-                x: e.clientX - rect.left,
-                y: e.clientY - rect.top,
-            });
-        }
-    }, []);
-
-    const handleMouseMove = useCallback(
-        (e: MouseEvent) => {
-            if (isDragging && chatBoxRef.current) {
-                const newX = e.clientX - dragOffset.x;
-                const newY = e.clientY - dragOffset.y;
-
-                const maxX = window.innerWidth - chatBoxRef.current.offsetWidth;
-                const maxY =
-                    window.innerHeight - chatBoxRef.current.offsetHeight;
-
-                onPositionChange({
-                    x: Math.max(0, Math.min(newX, maxX)),
-                    y: Math.max(0, Math.min(newY, maxY)),
-                });
-            }
-        },
-        [isDragging, dragOffset, onPositionChange]
-    );
-
-    const handleMouseUp = useCallback(() => {
-        setIsDragging(false);
-    }, []);
-
-    // Drag event listeners
-    useEffect(() => {
-        if (isDragging) {
-            document.addEventListener('mousemove', handleMouseMove);
-            document.addEventListener('mouseup', handleMouseUp);
-
-            return () => {
-                document.removeEventListener('mousemove', handleMouseMove);
-                document.removeEventListener('mouseup', handleMouseUp);
-            };
-        }
-    }, [isDragging, handleMouseMove, handleMouseUp]);
-
     if (!isOpen) return null;
-
-    const showWarnings = !hasChatInputNode || !hasChatOutputNode;
 
     return (
         <Card
             ref={chatBoxRef}
             className={`
-                absolute transition-none z-[1001]
-                w-96 h-[500px] shadow-xl bg-white border border-gray-300 rounded-lg backdrop-blur-sm
+                absolute transition-none z-[${CHAT_BOX_Z_INDEX}]
+                w-96 h-[${CHAT_BOX_HEIGHT}px] shadow-xl bg-white border border-gray-300 rounded-lg backdrop-blur-sm
                 ${isDragging ? 'shadow-2xl select-none' : ''}
                 flex flex-col overflow-hidden p-0
             `}
@@ -389,133 +402,38 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
             }}
         >
             {/* Draggable Header */}
-            <CardHeader
-                style={chatBoxStyles.header}
-                className="cursor-move flex-shrink-0 p-0 m-0 border-b"
+            <ChatHeader
+                isFlowRunning={isFlowRunning}
+                onClearMessages={handleClearMessages}
+                onClose={onClose}
                 onMouseDown={handleMouseDown}
-            >
-                <div className="flex items-center">
-                    <div style={chatBoxStyles.headerTitle}>
-                        Chat Playground {isFlowRunning && '(Running...)'}
-                    </div>
-                </div>
-                <div style={chatBoxStyles.headerActions}>
-                    <button
-                        onClick={handleClearMessages}
-                        style={chatBoxStyles.iconButton}
-                        title="Clear messages"
-                        aria-label="Clear messages"
-                        disabled={messages.length === 0}
-                    >
-                        <Trash2 size={18} />
-                    </button>
-                    <button
-                        onClick={onClose}
-                        style={chatBoxStyles.iconButton}
-                        title="Close chat"
-                        aria-label="Close chat"
-                    >
-                        <X size={18} />
-                    </button>
-                </div>
-            </CardHeader>
+                messagesLength={messages.length}
+            />
 
             {/* Content Area */}
             <div className="flex-1 overflow-hidden flex flex-col">
-                {showWarnings ? (
-                    <div className="flex-1 flex items-center justify-center p-6">
-                        <div className="text-center space-y-4">
-                            {!hasChatInputNode && (
-                                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                                    <p className="text-yellow-800 font-medium">
-                                        Need ChatInput Node to start chatting
-                                    </p>
-                                </div>
-                            )}
-                            {!hasChatOutputNode && (
-                                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                                    <p className="text-blue-800 font-medium">
-                                        Need ChatOutput to receive message from
-                                        flow
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                {!hasChatNodes ? (
+                    <ChatWarnings
+                        hasChatInputNode={hasChatInputNode}
+                        hasChatOutputNode={hasChatOutputNode}
+                    />
                 ) : (
                     <>
                         {/* Messages Area */}
-                        <div className="flex-1 overflow-y-auto p-4">
-                            {flowError && (
-                                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                                    <p className="text-red-800 text-sm font-medium">
-                                        Error: {flowError}
-                                    </p>
-                                </div>
-                            )}
-
-                            {messages.map(msg => (
-                                <div
-                                    key={msg.id}
-                                    className={`mb-4 ${msg.user_id === 1 ? 'text-right' : ''}`}
-                                >
-                                    <div
-                                        className={`
-                                            inline-block p-3 rounded-lg max-w-[80%] break-words
-                                            ${
-                                                msg.user_id === 1
-                                                    ? 'bg-primary text-primary-foreground'
-                                                    : 'bg-muted'
-                                            }
-                                        `}
-                                    >
-                                        {msg.message}
-                                    </div>
-                                    <div className="text-xs text-muted-foreground mt-1">
-                                        {msg.timestamp.toLocaleTimeString([], {
-                                            hour: '2-digit',
-                                            minute: '2-digit',
-                                        })}
-                                    </div>
-                                </div>
-                            ))}
-
-                            {isFlowRunning && (
-                                <div className="mb-4 text-left">
-                                    <div className="inline-block p-3 rounded-lg bg-muted text-muted-foreground">
-                                        Thinking...
-                                    </div>
-                                </div>
-                            )}
-
-                            <div ref={messagesEndRef} />
-                        </div>
+                        <MessagesArea
+                            messages={messages}
+                            flowError={flowError}
+                            isFlowRunning={isFlowRunning}
+                        />
 
                         {/* Message Input */}
-                        <div className="flex-shrink-0 border-t p-3 bg-white">
-                            <div className="flex items-center gap-2">
-                                <Input
-                                    value={message}
-                                    onChange={handleMessageChange}
-                                    onKeyDown={handleKeyPress}
-                                    placeholder={
-                                        isFlowRunning
-                                            ? 'Processing...'
-                                            : 'Type a message...'
-                                    }
-                                    className="flex-1"
-                                    disabled={isFlowRunning}
-                                />
-                                <Button
-                                    onClick={handleSendMessage}
-                                    disabled={!message.trim() || isFlowRunning}
-                                    size="icon"
-                                    className="h-8 w-8 flex-shrink-0"
-                                >
-                                    <Send className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        </div>
+                        <MessageInput
+                            message={message}
+                            isFlowRunning={isFlowRunning}
+                            onMessageChange={handleMessageChange}
+                            onKeyPress={handleKeyPress}
+                            onSendMessage={handleSendMessage}
+                        />
                     </>
                 )}
             </div>
