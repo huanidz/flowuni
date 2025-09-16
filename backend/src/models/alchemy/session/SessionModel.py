@@ -1,5 +1,5 @@
 # SessionModel.py
-from sqlalchemy import Column, Index, String
+from sqlalchemy import Boolean, Column, ForeignKey, Index, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from src.models.alchemy.shared.AppBaseModel import AppBaseModel
@@ -8,9 +8,16 @@ from src.models.alchemy.shared.AppBaseModel import AppBaseModel
 class SessionModel(AppBaseModel):
     __tablename__ = "sessions"
 
-    flow_id = Column(String(64), nullable=True, index=True)
+    flow_id = Column(
+        String(64),
+        ForeignKey("flows.flow_id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
     user_defined_session_id = Column(String, index=True)
     session_metadata = Column(JSONB, nullable=True)
+
+    is_playground = Column(Boolean, default=False, nullable=False)
 
     chat_histories = relationship(
         "SessionChatHistoryModel",
@@ -18,6 +25,7 @@ class SessionModel(AppBaseModel):
         lazy=True,
         cascade="all, delete-orphan",
     )
+    flow = relationship("FlowModel", back_populates="sessions")
 
     __table_args__ = (
         Index("idx_sessions_flow_id", "flow_id"),

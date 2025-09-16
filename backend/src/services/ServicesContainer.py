@@ -7,6 +7,10 @@ if TYPE_CHECKING:
     from src.services.AuthService import AuthService, AuthServiceInterface
     from src.services.FlowService import FlowService, FlowServiceInterface
     from src.services.NodeService import NodeService, NodeServiceInterface
+    from src.services.PlaygroundService import (
+        PlaygroundService,
+        PlaygroundServiceInterface,
+    )
     from src.services.UserService import UserService, UserServiceInterface
 
 
@@ -34,6 +38,7 @@ class ServicesContainer:
         self.auth_service: Optional[AuthServiceInterface] = None
         self.flow_service: Optional[FlowServiceInterface] = None
         self.node_service: Optional[NodeServiceInterface] = None
+        self.playground_service: Optional[PlaygroundServiceInterface] = None
         self.user_service: Optional[UserServiceInterface] = None
 
         # Set provided services

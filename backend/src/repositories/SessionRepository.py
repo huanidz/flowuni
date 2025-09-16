@@ -23,6 +23,7 @@ class SessionRepository(BaseRepository[SessionModel]):
         user_defined_session_id: str,
         flow_id: str,
         session_metadata: Optional[dict] = None,
+        is_playground: bool = False,
     ) -> SessionModel:
         """
         Create a new session
@@ -32,6 +33,7 @@ class SessionRepository(BaseRepository[SessionModel]):
                 user_defined_session_id=user_defined_session_id,
                 flow_id=flow_id,
                 session_metadata=session_metadata or {},
+                is_playground=is_playground,
             )
 
             created_session = self.add(session)
@@ -69,13 +71,15 @@ class SessionRepository(BaseRepository[SessionModel]):
             self.db_session.rollback()
             raise e
 
-    def get_by_flow_id(self, flow_id: str) -> List[SessionModel]:
+    def get_by_flow_id(self, flow_id: str, is_playground: bool) -> List[SessionModel]:
         """
         Get all sessions for a specific flow
         """
         try:
             sessions = (
-                self.db_session.query(SessionModel).filter_by(flow_id=flow_id).all()
+                self.db_session.query(SessionModel)
+                .filter_by(flow_id=flow_id, is_playground=is_playground)
+                .all()
             )
             logger.info(f"Retrieved {len(sessions)} sessions for flow ID: {flow_id}")
             return sessions
