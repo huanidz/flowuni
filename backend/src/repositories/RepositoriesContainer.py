@@ -1,7 +1,6 @@
 from typing import Optional
 
 from src.repositories.ApiKeyRepository import ApiKeyRepository
-from src.repositories.BaseRepository import BaseRepository
 from src.repositories.FlowRepositories import FlowRepository
 from src.repositories.SessionRepository import SessionRepository
 from src.repositories.UserRepository import UserRepository
@@ -101,3 +100,21 @@ class RepositoriesContainer:
         """Human readable string representation."""
         available = self.get_available_repositories()
         return f"RepositoriesContainer with {len(available)} available repositories: {', '.join(available)}"  # noqa
+
+    @classmethod
+    def auto_init_all(cls, db_session) -> "RepositoriesContainer":
+        """
+        Auto-initialize all available repositories with the provided database session.
+
+        Args:
+            db_session: Database session to pass to all repositories
+
+        Returns:
+            RepositoriesContainer with all repositories initialized
+        """
+        return cls(
+            api_key_repository=ApiKeyRepository(db_session),
+            flow_repository=FlowRepository(db_session),
+            session_repository=SessionRepository(db_session),
+            user_repository=UserRepository(db_session),
+        )

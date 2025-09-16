@@ -4,7 +4,7 @@ import threading
 import time
 import traceback
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 import networkx as nx
 from loguru import logger
@@ -12,11 +12,9 @@ from src.consts.node_consts import (
     NODE_DATA_MODE,
     NODE_EXECUTION_STATUS,
     NODE_LABEL_CONSTS,
-    SPECIAL_NODE_INPUT_CONSTS,
 )
 from src.exceptions.execution_exceptions import GraphExecutorError
 from src.executors.DataClass import NodeExecutionResult
-from src.executors.ExecutionContext import ExecutionContext
 from src.executors.ExecutionEventPublisher import (
     ExecutionControl,
     ExecutionEventPublisher,
@@ -34,6 +32,9 @@ from src.nodes.NodeRegistry import NodeRegistry
 from src.schemas.flowbuilder.flow_graph_schemas import NodeData
 from src.schemas.nodes.node_data_parsers import ToolDataParser
 
+if TYPE_CHECKING:
+    from src.executors.ExecutionContext import ExecutionContext
+
 
 class GraphExecutor:
     """
@@ -50,7 +51,7 @@ class GraphExecutor:
         execution_control: ExecutionControl,
         max_workers: Optional[int] = None,
         enable_debug: bool = True,
-        execution_context: Optional[ExecutionContext] = None,
+        execution_context: Optional["ExecutionContext"] = None,
         execution_event_publisher: Optional[ExecutionEventPublisher] = None,
     ):
         """
@@ -62,7 +63,7 @@ class GraphExecutor:
             max_workers: Maximum number of threads for parallel execution
         """  # noqa: E501
         self.graph: nx.DiGraph = graph
-        self.execution_context: Optional[ExecutionContext] = execution_context
+        self.execution_context: Optional["ExecutionContext"] = execution_context
         self.execution_plan: List[List[str]] = execution_plan
         self.execution_control: ExecutionControl = execution_control
         self.max_workers = max_workers

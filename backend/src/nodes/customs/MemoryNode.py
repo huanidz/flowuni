@@ -47,22 +47,20 @@ class MemoryNode(Node):
         Returns:
             Dictionary containing the retrieved messages
         """
-        recent_messages_count = inputs.get("recent_messages", 5)
+        recent_messages_count = inputs.get("recent_messages", None)
 
-        # Log the incoming inputs for debugging
-        logger.info(f"Retrieving {recent_messages_count} recent messages")
+        session_repo = self.context.repositories.session_repository
 
-        # Simulate retrieving recent messages from memory/storage
-        # In a real implementation, this would fetch from actual memory/storage
-        messages = []
-        for i in range(int(recent_messages_count)):
-            messages.append(f"Message {i + 1}: This is a sample message from memory")
+        session_id = self.context.session_id
 
-        # Join messages with newlines
-        result = "\n".join(messages)
+        messages = session_repo.get_chat_history(
+            session_id=session_id,
+            num_messages=recent_messages_count,
+        )
 
-        logger.info(f"Retrieved {len(messages)} messages")
-        return {"messages": result}
+        logger.info(f"Retrieved {len(messages)} messages from session {session_id}")
+
+        return {"messages": "test"}
 
     def build_tool(self, inputs_values: Dict[str, Any], tool_configs):
         raise NotImplementedError("Subclasses must override build_tool")
