@@ -54,7 +54,7 @@ class FlowEdge(BaseModel):
     targetHandle: Optional[str] = None  # corresponds to 'targetHandle'
 
 
-class FlowGraphRequest(BaseModel):
+class CanvasFlowRunRequest(BaseModel):
     """Top-level request model representing the entire flow graph."""
 
     nodes: List[FlowNode]
@@ -73,22 +73,22 @@ class FlowGraphRequest(BaseModel):
         "If 'downstream', the flow will execute the selected node and its downstream nodes.",  # noqa: E501
     )
 
-
-class FlowPlaygroundRequest(BaseModel):
-    flow_id: str
-    flow_graph_request: FlowGraphRequest
+    session_id: Optional[str] = Field(
+        default=None,
+        description="The session ID for the flow run. If None, a new session will be created.",  # noqa: E501
+    )
 
 
 # --- Flow Run API ---
 
 
-class FlowRunMessage(BaseModel):
+class ApiFlowRunMessage(BaseModel):
     type: str
     content: str
 
 
-class FlowRunRequest(BaseModel):
-    messages: Optional[List[FlowRunMessage]] = Field(
+class ApiFlowRunRequest(BaseModel):
+    messages: Optional[List[ApiFlowRunMessage]] = Field(
         default_factory=list,
         description="List of messages to be sent to the flow run.",
     )

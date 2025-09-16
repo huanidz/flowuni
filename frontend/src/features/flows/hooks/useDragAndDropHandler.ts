@@ -3,6 +3,7 @@ import type { Node, ReactFlowInstance } from '@xyflow/react';
 import { Position } from '@xyflow/react';
 import { useNodeRegistry } from '@/features/nodes';
 import React from 'react';
+import { toast } from 'sonner';
 import { NODE_DATA_MODE, NODE_EXECUTION_STATE } from '../consts';
 import { nanoid } from 'nanoid';
 
@@ -22,7 +23,7 @@ export const useDragDropHandler = (
     const { getNodeSpecByRFNodeType, loaded } = useNodeRegistry();
 
     const onDrop = useCallback(
-        (event: React.DragEvent<HTMLDivElement>) => {
+        (event: React.DragEvent<HTMLDivElement>, nodes: Node[]) => {
             event.preventDefault();
             if (!reactFlowInstance || !loaded) return;
 
@@ -43,6 +44,17 @@ export const useDragDropHandler = (
 
             const type = event.dataTransfer.getData('application/reactflow');
             if (!type) return;
+
+            // Check for duplicate Chat Input or Chat Output nodes
+            if (type === 'Chat Input' || type === 'Chat Output') {
+                const existingNode = nodes.find(node => node.type === type);
+                if (existingNode) {
+                    toast.error(`Only one ${type} node is allowed`, {
+                        description: `A ${type} node already exists in the flow.`,
+                    });
+                    return;
+                }
+            }
 
             const bounds = (
                 event.currentTarget as HTMLDivElement

@@ -1,12 +1,17 @@
 from typing import Dict, Optional
+from uuid import uuid4
 
 from fastapi import HTTPException
 from loguru import logger
 from src.exceptions.auth_exceptions import UNAUTHORIZED_EXCEPTION
+from src.executors.ExecutionContext import ExecutionContext
 from src.executors.GraphExecutor import GraphExecutor
 from src.nodes.GraphCompiler import GraphCompiler
 from src.nodes.GraphLoader import GraphLoader
-from src.schemas.flowbuilder.flow_graph_schemas import FlowGraphRequest
+from src.schemas.flowbuilder.flow_graph_schemas import (
+    ApiFlowRunRequest,
+    CanvasFlowRunRequest,
+)
 from src.schemas.flows.flow_schemas import FlowRunResult
 from src.services.ApiKeyService import ApiKeyService
 from src.services.FlowService import FlowService
@@ -14,16 +19,20 @@ from src.services.FlowService import FlowService
 
 class FlowSyncWorker:
     def __init__(self):
-        pass
+        self.run_id = str(uuid4())
 
     def run_sync(
-        self, flow_id: str, flow_graph_request_dict: Dict, enable_debug: bool = True
+        self,
+        flow_id: str,
+        session_id: str,
+        flow_graph_request_dict: Dict,
+        enable_debug: bool = True,
     ) -> FlowRunResult:
         try:
             logger.info(f"Starting flow execution task for flow_id: {flow_id}")
 
             # Parse the request
-            flow_graph_request = FlowGraphRequest(**flow_graph_request_dict)
+            flow_graph_request = CanvasFlowRunRequest(**flow_graph_request_dict)
 
             # Load the graph
             logger.info("Loading graph from request")
@@ -35,12 +44,15 @@ class FlowSyncWorker:
                 graph=G, remove_standalone=False
             )  # Keep standalone nodes
             execution_plan = compiler.compile()
-
+            execution_context = ExecutionContext(
+                run_id=self.run_id, flow_id=flow_id, session_id=session_id
+            )
             logger.info(f"Creating executor with {len(execution_plan)} layers")
             executor = GraphExecutor(
                 graph=G,
                 execution_plan=execution_plan,
-                execution_context=None,
+                execution_event_publisher=None,
+                execution_context=execution_context,
                 enable_debug=False,
             )
 
@@ -66,6 +78,7 @@ class FlowSyncWorker:
     def run_flow_with_validation(
         self,
         flow_id: str,
+        flow_run_request: ApiFlowRunRequest,
         request_api_key: Optional[str],
         api_key_service: ApiKeyService,
         flow_service: FlowService,
@@ -111,10 +124,14 @@ class FlowSyncWorker:
                 logger.warning(f"Flow has no definition: {flow_id}")
                 raise HTTPException(status_code=400, detail="Flow has no definition")
 
+            session_id = flow_run_request.session_id
+
             # Execute the flow
             logger.info(f"Starting validated flow execution for flow_id: {flow_id}")
             execution_result = self.run_sync(
-                flow_id=flow_id, flow_graph_request_dict=flow_definition
+                flow_id=flow_id,
+                session_id=session_id,
+                flow_graph_request_dict=flow_definition,
             )
 
             logger.success(

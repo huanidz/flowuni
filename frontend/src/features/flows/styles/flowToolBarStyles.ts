@@ -1,3 +1,5 @@
+import { Columns } from 'lucide-react';
+
 // Main toolbar container styles
 export const toolbarContainer = {
     position: 'absolute' as const,
@@ -177,4 +179,69 @@ export const runSelectedOnlyMenuItem = {
 export const runSelectedOnlyMenuItemHover = {
     backgroundColor: '#c8e6c9',
     color: '#2e7d32',
+};
+
+// Session panel styles
+export const sessionPanel = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'flex-end', // Right align the content
+    gap: '12px',
+    padding: '10px 16px',
+    backgroundColor: '#bebebeff',
+    borderRadius: '8px',
+    border: '1px solid #e9ecef',
+    fontSize: '12px',
+    marginTop: '8px', // Space from buttons above
+    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+    width: 'fit-content',
+    marginLeft: 'auto',
+};
+
+export const sessionCheckbox = {
+    marginRight: '0px', // Remove margin as gap handles spacing
+    accentColor: '#010f1dff', // Better checkbox color
+    backgroundColor: '#ffffffff',
+    color: 'black',
+};
+
+export const sessionLabel = {
+    fontSize: '13px',
+    color: '#495057',
+    cursor: 'pointer',
+    fontWeight: '500',
+};
+
+export const sessionIdText = {
+    fontFamily:
+        'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Menlo, monospace',
+    fontSize: '11px',
+    color: '#212529',
+    backgroundColor: '#ffffff',
+    padding: '4px 8px',
+    borderRadius: '4px',
+    border: '1px solid #dee2e6',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    boxShadow: 'inset 0 1px 2px rgba(0, 0, 0, 0.05)',
+};
+
+export const resetButton = {
+    backgroundColor: '#6c757d',
+    color: 'white',
+    border: 'none',
+    padding: '5px 10px',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '11px',
+    minWidth: '55px',
+    fontWeight: '500',
+    transition: 'background-color 0.1s ease-in-out',
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+};
+
+export const resetButtonHover = {
+    backgroundColor: '#5a6268',
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)',
 };

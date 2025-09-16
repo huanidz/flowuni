@@ -185,7 +185,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
         <div className="w-full h-screen bg-gray-100 flex">
             <div
                 className="relative flex-grow"
-                onDrop={onDrop}
+                onDrop={event => onDrop(event, currentNodes)}
                 onDragOver={onDragOver}
                 tabIndex={1}
             >
@@ -299,6 +299,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
                 position={playgroundPosition}
                 onPositionChange={setPlaygroundPosition}
                 nodeUpdateHandlers={updateHandlers}
+                flowId={flow_id}
             />
         </div>
     );

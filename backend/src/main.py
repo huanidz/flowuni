@@ -7,6 +7,7 @@ from src.configs.LoggingConfig import setup_logger
 from src.routes.api_key_routes import api_key_router
 from src.routes.auth_routes import auth_router
 from src.routes.common_routes import common_router
+from src.routes.flow_playground_session_routes import playground_router
 from src.routes.flow_routes import flow_router
 from src.routes.flow_runner_routes import flow_execution_router
 from src.routes.node_routes import node_router
@@ -49,3 +50,4 @@ app.include_router(api_key_router)
 app.include_router(node_router)
 app.include_router(flow_router)
 app.include_router(flow_execution_router)
+app.include_router(playground_router)

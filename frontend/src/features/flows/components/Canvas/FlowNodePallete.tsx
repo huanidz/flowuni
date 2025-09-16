@@ -1,5 +1,5 @@
 import React, { useEffect, useState, forwardRef, useMemo } from 'react';
-import { ChevronUp, ChevronDown, Search, Wrench } from 'lucide-react';
+import { ChevronUp, ChevronDown, Search, Wrench, Disc3 } from 'lucide-react';
 import { useNodeRegistry } from '@/features/nodes';
 
 interface NodePaletteProps {

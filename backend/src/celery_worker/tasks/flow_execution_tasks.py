@@ -4,16 +4,22 @@ from loguru import logger
 from redis import Redis
 from src.celery_worker.celery_worker import celery_app
 from src.configs.config import get_settings
-from src.executors.ExecutionContext import ExecutionContext, ExecutionControl
+from src.dependencies.db_dependency import get_db
+from src.executors.ExecutionContext import ExecutionContext
+from src.executors.ExecutionEventPublisher import (
+    ExecutionControl,
+    ExecutionEventPublisher,
+)
 from src.executors.GraphExecutor import GraphExecutor
 from src.nodes.GraphCompiler import GraphCompiler
 from src.nodes.GraphLoader import GraphLoader
-from src.schemas.flowbuilder.flow_graph_schemas import FlowGraphRequest
+from src.repositories.RepositoriesContainer import RepositoriesContainer
+from src.schemas.flowbuilder.flow_graph_schemas import CanvasFlowRunRequest
 
 
 @celery_app.task
 def compile_flow(flow_id: str, flow_graph_request_dict: Dict):
-    flow_graph_request = FlowGraphRequest(**flow_graph_request_dict)
+    flow_graph_request = CanvasFlowRunRequest(**flow_graph_request_dict)
     G = GraphLoader.from_request(flow_graph_request)
 
     compiler = GraphCompiler(graph=G)
@@ -36,13 +42,20 @@ def run_flow(
     Returns:
         Dictionary with execution results
     """
+
+    app_db_session = None  # Get a DB session for this task
+
     try:
         app_settings = get_settings()
+
+        # Get DB session
+        app_db_session = next(get_db())
+        repositories = RepositoriesContainer.auto_init_all(db_session=app_db_session)
 
         logger.info(f"Starting flow execution task for flow_id: {flow_id}")
 
         # Parse the request
-        flow_graph_request = FlowGraphRequest(**flow_graph_request_dict)
+        flow_graph_request = CanvasFlowRunRequest(**flow_graph_request_dict)
 
         # Load the graph
         logger.info("Loading graph from request")
@@ -62,9 +75,17 @@ def run_flow(
             db=app_settings.REDIS_DB,
             decode_responses=True,
         )
-        exe_context = ExecutionContext(
+        exe_event_publisher = ExecutionEventPublisher(
             task_id=self.request.id,
             redis_client=redis_client,
+        )
+        execution_context = ExecutionContext(
+            run_id=self.request.id,
+            flow_id=flow_id,
+            session_id=None,
+            user_id=None,
+            metadata={},
+            repositories=repositories,
         )
         exe_control = ExecutionControl(
             start_node=flow_graph_request.start_node, scope=flow_graph_request.scope
@@ -73,7 +94,8 @@ def run_flow(
         executor = GraphExecutor(
             graph=G,
             execution_plan=execution_plan,
-            execution_context=exe_context,
+            execution_event_publisher=exe_event_publisher,
+            execution_context=execution_context,
             execution_control=exe_control,
             enable_debug=enable_debug,
         )
@@ -96,3 +118,6 @@ def run_flow(
         logger.error(f"Flow execution failed for flow_id {flow_id}: {str(e)}")
         # Re-raise the exception so Celery marks the task as failed
         raise
+    finally:
+        if app_db_session:
+            app_db_session.close()

@@ -91,6 +91,12 @@ class AgentNode(Node):
                 required=True,
             ),
             NodeInput(
+                name="chat_history",
+                type=TextFieldInputHandle(multiline=True),
+                description="The chat history for the agent.",
+                required=False,
+            ),
+            NodeInput(
                 name="input_message",
                 type=TextFieldInputHandle(),
                 description="The message to be processed by agent.",

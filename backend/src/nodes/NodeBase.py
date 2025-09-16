@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Type, Union, get_args
 from pydantic import BaseModel
 from src.consts.node_consts import NODE_DATA_MODE, NODE_EXECUTION_STATUS
 from src.exceptions.node_exceptions import NodeValidationError
+from src.executors.ExecutionContext import ExecutionContext
 from src.helpers.PydanticSchemaConverter import PydanticSchemaConverter
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
@@ -25,6 +26,7 @@ class Node(ABC):
     """Abstract base class for all nodes in the processing graph."""
 
     spec: NodeSpec
+    context: Optional[ExecutionContext] = None
 
     # ============================================================================
     # CLASS SETUP AND VALIDATION
@@ -34,6 +36,10 @@ class Node(ABC):
         """Validate node specification when subclass is created."""
         super().__init_subclass__(**kwargs)
         cls._validate_node_spec()
+
+    def bind_context(self, context: ExecutionContext) -> None:
+        """Bind an execution context to the node instance."""
+        self.context = context
 
     @classmethod
     def _validate_node_spec(cls) -> None:
@@ -537,6 +543,9 @@ class Node(ABC):
         """Deprecated: Use _build_output_mapping instead."""
         return self._build_output_mapping(result)
 
-    def run(self, node_data: "NodeData") -> "NodeData":
+    def run(
+        self, node_data: "NodeData", exec_context: Optional[ExecutionContext] = None
+    ) -> "NodeData":
         """Deprecated: Use execute instead."""
+        self.bind_context(exec_context)
         return self.execute(node_data)
