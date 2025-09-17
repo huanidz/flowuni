@@ -3,10 +3,8 @@ import { Card } from '@/components/ui/card';
 import { useNodes, useEdges } from '@xyflow/react';
 import type { PlaygroundChatBoxPosition, PGMessage } from '../../types';
 import { runFlow } from '../../api';
-import { NODE_EXECUTION_STATE } from '../../consts';
 import type { GetPlaygroundSessionsRequest } from '@/features/playground/types';
 import {
-    useDeletePlaygroundSession,
     useSessionsWithLastMessage,
     useAddChatMessage,
 } from '@/features/playground/hooks';
@@ -20,6 +18,9 @@ import MessagesArea from './PlaygroundComponents/MessagesArea';
 import MessageInput from './PlaygroundComponents/MessageInput';
 import ChatSessionSidebar from './PlaygroundComponents/ChatSessionSidebar';
 
+// Custom hooks
+import { useDraggingChatbox } from './PlaygroundComponents/useDraggingChatbox';
+
 // Constants
 import {
     CHAT_BOX_HEIGHT,
@@ -30,11 +31,8 @@ import {
     BOT_ID,
     CHAT_INPUT_NODE_TYPE,
     CHAT_OUTPUT_NODE_TYPE,
-    FLOW_TIMEOUT_ERROR,
-    CONNECTION_ERROR,
     NO_TASK_ID_ERROR,
     FLOW_RUN_ERROR,
-    SSE_LOG_PREFIX,
     FLOW_LOG_PREFIX,
     ROLE_USER,
     ROLE_ASSISTANT,
@@ -72,11 +70,6 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
     const hasChatNodes = hasChatInputNode && hasChatOutputNode;
 
     // State
-    const [isDragging, setIsDragging] = useState(false);
-    const [dragOffset, setDragOffset] = useState<PlaygroundChatBoxPosition>({
-        x: 0,
-        y: 0,
-    });
     const [message, setMessage] = useState('');
     const [isFlowRunning, setIsFlowRunning] = useState(false);
     const [flowError, setFlowError] = useState<string | null>(null);
@@ -98,14 +91,8 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
     } = useSessionsWithLastMessage(request);
 
     // Playground store state
-    const {
-        currentSession,
-        setCurrentSession,
-        chatMessages,
-        isLoadingChat,
-        addChatMessage,
-        clearChatMessages,
-    } = usePlaygroundStore();
+    const { currentSession, chatMessages, addChatMessage } =
+        usePlaygroundStore();
 
     // Add chat message mutation
     const addChatMessageMutation = useAddChatMessage();
@@ -151,51 +138,11 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
     }, [initializePosition]);
 
     // ===== DRAGGING LOGIC =====
-    const handleMouseDown = useCallback((e: React.MouseEvent) => {
-        if (chatBoxRef.current) {
-            const rect = chatBoxRef.current.getBoundingClientRect();
-            setIsDragging(true);
-            setDragOffset({
-                x: e.clientX - rect.left,
-                y: e.clientY - rect.top,
-            });
-        }
-    }, []);
-
-    const handleMouseMove = useCallback(
-        (e: MouseEvent) => {
-            if (isDragging && chatBoxRef.current) {
-                const newX = e.clientX - dragOffset.x;
-                const newY = e.clientY - dragOffset.y;
-
-                const maxX = window.innerWidth - chatBoxRef.current.offsetWidth;
-                const maxY =
-                    window.innerHeight - chatBoxRef.current.offsetHeight;
-
-                onPositionChange({
-                    x: Math.max(0, Math.min(newX, maxX)),
-                    y: Math.max(0, Math.min(newY, maxY)),
-                });
-            }
-        },
-        [isDragging, dragOffset, onPositionChange]
-    );
-
-    const handleMouseUp = useCallback(() => {
-        setIsDragging(false);
-    }, []);
-
-    useEffect(() => {
-        if (isDragging) {
-            document.addEventListener('mousemove', handleMouseMove);
-            document.addEventListener('mouseup', handleMouseUp);
-
-            return () => {
-                document.removeEventListener('mousemove', handleMouseMove);
-                document.removeEventListener('mouseup', handleMouseUp);
-            };
-        }
-    }, [isDragging, handleMouseMove, handleMouseUp]);
+    const { isDragging, handleMouseDown } = useDraggingChatbox({
+        chatBoxRef,
+        position,
+        onPositionChange,
+    });
 
     // ===== CLEANUP LOGIC =====
     const cleanupEventSource = useCallback(() => {

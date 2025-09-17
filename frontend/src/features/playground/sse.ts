@@ -3,7 +3,6 @@ import { NODE_EXECUTION_STATE } from '@/features/flows/consts';
 import {
     CHAT_OUTPUT_NODE_TYPE,
     SSE_LOG_PREFIX,
-    ROLE_ASSISTANT,
 } from '@/features/flows/components/Canvas/PlaygroundComponents/constants';
 
 // Types for SSE handling
