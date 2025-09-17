@@ -115,6 +115,10 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
                             {label}
                         </span>
                     )}
+                    {
+                        // Render label without icon if no icon is provided
+                        !icon && label
+                    }
                 </div>
                 <div style={nodeStyles.headerControls}>
                     {canBeTool && onModeChange && (

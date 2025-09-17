@@ -2,7 +2,7 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 import { Icon } from '@iconify/react';
 // Import Material Icons dynamically
-import * as MaterialIcons from '@mui/icons-material';
+// import * as MaterialIcons from '@mui/icons-material';
 
 /**
  * Types for node icons based on the backend NodeIcon.py definitions

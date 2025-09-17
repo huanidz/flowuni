@@ -58,6 +58,7 @@ export interface NodeSpec {
     // metadata fields
     group: string;
     icon?: NodeIcon;
+    tags?: string[];
 }
 
 // --- Node Data ---

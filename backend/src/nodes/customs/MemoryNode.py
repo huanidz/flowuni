@@ -1,7 +1,7 @@
 from typing import Any, Dict, Union
 
 from loguru import logger
-from src.consts.node_consts import NODE_GROUP_CONSTS
+from src.consts.node_consts import NODE_GROUP_CONSTS, NODE_TAGS_CONSTS
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.handles.basics.inputs.NumberInputHandle import NumberInputHandle
@@ -32,6 +32,7 @@ class MemoryNode(Node):
         parameters=[],
         can_be_tool=False,
         group=NODE_GROUP_CONSTS.AGENT,
+        tags=[NODE_TAGS_CONSTS.SESSION_ENABLED],
     )
 
     def process(

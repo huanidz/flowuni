@@ -31,6 +31,9 @@ class NodeSpec(BaseModel):
         default=None,
         description="Node icon specification (e.g. emoji, fontawesome, svg)",
     )
+    tags: List[str] = Field(
+        default_factory=list, description="Tags associated with the node"
+    )
 
     # --- Validators ---
 

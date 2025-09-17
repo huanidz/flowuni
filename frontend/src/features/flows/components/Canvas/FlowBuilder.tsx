@@ -209,7 +209,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
                     onConnectStart={handleConnectionStart}
                     onConnectEnd={handleConnectionEnd}
                     isValidConnection={isValidConnection}
-                    minZoom={0.88}
+                    minZoom={0.7}
                     maxZoom={2}
                     className="bg-gray-50"
                     nodeTypes={nodeTypes}
