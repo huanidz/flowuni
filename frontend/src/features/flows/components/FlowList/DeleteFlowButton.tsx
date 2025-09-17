@@ -42,7 +42,7 @@ const DeleteFlowButton: React.FC<DeleteFlowButtonProps> = ({
                 size="icon"
                 className="text-red-500"
             >
-                🗑️
+                Delete
             </Button>
             <Dialog open={confirmModalOpen} onOpenChange={setConfirmModalOpen}>
                 <DialogContent>

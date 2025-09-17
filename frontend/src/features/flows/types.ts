@@ -30,6 +30,13 @@ export interface CreateFlowResponse {
     flow_id: string;
 }
 
+export interface CreateFlowWithDataRequest {
+    name?: string;
+    flow_definition?: any;
+}
+
+export interface CreateFlowWithDataResponse extends Flow {}
+
 // --- Flow Detail ---
 
 export interface GetFlowDetailParams {
