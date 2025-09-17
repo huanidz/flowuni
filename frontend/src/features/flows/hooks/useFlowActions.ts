@@ -176,6 +176,51 @@ export const useFlowActions = (
         // Node ID reset is no longer needed as we're using timestamp-based IDs
     }, [setNodes, setEdges]);
 
+    const onResetAllData = useCallback(() => {
+        // Reset all node data to initial state (inputs, outputs, execution results, and status)
+        nodes.forEach(node => {
+            // Reset input values to empty objects
+            Object.keys(node.data?.input_values || {}).forEach(inputName => {
+                nodeUpdateHandlers.updateNodeInputData(node.id, inputName, '');
+            });
+
+            // Reset output values to empty objects
+            Object.keys(node.data?.output_values || {}).forEach(outputName => {
+                nodeUpdateHandlers.updateNodeOutputData(
+                    node.id,
+                    outputName,
+                    ''
+                );
+            });
+
+            // Reset execution result to null
+            nodeUpdateHandlers.updateNodeExecutionResult(node.id, null);
+
+            // Reset execution status to DRAFT
+            nodeUpdateHandlers.updateNodeExecutionStatus(node.id, 'draft');
+        });
+    }, [nodes, nodeUpdateHandlers]);
+
+    const onResetExecutionData = useCallback(() => {
+        // Reset only execution-related data (outputs, execution results, and status)
+        nodes.forEach(node => {
+            // Reset output values to empty objects
+            Object.keys(node.data?.output_values || {}).forEach(outputName => {
+                nodeUpdateHandlers.updateNodeOutputData(
+                    node.id,
+                    outputName,
+                    ''
+                );
+            });
+
+            // Reset execution result to null
+            nodeUpdateHandlers.updateNodeExecutionResult(node.id, null);
+
+            // Reset execution status to DRAFT
+            nodeUpdateHandlers.updateNodeExecutionStatus(node.id, 'draft');
+        });
+    }, [nodes, nodeUpdateHandlers]);
+
     const onPlaygroundFlow = useCallback(() => {
         // Dummy function for playground action
         console.log('Playground action triggered');
@@ -187,6 +232,8 @@ export const useFlowActions = (
         onRunFlowFromSelectedNode,
         onRunSelectedOnly,
         onClearFlow,
+        onResetAllData,
+        onResetExecutionData,
         onSaveFlow,
         onPlaygroundFlow,
     };

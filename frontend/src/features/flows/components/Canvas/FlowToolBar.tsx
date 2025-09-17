@@ -9,12 +9,15 @@ import CompileButton from './FlowToolBarComponents/CompileButton';
 import SaveButton from './FlowToolBarComponents/SaveButton';
 import PlaygroundButton from './FlowToolBarComponents/PlaygroundButton';
 import ClearButton from './FlowToolBarComponents/ClearButton';
+import ResetDataButton from './FlowToolBarComponents/ResetDataButton';
 
 interface FlowToolbarProps {
     onRun: () => void;
     onRunFromSelected: () => void;
     onRunSelectedOnly: () => void;
     onClear: () => void;
+    onResetAllData: () => void;
+    onResetExecutionData: () => void;
     onCompile: () => void;
     onSave: () => void;
     onPlayground: () => void;
@@ -25,6 +28,8 @@ const FlowToolbar: React.FC<FlowToolbarProps> = ({
     onRunFromSelected,
     onRunSelectedOnly,
     onClear,
+    onResetAllData,
+    onResetExecutionData,
     onCompile,
     onSave,
     onPlayground,
@@ -72,6 +77,11 @@ const FlowToolbar: React.FC<FlowToolbarProps> = ({
                     <PlaygroundButton onPlayground={handlePlayground} />
 
                     <ClearButton onClear={onClear} />
+
+                    <ResetDataButton
+                        onResetAllData={onResetAllData}
+                        onResetExecutionData={onResetExecutionData}
+                    />
                 </div>
             </div>
         </div>

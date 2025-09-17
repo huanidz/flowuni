@@ -9,6 +9,7 @@ import {
 export interface SSEMessageData {
     event: string;
     data: any;
+    node_id?: string;
 }
 
 export interface SSEHandlers {
@@ -26,6 +27,16 @@ export interface FlowExecutionOptions {
     cleanupTimeout: () => void;
     flowExecutionTimeout: number;
     handlers?: SSEHandlers;
+    isFlowWatchEnabled?: boolean;
+    nodeUpdateHandlers?: {
+        updateNodeExecutionResult?: (nodeId: string, result: string) => void;
+        updateNodeExecutionStatus?: (nodeId: string, status: string) => void;
+        updateNodeOutputData?: (
+            nodeId: string,
+            outputName: string,
+            value: any
+        ) => void;
+    };
 }
 
 /**
@@ -98,6 +109,8 @@ export const executeFlowWithSSE = ({
     cleanupTimeout,
     flowExecutionTimeout,
     handlers = {},
+    isFlowWatchEnabled = false,
+    nodeUpdateHandlers,
 }: FlowExecutionOptions) => {
     let eventSource: EventSource | null = null;
     let timeoutId: NodeJS.Timeout | null = null;
@@ -106,6 +119,7 @@ export const executeFlowWithSSE = ({
     eventSource = watchFlowExecution(taskId, (message: string) => {
         const parsed = parseSSEMessage(message);
         if (parsed) {
+            // Handle chat-related events
             handleSSEData(parsed, {
                 ...handlers,
                 onFlowFailed: (error: string) => {
@@ -122,6 +136,47 @@ export const executeFlowWithSSE = ({
                     handlers.onFlowCompleted?.(nodeType, inputValues);
                 },
             });
+
+            // Handle flow watch events if enabled
+            if (isFlowWatchEnabled && nodeUpdateHandlers && parsed.node_id) {
+                const { event, data } = parsed;
+                const node_id = parsed.node_id;
+                const event_status = event;
+                const { input_values, output_values } = data || {};
+
+                console.log(
+                    `${SSE_LOG_PREFIX} Flow watch enabled, updating node:`,
+                    node_id,
+                    'with event:',
+                    event_status
+                );
+
+                // Update node execution data using the provided handlers
+                if (nodeUpdateHandlers.updateNodeExecutionResult) {
+                    nodeUpdateHandlers.updateNodeExecutionResult(
+                        node_id,
+                        JSON.stringify(parsed, null, 2)
+                    );
+                }
+                if (nodeUpdateHandlers.updateNodeExecutionStatus) {
+                    nodeUpdateHandlers.updateNodeExecutionStatus(
+                        node_id,
+                        event_status
+                    );
+                }
+                if (nodeUpdateHandlers.updateNodeOutputData && output_values) {
+                    // Update each output value individually
+                    Object.entries(output_values).forEach(
+                        ([outputName, value]) => {
+                            nodeUpdateHandlers.updateNodeOutputData?.(
+                                node_id,
+                                outputName,
+                                value
+                            );
+                        }
+                    );
+                }
+            }
         }
     });
 

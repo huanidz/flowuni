@@ -30,6 +30,12 @@ export interface NodeInput {
     enable_as_whole_for_tool?: boolean;
 }
 
+export interface NodeIcon {
+    icon_type: string;
+    icon_value: string;
+    color?: string;
+}
+
 export interface NodeOutput {
     name: string;
     type_detail: IOTypeDetail;
@@ -51,6 +57,8 @@ export interface NodeSpec {
 
     // metadata fields
     group: string;
+    icon?: NodeIcon;
+    tags?: string[];
 }
 
 // --- Node Data ---

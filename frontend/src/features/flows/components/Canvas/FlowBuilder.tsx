@@ -121,6 +121,8 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
         onRunFlowFromSelectedNode,
         onRunSelectedOnly,
         onClearFlow,
+        onResetAllData,
+        onResetExecutionData,
         onSaveFlow,
         onPlaygroundFlow,
     } = useFlowActions(
@@ -196,6 +198,8 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
                     onRunFromSelected={onRunFlowFromSelectedNode}
                     onRunSelectedOnly={onRunSelectedOnly}
                     onClear={onClearFlow}
+                    onResetAllData={onResetAllData}
+                    onResetExecutionData={onResetExecutionData}
                     onSave={onSaveFlow}
                     onPlayground={handlePlaygroundClick}
                 />
@@ -209,7 +213,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
                     onConnectStart={handleConnectionStart}
                     onConnectEnd={handleConnectionEnd}
                     isValidConnection={isValidConnection}
-                    minZoom={0.88}
+                    minZoom={0.7}
                     maxZoom={2}
                     className="bg-gray-50"
                     nodeTypes={nodeTypes}

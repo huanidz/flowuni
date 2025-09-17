@@ -13,6 +13,10 @@ import type {
     UpdateNodeExecutionResultFunction,
     UpdateNodeExecutionStatusFunction,
 } from '@/features/nodes';
+import type {
+    NodeIconData,
+    NodeIconType,
+} from '@/features/flows/components/NodeIconDisplayer/NodeIconDisplayer';
 
 // Constants
 import { NODE_DATA_MODE } from '../consts';
@@ -63,6 +67,15 @@ class NodeFactoryClass {
             const mode = data.mode || NODE_DATA_MODE.NORMAL;
             const can_be_tool = nodeSpec.can_be_tool;
 
+            // Convert NodeIcon to NodeIconData if it exists
+            const iconData: NodeIconData | undefined = nodeSpec.icon
+                ? {
+                      icon_type: nodeSpec.icon.icon_type as NodeIconType,
+                      icon_value: nodeSpec.icon.icon_value,
+                      color: nodeSpec.icon.color,
+                  }
+                : undefined;
+
             // Direct handlers passed from the unified update system
             const handleInputValueChange = updateNodeInputData
                 ? (inputName: string, value: any) =>
@@ -89,6 +102,7 @@ class NodeFactoryClass {
                         canBeTool={can_be_tool}
                         nodeId={id}
                         execution_status={data.execution_status}
+                        icon={iconData}
                     />
 
                     {/* Inputs Configuration */}

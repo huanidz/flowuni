@@ -73,6 +73,7 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
     const [message, setMessage] = useState('');
     const [isFlowRunning, setIsFlowRunning] = useState(false);
     const [flowError, setFlowError] = useState<string | null>(null);
+    const [isFlowWatchEnabled, setIsFlowWatchEnabled] = useState(false);
     // Collapse/expand feature disabled but kept for future use
     // const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const isSidebarCollapsed = false;
@@ -107,13 +108,12 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
         }));
     }, [chatMessages]);
 
-    console.log('transformedMessages: ', transformedMessages);
-
     // Refs
     const chatBoxRef = useRef<HTMLDivElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const eventSourceRef = useRef<EventSource | null>(null);
     const flowTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const flowWatchEventSourceRef = useRef<EventSource | null>(null);
 
     const { updateNodeInputData } = nodeUpdateHandlers;
 
@@ -159,11 +159,19 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
         }
     }, []);
 
+    const cleanupFlowWatchEventSource = useCallback(() => {
+        if (flowWatchEventSourceRef.current) {
+            flowWatchEventSourceRef.current.close();
+            flowWatchEventSourceRef.current = null;
+        }
+    }, []);
+
     const cleanupAll = useCallback(() => {
         cleanupEventSource();
         cleanupTimeout();
+        cleanupFlowWatchEventSource();
         setIsFlowRunning(false);
-    }, [cleanupEventSource, cleanupTimeout]);
+    }, [cleanupEventSource, cleanupTimeout, cleanupFlowWatchEventSource]);
 
     useEffect(() => {
         return () => {
@@ -182,6 +190,12 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [transformedMessages]);
 
+    // ===== FLOW WATCH LOGIC =====
+    const handleFlowWatchToggle = useCallback(async () => {
+        const newFlowWatchState = !isFlowWatchEnabled;
+        setIsFlowWatchEnabled(newFlowWatchState);
+    }, [isFlowWatchEnabled]);
+
     // ===== FLOW EXECUTION LOGIC =====
     const executeFlow = useCallback(async () => {
         if (isFlowRunning) {
@@ -195,7 +209,15 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
         try {
             cleanupEventSource();
 
-            const response = await runFlow(nodes, edges);
+            const current_session_id = currentSession?.user_defined_session_id;
+
+            const response = await runFlow(
+                nodes,
+                edges,
+                null,
+                'downstream',
+                current_session_id
+            );
             console.log(`${FLOW_LOG_PREFIX} Run response:`, response);
 
             const { task_id } = response;
@@ -211,6 +233,8 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
                 cleanupEventSource,
                 cleanupTimeout,
                 flowExecutionTimeout: FLOW_EXECUTION_TIMEOUT,
+                isFlowWatchEnabled,
+                nodeUpdateHandlers,
                 handlers: {
                     onFlowCompleted: async (
                         nodeType: string,
@@ -250,8 +274,11 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
         isFlowRunning,
         cleanupEventSource,
         cleanupTimeout,
+        cleanupFlowWatchEventSource,
         currentSession,
         addChatMessageMutation,
+        isFlowWatchEnabled,
+        nodeUpdateHandlers,
     ]);
 
     // ===== SESSION FETCHING LOGIC =====
@@ -359,6 +386,8 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
                         isLoading={isLoadingSessions}
                         error={sessionsError ? sessionsError.message : null}
                         flowId={flowId}
+                        isFlowWatchEnabled={isFlowWatchEnabled}
+                        onFlowWatchToggle={handleFlowWatchToggle}
                     />
 
                     {/* Chat Content */}

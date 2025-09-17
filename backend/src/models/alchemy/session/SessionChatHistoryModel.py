@@ -1,5 +1,5 @@
 # SessionChatHistoryModel.py
-from sqlalchemy import BigInteger, Column, Enum, ForeignKey, Index, String, Text
+from sqlalchemy import Column, Enum, ForeignKey, Index, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from src.models.alchemy.shared.AppBaseModel import AppBaseModel

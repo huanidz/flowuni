@@ -2,6 +2,7 @@ from typing import Any, Dict, Union
 
 from loguru import logger
 from src.consts.node_consts import NODE_LABEL_CONSTS, SPECIAL_NODE_INPUT_CONSTS
+from src.nodes.core.NodeIcon import NodeIconIconify
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.handles.basics.inputs.TextFieldInputHandle import TextFieldInputHandle
@@ -38,6 +39,7 @@ class RouterNode(Node):
             ),
         ],
         parameters=[],
+        icon=NodeIconIconify(icon_value="tabler:route-alt-right"),
     )
 
     def process(

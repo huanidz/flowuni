@@ -3,6 +3,7 @@ from typing import Any, Dict, Union
 from loguru import logger
 from pydantic import BaseModel
 from src.components.funcs.CalculatorNodeFuncs import safe_eval
+from src.nodes.core.NodeIcon import NodeIconIconify
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.handles.basics.inputs.TextFieldInputHandle import TextFieldInputHandle
@@ -35,6 +36,7 @@ class CalculatorNode(Node):
         ],
         parameters=[],
         can_be_tool=True,
+        icon=NodeIconIconify(icon_value="lucide:calculator"),
     )
 
     def process(

@@ -1,12 +1,21 @@
-from typing import Any, Dict, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Union
 
 from loguru import logger
-from src.consts.node_consts import NODE_GROUP_CONSTS
+from src.consts.node_consts import NODE_GROUP_CONSTS, NODE_TAGS_CONSTS
+from src.models.parsers.SessionChatHistoryParser import (
+    SessionChatHistoryListParser,
+    SessionChatHistoryParser,
+)
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.handles.basics.inputs.NumberInputHandle import NumberInputHandle
 from src.nodes.handles.basics.outputs.StringOutputHandle import StringOutputHandle
 from src.nodes.NodeBase import Node, NodeSpec
+
+if TYPE_CHECKING:
+    from src.models.alchemy.session.SessionChatHistoryModel import (
+        SessionChatHistoryModel,
+    )
 
 
 class MemoryNode(Node):
@@ -32,6 +41,7 @@ class MemoryNode(Node):
         parameters=[],
         can_be_tool=False,
         group=NODE_GROUP_CONSTS.AGENT,
+        tags=[NODE_TAGS_CONSTS.SESSION_ENABLED],
     )
 
     def process(
@@ -53,14 +63,24 @@ class MemoryNode(Node):
 
         session_id = self.context.session_id
 
-        messages = session_repo.get_chat_history(
+        logger.info(f"Context: {self.context.to_dict()}")
+
+        messages: List[SessionChatHistoryModel] = session_repo.get_chat_history(
             session_id=session_id,
             num_messages=recent_messages_count,
         )
 
-        logger.info(f"Retrieved {len(messages)} messages from session {session_id}")
+        chat_histories = [
+            SessionChatHistoryParser.model_validate(chat_history)
+            for chat_history in messages
+        ]
+        chat_history_list = SessionChatHistoryListParser(
+            session_id=session_id, chat_histories=chat_histories
+        )
 
-        return {"messages": "test"}
+        logger.info(f"Recent messages: {chat_history_list.model_dump_json()}")
+
+        return {"messages": chat_history_list.model_dump_json()}
 
     def build_tool(self, inputs_values: Dict[str, Any], tool_configs):
         raise NotImplementedError("Subclasses must override build_tool")

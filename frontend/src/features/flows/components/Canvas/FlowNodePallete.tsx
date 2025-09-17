@@ -1,32 +1,66 @@
 import React, { useEffect, useState, forwardRef, useMemo } from 'react';
 import { ChevronUp, ChevronDown, Search, Wrench, Disc3 } from 'lucide-react';
 import { useNodeRegistry } from '@/features/nodes';
+import type { NodeSpec } from '@/features/nodes/types';
+import { NodeIconDisplayer } from '@/features/flows/components/NodeIconDisplayer/NodeIconDisplayer';
+import { NODE_TAGS } from '@/features/nodes/consts';
 
 interface NodePaletteProps {
     onDragStart: (event: React.DragEvent, node_type: string) => void;
     searchDelay?: number; // Configurable delay in milliseconds (default: 1000ms)
 }
 
-interface NodeSpec {
-    name: string;
-    description: string;
-    group: string;
-    can_be_tool?: boolean; // Added can_be_tool property
-}
-
 // Component to display node name with icons
+
 const NodeNameWithIcons = ({
     name,
     canBeTool,
+    icon,
+    tags,
 }: {
     name: string;
     canBeTool?: boolean;
+    icon?: import('@/features/nodes/types').NodeIcon;
+    tags?: string[];
 }) => {
+    // Convert NodeIcon to NodeIconData for NodeIconDisplayer
+    const iconData = icon
+        ? {
+              icon_type: icon.icon_type as any,
+              icon_value: icon.icon_value,
+              color: icon.color,
+          }
+        : null;
+
     return (
-        <div className="flex justify-between items-center">
-            <div className="font-medium text-sm text-gray-800">{name}</div>
-            <div className="flex space-x-1">
-                {canBeTool && <Wrench size={14} className="text-gray-500" />}
+        <div className="flex justify-between items-center min-h-[20px]">
+            <div className="flex items-center gap-2">
+                {/* Node Icon */}
+                {iconData && (
+                    <div className="flex items-center justify-center w-4 h-4">
+                        <NodeIconDisplayer icon={iconData} size={16} />
+                    </div>
+                )}
+                <span className="font-medium text-sm text-gray-800 leading-none">
+                    {name}
+                </span>
+            </div>
+
+            {/* Special Icon */}
+            <div className="flex items-center">
+                {canBeTool && (
+                    <div className="flex items-center justify-center w-4 h-4">
+                        <Wrench size={14} className="text-gray-500" />
+                    </div>
+                )}
+                {
+                    // If node's tags contain "session-enabled", show Disc3 icon
+                    tags?.includes(NODE_TAGS.SESSION_ENABLED) && (
+                        <div className="flex items-center justify-center w-4 h-4">
+                            <Disc3 size={14} className="text-gray-500" />
+                        </div>
+                    )
+                }
                 {/* Additional icons can be added here in the future */}
             </div>
         </div>
@@ -80,6 +114,11 @@ const NodePalette = forwardRef<HTMLDivElement, NodePaletteProps>(
                             description: node.description || '',
                             group: group,
                             can_be_tool: node.can_be_tool || false, // Include the can_be_tool property
+                            inputs: node.inputs || [],
+                            outputs: node.outputs || [],
+                            parameters: node.parameters || [],
+                            icon: node.icon, // Include the icon property
+                            tags: node.tags,
                         });
                     });
                     setNodeGroups(groupedNodes);
@@ -150,12 +189,6 @@ const NodePalette = forwardRef<HTMLDivElement, NodePaletteProps>(
                             size={16}
                             className="absolute left-3 top-2.5 text-gray-400"
                         />
-                        {/* SPINNER (disable for now) */}
-                        {/* {searchQuery !== debouncedQuery && (
-                            <div className="absolute right-3 top-2.5">
-                                <div className="w-5 h-5 border-2 border-t-transparent border-blue-500 rounded-full animate-spin"></div>
-                            </div>
-                        )} */}
                     </div>
                 </div>
                 <div className="p-3 w-96">
@@ -199,6 +232,8 @@ const NodePalette = forwardRef<HTMLDivElement, NodePaletteProps>(
                                                 <NodeNameWithIcons
                                                     name={node.name}
                                                     canBeTool={node.can_be_tool}
+                                                    icon={node.icon}
+                                                    tags={node.tags}
                                                 />
                                                 {node.description && (
                                                     <div className="text-xs text-gray-500 leading-relaxed mt-1">

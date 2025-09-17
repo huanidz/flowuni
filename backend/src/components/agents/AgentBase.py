@@ -54,6 +54,7 @@ class Agent(ABC):
     def chat(
         self,
         message: ChatMessage,
+        prev_histories: Optional[List[ChatMessage]] = None,
         streaming: bool = False,
         max_workers: Optional[int] = None,
     ) -> ChatResponse:
@@ -67,9 +68,11 @@ class Agent(ABC):
 
         Returns:
             ChatResponse: The agent's response
-        """
+        """  # noqa
         # Setup the conversation
-        agent_response_schema, chat_messages = self._setup_agent_conversation(message)
+        agent_response_schema, chat_messages = self._setup_agent_conversation(
+            message=message, prev_histories=prev_histories
+        )
 
         # Get the agent's initial response
         agent_response = self.llm_provider.structured_completion(
@@ -136,7 +139,9 @@ class Agent(ABC):
             api_key=self.llm_provider.api_key,
         )
 
-    def _setup_agent_conversation(self, message: ChatMessage) -> tuple:
+    def _setup_agent_conversation(
+        self, message: ChatMessage, prev_histories: List[ChatMessage] = []
+    ) -> tuple:
         """
         Set up the agent for conversation by preparing system prompt and response schema.
 
@@ -145,7 +150,7 @@ class Agent(ABC):
 
         Returns:
             tuple: (agent_response_schema, chat_messages list)
-        """
+        """  # noqa
         # Step 1: Prepare the system prompt with available tools
         system_prompt = self._prepare_system_prompt()
         logger.info(f"System Prompt: {system_prompt}")
@@ -165,7 +170,10 @@ class Agent(ABC):
         )
 
         # Step 5: Start our conversation with the initial message
-        chat_messages = [message]
+        if prev_histories:
+            chat_messages = prev_histories + [message]
+        else:
+            chat_messages = [message]
 
         return agent_response_schema, chat_messages
 
@@ -224,7 +232,7 @@ class Agent(ABC):
                 messages=chat_messages, output_schema=tool_schema_model
             )
             logger.info(
-                f"🎯 LLM provided tool inputs: {tool_call_response.model_dump_json(indent=2)}"
+                f"🎯 LLM tool inputs: {tool_call_response.model_dump_json(indent=2)}"
             )
 
             processed_result = node_instance.process_tool(

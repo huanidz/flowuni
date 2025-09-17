@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import FlowCanvas from '@/features/flows/components/Canvas/FlowCanvas';
 import { useNavigate } from 'react-router-dom';
 import { CanvasHeader } from '@/features/flows/components/Canvas/CanvasHeader';
@@ -36,11 +36,11 @@ const FlowBuilderPage: React.FC = () => {
         );
     }
 
-    const onNavigateBack = () => {
+    const onNavigateBack = useCallback(() => {
         setPlaygroundOpen(false);
         navigate('/dashboard');
         setCurrentFlow(null);
-    };
+    }, [setPlaygroundOpen, navigate, setCurrentFlow]);
 
     return (
         <div className="h-screen flex flex-col">

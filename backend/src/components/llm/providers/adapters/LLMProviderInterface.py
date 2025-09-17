@@ -79,3 +79,6 @@ class LLMProviderBase(LLMProviderInterface):
 
     def get_client(self) -> Instructor:
         raise NotImplementedError("Subclass must implement this method")
+
+    def role_fix(self, chat_message: ChatMessage) -> ChatMessage:
+        raise NotImplementedError("Subclass must implement this method")

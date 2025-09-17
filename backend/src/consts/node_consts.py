@@ -26,3 +26,7 @@ class NODE_GROUP_CONSTS:
     DEFAULT = "default"
     AGENT = "agent"
     GROUP_TEST = "test"
+
+
+class NODE_TAGS_CONSTS:
+    SESSION_ENABLED = "session-enabled"

@@ -1,6 +1,5 @@
 import { watchFlowExecution } from '@/api/sse';
 import { toast } from 'sonner';
-import type { Node } from '@xyflow/react';
 
 /**
  * Creates and returns a function that handles SSE events for flow execution

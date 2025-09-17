@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Loader2 } from 'lucide-react';
+import { Plus, Loader2, Eye, EyeOff } from 'lucide-react';
 import ChatSessionItem from './ChatSessionItem';
 import {
     useCreatePlaygroundSession,
@@ -40,6 +40,8 @@ interface ChatSessionSidebarProps {
     isLoading?: boolean;
     error?: string | null;
     flowId: string;
+    isFlowWatchEnabled: boolean;
+    onFlowWatchToggle: () => Promise<void>;
 }
 
 const ChatSessionSidebar: React.FC<ChatSessionSidebarProps> = ({
@@ -48,6 +50,8 @@ const ChatSessionSidebar: React.FC<ChatSessionSidebarProps> = ({
     isLoading = false,
     error = null,
     flowId,
+    isFlowWatchEnabled,
+    onFlowWatchToggle,
 }) => {
     const createSessionMutation = useCreatePlaygroundSession();
     const [isCreating, setIsCreating] = React.useState(false);
@@ -171,22 +175,50 @@ const ChatSessionSidebar: React.FC<ChatSessionSidebarProps> = ({
             }`}
         >
             {/* Header */}
-            <div className="flex items-center justify-between p-3 border-b border-gray-200">
-                <h3 className="text-sm font-medium text-gray-700">
-                    Chat Sessions
-                </h3>
-                <button
-                    onClick={handleCreateSession}
-                    className="p-1 hover:bg-gray-200 rounded transition-colors"
-                    title="Create new session"
-                    disabled={createSessionMutation.isPending || isCreating}
-                >
-                    {isCreating || createSessionMutation.isPending ? (
-                        <Loader2 size={16} className="animate-spin" />
-                    ) : (
-                        <Plus size={16} />
-                    )}
-                </button>
+            <div className="flex flex-col space-y-2 p-3 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-medium text-gray-700">
+                        Chat Sessions
+                    </h3>
+                    <button
+                        onClick={handleCreateSession}
+                        className="p-1 hover:bg-gray-200 rounded transition-colors"
+                        title="Create new session"
+                        disabled={createSessionMutation.isPending || isCreating}
+                    >
+                        {isCreating || createSessionMutation.isPending ? (
+                            <Loader2 size={16} className="animate-spin" />
+                        ) : (
+                            <Plus size={16} />
+                        )}
+                    </button>
+                </div>
+
+                {/* Flow Watch Toggle */}
+                <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-600">
+                        Enable Flow Watch
+                    </span>
+                    <button
+                        onClick={onFlowWatchToggle}
+                        className={`p-1 rounded transition-colors ${
+                            isFlowWatchEnabled
+                                ? 'bg-blue-100 text-blue-600 hover:bg-blue-200'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                        title={
+                            isFlowWatchEnabled
+                                ? 'Disable Flow Watch'
+                                : 'Enable Flow Watch'
+                        }
+                    >
+                        {isFlowWatchEnabled ? (
+                            <Eye size={16} />
+                        ) : (
+                            <EyeOff size={16} />
+                        )}
+                    </button>
+                </div>
             </div>
 
             {/* Sessions List */}

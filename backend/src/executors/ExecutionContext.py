@@ -24,3 +24,10 @@ class ExecutionContext(BaseModel):
 
     class Config:
         arbitrary_types_allowed = True
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Custom dict method to exclude repositories and services from serialization."""
+        data = super().model_dump()
+        data.pop("repositories", None)
+        data.pop("services", None)
+        return data

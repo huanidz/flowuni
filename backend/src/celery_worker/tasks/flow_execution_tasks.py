@@ -82,7 +82,7 @@ def run_flow(
         execution_context = ExecutionContext(
             run_id=self.request.id,
             flow_id=flow_id,
-            session_id=None,
+            session_id=flow_graph_request.session_id,
             user_id=None,
             metadata={},
             repositories=repositories,
