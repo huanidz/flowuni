@@ -1,22 +1,18 @@
 import React from 'react';
 import { CardHeader } from '@/components/ui/card';
-import { X, Trash2 } from 'lucide-react';
+import { X } from 'lucide-react';
 import { chatBoxStyles } from '@/features/flows/styles/chatBoxStyles';
 
 interface ChatHeaderProps {
     isFlowRunning: boolean;
-    onClearMessages: () => void;
     onClose: () => void;
     onMouseDown: (e: React.MouseEvent) => void;
-    messagesLength: number;
 }
 
 const ChatHeader: React.FC<ChatHeaderProps> = ({
     isFlowRunning,
-    onClearMessages,
     onClose,
     onMouseDown,
-    messagesLength,
 }) => {
     return (
         <CardHeader
@@ -30,15 +26,6 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
                 </div>
             </div>
             <div style={chatBoxStyles.headerActions}>
-                <button
-                    onClick={onClearMessages}
-                    style={chatBoxStyles.iconButton}
-                    title="Clear messages"
-                    aria-label="Clear messages"
-                    disabled={messagesLength === 0}
-                >
-                    <Trash2 size={18} />
-                </button>
                 <button
                     onClick={onClose}
                     style={chatBoxStyles.iconButton}

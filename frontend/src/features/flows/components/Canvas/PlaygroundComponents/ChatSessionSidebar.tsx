@@ -84,6 +84,9 @@ const ChatSessionSidebar: React.FC<ChatSessionSidebarProps> = ({
             if (currentSession?.user_defined_session_id === sessionId) {
                 setCurrentSession(null);
                 clearChatMessages();
+            } else {
+                // Reselect the current session to avoid stale data
+                setCurrentSession(currentSession);
             }
         } catch (error) {
             console.error('Error deleting session:', error);
@@ -187,36 +190,10 @@ const ChatSessionSidebar: React.FC<ChatSessionSidebarProps> = ({
                         <Plus size={16} />
                     )}
                 </button>
-                {/* Collapse/expand button disabled but kept for future use */}
-                {/* <button
-                    onClick={onToggle}
-                    className="p-1 hover:bg-gray-200 rounded transition-colors"
-                    title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-                >
-                    {isCollapsed ? (
-                        <ChevronRight size={16} />
-                    ) : (
-                        <ChevronLeft size={16} />
-                    )}
-                </button> */}
             </div>
 
             {/* Sessions List */}
             <div className="flex-1 overflow-y-auto">
-                {/* Collapse/expand feature disabled but kept for future use */}
-                {/* {isCollapsed ? (
-                    <div className="flex flex-col items-center py-2 space-y-2">
-                        {sessions.map(session => (
-                            <div
-                                key={session.id}
-                                className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-xs text-gray-600"
-                                title={session.title}
-                            >
-                                {session.title.charAt(0).toUpperCase()}
-                            </div>
-                        ))}
-                    </div>
-                ) : ( */}
                 <div className="p-2 space-y-1">
                     {isLoading ? (
                         <div className="flex items-center justify-center py-4">

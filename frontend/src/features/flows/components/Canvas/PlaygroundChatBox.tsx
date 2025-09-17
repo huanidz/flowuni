@@ -292,15 +292,6 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
                             role: ROLE_ASSISTANT,
                             message: input_values.message_in,
                         });
-                    } else {
-                        // If no session, just add to local state
-                        addChatMessage({
-                            id: `bot-${Date.now()}`,
-                            session_id: 'temp',
-                            role: ROLE_ASSISTANT,
-                            message: input_values.message_in,
-                            created_at: new Date().toISOString(),
-                        });
                     }
                     setIsFlowRunning(false);
                     cleanupEventSource();
@@ -440,15 +431,6 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
                 role: ROLE_USER,
                 message: trimmedMessage,
             });
-        } else {
-            // If no session, just add to local state
-            addChatMessage({
-                id: `user-${Date.now()}`,
-                session_id: 'temp',
-                role: ROLE_USER,
-                message: trimmedMessage,
-                created_at: new Date().toISOString(),
-            });
         }
 
         setMessage('');
@@ -520,10 +502,8 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
                 {/* Draggable Header */}
                 <ChatHeader
                     isFlowRunning={isFlowRunning}
-                    onClearMessages={handleClearMessages}
                     onClose={onClose}
                     onMouseDown={handleMouseDown}
-                    messagesLength={transformedMessages.length}
                 />
 
                 {/* Content Area with Sidebar */}
