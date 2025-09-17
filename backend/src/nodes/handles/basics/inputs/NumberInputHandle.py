@@ -35,7 +35,11 @@ class NumberInputHandle(InputHandleTypeBase):
         return 0
 
     def to_json_schema(self) -> Dict[str, Any]:
-        schema = {"type": "number", "integer_only": self.integer_only}
+        schema = {
+            "type": "number",
+            "integer_only": self.integer_only,
+            "hide_input_field": self.hide_input_field,
+        }
         if self.min_value is not None:
             schema["min_value"] = self.min_value
         if self.max_value is not None:

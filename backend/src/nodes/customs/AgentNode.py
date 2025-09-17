@@ -15,6 +15,7 @@ from src.models.parsers.SessionChatHistoryParser import (
     SessionChatHistoryListParser,
     SessionChatHistoryParser,
 )
+from src.nodes.core.NodeIcon import NodeIconIconify
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.core.NodeParameterSpec import ParameterSpec
@@ -98,7 +99,7 @@ class AgentNode(Node):
             ),
             NodeInput(
                 name="chat_history",
-                type=TextFieldInputHandle(multiline=True),
+                type=TextFieldInputHandle(multiline=True, hide_input_field=True),
                 description="The chat history for the agent.",
                 required=False,
             ),
@@ -147,6 +148,7 @@ class AgentNode(Node):
         ],
         can_be_tool=False,
         group=NODE_GROUP_CONSTS.AGENT,
+        icon=NodeIconIconify(icon_value="mage:robot-happy"),
     )
 
     def process(self, input_values, parameter_values):

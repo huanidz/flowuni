@@ -1,3 +1,4 @@
+from src.nodes.core.NodeIcon import NodeIconIconify
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.handles.basics.inputs.TextFieldInputHandle import TextFieldInputHandle
 from src.nodes.NodeBase import Node, NodeSpec
@@ -16,6 +17,7 @@ class ChatOutput(Node):
         ],
         outputs=[],
         parameters=[],
+        icon=NodeIconIconify(icon_value="material-symbols:output"),
     )
 
     def process(self, inputs, parameters):

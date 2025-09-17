@@ -74,6 +74,10 @@ export const SidebarInputsSection: React.FC<SidebarInputsSectionProps> = ({
         const handleId = `${spec_input.name}-index:${index}`;
         const isConnected = targetHandleEdges.has(handleId);
 
+        // Check if input field should be hidden
+        const hideInputField =
+            spec_input.type_detail.defaults?.hide_input_field || false;
+
         const inputProps = {
             label: spec_input.name,
             value: effectiveValue,
@@ -84,6 +88,9 @@ export const SidebarInputsSection: React.FC<SidebarInputsSectionProps> = ({
             disabled: isWholeAsToolMode || isConnected,
             isSidebar: true, // Flag to indicate this is being used in the sidebar
         };
+
+        // Don't show the toggle button if input field is hidden
+        const showToggleButton = hasInputComponent && !hideInputField;
 
         return (
             <div key={`input-${index}`} style={sidebarStyles.inputItem}>
@@ -101,7 +108,7 @@ export const SidebarInputsSection: React.FC<SidebarInputsSectionProps> = ({
                             }
                         />
                     </div>
-                    {hasInputComponent && (
+                    {showToggleButton && (
                         <button
                             onClick={() => toggleInputExpanded(spec_input.name)}
                             style={sidebarStyles.toggleButton}
@@ -119,7 +126,7 @@ export const SidebarInputsSection: React.FC<SidebarInputsSectionProps> = ({
                     )}
                 </div>
 
-                {hasInputComponent && isExpanded && (
+                {hasInputComponent && isExpanded && !hideInputField && (
                     <div style={sidebarStyles.inputComponent}>
                         <InputComponent {...inputProps} />
                     </div>

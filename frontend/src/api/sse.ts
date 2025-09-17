@@ -10,7 +10,7 @@ export const watchFlowExecution = (
     onDone?: () => void,
     onError?: (err: Event) => void
 ) => {
-    const token = sessionStorage.getItem(ACCESS_TOKEN_KEY);
+    const token = localStorage.getItem(ACCESS_TOKEN_KEY);
 
     // Construct URL with token in query params (SSE doesn't support Authorization headers)
     const url = new URL(`${baseURL}/exec/stream/${taskId}`);

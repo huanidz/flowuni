@@ -17,6 +17,7 @@ class InputHandleTypeBase(BaseModel, ABC):
     load_on_init: bool = False
     reload_on_change: bool = False
     hidden: bool = False
+    hide_input_field: bool = False  # Hide the input field in the node UI
 
     class Config:
         arbitrary_types_allowed = True

@@ -6,6 +6,7 @@ from src.models.parsers.SessionChatHistoryParser import (
     SessionChatHistoryListParser,
     SessionChatHistoryParser,
 )
+from src.nodes.core.NodeIcon import NodeIconIconify
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.handles.basics.inputs.NumberInputHandle import NumberInputHandle
@@ -42,6 +43,7 @@ class MemoryNode(Node):
         can_be_tool=False,
         group=NODE_GROUP_CONSTS.AGENT,
         tags=[NODE_TAGS_CONSTS.SESSION_ENABLED],
+        icon=NodeIconIconify(icon_value="material-symbols:memory"),
     )
 
     def process(
