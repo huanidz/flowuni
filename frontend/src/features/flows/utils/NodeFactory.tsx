@@ -25,7 +25,7 @@ import { NODE_DATA_MODE } from '../consts';
 import { InputsSection } from '../components/NodeSections/InputsSection';
 import { ParametersSection } from '../components/NodeSections/ParametersSection';
 import { OutputsSection } from '../components/NodeSections/OutputsSection';
-import { NodeExecutionResult } from '../components/NodeSections/NodeExecutionResult';
+import { NodeExecutionResultV2 } from '../components/NodeSections/NodeExecutionResultV2';
 import { NodeHeader } from '../components/NodeSections/NodeHeader';
 
 // Styles
@@ -91,6 +91,8 @@ class NodeFactoryClass {
                 ? (newMode: string) => updateNodeModeData(id, newMode)
                 : undefined;
 
+            console.log('data.execution_status: ', data.execution_status);
+
             // === Render Node UI ===
             return (
                 <div style={nodeStyles.container} key={id}>
@@ -135,7 +137,7 @@ class NodeFactoryClass {
                     />
 
                     {/* Node Execution Result */}
-                    <NodeExecutionResult
+                    <NodeExecutionResultV2
                         result={data.execution_result}
                         status={data.execution_status}
                     />

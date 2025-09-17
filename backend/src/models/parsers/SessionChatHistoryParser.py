@@ -22,7 +22,7 @@ class SessionChatHistoryParser(BaseModel):
 class SessionChatHistoryListParser(BaseModel):
     """Parser for session chat history."""
 
-    session_id: str
+    session_id: Optional[str] = None
     chat_histories: List[SessionChatHistoryParser] = []
 
     class Config:

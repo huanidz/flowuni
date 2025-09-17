@@ -65,6 +65,15 @@ class MemoryNode(Node):
 
         session_id = self.context.session_id
 
+        # If no session_id, construct a dummy chat_history_list and return empty messages
+        if not session_id:
+            logger.warning("No session_id found in context. Returning empty messages.")
+            empty_chat_history_list = SessionChatHistoryListParser(
+                session_id=None,
+                chat_histories=[],
+            )
+            return {"messages": empty_chat_history_list.model_dump_json()}
+
         logger.info(f"Context: {self.context.to_dict()}")
 
         messages: List[SessionChatHistoryModel] = session_repo.get_chat_history(

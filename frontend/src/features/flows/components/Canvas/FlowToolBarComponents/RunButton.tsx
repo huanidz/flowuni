@@ -20,6 +20,7 @@ import {
 
 interface RunButtonProps {
     onRun: () => void;
+    onResetExecutionData: () => void;
     onRunFromSelected: () => void;
     onRunSelectedOnly: () => void;
     isDropdownOpen: boolean;
@@ -28,6 +29,7 @@ interface RunButtonProps {
 
 const RunButton: React.FC<RunButtonProps> = ({
     onRun,
+    onResetExecutionData,
     onRunFromSelected,
     onRunSelectedOnly,
     isDropdownOpen,
@@ -36,7 +38,10 @@ const RunButton: React.FC<RunButtonProps> = ({
     return (
         <div style={splitRunButtonContainer}>
             <button
-                onClick={onRun}
+                onClick={() => {
+                    onResetExecutionData();
+                    onRun();
+                }}
                 style={runButton}
                 onMouseEnter={e => {
                     e.currentTarget.style.backgroundColor =

@@ -62,6 +62,7 @@ const FlowToolbar: React.FC<FlowToolbarProps> = ({
             <div style={toolbarWrapper}>
                 <RunButton
                     onRun={onRun}
+                    onResetExecutionData={onResetExecutionData}
                     onRunFromSelected={onRunFromSelected}
                     onRunSelectedOnly={onRunSelectedOnly}
                     isDropdownOpen={isRunDropdownOpen}
