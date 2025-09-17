@@ -202,6 +202,8 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
                     onResetExecutionData={onResetExecutionData}
                     onSave={onSaveFlow}
                     onPlayground={handlePlaygroundClick}
+                    nodes={currentNodes}
+                    edges={currentEdges}
                 />
 
                 <ReactFlow

@@ -54,7 +54,7 @@ const FlowPage: React.FC = () => {
                     onClick={handleCreateFlow}
                     className="bg-gradient-to-r from-purple-500 to-blue-500 text-white active:scale-95 transform transition-transform duration-150"
                 >
-                    + Tạo Flow mới
+                    + Create
                 </Button>
             </div>
 
