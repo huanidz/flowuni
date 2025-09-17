@@ -7,7 +7,7 @@ import {
 } from '@/features/playground/hooks';
 import { usePlaygroundStore } from '@/features/playground/stores';
 import type { CreatePlaygroundSessionRequest } from '@/features/playground/types';
-
+import { useDeletePlaygroundSession } from '@/features/playground/hooks';
 // Add CSS animation styles
 const zoomAnimationStyles = `
   @keyframes zoomInOut {
@@ -36,9 +36,7 @@ interface ChatSession {
 
 interface ChatSessionSidebarProps {
     isCollapsed: boolean;
-    onToggle: () => void;
     sessions: ChatSession[];
-    onDeleteSession: (id: string) => Promise<void>;
     isLoading?: boolean;
     error?: string | null;
     flowId: string;
@@ -46,9 +44,7 @@ interface ChatSessionSidebarProps {
 
 const ChatSessionSidebar: React.FC<ChatSessionSidebarProps> = ({
     isCollapsed,
-    onToggle,
     sessions,
-    onDeleteSession,
     isLoading = false,
     error = null,
     flowId,
@@ -75,10 +71,11 @@ const ChatSessionSidebar: React.FC<ChatSessionSidebarProps> = ({
             50 // Number of messages to fetch
         );
 
+    const deleteSessionMutation = useDeletePlaygroundSession();
     // Handle session deletion with current session check
     const handleDeleteSession = async (sessionId: string) => {
         try {
-            await onDeleteSession(sessionId);
+            await deleteSessionMutation.mutateAsync(sessionId);
 
             // If the deleted session is the current session, clear it from state
             if (currentSession?.user_defined_session_id === sessionId) {

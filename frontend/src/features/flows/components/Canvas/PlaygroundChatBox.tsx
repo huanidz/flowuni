@@ -3,7 +3,6 @@ import { Card } from '@/components/ui/card';
 import { useNodes, useEdges } from '@xyflow/react';
 import type { PlaygroundChatBoxPosition, PGMessage } from '../../types';
 import { runFlow } from '../../api';
-import { watchFlowExecution } from '@/api/sse';
 import { NODE_EXECUTION_STATE } from '../../consts';
 import type { GetPlaygroundSessionsRequest } from '@/features/playground/types';
 import {
@@ -12,6 +11,7 @@ import {
     useAddChatMessage,
 } from '@/features/playground/hooks';
 import { usePlaygroundStore } from '@/features/playground/stores';
+import { executeFlowWithSSE } from '@/features/playground/sse';
 
 // Extracted components
 import ChatHeader from './PlaygroundComponents/ChatHeader';
@@ -235,74 +235,6 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [transformedMessages]);
 
-    // ===== SSE LOGIC =====
-    const parseSSEMessage = useCallback((message: string) => {
-        try {
-            const parsed = JSON.parse(message);
-            console.log(`${SSE_LOG_PREFIX} Parsed message:`, parsed);
-            return parsed;
-        } catch (error) {
-            console.error(
-                `${SSE_LOG_PREFIX} Failed to parse message:`,
-                error,
-                'Raw message:',
-                message
-            );
-            return null;
-        }
-    }, []);
-
-    const handleSSEData = useCallback(
-        (parsed: any) => {
-            if (!parsed) {
-                console.warn(`${SSE_LOG_PREFIX} No parsed message`);
-                return;
-            }
-
-            const { event, data } = parsed;
-
-            // Handle failed events
-            if (event === 'failed' && data?.error) {
-                console.error(
-                    `${SSE_LOG_PREFIX} Flow execution failed:`,
-                    data.error
-                );
-
-                cleanupTimeout();
-                setIsFlowRunning(false);
-                setFlowError(data.error);
-                cleanupEventSource();
-                return;
-            }
-
-            // Handle successful events
-            if (event === NODE_EXECUTION_STATE.COMPLETED && data) {
-                const { node_type, input_values } = data;
-
-                if (
-                    node_type === CHAT_OUTPUT_NODE_TYPE &&
-                    input_values?.message_in
-                ) {
-                    cleanupTimeout();
-
-                    // Add to store
-                    if (currentSession) {
-                        addChatMessageMutation.mutateAsync({
-                            session_id: currentSession.user_defined_session_id,
-                            role: ROLE_ASSISTANT,
-                            message: input_values.message_in,
-                        });
-                    }
-                    setIsFlowRunning(false);
-                    cleanupEventSource();
-                }
-
-                console.log(`${SSE_LOG_PREFIX} Processed node:`, node_type);
-            }
-        },
-        [cleanupTimeout, cleanupEventSource]
-    );
-
     // ===== FLOW EXECUTION LOGIC =====
     const executeFlow = useCallback(async () => {
         if (isFlowRunning) {
@@ -324,38 +256,40 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
                 throw new Error(NO_TASK_ID_ERROR);
             }
 
-            // Watch flow execution via SSE
-            eventSourceRef.current = watchFlowExecution(task_id, message => {
-                const parsed = parseSSEMessage(message);
-                if (parsed) {
-                    handleSSEData(parsed);
-                }
+            // Execute flow with SSE monitoring
+            const { eventSource, timeoutId } = executeFlowWithSSE({
+                taskId: task_id,
+                onFlowRunningChange: setIsFlowRunning,
+                onFlowErrorChange: setFlowError,
+                cleanupEventSource,
+                cleanupTimeout,
+                flowExecutionTimeout: FLOW_EXECUTION_TIMEOUT,
+                handlers: {
+                    onFlowCompleted: async (
+                        nodeType: string,
+                        inputValues: any
+                    ) => {
+                        if (
+                            nodeType === CHAT_OUTPUT_NODE_TYPE &&
+                            inputValues?.message_in
+                        ) {
+                            // Add to store
+                            if (currentSession) {
+                                await addChatMessageMutation.mutateAsync({
+                                    session_id:
+                                        currentSession.user_defined_session_id,
+                                    role: ROLE_ASSISTANT,
+                                    message: inputValues.message_in,
+                                });
+                            }
+                        }
+                    },
+                },
             });
 
-            // Set a timeout to handle cases where we don't get a response
-            flowTimeoutRef.current = setTimeout(() => {
-                console.warn(`${FLOW_LOG_PREFIX} Timeout waiting for response`);
-                setFlowError(FLOW_TIMEOUT_ERROR);
-                setIsFlowRunning(false);
-                cleanupEventSource();
-            }, FLOW_EXECUTION_TIMEOUT);
-
-            // Handle SSE connection errors
-            if (eventSourceRef.current) {
-                eventSourceRef.current.onerror = error => {
-                    console.error(`${SSE_LOG_PREFIX} Connection error:`, error);
-                    setFlowError(CONNECTION_ERROR);
-                    setIsFlowRunning(false);
-                    cleanupTimeout();
-                    cleanupEventSource();
-                };
-
-                eventSourceRef.current.close = () => {
-                    console.log(`${SSE_LOG_PREFIX} Connection closed`);
-                    // Don't automatically set running to false here
-                    // Let the timeout or successful response handle it
-                };
-            }
+            // Store references for cleanup
+            eventSourceRef.current = eventSource;
+            flowTimeoutRef.current = timeoutId;
         } catch (error) {
             console.error(`${FLOW_LOG_PREFIX} Error running flow:`, error);
             setFlowError(
@@ -367,10 +301,10 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
         nodes,
         edges,
         isFlowRunning,
-        parseSSEMessage,
-        handleSSEData,
         cleanupEventSource,
         cleanupTimeout,
+        currentSession,
+        addChatMessageMutation,
     ]);
 
     // ===== SESSION FETCHING LOGIC =====
@@ -382,43 +316,6 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
             lastMessage: session.last_message,
             timestamp: new Date(session.timestamp),
         })) || [];
-
-    // ===== MESSAGE HANDLING LOGIC =====
-    const handleClearMessages = useCallback(() => {
-        clearChatMessages();
-        setFlowError(null);
-    }, [clearChatMessages]);
-
-    // ===== SIDEBAR LOGIC =====
-    // Collapse/expand feature disabled but kept for future use
-    const handleToggleSidebar = useCallback(() => {
-        // setIsSidebarCollapsed(prev => !prev);
-        console.log('Collapse/expand feature disabled');
-    }, []);
-
-    // Add the delete session mutation hook
-    const deleteSessionMutation = useDeletePlaygroundSession();
-
-    const handleDeleteSession = useCallback(
-        async (id: string) => {
-            try {
-                await deleteSessionMutation.mutateAsync(id);
-                // If the deleted session is the current session, clear it from state
-                if (currentSession?.user_defined_session_id === id) {
-                    setCurrentSession(null);
-                    clearChatMessages();
-                }
-            } catch (error) {
-                console.error('Error deleting session:', error);
-            }
-        },
-        [
-            deleteSessionMutation,
-            currentSession,
-            setCurrentSession,
-            clearChatMessages,
-        ]
-    );
 
     const handleSendMessage = useCallback(async () => {
         const trimmedMessage = message.trim();
@@ -511,9 +408,7 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
                     {/* Sidebar */}
                     <ChatSessionSidebar
                         isCollapsed={isSidebarCollapsed}
-                        onToggle={handleToggleSidebar}
                         sessions={transformedSessions}
-                        onDeleteSession={handleDeleteSession}
                         isLoading={isLoadingSessions}
                         error={sessionsError ? sessionsError.message : null}
                         flowId={flowId}
