@@ -2,6 +2,10 @@ import React, { useState } from 'react';
 import { MoreVertical } from 'lucide-react';
 import { nodeStyles } from '@/features/flows/styles/nodeStyles';
 import { getStatusBadgeStyles } from '@/features/flows/styles/nodeExecutionStatusHelper';
+import {
+    NodeIconDisplayer,
+    type NodeIconData,
+} from '@/features/flows/components/NodeIconDisplayer/NodeIconDisplayer';
 
 interface NodeHeaderProps {
     label: string;
@@ -11,6 +15,7 @@ interface NodeHeaderProps {
     canBeTool?: boolean;
     nodeId?: string;
     execution_status?: string;
+    icon?: NodeIconData;
 }
 
 export const NodeHeader: React.FC<NodeHeaderProps> = ({
@@ -21,6 +26,7 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
     canBeTool,
     nodeId,
     execution_status,
+    icon,
 }) => {
     const [showActionsMenu, setShowActionsMenu] = useState(false);
 
@@ -95,7 +101,20 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
 
             <div style={nodeStyles.headerContent}>
                 <div style={nodeStyles.headerLabel} title={label}>
-                    {label}
+                    {icon && (
+                        <span
+                            style={{
+                                marginRight: '8px',
+                                display: 'flex',
+                                alignItems: 'center',
+                            }}
+                        >
+                            <div style={{ marginRight: '4px' }}>
+                                <NodeIconDisplayer icon={icon} size={18} />
+                            </div>
+                            {label}
+                        </span>
+                    )}
                 </div>
                 <div style={nodeStyles.headerControls}>
                     {canBeTool && onModeChange && (

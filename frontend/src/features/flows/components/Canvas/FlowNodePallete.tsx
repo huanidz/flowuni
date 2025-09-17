@@ -10,6 +10,7 @@ interface NodePaletteProps {
 }
 
 // Component to display node name with icons
+
 const NodeNameWithIcons = ({
     name,
     canBeTool,
@@ -29,22 +30,26 @@ const NodeNameWithIcons = ({
         : null;
 
     return (
-        <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-2">
+        <div className="flex justify-between items-center min-h-[20px]">
+            <div className="flex items-center gap-2">
                 {/* Node Icon */}
                 {iconData && (
-                    <NodeIconDisplayer
-                        icon={iconData}
-                        size={16}
-                        className="flex-shrink-0"
-                    />
+                    <div className="flex items-center justify-center w-4 h-4">
+                        <NodeIconDisplayer icon={iconData} size={16} />
+                    </div>
                 )}
-                <div className="font-medium text-sm text-gray-800">{name}</div>
+                <span className="font-medium text-sm text-gray-800 leading-none">
+                    {name}
+                </span>
             </div>
 
             {/* Special Icon */}
-            <div className="flex space-x-1">
-                {canBeTool && <Wrench size={14} className="text-gray-500" />}
+            <div className="flex items-center">
+                {canBeTool && (
+                    <div className="flex items-center justify-center w-4 h-4">
+                        <Wrench size={14} className="text-gray-500" />
+                    </div>
+                )}
                 {/* Additional icons can be added here in the future */}
             </div>
         </div>
