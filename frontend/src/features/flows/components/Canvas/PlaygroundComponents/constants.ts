@@ -4,7 +4,6 @@ export const CHAT_BOX_HEIGHT = 500; // h-[500px]
 
 // Positioning constants
 export const CHAT_BOX_MARGIN = 16;
-export const CHAT_BOX_Z_INDEX = 1001;
 
 // Timeout constants
 export const FLOW_EXECUTION_TIMEOUT = 30000; // 30 seconds

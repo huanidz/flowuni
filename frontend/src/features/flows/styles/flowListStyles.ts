@@ -99,6 +99,7 @@ export const flowListStyles = {
         fontSize: '12px',
         minWidth: '32px',
         height: '32px',
+        backgroundColor: '#f1f5f9',
     },
 };
 
