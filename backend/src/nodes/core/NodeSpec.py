@@ -2,6 +2,7 @@ from typing import List
 
 from pydantic import BaseModel, Field, model_validator
 from src.consts.node_consts import NODE_GROUP_CONSTS
+from src.nodes.core.NodeIcon import NodeIcon
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.core.NodeParameterSpec import ParameterSpec
@@ -25,6 +26,10 @@ class NodeSpec(BaseModel):
     group: str = Field(
         default=NODE_GROUP_CONSTS.DEFAULT,
         description="Node's group. This will be used to group nodes in the UI.",
+    )
+    icon: NodeIcon = Field(
+        default=None,
+        description="Node icon specification (e.g. emoji, fontawesome, svg)",
     )
 
     # --- Validators ---

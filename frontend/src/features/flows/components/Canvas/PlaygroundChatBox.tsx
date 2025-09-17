@@ -107,8 +107,6 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
         }));
     }, [chatMessages]);
 
-    console.log('transformedMessages: ', transformedMessages);
-
     // Refs
     const chatBoxRef = useRef<HTMLDivElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
