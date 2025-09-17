@@ -121,6 +121,8 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
         onRunFlowFromSelectedNode,
         onRunSelectedOnly,
         onClearFlow,
+        onResetAllData,
+        onResetExecutionData,
         onSaveFlow,
         onPlaygroundFlow,
     } = useFlowActions(
@@ -196,6 +198,8 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
                     onRunFromSelected={onRunFlowFromSelectedNode}
                     onRunSelectedOnly={onRunSelectedOnly}
                     onClear={onClearFlow}
+                    onResetAllData={onResetAllData}
+                    onResetExecutionData={onResetExecutionData}
                     onSave={onSaveFlow}
                     onPlayground={handlePlaygroundClick}
                 />
