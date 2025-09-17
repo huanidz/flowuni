@@ -91,6 +91,10 @@ const ChatSessionSidebar: React.FC<ChatSessionSidebarProps> = ({
     };
 
     const handleSessionClick = async (session: ChatSession) => {
+        // Check if this is the same as the current session
+        const isSameSession =
+            currentSession?.user_defined_session_id === session.id;
+
         // Set the current session in the store
         setCurrentSession({
             user_defined_session_id: session.id,
@@ -103,9 +107,12 @@ const ChatSessionSidebar: React.FC<ChatSessionSidebarProps> = ({
             modified_at: session.timestamp.toISOString(),
         });
 
-        // Clear existing chat messages
-        setChatMessages([]);
-        setIsLoadingChat(true);
+        // Only clear messages and set loading state if it's a different session
+        if (!isSameSession) {
+            // Clear existing chat messages
+            setChatMessages([]);
+            setIsLoadingChat(true);
+        }
     };
 
     // Effect to update chat messages when chat history data changes
