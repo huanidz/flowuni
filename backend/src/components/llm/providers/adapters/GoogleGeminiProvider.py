@@ -84,6 +84,9 @@ class GoogleGeminiProvider(LLMProviderBase):
     def structured_completion(self, messages: List[ChatMessage], output_schema):
         llm_client: instructor.Instructor = self.get_client()
 
+        # Fix roles in messages
+        messages = [self.role_fix(msg) for msg in messages]
+
         constructed_messages = []
 
         constructed_messages.append(
@@ -140,3 +143,17 @@ class GoogleGeminiProvider(LLMProviderBase):
             system_instruction=self.system_prompt,
             thinking_config=thinking_config,
         )
+
+    def role_fix(self, chat_message: ChatMessage) -> ChatMessage:
+        if chat_message.role == "assistant":
+            chat_message.role = self.roles.ASSISTANT
+        elif chat_message.role == "model":
+            chat_message.role = self.roles.ASSISTANT
+        elif chat_message.role == "user":
+            chat_message.role = self.roles.USER
+        elif chat_message.role == "system":
+            chat_message.role = self.roles.SYSTEM
+        else:
+            logger.warning(f"Unknown role '{chat_message.role}', defaulting to 'user'")
+            chat_message.role = self.roles.USER
+        return chat_message

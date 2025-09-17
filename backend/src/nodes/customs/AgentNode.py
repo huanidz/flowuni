@@ -1,5 +1,7 @@
 import json
+from typing import Any, Dict, List, Union
 
+from loguru import logger
 from src.components.agents.AgentBase import Agent
 from src.components.llm.models.core import (
     ChatMessage,
@@ -9,6 +11,10 @@ from src.components.llm.providers.adapters.LLMProviderInterface import LLMProvid
 from src.components.llm.providers.LLMProviderConsts import LLMProviderName
 from src.components.llm.providers.LLMProviderFactory import LLMProviderFactory
 from src.consts.node_consts import NODE_GROUP_CONSTS
+from src.models.parsers.SessionChatHistoryParser import (
+    SessionChatHistoryListParser,
+    SessionChatHistoryParser,
+)
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.core.NodeParameterSpec import ParameterSpec
@@ -144,13 +150,19 @@ class AgentNode(Node):
     )
 
     def process(self, input_values, parameter_values):
-        from loguru import logger
-
         provider = input_values["provider"]
         model = input_values["model"]
         api_key = input_values["API Key"]
         system_prompt = input_values["system_instruction"]
         input_message = input_values["input_message"]
+
+        chat_history = input_values.get("chat_history", None)
+        prev_histories: List[ChatMessage] = []
+        if chat_history:
+            chat_history_list = SessionChatHistoryListParser.model_validate_json(
+                chat_history
+            )
+            prev_histories: List[ChatMessage] = chat_history_list.to_chat_messages()
 
         tools = []
         tools_value = input_values["tools"]
@@ -159,8 +171,6 @@ class AgentNode(Node):
         else:
             tools = json.loads(input_values["tools"])
             tools = [ToolDataParser(**tool) for tool in tools]
-
-        logger.info(f"👉 tools: {tools}")
 
         llm_provider: LLMProviderBase = LLMProviderFactory.get_provider(
             provider_name=provider
@@ -177,7 +187,9 @@ class AgentNode(Node):
         )
 
         chat_message = ChatMessage(role="user", content=input_message)
-        chat_response: ChatResponse = agent.chat(message=chat_message)
+        chat_response: ChatResponse = agent.chat(
+            message=chat_message, prev_histories=prev_histories
+        )
 
         return {"response": chat_response.content}
 

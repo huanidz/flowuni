@@ -78,7 +78,8 @@ export const runFlow = async (
     nodes: Node[],
     edges: Edge[],
     startNode: string | null = null,
-    scope: 'node_only' | 'downstream' = 'downstream'
+    scope: 'node_only' | 'downstream' = 'downstream',
+    sessionId: string | null = null
 ) => {
     const payload = getFlowGraphData(nodes, edges);
 
@@ -91,6 +92,10 @@ export const runFlow = async (
     if (startNode) {
         requestPayload.start_node = startNode;
         requestPayload.scope = scope;
+    }
+
+    if (sessionId) {
+        requestPayload.session_id = sessionId;
     }
 
     console.log('Run Flow payload: ', requestPayload);

@@ -193,7 +193,15 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
         try {
             cleanupEventSource();
 
-            const response = await runFlow(nodes, edges);
+            const current_session_id = currentSession?.user_defined_session_id;
+
+            const response = await runFlow(
+                nodes,
+                edges,
+                null,
+                'downstream',
+                current_session_id
+            );
             console.log(`${FLOW_LOG_PREFIX} Run response:`, response);
 
             const { task_id } = response;
