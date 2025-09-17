@@ -7,7 +7,7 @@ import {
 } from '@/features/playground/hooks';
 import { usePlaygroundStore } from '@/features/playground/stores';
 import type { CreatePlaygroundSessionRequest } from '@/features/playground/types';
-
+import { useDeletePlaygroundSession } from '@/features/playground/hooks';
 // Add CSS animation styles
 const zoomAnimationStyles = `
   @keyframes zoomInOut {
@@ -36,9 +36,7 @@ interface ChatSession {
 
 interface ChatSessionSidebarProps {
     isCollapsed: boolean;
-    onToggle: () => void;
     sessions: ChatSession[];
-    onDeleteSession: (id: string) => Promise<void>;
     isLoading?: boolean;
     error?: string | null;
     flowId: string;
@@ -46,9 +44,7 @@ interface ChatSessionSidebarProps {
 
 const ChatSessionSidebar: React.FC<ChatSessionSidebarProps> = ({
     isCollapsed,
-    onToggle,
     sessions,
-    onDeleteSession,
     isLoading = false,
     error = null,
     flowId,
@@ -75,15 +71,19 @@ const ChatSessionSidebar: React.FC<ChatSessionSidebarProps> = ({
             50 // Number of messages to fetch
         );
 
+    const deleteSessionMutation = useDeletePlaygroundSession();
     // Handle session deletion with current session check
     const handleDeleteSession = async (sessionId: string) => {
         try {
-            await onDeleteSession(sessionId);
+            await deleteSessionMutation.mutateAsync(sessionId);
 
             // If the deleted session is the current session, clear it from state
             if (currentSession?.user_defined_session_id === sessionId) {
                 setCurrentSession(null);
                 clearChatMessages();
+            } else {
+                // Reselect the current session to avoid stale data
+                setCurrentSession(currentSession);
             }
         } catch (error) {
             console.error('Error deleting session:', error);
@@ -91,6 +91,10 @@ const ChatSessionSidebar: React.FC<ChatSessionSidebarProps> = ({
     };
 
     const handleSessionClick = async (session: ChatSession) => {
+        // Check if this is the same as the current session
+        const isSameSession =
+            currentSession?.user_defined_session_id === session.id;
+
         // Set the current session in the store
         setCurrentSession({
             user_defined_session_id: session.id,
@@ -103,9 +107,12 @@ const ChatSessionSidebar: React.FC<ChatSessionSidebarProps> = ({
             modified_at: session.timestamp.toISOString(),
         });
 
-        // Clear existing chat messages
-        setChatMessages([]);
-        setIsLoadingChat(true);
+        // Only clear messages and set loading state if it's a different session
+        if (!isSameSession) {
+            // Clear existing chat messages
+            setChatMessages([]);
+            setIsLoadingChat(true);
+        }
     };
 
     // Effect to update chat messages when chat history data changes
@@ -180,36 +187,10 @@ const ChatSessionSidebar: React.FC<ChatSessionSidebarProps> = ({
                         <Plus size={16} />
                     )}
                 </button>
-                {/* Collapse/expand button disabled but kept for future use */}
-                {/* <button
-                    onClick={onToggle}
-                    className="p-1 hover:bg-gray-200 rounded transition-colors"
-                    title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-                >
-                    {isCollapsed ? (
-                        <ChevronRight size={16} />
-                    ) : (
-                        <ChevronLeft size={16} />
-                    )}
-                </button> */}
             </div>
 
             {/* Sessions List */}
             <div className="flex-1 overflow-y-auto">
-                {/* Collapse/expand feature disabled but kept for future use */}
-                {/* {isCollapsed ? (
-                    <div className="flex flex-col items-center py-2 space-y-2">
-                        {sessions.map(session => (
-                            <div
-                                key={session.id}
-                                className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-xs text-gray-600"
-                                title={session.title}
-                            >
-                                {session.title.charAt(0).toUpperCase()}
-                            </div>
-                        ))}
-                    </div>
-                ) : ( */}
                 <div className="p-2 space-y-1">
                     {isLoading ? (
                         <div className="flex items-center justify-center py-4">
