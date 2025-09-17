@@ -225,12 +225,12 @@ export const NodeConfigSidebar: React.FC<NodeConfigSidebarProps> = ({
           {renderOutputsSection()}
         </SidebarSection> */}
 
-                <SidebarSection
+                {/* <SidebarSection
                     title="Execution Results"
                     defaultCollapsed={true}
                 >
                     {renderExecutionResultsSection()}
-                </SidebarSection>
+                </SidebarSection> */}
             </div>
         </div>
     );

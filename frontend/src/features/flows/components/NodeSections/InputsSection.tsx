@@ -66,6 +66,9 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
         const inputType = spec_input.type_detail.type;
         const isHidden =
             (spec_input.type_detail as any)?.defaults?.hidden ?? false;
+        const hideInputField =
+            (spec_input.type_detail as any)?.defaults?.hide_input_field ??
+            false;
         const defaultVisibility =
             INPUT_TYPE_DEFAULT_COLLAPSE[inputType] ?? true;
         const [showInputComponent, setShowInputComponent] =
@@ -95,6 +98,9 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
             setShowInputComponent(!showInputComponent);
         };
 
+        // Don't show the toggle button if input field is hidden
+        const showToggleButton = hasInputComponent && !hideInputField;
+
         return (
             <div
                 key={`input-${index}`}
@@ -110,7 +116,7 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
                             allow_multiple_incoming_edges
                         }
                     />
-                    {hasInputComponent && (
+                    {showToggleButton && (
                         <button
                             onClick={toggleInputComponent}
                             style={nodeInputSectionStyles.toggleButton}
@@ -138,7 +144,7 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
                     />
                 )}
 
-                {hasInputComponent && showInputComponent && (
+                {hasInputComponent && showInputComponent && !hideInputField && (
                     <div style={nodeStyles.inputComponent}>
                         <InputComponent {...inputProps} />
                     </div>

@@ -6,6 +6,7 @@ from src.models.parsers.SessionChatHistoryParser import (
     SessionChatHistoryListParser,
     SessionChatHistoryParser,
 )
+from src.nodes.core.NodeIcon import NodeIconIconify
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.handles.basics.inputs.NumberInputHandle import NumberInputHandle
@@ -42,6 +43,7 @@ class MemoryNode(Node):
         can_be_tool=False,
         group=NODE_GROUP_CONSTS.AGENT,
         tags=[NODE_TAGS_CONSTS.SESSION_ENABLED],
+        icon=NodeIconIconify(icon_value="material-symbols:memory"),
     )
 
     def process(
@@ -62,6 +64,15 @@ class MemoryNode(Node):
         session_repo = self.context.repositories.session_repository
 
         session_id = self.context.session_id
+
+        # If no session_id, construct a dummy chat_history_list and return empty messages
+        if not session_id:
+            logger.warning("No session_id found in context. Returning empty messages.")
+            empty_chat_history_list = SessionChatHistoryListParser(
+                session_id=None,
+                chat_histories=[],
+            )
+            return {"messages": empty_chat_history_list.model_dump_json()}
 
         logger.info(f"Context: {self.context.to_dict()}")
 

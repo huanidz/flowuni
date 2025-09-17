@@ -12,6 +12,8 @@ import type {
     GetFlowDetailResponse,
     SaveFlowParams,
     SaveFlowResponse,
+    CreateFlowWithDataRequest,
+    CreateFlowWithDataResponse,
 } from './types';
 import { getFlowGraphData } from './utils';
 import type { Node, Edge } from '@xyflow/react';
@@ -29,6 +31,17 @@ export const getFlows = async ({
 
 export const createEmtpyFlow = async (): Promise<CreateFlowResponse> => {
     const { data } = await apiClient.post(FLOWS_ENDPOINT);
+
+    return data;
+};
+
+export const createFlowWithData = async (
+    request: CreateFlowWithDataRequest
+): Promise<CreateFlowWithDataResponse> => {
+    const { data } = await apiClient.post(
+        `${FLOWS_ENDPOINT}/with-data`,
+        request
+    );
 
     return data;
 };

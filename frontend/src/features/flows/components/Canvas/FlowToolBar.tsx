@@ -3,6 +3,7 @@ import {
     toolbarContainer,
     toolbarWrapper,
     rightAlignedButtonsContainer,
+    secondRowContainer,
 } from '@/features/flows/styles/flowToolBarStyles';
 import RunButton from './FlowToolBarComponents/RunButton';
 import CompileButton from './FlowToolBarComponents/CompileButton';
@@ -10,6 +11,8 @@ import SaveButton from './FlowToolBarComponents/SaveButton';
 import PlaygroundButton from './FlowToolBarComponents/PlaygroundButton';
 import ClearButton from './FlowToolBarComponents/ClearButton';
 import ResetDataButton from './FlowToolBarComponents/ResetDataButton';
+import ExportButton from './FlowToolBarComponents/ExportButton';
+import type { Node, Edge } from '@xyflow/react';
 
 interface FlowToolbarProps {
     onRun: () => void;
@@ -21,6 +24,8 @@ interface FlowToolbarProps {
     onCompile: () => void;
     onSave: () => void;
     onPlayground: () => void;
+    nodes: Node[];
+    edges: Edge[];
 }
 
 const FlowToolbar: React.FC<FlowToolbarProps> = ({
@@ -33,6 +38,8 @@ const FlowToolbar: React.FC<FlowToolbarProps> = ({
     onCompile,
     onSave,
     onPlayground,
+    nodes,
+    edges,
 }) => {
     const [isRunDropdownOpen, setIsRunDropdownOpen] = useState(false);
 
@@ -62,15 +69,14 @@ const FlowToolbar: React.FC<FlowToolbarProps> = ({
             <div style={toolbarWrapper}>
                 <RunButton
                     onRun={onRun}
+                    onResetExecutionData={onResetExecutionData}
                     onRunFromSelected={onRunFromSelected}
                     onRunSelectedOnly={onRunSelectedOnly}
                     isDropdownOpen={isRunDropdownOpen}
                     onDropdownOpenChange={setIsRunDropdownOpen}
                 />
 
-                <CompileButton onCompile={onCompile} />
-
-                <SaveButton onSave={onSave} />
+                {/* <CompileButton onCompile={onCompile} /> */}
 
                 {/* Right-aligned buttons */}
                 <div style={rightAlignedButtonsContainer}>
@@ -83,6 +89,13 @@ const FlowToolbar: React.FC<FlowToolbarProps> = ({
                         onResetExecutionData={onResetExecutionData}
                     />
                 </div>
+            </div>
+
+            {/* Second row with Export button */}
+            <div style={secondRowContainer}>
+                <SaveButton onSave={onSave} />
+
+                <ExportButton nodes={nodes} edges={edges} />
             </div>
         </div>
     );

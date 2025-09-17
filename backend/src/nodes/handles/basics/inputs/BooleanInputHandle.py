@@ -18,4 +18,8 @@ class BooleanInputHandle(InputHandleTypeBase):
         return False
 
     def to_json_schema(self) -> Dict[str, Any]:
-        return {"type": "boolean", "label": self.label}
+        return {
+            "type": "boolean",
+            "label": self.label,
+            "hide_input_field": self.hide_input_field,
+        }

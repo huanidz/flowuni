@@ -11,6 +11,10 @@ import { Button } from '@/components/ui/button';
 import DeleteFlowButton from '@/features/flows/components/FlowList/DeleteFlowButton';
 import type { Flow } from '@/features/flows/types';
 import { useNavigate } from 'react-router-dom';
+import {
+    flowListStyles,
+    statusStyles,
+} from '@/features/flows/styles/flowListStyles';
 
 interface FlowListProps {
     flows: Flow[];
@@ -35,44 +39,68 @@ const FlowList: React.FC<FlowListProps> = ({ flows }) => {
     };
 
     return (
-        <div>
+        <div style={flowListStyles.container}>
             <Table>
-                <TableHeader>
+                <TableHeader style={flowListStyles.tableHeader}>
                     <TableRow>
-                        <TableHead>FLOW</TableHead>
-                        <TableHead>TRẠNG THÁI</TableHead>
-                        <TableHead>THAO TÁC</TableHead>
+                        <TableHead style={flowListStyles.tableHeaderCell}>
+                            FLOW
+                        </TableHead>
+                        <TableHead style={flowListStyles.tableHeaderCell}>
+                            STATUS
+                        </TableHead>
+                        <TableHead style={flowListStyles.tableHeaderActions}>
+                            ACTIONS
+                        </TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {flows.map(flow => (
                         <React.Fragment key={flow.flow_id}>
                             <TableRow>
-                                <TableCell>
+                                <TableCell style={flowListStyles.tableCell}>
                                     <div>
-                                        <div>{flow.name}</div>
-                                        <div>{flow.description}</div>
+                                        <div style={flowListStyles.flowName}>
+                                            {flow.name}
+                                        </div>
+                                        <div
+                                            style={
+                                                flowListStyles.flowDescription
+                                            }
+                                        >
+                                            {flow.description}
+                                        </div>
                                     </div>
                                 </TableCell>
-                                <TableCell>
-                                    <span>
-                                        {flow.is_active
-                                            ? 'Đang hoạt động'
-                                            : 'Tạm dừng'}
+                                <TableCell style={flowListStyles.tableCell}>
+                                    <span
+                                        style={
+                                            flow.is_active
+                                                ? statusStyles.active
+                                                : statusStyles.inactive
+                                        }
+                                    >
+                                        {flow.is_active ? 'ACTIVE' : 'INACTIVE'}
                                     </span>
                                 </TableCell>
-                                <TableCell>
+                                <TableCell
+                                    style={{
+                                        ...flowListStyles.tableCell,
+                                        ...flowListStyles.actionsCell,
+                                    }}
+                                >
                                     <Button
                                         onClick={() => handleFlowClick(flow)}
                                         variant="ghost"
                                         size="sm"
                                     >
-                                        Run
+                                        Go to flow
                                     </Button>
                                     <Button
                                         onClick={() => toggleRow(flow.flow_id)}
                                         variant="ghost"
                                         size="sm"
+                                        style={flowListStyles.expandButton}
                                     >
                                         {expandedRows.has(flow.flow_id)
                                             ? '▲'
@@ -84,56 +112,164 @@ const FlowList: React.FC<FlowListProps> = ({ flows }) => {
                                     />
                                 </TableCell>
                             </TableRow>
-                            <TableRow>
-                                <TableCell colSpan={3}>
-                                    <div>
-                                        {expandedRows.has(flow.flow_id) && (
-                                            <div>
-                                                <div>
-                                                    <div>
-                                                        ID: {flow.flow_id}
-                                                    </div>
-                                                    <div>
-                                                        Ngày tạo:{' '}
+                            {expandedRows.has(flow.flow_id) && (
+                                <TableRow style={flowListStyles.expandedRow}>
+                                    <TableCell
+                                        colSpan={3}
+                                        style={{ padding: 0 }}
+                                    >
+                                        <div
+                                            style={
+                                                flowListStyles.expandedContent
+                                            }
+                                        >
+                                            <div
+                                                style={
+                                                    flowListStyles.detailSection
+                                                }
+                                            >
+                                                <div
+                                                    style={
+                                                        flowListStyles.detailItem
+                                                    }
+                                                >
+                                                    <span
+                                                        style={
+                                                            flowListStyles.detailLabel
+                                                        }
+                                                    >
+                                                        ID:
+                                                    </span>
+                                                    <span
+                                                        style={
+                                                            flowListStyles.detailValue
+                                                        }
+                                                    >
+                                                        {flow.flow_id}
+                                                    </span>
+                                                </div>
+                                                <div
+                                                    style={
+                                                        flowListStyles.detailItem
+                                                    }
+                                                >
+                                                    <span
+                                                        style={
+                                                            flowListStyles.detailLabel
+                                                        }
+                                                    >
+                                                        Ngày tạo:
+                                                    </span>
+                                                    <span
+                                                        style={
+                                                            flowListStyles.detailValue
+                                                        }
+                                                    >
                                                         {new Date(
                                                             flow.created_at as string
                                                         ).toLocaleDateString(
                                                             'vi-VN'
                                                         )}
-                                                    </div>
-                                                    <div>
-                                                        Số lượng nút:{' '}
+                                                    </span>
+                                                </div>
+                                                <div
+                                                    style={
+                                                        flowListStyles.detailItem
+                                                    }
+                                                >
+                                                    <span
+                                                        style={
+                                                            flowListStyles.detailLabel
+                                                        }
+                                                    >
+                                                        Số lượng nút:
+                                                    </span>
+                                                    <span
+                                                        style={
+                                                            flowListStyles.detailValue
+                                                        }
+                                                    >
                                                         {flow.node_count !==
                                                         undefined
                                                             ? flow.node_count
                                                             : 'Không có số lượng nút'}
-                                                    </div>
-                                                    <div>
-                                                        Trạng thái:{' '}
+                                                    </span>
+                                                </div>
+                                                <div
+                                                    style={
+                                                        flowListStyles.detailItem
+                                                    }
+                                                >
+                                                    <span
+                                                        style={
+                                                            flowListStyles.detailLabel
+                                                        }
+                                                    >
+                                                        Trạng thái:
+                                                    </span>
+                                                    <span
+                                                        style={
+                                                            flowListStyles.detailValue
+                                                        }
+                                                    >
                                                         {flow.is_active
                                                             ? 'Đang hoạt động'
                                                             : 'Tạm dừng'}
-                                                    </div>
+                                                    </span>
                                                 </div>
-                                                <div>
-                                                    <div>
-                                                        Mô tả:{' '}
+                                            </div>
+                                            <div
+                                                style={
+                                                    flowListStyles.detailSection
+                                                }
+                                            >
+                                                <div
+                                                    style={
+                                                        flowListStyles.detailItem
+                                                    }
+                                                >
+                                                    <span
+                                                        style={
+                                                            flowListStyles.detailLabel
+                                                        }
+                                                    >
+                                                        Mô tả:
+                                                    </span>
+                                                    <span
+                                                        style={
+                                                            flowListStyles.detailValue
+                                                        }
+                                                    >
                                                         {flow.description}
-                                                    </div>
+                                                    </span>
                                                 </div>
-                                                <div>
-                                                    <div>
-                                                        Tình trạng:{' '}
+                                                <div
+                                                    style={
+                                                        flowListStyles.detailItem
+                                                    }
+                                                >
+                                                    <span
+                                                        style={
+                                                            flowListStyles.detailLabel
+                                                        }
+                                                    >
+                                                        Tình trạng:
+                                                    </span>
+                                                    <span
+                                                        style={
+                                                            flowListStyles.detailValue
+                                                        }
+                                                    >
                                                         {flow.is_active
                                                             ? 'Dòng chảy đang hoạt động'
                                                             : 'Dòng chảy tạm dừng'}
-                                                    </div>
+                                                    </span>
                                                 </div>
                                             </div>
-                                        )}
-                                    </div>
-                                </TableCell>
-                            </TableRow>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            )}
                         </React.Fragment>
                     ))}
                 </TableBody>

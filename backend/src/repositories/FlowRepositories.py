@@ -208,6 +208,81 @@ class FlowRepository(BaseRepository):
             logger.error(f"Error creating flow for user {user_id}: {e}")
             raise e
 
+    def create_flow_with_data(
+        self, user_id: int, name: str = None, flow_definition: dict = None
+    ) -> FlowModel:
+        """
+        Create a new flow with optional name and flow definition.
+        If name is not provided, it will auto-increment like 'New Flow', 'New Flow (1)', etc.
+        """
+        try:
+            # If no name provided, use the same logic as create_empty_flow
+            if name is None:
+                base_name = "New Flow"
+
+                # Fetch all existing names for this user that start with 'New Flow'
+                existing_names = (
+                    self.db_session.query(FlowModel.name)
+                    .filter(
+                        FlowModel.user_id == user_id,
+                        FlowModel.name.ilike(f"{base_name}%"),
+                    )
+                    .all()
+                )
+
+                # Extract just the name strings
+                existing_names = [name[0] for name in existing_names]
+
+                # Find the next available number
+                used_numbers = set()
+
+                pattern = re.compile(rf"^{re.escape(base_name)}(?: \((\d+)\))?$")
+                for existing_name in existing_names:
+                    match = pattern.match(existing_name)
+                    if match:
+                        num = match.group(1)
+                        used_numbers.add(int(num) if num else 0)
+
+                # Find the lowest unused number
+                next_number = 0
+                while next_number in used_numbers:
+                    next_number += 1
+
+                # Generate the name
+                if next_number == 0:
+                    name = base_name
+                else:
+                    name = f"{base_name} ({next_number})"
+
+            # Create the flow
+            flow_id = str(uuid4())
+            flow = FlowModel(
+                flow_id=flow_id,
+                name=name,
+                description="",
+                user_id=user_id,
+                flow_definition=flow_definition,
+            )
+            self.db_session.add(flow)
+            self.db_session.commit()
+            self.db_session.refresh(flow)
+
+            logger.info(
+                f"Created new flow with name: '{name}', ID: {flow.flow_id}, for user ID: {user_id}"
+            )
+            return flow
+
+        except IntegrityError as e:
+            self.db_session.rollback()
+            logger.error(f"Integrity error when creating flow for user {user_id}: {e}")
+            raise ValueError(
+                "Failed to create flow due to database integrity error."
+            ) from e
+        except Exception as e:
+            self.db_session.rollback()
+            logger.error(f"Error creating flow for user {user_id}: {e}")
+            raise e
+
     def add_flow(self, flow: FlowModel) -> FlowModel:
         """
         Add flow

@@ -4,7 +4,9 @@ from typing import Optional, Tuple
 from loguru import logger
 from src.exceptions.shared_exceptions import MISMATCH_EXCEPTION, NOT_FOUND_EXCEPTION
 from src.models.alchemy.flows.FlowModel import FlowModel
+from src.nodes.GraphLoader import GraphLoader
 from src.repositories.FlowRepositories import FlowRepository
+from src.schemas.flowbuilder.flow_crud_schemas import FlowCreateRequest
 from src.schemas.flows.flow_schemas import FlowPatchRequest, GetFlowResponseItem
 
 
@@ -24,6 +26,15 @@ class FlowServiceInterface(ABC):
     def create_empty_flow(self, user_id: int) -> str:
         """
         Create an empty flow for a user
+        """
+        pass
+
+    @abstractmethod
+    def create_flow_with_data(
+        self, user_id: int, flow_request: FlowCreateRequest
+    ) -> FlowModel:
+        """
+        Create a flow with optional name and flow definition
         """
         pass
 
@@ -93,6 +104,28 @@ class FlowService(FlowServiceInterface):
             return flow.flow_id
         except Exception as e:
             logger.error(f"Error creating empty flow for user {user_id}: {str(e)}")
+            raise
+
+    def create_flow_with_data(
+        self, user_id: int, flow_request: FlowCreateRequest
+    ) -> FlowModel:
+        """
+        Create a flow with optional name and flow definition
+        """
+        try:
+            # Validate flow definition if provided
+            if flow_request.flow_definition:
+                GraphLoader.from_flow_create_request(flow_request)
+
+            flow = self.flow_repository.create_flow_with_data(
+                user_id=user_id,
+                name=flow_request.name,
+                flow_definition=flow_request.flow_definition,
+            )
+            logger.info(f"Successfully created flow with data for user {user_id}")
+            return flow
+        except Exception as e:
+            logger.error(f"Error creating flow with data for user {user_id}: {str(e)}")
             raise
 
     def get_flow_detail_by_id(self, flow_id: str) -> FlowModel:

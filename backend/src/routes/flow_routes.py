@@ -7,7 +7,11 @@ from src.dependencies.auth_dependency import get_current_user
 from src.dependencies.flow_dep import get_flow_service
 from src.exceptions.auth_exceptions import UNAUTHORIZED_EXCEPTION
 from src.exceptions.shared_exceptions import NOT_FOUND_EXCEPTION
-from src.schemas.flowbuilder.flow_crud_schemas import EmptyFlowCreateResponse
+from src.schemas.flowbuilder.flow_crud_schemas import (
+    EmptyFlowCreateResponse,
+    FlowCreateRequest,
+    FlowCreateResponse,
+)
 from src.schemas.flows.flow_schemas import (
     FlowPatchRequest,
     FlowPatchResponse,
@@ -44,6 +48,40 @@ async def create_empty_flow(
         raise HTTPException(
             status_code=500,
             detail="An error occurred while queuing the compilation task.",
+        )
+
+
+@flow_router.post("/with-data", response_model=FlowCreateResponse)
+async def create_flow_with_data(
+    request: FlowCreateRequest,
+    flow_service: FlowService = Depends(get_flow_service),
+    auth_user_id: int = Depends(get_current_user),
+):
+    """
+    Create a flow with optional name and flow definition
+    """
+    try:
+        flow = flow_service.create_flow_with_data(
+            user_id=auth_user_id, flow_request=request
+        )
+
+        response = FlowCreateResponse(
+            flow_id=flow.flow_id,
+            name=flow.name,
+            description=flow.description,
+            is_active=flow.is_active,
+            flow_definition=flow.flow_definition,
+        )
+
+        return response
+
+    except Exception as e:
+        logger.error(
+            f"Error creating flow with data: {e}. traceback: {traceback.format_exc()}"
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="An error occurred while creating the flow with data.",
         )
 
 

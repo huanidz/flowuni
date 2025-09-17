@@ -1,5 +1,3 @@
-import { Columns } from 'lucide-react';
-
 // Main toolbar container styles
 export const toolbarContainer = {
     position: 'absolute' as const,
@@ -244,4 +242,38 @@ export const resetButton = {
 export const resetButtonHover = {
     backgroundColor: '#5a6268',
     boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)',
+};
+
+// Export button styles
+export const exportButton = {
+    backgroundColor: '#17a2b8',
+    color: 'white',
+    border: 'none',
+    padding: '10px 15px',
+    borderRadius: '5px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+};
+
+// Export button hover state
+export const exportButtonHover = {
+    backgroundColor: '#138496',
+};
+
+// Second row container for export button
+export const secondRowContainer = {
+    fontFamily: 'sans-serif',
+    border: '1px solid #ddd',
+    borderRadius: '8px',
+    padding: '10px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: '10px',
+    backgroundColor: '#f9f9f9',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+    marginTop: '4px',
+    width: 'fit-content',
+    marginLeft: 'auto',
 };
