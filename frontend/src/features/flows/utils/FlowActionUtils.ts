@@ -17,13 +17,13 @@ export const createSSEEventHandler = (nodeUpdateHandlers: any) => {
         console.log('[SSE] Setting up event listener for task_id:', task_id);
 
         return watchFlowExecution(task_id, msg => {
-            console.log('[SSE] Raw message received:', msg);
+            // console.log('[SSE] Raw message received:', msg);
 
             let parsed;
 
             try {
                 parsed = JSON.parse(msg);
-                console.log('[SSE] Parsed message:', parsed);
+                // console.log('[SSE] Parsed message:', parsed);
             } catch (e) {
                 console.error('[SSE] Failed to parse message:', e);
                 return;
@@ -38,18 +38,18 @@ export const createSSEEventHandler = (nodeUpdateHandlers: any) => {
             const node_id = parsed?.node_id;
             const event_status = parsed?.event;
             const { input_values, output_values } = data;
-            console.log(
-                '[SSE] Updating node:',
-                node_id,
-                'with input_values:',
-                input_values
-            );
-            console.log(
-                '[SSE] Updating node:',
-                node_id,
-                'with output_values:',
-                output_values
-            );
+            // console.log(
+            //     '[SSE] Updating node:',
+            //     node_id,
+            //     'with input_values:',
+            //     input_values
+            // );
+            // console.log(
+            //     '[SSE] Updating node:',
+            //     node_id,
+            //     'with output_values:',
+            //     output_values
+            // );
 
             // Update node execution data using the provided handlers
             if (updateNodeExecutionResult) {

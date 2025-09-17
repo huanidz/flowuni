@@ -91,8 +91,6 @@ class NodeFactoryClass {
                 ? (newMode: string) => updateNodeModeData(id, newMode)
                 : undefined;
 
-            console.log('data.execution_status: ', data.execution_status);
-
             // === Render Node UI ===
             return (
                 <div style={nodeStyles.container} key={id}>
