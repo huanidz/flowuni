@@ -1,4 +1,3 @@
-import copy
 import json
 import threading
 import time
@@ -46,7 +45,7 @@ class GraphExecutor:
 
     def __init__(
         self,
-        graph: nx.DiGraph,
+        graph: nx.MultiDiGraph,
         execution_plan: List[List[str]],
         execution_control: ExecutionControl,
         max_workers: Optional[int] = None,
@@ -62,7 +61,7 @@ class GraphExecutor:
             execution_plan: List of layers, where each layer contains nodes that can execute in parallel
             max_workers: Maximum number of threads for parallel execution
         """  # noqa: E501
-        self.graph: nx.DiGraph = graph
+        self.graph: nx.MultiDiGraph = graph
         self.execution_context: Optional["ExecutionContext"] = execution_context
         self.execution_plan: List[List[str]] = execution_plan
         self.execution_control: ExecutionControl = execution_control

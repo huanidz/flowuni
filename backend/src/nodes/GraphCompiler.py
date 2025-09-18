@@ -21,7 +21,7 @@ class GraphCompiler:
     executed in parallel, respecting the dependencies defined by the graph edges.
     """  # noqa
 
-    def __init__(self, graph: nx.DiGraph, remove_standalone: bool = False):
+    def __init__(self, graph: nx.MultiDiGraph, remove_standalone: bool = False):
         """
         Initialize the GraphCompiler.
 
@@ -33,8 +33,8 @@ class GraphCompiler:
         Raises:
             GraphCompilerError: If the graph is not a DAG
         """
-        if not isinstance(graph, nx.DiGraph):
-            raise GraphCompilerError("Graph must be a NetworkX DiGraph")
+        if not isinstance(graph, nx.MultiDiGraph):
+            raise GraphCompilerError("Graph must be a NetworkX MultiDiGraph")
 
         self.remove_standalone = remove_standalone
         self._original_graph = graph.copy()
@@ -45,7 +45,7 @@ class GraphCompiler:
         self._validate_graph(self.graph)
         self._execution_plan: Optional[List[List[str]]] = None
 
-    def _process_graph(self, graph: nx.DiGraph) -> nx.DiGraph:
+    def _process_graph(self, graph: nx.MultiDiGraph) -> nx.MultiDiGraph:
         """
         Process the graph based on standalone node handling preference.
 
@@ -69,7 +69,7 @@ class GraphCompiler:
 
         return graph.copy()
 
-    def _validate_graph(self, graph: nx.DiGraph) -> None:
+    def _validate_graph(self, graph: nx.MultiDiGraph) -> None:
         """
         Validate that the graph is a proper DAG.
 
@@ -310,12 +310,12 @@ class GraphCompiler:
         return list(self.graph.successors(node_id))
 
     @property
-    def graph(self) -> nx.DiGraph:
+    def graph(self) -> nx.MultiDiGraph:
         """Get the underlying processed graph (read-only access recommended)."""
         return self._graph
 
     @graph.setter
-    def graph(self, value: nx.DiGraph) -> None:
+    def graph(self, value: nx.MultiDiGraph) -> None:
         """Set the graph and reset compilation state."""
         self._graph = value
         self._execution_plan = None
