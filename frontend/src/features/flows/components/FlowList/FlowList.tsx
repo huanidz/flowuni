@@ -92,9 +92,13 @@ const FlowList: React.FC<FlowListProps> = ({ flows }) => {
                                     <Button
                                         onClick={() => handleFlowClick(flow)}
                                         variant="ghost"
+                                        style={{
+                                            backgroundColor: '#3b82f6',
+                                            color: '#fff',
+                                        }}
                                         size="sm"
                                     >
-                                        Go to flow
+                                        To FlowBuilder
                                     </Button>
                                     <Button
                                         onClick={() => toggleRow(flow.flow_id)}

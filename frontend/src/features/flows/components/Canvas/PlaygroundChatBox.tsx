@@ -25,7 +25,6 @@ import { useDraggingChatbox } from './PlaygroundComponents/useDraggingChatbox';
 import {
     CHAT_BOX_HEIGHT,
     CHAT_BOX_MARGIN,
-    CHAT_BOX_Z_INDEX,
     FLOW_EXECUTION_TIMEOUT,
     USER_ID,
     BOT_ID,
@@ -358,7 +357,7 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
         <Card
             ref={chatBoxRef}
             className={`
-                absolute transition-none z-[${CHAT_BOX_Z_INDEX}]
+                absolute transition-none z-11
                 w-[672px] h-[${CHAT_BOX_HEIGHT}px] shadow-xl bg-white border border-gray-300 rounded-lg backdrop-blur-sm
                 ${isDragging ? 'shadow-2xl select-none' : ''}
                 flex overflow-hidden p-0
