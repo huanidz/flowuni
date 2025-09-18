@@ -44,6 +44,9 @@ class StringTransformNode(Node):
 
     def process(self, input_values, parameter_values):
         input_string = input_values["input"]
+        number_input = input_values.get("num_input", 0)
+
+        logger.info(f"👉 input_string: {input_string}, number {number_input}")
 
         logger.info(f"👉 parameter_values: {parameter_values}")
 

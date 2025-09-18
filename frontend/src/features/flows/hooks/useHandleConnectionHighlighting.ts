@@ -28,7 +28,7 @@ export const useConnectionHighlighting = ({
 
             // Add highlights to compatible handles using data attributes
             handles.forEach(({ nodeId, handleId }) => {
-                console.log('Highlighting handle:', { nodeId, handleId });
+                // console.log('Highlighting handle:', { nodeId, handleId });
 
                 // First try to find handle with specific handleId
                 let handleElement = document.querySelector(

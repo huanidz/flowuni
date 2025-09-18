@@ -44,7 +44,13 @@ class GraphLoader:
                 v_of_edge=edge.target,
                 source_handle=edge.sourceHandle,
                 target_handle=edge.targetHandle,
+                type=edge.type,
+                data=edge.data,
             )
+
+        # Get all edges
+        all_edges = G.edges(data=True)
+        logger.debug(f"All edges in the graph: {all_edges}")
 
         return G
 

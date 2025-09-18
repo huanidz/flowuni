@@ -20,6 +20,7 @@ import { useConnectionValidation } from '../../hooks/useConnectionValidator';
 import { useConnectionHighlighting } from '../../hooks/useHandleConnectionHighlighting';
 import { useSelectedNode } from '@/features/flows/hooks/useSelectedNode';
 import { addEdge } from '@xyflow/react';
+import CustomEdge from '../ReactFlowOverride/CustomEdge';
 import { type Connection } from '@xyflow/react';
 import { NodeConfigSidebar } from '@/features/flows/components/Sidebar/NodeConfigSidebar';
 import PlaygroundChatBox from './PlaygroundChatBox';
@@ -29,6 +30,8 @@ import { useNodeStore } from '@/features/nodes';
 interface FlowBuilderContentProps {
     flow_id: string;
 }
+
+const edgeTypes = { custom: CustomEdge };
 
 // Separate the main flow component to use ReactFlow hooks
 const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
@@ -97,7 +100,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
     useEffect(() => {
         if (initialNodes && nodeTypesLoaded) {
             setNodes(initialNodes);
-            setEdges(initialEdges || []);
+            setEdges(initialEdges);
             initializeFlow();
         }
     }, [
@@ -146,8 +149,18 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
 
     const onConnectV2 = useCallback(
         (params: Connection) => {
+            console.log('Params:', params);
             if (isValidConnection(params)) {
-                setEdges(eds => addEdge(params, eds));
+                setEdges(eds =>
+                    addEdge(
+                        {
+                            ...params,
+                            type: 'custom',
+                            data: { text: 'Custom Label 🎉' },
+                        },
+                        eds
+                    )
+                );
             }
         },
         [isValidConnection]
@@ -209,6 +222,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
                 <ReactFlow
                     nodes={currentNodes}
                     edges={currentEdges}
+                    edgeTypes={edgeTypes}
                     onNodesChange={onNodesChange}
                     onEdgesChange={onEdgesChange}
                     onConnect={onConnectV2}
