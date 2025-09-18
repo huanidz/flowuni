@@ -1,5 +1,3 @@
-# src/engine/GraphCompiler.py
-
 from collections import deque
 from typing import Any, Dict, List, Optional
 
@@ -130,6 +128,7 @@ class GraphCompiler:
     def _kahn_topological_sort(self) -> List[List[str]]:
         """
         Perform topological sorting using Kahn's algorithm with layering.
+        Modified to handle MultiDiGraph correctly by counting unique predecessors only.
 
         Returns:
             List of execution layers
@@ -147,8 +146,12 @@ class GraphCompiler:
         # Create a subgraph without standalone nodes for processing
         processing_graph = self.graph.subgraph(nodes_to_process).copy()
 
-        # Create a copy of in-degrees for the processing graph
-        in_degrees = dict(processing_graph.in_degree())
+        # For MultiDiGraph, we need to count unique predecessors, not total edges
+        # This is the key fix: use len(set(predecessors)) instead of in_degree()
+        in_degrees = {
+            node: len(set(processing_graph.predecessors(node)))
+            for node in processing_graph.nodes
+        }
 
         # Use deque for efficient queue operations
         current_layer_queue = deque(
@@ -173,7 +176,9 @@ class GraphCompiler:
                 processed_nodes.add(node_id)
 
                 # Update in-degrees for successor nodes
-                for successor in processing_graph.successors(node_id):
+                # Get unique successors to avoid counting the same node multiple times
+                unique_successors = set(processing_graph.successors(node_id))
+                for successor in unique_successors:
                     in_degrees[successor] -= 1
                     if in_degrees[successor] == 0:
                         current_layer_queue.append(successor)
@@ -181,6 +186,10 @@ class GraphCompiler:
         # Check if all nodes were processed
         if len(processed_nodes) != len(processing_graph.nodes):
             unprocessed = set(processing_graph.nodes) - processed_nodes
+            # Additional debugging info
+            logger.error(f"Processed nodes: {processed_nodes}")
+            logger.error(f"All nodes: {set(processing_graph.nodes)}")
+            logger.error(f"Final in_degrees: {in_degrees}")
             raise GraphCompilerError(
                 f"Failed to process all nodes. Unprocessed nodes: {unprocessed}. "
                 "This may indicate cycles or disconnected components."
