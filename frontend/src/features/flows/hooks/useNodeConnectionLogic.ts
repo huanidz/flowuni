@@ -3,6 +3,7 @@ import { addEdge, type Connection } from '@xyflow/react';
 import type { Node, Edge } from '@xyflow/react';
 import { useConnectionValidation } from './useConnectionValidator';
 import { useNodeStore } from '@/features/nodes';
+import { getSourceOutputTypeName } from '../utils';
 
 interface UseNodeConnectionLogicProps {
     // current nodes and edges are provided for validation hook (if needed by consumer)
@@ -30,30 +31,14 @@ export const useNodeConnectionLogic = ({
     ): string | undefined => {
         const { source, sourceHandle } = params;
 
-        // find source node
-        const sourceNode = nodes.find(n => n.id === source);
-        if (!sourceNode) return undefined;
-
-        const sourceNodeSpec = getNodeSpecByRFNodeType(sourceNode.type ?? '');
-        if (!sourceNodeSpec) return undefined;
-
-        // derive handle index: if sourceHandle is null -> tool node -> use first output (index 0)
-        let handleIndex: number;
-        if (sourceHandle === null) {
-            handleIndex = 0;
-        } else {
-            const parts = sourceHandle.split(':');
-            if (parts.length < 2) return undefined;
-            const idx = parseInt(parts[1], 10);
-            if (isNaN(idx)) return undefined;
-            handleIndex = idx;
-        }
-
-        const outputSpec = sourceNodeSpec.outputs[handleIndex];
-        if (!outputSpec) return undefined;
+        // Use the utility function to get the source output type name
+        const outputTypeName = getSourceOutputTypeName(
+            { source, sourceHandle: sourceHandle ?? null },
+            nodes,
+            getNodeSpecByRFNodeType
+        );
 
         // If the source output's IO type is RouterOutputHandle -> use custom edge
-        const outputTypeName = outputSpec.type_detail?.type;
         if (outputTypeName === 'RouterOutputHandle') return 'custom';
 
         return undefined;

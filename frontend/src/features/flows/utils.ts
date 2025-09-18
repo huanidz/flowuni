@@ -187,3 +187,50 @@ export const logNodeDetails = (nodes: Node[]) => {
         });
     });
 };
+// --- Shared helpers for connection/handle parsing ---
+/**
+ * Extract handle index from a handle string of format "<id>:<index>"
+ * Returns null if invalid or handle is null.
+ */
+export const extractHandleIndex = (handle: string | null): number | null => {
+    if (handle === null) return null;
+    const parts = handle.split(':');
+    if (parts.length < 2) {
+        // Invalid handle format
+        return null;
+    }
+    const idx = parseInt(parts[1], 10);
+    if (isNaN(idx)) return null;
+    return idx;
+};
+
+/**
+ * Given connection source info and node specs, return the output type name of the source output handle.
+ * - params: object with source and sourceHandle (sourceHandle can be null for tool nodes)
+ * - nodes: current RF nodes
+ * - getNodeSpecByRFNodeType: function to get NodeSpec by node.type
+ *
+ * Returns the output IO type name (e.g., 'RouterOutputHandle') or undefined when cannot determine.
+ */
+export const getSourceOutputTypeName = (
+    params: { source: string; sourceHandle: string | null },
+    nodes: Node[],
+    getNodeSpecByRFNodeType: (nodeName: string) => any | undefined
+): string | undefined => {
+    const { source, sourceHandle } = params;
+    const sourceNode = nodes.find(n => n.id === source);
+    if (!sourceNode) return undefined;
+    const sourceNodeSpec = getNodeSpecByRFNodeType(sourceNode.type ?? '');
+    if (!sourceNodeSpec) return undefined;
+    let handleIndex: number;
+    if (sourceHandle === null) {
+        handleIndex = 0;
+    } else {
+        const idx = extractHandleIndex(sourceHandle);
+        if (idx === null) return undefined;
+        handleIndex = idx;
+    }
+    const outputSpec = sourceNodeSpec.outputs?.[handleIndex];
+    if (!outputSpec) return undefined;
+    return outputSpec.type_detail?.type;
+};
