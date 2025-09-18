@@ -44,6 +44,7 @@ class GraphLoader:
                 v_of_edge=edge.target,
                 source_handle=edge.sourceHandle,
                 target_handle=edge.targetHandle,
+                data=edge.data,
             )
 
         # Get all edges

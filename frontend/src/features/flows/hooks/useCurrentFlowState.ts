@@ -35,6 +35,7 @@ export const useCurrentFlowState = (flow_id: string) => {
         }
 
         const parsed = parseFlowDefinition(current_flow.flow_definition);
+        console.log('Parsed flow definition:', parsed);
         return {
             initialNodes: parsed.nodes,
             initialEdges: parsed.edges,
@@ -46,15 +47,6 @@ export const useCurrentFlowState = (flow_id: string) => {
         setNodes(initialNodes);
         setEdges(initialEdges);
     }, [initialNodes, initialEdges, setNodes, setEdges]);
-
-    // Reinitialize flow with new nodes and edges
-    const reinitializeFlow = useCallback(
-        (newNodes: Node[], newEdges: Edge[]) => {
-            setNodes(newNodes);
-            setEdges(newEdges);
-        },
-        [setNodes, setEdges]
-    );
 
     // Get loading and error states
     const { isLoading: isLoadingFlow, error: flowError } = useGetFlowDetail({
@@ -73,7 +65,6 @@ export const useCurrentFlowState = (flow_id: string) => {
         initialNodes,
         initialEdges,
         initializeFlow,
-        reinitializeFlow,
         isLoading,
         flowError,
         nodeRegistryLoaded,

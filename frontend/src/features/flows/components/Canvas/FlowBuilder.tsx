@@ -100,13 +100,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
     useEffect(() => {
         if (initialNodes && nodeTypesLoaded) {
             setNodes(initialNodes);
-            // Ensure all edges have the 'custom' type
-            const edgesWithCustomType = (initialEdges || []).map(edge => ({
-                ...edge,
-                type: 'custom',
-                data: { text: edge.data?.text || 'Custom Label 🎉' },
-            }));
-            setEdges(edgesWithCustomType);
+            setEdges(initialEdges);
             initializeFlow();
         }
     }, [

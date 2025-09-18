@@ -1,38 +1,56 @@
 import {
     BaseEdge,
     EdgeLabelRenderer,
-    getBezierPath,
+    getSimpleBezierPath,
     type EdgeProps,
+    useReactFlow,
 } from '@xyflow/react';
-import React from 'react';
+import React, { useState } from 'react';
 import type { CSSProperties } from 'react';
 
 interface CustomEdgeData {
     text?: string;
 }
 
-/**
- * Custom edge component for React Flow with TypeScript support
- * Displays a bezier path edge with a customizable label
- */
 function CustomEdge({
     id,
     sourceX,
     sourceY,
     targetX,
     targetY,
+    sourcePosition,
+    targetPosition,
     style,
     markerEnd,
     data,
 }: EdgeProps): React.ReactNode {
-    const [edgePath, labelX, labelY] = getBezierPath({
+    const { setEdges } = useReactFlow();
+    const [isEditing, setIsEditing] = useState(false);
+    const [value, setValue] = useState((data as CustomEdgeData)?.text || '');
+
+    const [edgePath, labelX, labelY] = getSimpleBezierPath({
         sourceX,
         sourceY,
         targetX,
         targetY,
+        sourcePosition,
+        targetPosition,
     });
 
-    const edgeStyle: CSSProperties = style || {};
+    const edgeStyle: CSSProperties = {
+        stroke: '#333',
+        strokeWidth: 1.5,
+        ...style,
+    };
+
+    const handleSave = () => {
+        setIsEditing(false);
+        setEdges(eds =>
+            eds.map(e =>
+                e.id === id ? { ...e, data: { ...e.data, text: value } } : e
+            )
+        );
+    };
 
     return (
         <>
@@ -42,14 +60,36 @@ function CustomEdge({
                     style={{
                         position: 'absolute',
                         transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+                        fontSize: 10,
+                        color: '#222',
+                        background: '#fff',
+                        padding: '1px 4px',
+                        borderRadius: 3,
+                        border: '1px solid #ddd',
                         pointerEvents: 'all',
-                        background: 'white',
-                        padding: 2,
-                        borderRadius: 4,
-                        fontSize: 12,
+                        minWidth: 40,
                     }}
+                    onDoubleClick={() => setIsEditing(true)}
                 >
-                    {(data as CustomEdgeData)?.text || 'default'}
+                    {isEditing ? (
+                        <input
+                            autoFocus
+                            value={value}
+                            onChange={e => setValue(e.target.value)}
+                            onBlur={handleSave}
+                            onKeyDown={e => {
+                                if (e.key === 'Enter') handleSave();
+                            }}
+                            style={{
+                                width: '100%',
+                                fontSize: 10,
+                                border: 'none',
+                                outline: 'none',
+                            }}
+                        />
+                    ) : (
+                        value || 'edit me'
+                    )}
                 </div>
             </EdgeLabelRenderer>
         </>

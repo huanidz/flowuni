@@ -29,6 +29,7 @@ export interface FlowDefinitionData {
         target: string;
         sourceHandle?: string;
         targetHandle?: string;
+        data?: Record<string, any>;
     }>;
 }
 
@@ -93,6 +94,7 @@ export const parseFlowDefinition = (
             target: edgeData.target,
             sourceHandle: edgeData.sourceHandle,
             targetHandle: edgeData.targetHandle,
+            data: edgeData.data,
         }));
 
         console.log(
@@ -159,13 +161,16 @@ export const getFlowGraphData = (nodes: Node[], edges: Edge[]) => ({
         position,
         data,
     })),
-    edges: edges.map(({ id, source, target, sourceHandle, targetHandle }) => ({
-        id,
-        source,
-        target,
-        sourceHandle,
-        targetHandle,
-    })),
+    edges: edges.map(
+        ({ id, source, target, sourceHandle, targetHandle, data }) => ({
+            id,
+            source,
+            target,
+            sourceHandle,
+            targetHandle,
+            data,
+        })
+    ),
 });
 
 export const logNodeDetails = (nodes: Node[]) => {

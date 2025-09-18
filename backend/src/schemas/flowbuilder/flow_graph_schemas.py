@@ -52,6 +52,7 @@ class FlowEdge(BaseModel):
     target: str
     sourceHandle: Optional[str] = None  # corresponds to 'sourceHandle'
     targetHandle: Optional[str] = None  # corresponds to 'targetHandle'
+    data: Optional[Dict[str, Any]] = None
 
 
 class CanvasFlowRunRequest(BaseModel):
