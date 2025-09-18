@@ -2,6 +2,7 @@ from .AgentNode import AgentNode
 from .CalculatorNode import CalculatorNode
 from .ComparisonRouterNode import ComparisonRouterNode
 from .HttpRequestNode import HttpRequestNode
+from .LLMProviderNode import LLMProviderNode
 from .MemoryNode import MemoryNode
 from .ResolverTestNode import ResolverTestNode
 from .RouterNode import RouterNode

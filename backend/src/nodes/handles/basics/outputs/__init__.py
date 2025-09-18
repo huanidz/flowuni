@@ -1,4 +1,5 @@
 from .DataOutputHandle import DataOutputHandle
+from .LLMProviderOutputHandle import LLMProviderOutputHandle
 from .NumberOutputHandle import NumberOutputHandle
 from .RouterOutputHandle import RouterOutputHandle
 from .StringOutputHandle import StringOutputHandle
@@ -10,6 +11,7 @@ __all__ = [
     "NumberOutputHandle",
     "StringOutputHandle",
     "RouterOutputHandle",
+    "LLMProviderOutputHandle",
 ]
 
 from enum import Enum
@@ -21,3 +23,4 @@ class OutputHandleTypeEnum(Enum):
     NUMBER = NumberOutputHandle
     STRING = StringOutputHandle
     ROUTER = RouterOutputHandle
+    LLM_PROVIDER = LLMProviderOutputHandle
