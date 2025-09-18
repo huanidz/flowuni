@@ -19,13 +19,12 @@ import { useCurrentFlowState } from '../../hooks/useCurrentFlowState';
 import { useConnectionValidation } from '../../hooks/useConnectionValidator';
 import { useConnectionHighlighting } from '../../hooks/useHandleConnectionHighlighting';
 import { useSelectedNode } from '@/features/flows/hooks/useSelectedNode';
-import { addEdge } from '@xyflow/react';
 import CustomEdge from '../ReactFlowOverride/CustomEdge';
-import { type Connection } from '@xyflow/react';
 import { NodeConfigSidebar } from '@/features/flows/components/Sidebar/NodeConfigSidebar';
 import PlaygroundChatBox from './PlaygroundChatBox';
 import useFlowStore from '@/features/flows/stores/flow_stores';
 import { useNodeStore } from '@/features/nodes';
+import useNodeConnectionLogic from '@/features/flows/hooks/useNodeConnectionLogic';
 
 interface FlowBuilderContentProps {
     flow_id: string;
@@ -147,24 +146,12 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
         currentEdges
     );
 
-    const onConnectV2 = useCallback(
-        (params: Connection) => {
-            console.log('Params:', params);
-            if (isValidConnection(params)) {
-                setEdges(eds =>
-                    addEdge(
-                        {
-                            ...params,
-                            type: 'custom',
-                            data: { text: 'Custom Label 🎉' },
-                        },
-                        eds
-                    )
-                );
-            }
-        },
-        [isValidConnection]
-    );
+    // Use extracted connection logic hook
+    const { onConnect } = useNodeConnectionLogic({
+        nodes: currentNodes,
+        edges: currentEdges,
+        setEdges,
+    });
 
     // Unified loading/error state handling
     if (isLoading || !nodeTypesLoaded) {
@@ -225,7 +212,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
                     edgeTypes={edgeTypes}
                     onNodesChange={onNodesChange}
                     onEdgesChange={onEdgesChange}
-                    onConnect={onConnectV2}
+                    onConnect={onConnect}
                     onConnectStart={handleConnectionStart}
                     onConnectEnd={handleConnectionEnd}
                     isValidConnection={isValidConnection}
