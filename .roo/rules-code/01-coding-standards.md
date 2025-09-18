@@ -11,3 +11,4 @@
 1. Prefer using shadcn/ui
 2. ReactQuery is v5 so some callbacks is deprecated
 3. Keep the styling very simple.
+4. Implicitly be aware of styling for responsive UI.

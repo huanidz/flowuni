@@ -21,6 +21,7 @@ from src.nodes.handles.basics.outputs.RouterOutputHandle import RouterOutputData
 from src.nodes.NodeBase import Node, NodeSpec
 from src.schemas.flowbuilder.flow_graph_schemas import ToolConfig
 from src.schemas.nodes.node_data_parsers import BuildToolResult
+from src.components.agents.AgentBase import Agent
 
 
 class LLMRouterNode(Node):
@@ -98,7 +99,12 @@ class LLMRouterNode(Node):
         )
 
         chat_message = ChatMessage(role="user", content=routing_prompt)
-        chat_response: ChatResponse = llm_provider_instance.chat(
+        agent = Agent(
+            llm_provider=llm_provider_instance,
+            system_prompt=self._get_routing_system_prompt(additional_instruction),
+            tools=[],
+        )
+        chat_response: ChatResponse = agent.chat_structured(
             message=chat_message, prev_histories=[]
         )
 

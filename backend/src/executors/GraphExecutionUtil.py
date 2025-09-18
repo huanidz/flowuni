@@ -1,6 +1,7 @@
 import networkx as nx
 from loguru import logger
 from src.consts.node_consts import NODE_EXECUTION_STATUS
+from src.executors.MultiDiGraphUtils import MultiDiGraphUtils
 from src.schemas.flowbuilder.flow_graph_schemas import NodeData
 
 
@@ -15,7 +16,7 @@ class GraphExecutionUtil:
 
     @staticmethod
     def validate_node_skip_status_before_execution(
-        graph: nx.DiGraph, node_id: str
+        graph: nx.MultiDiGraph, node_id: str
     ) -> bool:
         """
         Validate if a node should be skipped based on its predecessors.
@@ -58,7 +59,7 @@ class GraphExecutionUtil:
         return node_data.execution_status != NODE_EXECUTION_STATUS.SKIPPED
 
     @staticmethod
-    def get_node_data_copy(graph: nx.DiGraph, node_id: str) -> NodeData:
+    def get_node_data_copy(graph: nx.MultiDiGraph, node_id: str) -> NodeData:
         """
         Get a deep copy of node data for thread safety.
         """
@@ -77,7 +78,7 @@ class GraphExecutionUtil:
 
     @staticmethod
     def prepare_node_data_for_execution(
-        graph: nx.DiGraph, node_id: str, node_data: NodeData
+        graph: nx.MultiDiGraph, node_id: str, node_data: NodeData
     ) -> NodeData:
         """Prepare method for node_data before execution."""
 
@@ -88,11 +89,13 @@ class GraphExecutionUtil:
             # make a string that contain edge ids separated by comma. e.g. "edge_id_1,edge_id_2,edge_id_3"
 
             # Get all outgoing edges from this node
-            outgoing_edges = graph.out_edges(node_id, data=True)
+            outgoing_edges = MultiDiGraphUtils.iterate_edges_with_data(
+                graph, node_id, data=True, keys=True
+            )
 
             # Extract edge IDs and create comma-separated string
             edge_ids = []
-            for source, target, edge_data in outgoing_edges:
+            for source, target, edge_key, edge_data in outgoing_edges:
                 # edge ID is stored in the edge data
                 edge_id = edge_data.get("id")
                 edge_ids.append(edge_id)

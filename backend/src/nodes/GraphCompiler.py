@@ -1,5 +1,3 @@
-# src/engine/GraphCompiler.py
-
 from collections import deque
 from typing import Any, Dict, List, Optional
 
@@ -21,7 +19,7 @@ class GraphCompiler:
     executed in parallel, respecting the dependencies defined by the graph edges.
     """  # noqa
 
-    def __init__(self, graph: nx.DiGraph, remove_standalone: bool = False):
+    def __init__(self, graph: nx.MultiDiGraph, remove_standalone: bool = False):
         """
         Initialize the GraphCompiler.
 
@@ -33,8 +31,8 @@ class GraphCompiler:
         Raises:
             GraphCompilerError: If the graph is not a DAG
         """
-        if not isinstance(graph, nx.DiGraph):
-            raise GraphCompilerError("Graph must be a NetworkX DiGraph")
+        if not isinstance(graph, nx.MultiDiGraph):
+            raise GraphCompilerError("Graph must be a NetworkX MultiDiGraph")
 
         self.remove_standalone = remove_standalone
         self._original_graph = graph.copy()
@@ -45,7 +43,7 @@ class GraphCompiler:
         self._validate_graph(self.graph)
         self._execution_plan: Optional[List[List[str]]] = None
 
-    def _process_graph(self, graph: nx.DiGraph) -> nx.DiGraph:
+    def _process_graph(self, graph: nx.MultiDiGraph) -> nx.MultiDiGraph:
         """
         Process the graph based on standalone node handling preference.
 
@@ -69,7 +67,7 @@ class GraphCompiler:
 
         return graph.copy()
 
-    def _validate_graph(self, graph: nx.DiGraph) -> None:
+    def _validate_graph(self, graph: nx.MultiDiGraph) -> None:
         """
         Validate that the graph is a proper DAG.
 
@@ -130,6 +128,7 @@ class GraphCompiler:
     def _kahn_topological_sort(self) -> List[List[str]]:
         """
         Perform topological sorting using Kahn's algorithm with layering.
+        Modified to handle MultiDiGraph correctly by counting unique predecessors only.
 
         Returns:
             List of execution layers
@@ -147,8 +146,12 @@ class GraphCompiler:
         # Create a subgraph without standalone nodes for processing
         processing_graph = self.graph.subgraph(nodes_to_process).copy()
 
-        # Create a copy of in-degrees for the processing graph
-        in_degrees = dict(processing_graph.in_degree())
+        # For MultiDiGraph, we need to count unique predecessors, not total edges
+        # This is the key fix: use len(set(predecessors)) instead of in_degree()
+        in_degrees = {
+            node: len(set(processing_graph.predecessors(node)))
+            for node in processing_graph.nodes
+        }
 
         # Use deque for efficient queue operations
         current_layer_queue = deque(
@@ -173,7 +176,9 @@ class GraphCompiler:
                 processed_nodes.add(node_id)
 
                 # Update in-degrees for successor nodes
-                for successor in processing_graph.successors(node_id):
+                # Get unique successors to avoid counting the same node multiple times
+                unique_successors = set(processing_graph.successors(node_id))
+                for successor in unique_successors:
                     in_degrees[successor] -= 1
                     if in_degrees[successor] == 0:
                         current_layer_queue.append(successor)
@@ -181,6 +186,10 @@ class GraphCompiler:
         # Check if all nodes were processed
         if len(processed_nodes) != len(processing_graph.nodes):
             unprocessed = set(processing_graph.nodes) - processed_nodes
+            # Additional debugging info
+            logger.error(f"Processed nodes: {processed_nodes}")
+            logger.error(f"All nodes: {set(processing_graph.nodes)}")
+            logger.error(f"Final in_degrees: {in_degrees}")
             raise GraphCompilerError(
                 f"Failed to process all nodes. Unprocessed nodes: {unprocessed}. "
                 "This may indicate cycles or disconnected components."
@@ -310,12 +319,12 @@ class GraphCompiler:
         return list(self.graph.successors(node_id))
 
     @property
-    def graph(self) -> nx.DiGraph:
+    def graph(self) -> nx.MultiDiGraph:
         """Get the underlying processed graph (read-only access recommended)."""
         return self._graph
 
     @graph.setter
-    def graph(self, value: nx.DiGraph) -> None:
+    def graph(self, value: nx.MultiDiGraph) -> None:
         """Set the graph and reset compilation state."""
         self._graph = value
         self._execution_plan = None

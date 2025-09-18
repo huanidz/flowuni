@@ -9,12 +9,12 @@ from src.schemas.flowbuilder.flow_graph_schemas import CanvasFlowRunRequest, Flo
 
 class GraphLoader:
     @staticmethod
-    def from_request(flow: CanvasFlowRunRequest) -> nx.DiGraph:
+    def from_request(flow: CanvasFlowRunRequest) -> nx.MultiDiGraph:
         """
-        Load a flow graph from CanvasFlowRunRequest and return a NetworkX DiGraph.
+        Load a flow graph from CanvasFlowRunRequest and return a NetworkX MultiDiGraph.
         Each node is enriched with spec and runtime class (if available).
         """
-        G = nx.DiGraph()
+        G = nx.MultiDiGraph()
 
         nodeRegistry = NodeRegistry()
 
@@ -40,8 +40,9 @@ class GraphLoader:
 
             G.add_edge(
                 id=edge.id,
-                u_of_edge=edge.source,
-                v_of_edge=edge.target,
+                key=edge.id,
+                u_for_edge=edge.source,
+                v_for_edge=edge.target,
                 source_handle=edge.sourceHandle,
                 target_handle=edge.targetHandle,
                 type=edge.type,
@@ -49,15 +50,15 @@ class GraphLoader:
             )
 
         # Get all edges
-        all_edges = G.edges(data=True)
+        all_edges = G.edges(data=True, keys=True)
         logger.debug(f"All edges in the graph: {all_edges}")
 
         return G
 
     @staticmethod
-    def from_flow_create_request(flow: FlowCreateRequest) -> nx.DiGraph:
+    def from_flow_create_request(flow: FlowCreateRequest) -> nx.MultiDiGraph:
         """
-        Load a flow graph from FlowCreateRequest and return a NetworkX DiGraph.
+        Load a flow graph from FlowCreateRequest and return a NetworkX MultiDiGraph.
         Each node is enriched with spec and runtime class (if available).
 
         This function is used to perform validate if the flow definition is valid when creating a flow.
