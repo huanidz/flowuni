@@ -19,6 +19,7 @@ from src.executors.ExecutionEventPublisher import (
     ExecutionEventPublisher,
 )
 from src.executors.GraphExecutionUtil import GraphExecutionUtil
+from src.executors.MultiDiGraphUtils import MultiDiGraphUtils
 from src.executors.NodeDataFlowAdapter import NodeDataFlowAdapter
 from src.executors.strategies.RunFromNodeStrategy import RunFromNodeStrategy
 from src.executors.strategies.RunFullStrategy import RunFullStrategy
@@ -365,60 +366,72 @@ class GraphExecutor:
         with self._update_lock:
             for successor_node_id in successors:
                 try:
-                    edge_data = self.graph.get_edge_data(u=node_id, v=successor_node_id)
-                    logger.info(f"👉 edge_data: {edge_data}")
-                    if not edge_data:
+                    # Get all edges between these nodes
+                    edges_with_data = MultiDiGraphUtils.get_edges_with_data(
+                        self.graph, node_id, successor_node_id
+                    )
+
+                    if not edges_with_data:
                         logger.warning(
                             f"No edge data between {node_id} and {successor_node_id}"
                         )
                         continue
 
-                    successor_node_instance = self.graph.nodes.get(successor_node_id)
-                    successor_node_data: NodeData = successor_node_instance.get("data")
-
-                    # If successor node's exec state is in SKIPPED, then skip this node.
-                    if (
-                        successor_node_data.execution_status
-                        == NODE_EXECUTION_STATUS.SKIPPED
-                    ):
-                        logger.warning(
-                            f"Successor node {successor_node_id} is SKIPPED, skipping in the update."  # noqa E501
+                    # Process each edge
+                    for edge_key, edge_data in edges_with_data:
+                        successor_node_instance = self.graph.nodes.get(
+                            successor_node_id
                         )
-                        continue
-
-                    source_handle = edge_data.get("source_handle", "")
-                    logger.info(f"👉 source_handle: {source_handle}")
-                    target_handle = edge_data.get("target_handle", "")
-                    logger.info(f"👉 target_handle: {target_handle}")
-
-                    # Handle the -index splitting (same as old version)
-                    if source_handle and "-index" in source_handle:
-                        source_handle = source_handle.split("-index")[0]
-                    if target_handle and "-index" in target_handle:
-                        target_handle = target_handle.split("-index")[0]
-
-                    # Handle tool mode case using the dedicated function
-                    if (source_handle is None) and (SOURCE_MODE == NODE_DATA_MODE.TOOL):
-                        self._update_tool_mode_successor(
-                            node_id, successor_node_id, target_handle, executed_data
+                        successor_node_data: NodeData = successor_node_instance.get(
+                            "data"
                         )
-                        continue
 
-                    # Validate handles for normal mode
-                    if not source_handle or not target_handle:
-                        logger.warning(
-                            f"Invalid handles: source='{source_handle}', target='{target_handle}'"  # noqa
+                        # If successor node's exec state is in SKIPPED, then skip this node.
+                        if (
+                            successor_node_data.execution_status
+                            == NODE_EXECUTION_STATUS.SKIPPED
+                        ):
+                            logger.warning(
+                                f"Successor node {successor_node_id} is SKIPPED, skipping in the update."  # noqa E501
+                            )
+                            continue
+
+                        source_handle = edge_data.get("source_handle", "")
+                        logger.info(f"👉 source_handle: {source_handle}")
+                        target_handle = edge_data.get("target_handle", "")
+                        logger.info(f"👉 target_handle: {target_handle}")
+
+                        # Handle the -index splitting (same as old version)
+                        if source_handle and "-index" in source_handle:
+                            source_handle = source_handle.split("-index")[0]
+                        if target_handle and "-index" in target_handle:
+                            target_handle = target_handle.split("-index")[0]
+
+                        # Handle tool mode case using the dedicated function
+                        if (source_handle is None) and (
+                            SOURCE_MODE == NODE_DATA_MODE.TOOL
+                        ):
+                            self._update_tool_mode_successor(
+                                node_id, successor_node_id, target_handle, executed_data
+                            )
+                            continue
+
+                        # Validate handles for normal mode
+                        if not source_handle or not target_handle:
+                            logger.warning(
+                                f"Invalid handles: source='{source_handle}', target='{target_handle}'"  # noqa
+                            )
+                            continue
+
+                        # Handle normal mode case using the dedicated function
+                        self._update_normal_mode_successor(
+                            node_id,
+                            successor_node_id,
+                            source_handle,
+                            target_handle,
+                            executed_data,
+                            edge_key,  # Pass edge key for router logic
                         )
-                        continue
-
-                    # Handle normal mode case using the dedicated function
-                    self._update_normal_mode_successor(
-                        node_id,
-                        successor_node_id,
-                        source_handle,
-                        target_handle,
-                        executed_data,
-                    )
 
                 except Exception as e:
                     logger.warning(
@@ -432,6 +445,7 @@ class GraphExecutor:
         source_handle: str,
         target_handle: str,
         executed_data: NodeData,
+        edge_key: str = None,  # Add edge_key parameter
     ) -> None:
         """
         Handle normal mode successor updates with maximum readability.
@@ -446,6 +460,7 @@ class GraphExecutor:
             source_handle: Source handle name for the outgoing connection
             target_handle: Target handle name for the incoming connection
             executed_data: Executed data from the source node containing outputs
+            edge_key: The key of the edge (for MultiDiGraph)
 
         Raises:
             Exception: Re-raises any exception that occurs during the update process
@@ -453,7 +468,19 @@ class GraphExecutor:
 
         try:
             current_node_label: str = executed_data.node_type
-            edge_id = self.graph.get_edge_data(node_id, successor_node_id).get("id")
+
+            # Get edge data using the utility function
+            edge_data = MultiDiGraphUtils.get_edge_data_by_key(
+                self.graph, node_id, successor_node_id, edge_key
+            )
+
+            if not edge_data:
+                logger.warning(
+                    f"No edge data between {node_id} and {successor_node_id} with key {edge_key}"
+                )
+                return
+
+            edge_id = edge_data.get("id")
             logger.info(f"👉 edge_id: {edge_id}")
 
             # Step 0: Retrieve the current_node from the graph

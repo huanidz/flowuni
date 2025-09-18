@@ -1,6 +1,7 @@
 import networkx as nx
 from loguru import logger
 from src.consts.node_consts import NODE_EXECUTION_STATUS
+from src.executors.MultiDiGraphUtils import MultiDiGraphUtils
 from src.schemas.flowbuilder.flow_graph_schemas import NodeData
 
 
@@ -88,11 +89,13 @@ class GraphExecutionUtil:
             # make a string that contain edge ids separated by comma. e.g. "edge_id_1,edge_id_2,edge_id_3"
 
             # Get all outgoing edges from this node
-            outgoing_edges = graph.out_edges(node_id, data=True, keys=True)
+            outgoing_edges = MultiDiGraphUtils.iterate_edges_with_data(
+                graph, node_id, data=True, keys=True
+            )
 
             # Extract edge IDs and create comma-separated string
             edge_ids = []
-            for source, target, edge_data in outgoing_edges:
+            for source, target, edge_key, edge_data in outgoing_edges:
                 # edge ID is stored in the edge data
                 edge_id = edge_data.get("id")
                 edge_ids.append(edge_id)
