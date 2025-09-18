@@ -29,6 +29,7 @@ export interface FlowDefinitionData {
         target: string;
         sourceHandle?: string;
         targetHandle?: string;
+        type?: string;
         data?: Record<string, any>;
     }>;
 }
@@ -94,6 +95,7 @@ export const parseFlowDefinition = (
             target: edgeData.target,
             sourceHandle: edgeData.sourceHandle,
             targetHandle: edgeData.targetHandle,
+            type: edgeData.type,
             data: edgeData.data,
         }));
 
@@ -162,13 +164,14 @@ export const getFlowGraphData = (nodes: Node[], edges: Edge[]) => ({
         data,
     })),
     edges: edges.map(
-        ({ id, source, target, sourceHandle, targetHandle, data }) => ({
+        ({ id, source, target, sourceHandle, targetHandle, data, type }) => ({
             id,
             source,
             target,
             sourceHandle,
             targetHandle,
             data,
+            type, // Include the edge type when saving flow data
         })
     ),
 });
