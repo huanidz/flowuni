@@ -366,7 +366,7 @@ class GraphExecutor:
         with self._update_lock:
             for successor_node_id in successors:
                 try:
-                    edge_data = self.graph.get_edge_data(node_id, successor_node_id)
+                    edge_data = self.graph.get_edge_data(u=node_id, v=successor_node_id)
                     logger.info(f"👉 edge_data: {edge_data}")
                     if not edge_data:
                         logger.warning(
