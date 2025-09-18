@@ -3,6 +3,7 @@ from src.nodes.customs import (
     CalculatorNode,
     ComparisonRouterNode,
     HttpRequestNode,
+    LLMProviderNode,
     MemoryNode,
     RouterNode,
     StringAggregatorNode,
@@ -24,4 +25,5 @@ __all__ = [
     StringAggregatorNode,
     ComparisonRouterNode,
     MemoryNode,
+    LLMProviderNode,
 ]

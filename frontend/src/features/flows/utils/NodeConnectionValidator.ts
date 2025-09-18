@@ -194,6 +194,7 @@ export class ConnectionValidator {
                 'BooleanInputHandle',
                 'DynamicTypeInputHandle',
             ],
+            LLMProviderOutputHandle: ['LLMProviderInputHandle'],
         };
 
         const compatibleTargets = compatibilityMatrix[sourceTypeName] || [];
