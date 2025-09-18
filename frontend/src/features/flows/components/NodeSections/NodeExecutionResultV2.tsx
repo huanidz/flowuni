@@ -63,6 +63,118 @@ export const NodeExecutionResultV2: React.FC<NodeExecutionResultV2Props> = ({
         target.scrollTop += e.deltaY;
     };
 
+    // Check if a value is a valid JSON object or array
+    const isJsonValue = (value: any): boolean => {
+        if (typeof value === 'object' && value !== null) {
+            return true;
+        }
+        if (typeof value === 'string') {
+            try {
+                const parsed = JSON.parse(value);
+                return typeof parsed === 'object' && parsed !== null;
+            } catch {
+                return false;
+            }
+        }
+        return false;
+    };
+
+    // Parse JSON string value
+    const parseJsonValue = (value: any): any => {
+        if (typeof value === 'object' && value !== null) {
+            return value;
+        }
+        if (typeof value === 'string') {
+            try {
+                return JSON.parse(value);
+            } catch {
+                return value;
+            }
+        }
+        return value;
+    };
+
+    // Render a value as a card or sub-cards
+    const renderValueCard = (
+        key: string,
+        value: any,
+        depth: number = 0
+    ): React.ReactNode => {
+        const isJson = isJsonValue(value);
+        const parsedValue = isJson ? parseJsonValue(value) : value;
+
+        // Base card styles with depth-based indentation
+        const cardStyle = {
+            backgroundColor: depth === 0 ? '#f0fdf4' : '#fafafa',
+            border: depth === 0 ? '1px solid #bbf7d0' : '1px solid #e5e5e5',
+            borderRadius: '6px',
+            padding: '12px',
+            marginLeft: depth > 0 ? '16px' : '0px',
+        };
+
+        const keyStyle = {
+            fontWeight: 'bold',
+            marginBottom: '4px',
+            color: depth === 0 ? '#166534' : '#374151',
+        };
+
+        if (isJson && typeof parsedValue === 'object') {
+            if (Array.isArray(parsedValue)) {
+                // Handle arrays
+                return (
+                    <div key={key} style={cardStyle}>
+                        <div style={keyStyle}>{key} (Array):</div>
+                        <div
+                            style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '8px',
+                            }}
+                        >
+                            {parsedValue.map((item, index) =>
+                                renderValueCard(`[${index}]`, item, depth + 1)
+                            )}
+                        </div>
+                    </div>
+                );
+            } else {
+                // Handle objects
+                return (
+                    <div key={key} style={cardStyle}>
+                        <div style={keyStyle}>{key} (Object):</div>
+                        <div
+                            style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '8px',
+                            }}
+                        >
+                            {Object.entries(parsedValue).map(
+                                ([subKey, subValue]) =>
+                                    renderValueCard(subKey, subValue, depth + 1)
+                            )}
+                        </div>
+                    </div>
+                );
+            }
+        } else {
+            // Handle primitive values
+            return (
+                <div key={key} style={cardStyle}>
+                    <div style={keyStyle}>{key}:</div>
+                    <div
+                        style={{
+                            color: depth === 0 ? '#14532d' : '#6b7280',
+                            wordBreak: 'break-word',
+                        }}
+                    >
+                        {String(parsedValue)}
+                    </div>
+                </div>
+            );
+        }
+    };
+
     // Parse result to extract output values or error
     const parseResult = () => {
         if (!result) return { outputValues: null, error: null };
@@ -179,35 +291,9 @@ export const NodeExecutionResultV2: React.FC<NodeExecutionResultV2Props> = ({
                             <div>{error}</div>
                         </div>
                     ) : outputValues ? (
-                        Object.entries(outputValues).map(([key, value]) => (
-                            <div
-                                key={key}
-                                style={{
-                                    backgroundColor: '#f0fdf4',
-                                    border: '1px solid #bbf7d0',
-                                    borderRadius: '6px',
-                                    padding: '12px',
-                                }}
-                            >
-                                <div
-                                    style={{
-                                        fontWeight: 'bold',
-                                        marginBottom: '4px',
-                                        color: '#166534',
-                                    }}
-                                >
-                                    {key}:
-                                </div>
-                                <div
-                                    style={{
-                                        color: '#14532d',
-                                        wordBreak: 'break-word',
-                                    }}
-                                >
-                                    {String(value)}
-                                </div>
-                            </div>
-                        ))
+                        Object.entries(outputValues).map(([key, value]) =>
+                            renderValueCard(key, value, 0)
+                        )
                     ) : (
                         'No output'
                     )}
