@@ -367,6 +367,7 @@ class GraphExecutor:
             for successor_node_id in successors:
                 try:
                     edge_data = self.graph.get_edge_data(node_id, successor_node_id)
+                    logger.info(f"👉 edge_data: {edge_data}")
                     if not edge_data:
                         logger.warning(
                             f"No edge data between {node_id} and {successor_node_id}"
@@ -387,7 +388,9 @@ class GraphExecutor:
                         continue
 
                     source_handle = edge_data.get("source_handle", "")
+                    logger.info(f"👉 source_handle: {source_handle}")
                     target_handle = edge_data.get("target_handle", "")
+                    logger.info(f"👉 target_handle: {target_handle}")
 
                     # Handle the -index splitting (same as old version)
                     if source_handle and "-index" in source_handle:
@@ -452,6 +455,7 @@ class GraphExecutor:
         try:
             current_node_label: str = executed_data.node_type
             edge_id = self.graph.get_edge_data(node_id, successor_node_id).get("id")
+            logger.info(f"👉 edge_id: {edge_id}")
 
             # Step 0: Retrieve the current_node from the graph
             current_graph_node = self.graph.nodes.get(node_id)

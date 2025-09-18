@@ -90,6 +90,38 @@ class Agent(ABC):
         logger.info("💬 Returning final response")
         return ChatResponse(content=agent_response.final_response)
 
+    def chat_structured(
+        self,
+        message: ChatMessage,
+        output_schema,
+        prev_histories: Optional[List[ChatMessage]] = None,
+    ) -> any:
+        """
+        Process a message and return a structured response.
+
+        Args:
+            message (ChatMessage): The message to process
+            output_schema: The Pydantic model/schema for structured output
+            prev_histories (List[ChatMessage], optional): Previous chat histories. Defaults to None.
+        Returns:
+            any: The structured response as per the output schema
+        """  # noqa
+
+        # Setup the conversation
+        _, chat_messages = self._setup_agent_conversation(
+            message=message, prev_histories=prev_histories
+        )
+
+        # Get the structured response
+        structured_response = self.llm_provider.structured_completion(
+            messages=chat_messages, output_schema=output_schema
+        )
+        logger.info(
+            f"Structured Response: {structured_response.model_dump_json(indent=2)}"
+        )
+
+        return structured_response
+
     def _build_tools_map(self) -> Dict[str, Dict[str, ToolDataParser]]:
         """
         Build a mapping of tool names to tool parsers for quick lookup.
