@@ -16,6 +16,7 @@ import { useNodeUpdate } from '../../hooks/useNodeUpdate';
 import { useDragDropHandler } from '@/features/flows/hooks/useDragAndDropHandler';
 import { useFlowActions } from '@/features/flows/hooks/useFlowActions';
 import { useCurrentFlowState } from '../../hooks/useCurrentFlowState';
+import useFlowUltilities from '@/features/flows/hooks/useFlowUltilities';
 import { useConnectionValidation } from '../../hooks/useConnectionValidator';
 import { useConnectionHighlighting } from '../../hooks/useHandleConnectionHighlighting';
 import { useSelectedNode } from '@/features/flows/hooks/useSelectedNode';
@@ -58,6 +59,9 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
         isLoading,
         flowError,
     } = useCurrentFlowState(flow_id);
+
+    // Auto-save and other flow utilities (non-blocking)
+    useFlowUltilities(currentNodes, currentEdges);
 
     // Use selected node state
     const {
