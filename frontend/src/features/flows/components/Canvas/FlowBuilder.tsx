@@ -43,7 +43,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
         setPlaygroundOpen,
         playgroundPosition,
         setPlaygroundPosition,
-        isSaved,
+        setSaved,
     } = useFlowStore();
 
     // Use consolidated flow state hook (simplified without duplicate state)
@@ -115,6 +115,16 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
         setNodes,
         setEdges,
     ]);
+
+    // Track when flow is fully rendered
+    const [isFlowRendered, setIsFlowRendered] = React.useState(false);
+
+    // Mark flow as saved when all conditions are met
+    useEffect(() => {
+        if (isFlowRendered && currentNodes.length > 0 && nodeTypesLoaded) {
+            setSaved(true);
+        }
+    }, [isFlowRendered, currentNodes, nodeTypesLoaded, setSaved]);
 
     const { onDragStart, onDrop, onDragOver } = useDragDropHandler(
         reactFlowInstance,
@@ -209,7 +219,6 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
                     onPlayground={handlePlaygroundClick}
                     nodes={currentNodes}
                     edges={currentEdges}
-                    isSaved={isSaved}
                 />
 
                 <ReactFlow
@@ -231,6 +240,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
                     snapToGrid={true}
                     snapGrid={[15, 15]}
                     attributionPosition="top-right"
+                    onInit={() => setIsFlowRendered(true)}
                     onNodeClick={(_, node) => {
                         // Only handle node click if it's not already selected
                         if (!selectedNode || selectedNode.id !== node.id) {

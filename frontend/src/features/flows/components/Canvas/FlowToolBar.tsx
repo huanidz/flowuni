@@ -26,7 +26,6 @@ interface FlowToolbarProps {
     onPlayground: () => void;
     nodes: Node[];
     edges: Edge[];
-    isSaved: boolean;
 }
 
 const FlowToolbar: React.FC<FlowToolbarProps> = ({
@@ -41,7 +40,6 @@ const FlowToolbar: React.FC<FlowToolbarProps> = ({
     onPlayground,
     nodes,
     edges,
-    isSaved,
 }) => {
     const [isRunDropdownOpen, setIsRunDropdownOpen] = useState(false);
 
@@ -95,7 +93,7 @@ const FlowToolbar: React.FC<FlowToolbarProps> = ({
 
             {/* Second row with Export button */}
             <div style={secondRowContainer}>
-                <SaveButton onSave={onSave} isSaved={isSaved} />
+                <SaveButton onSave={onSave} />
 
                 <ExportButton nodes={nodes} edges={edges} />
             </div>

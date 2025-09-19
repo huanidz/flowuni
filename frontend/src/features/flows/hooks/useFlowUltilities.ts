@@ -4,7 +4,6 @@ import type { Node, Edge } from '@xyflow/react';
 import useFlowStore from '@/features/flows/stores/flow_stores';
 import { getFlowGraphData } from '@/features/flows/utils';
 import { saveFlow } from '@/features/flows/api';
-import { toast } from 'sonner';
 
 /**
  * Simple and fast DJB2 hash for strings.
@@ -59,20 +58,14 @@ export const useFlowUltilities = (
     const lastComputedHashRef = useRef<number | null>(null);
     const lastSavedHashRef = useRef<number | null>(null);
 
-    // Initialize the saved hash when the component mounts
-    useEffect(() => {
-        if (nodes.length > 0 || edges.length > 0) {
-            const initialHash = computeHash(nodes, edges);
-            lastSavedHashRef.current = initialHash;
-            setCurrentHash(initialHash);
-        }
-    }, []); // Empty dependency array means this runs once on mount
+    // Expose current hash for debugging/UI
+    const [currentHash, setCurrentHash] = useState<number | null>(null);
 
     // Track whether a save is in progress to avoid concurrent saves
     const savingRef = useRef(false);
 
-    // Expose current hash for debugging/UI
-    const [currentHash, setCurrentHash] = useState<number | null>(null);
+    // Skip first run of the "nodes/edges change" effect
+    const mountedRef = useRef(false);
 
     // Compute hash from nodes + edges
     const computeHash = useCallback((ns: Node[], es: Edge[]) => {
@@ -86,6 +79,15 @@ export const useFlowUltilities = (
             return null;
         }
     }, []);
+
+    // Initialize the saved hash when the component mounts
+    useEffect(() => {
+        if (nodes.length > 0 || edges.length > 0) {
+            const initialHash = computeHash(nodes, edges);
+            lastSavedHashRef.current = initialHash;
+            setCurrentHash(initialHash);
+        }
+    }, []); // run once on mount
 
     // Async save function used by autosave and manual trigger
     const doSave = useCallback(
@@ -121,7 +123,6 @@ export const useFlowUltilities = (
                 const { setSaved } = useFlowStore.getState();
                 setSaved(true);
 
-                toast.success('Auto-saved flow.');
                 return true;
             } catch (err) {
                 console.error('Auto-save failed:', err);
@@ -138,8 +139,13 @@ export const useFlowUltilities = (
         return await doSave(nodes, edges);
     }, [doSave, nodes, edges]);
 
-    // Effect: compute current hash whenever nodes/edges change
+    // Effect: compute current hash whenever nodes/edges change (skip first mount)
     useEffect(() => {
+        if (!mountedRef.current) {
+            mountedRef.current = true;
+            return;
+        }
+
         const h = computeHash(nodes, edges);
         lastComputedHashRef.current = h;
         setCurrentHash(h);
@@ -178,12 +184,8 @@ export const useFlowUltilities = (
         };
     }, [enabled, intervalMs, nodes, edges, computeHash, doSave]);
 
-    // Determine if the flow is saved (current hash matches last saved hash)
-    const isSaved = currentHash === lastSavedHashRef.current;
-
     return {
         currentHash,
-        isSaved,
         forceSave,
     };
 };

@@ -3,13 +3,14 @@ import {
     saveButton,
     saveButtonHover,
 } from '@/features/flows/styles/flowToolBarStyles';
+import useFlowStore from '@/features/flows/stores/flow_stores';
 
 interface SaveButtonProps {
     onSave: () => void;
-    isSaved: boolean;
 }
 
-const SaveButton: React.FC<SaveButtonProps> = ({ onSave, isSaved }) => {
+const SaveButton: React.FC<SaveButtonProps> = ({ onSave }) => {
+    const { isSaved } = useFlowStore();
     return (
         <button
             onClick={onSave}
