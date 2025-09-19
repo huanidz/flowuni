@@ -1,5 +1,9 @@
+import json
+from typing import List
+
 import networkx as nx
 from loguru import logger
+from src.consts.execution_consts import ROUTER_LABEL_SPLIT_JOIN_STRING
 from src.consts.node_consts import NODE_EXECUTION_STATUS
 from src.executors.MultiDiGraphUtils import MultiDiGraphUtils
 from src.schemas.flowbuilder.flow_graph_schemas import NodeData
@@ -94,28 +98,39 @@ class GraphExecutionUtil:
             )
 
             # Extract edge IDs and create comma-separated string
-            edge_ids = []
+            edge_route_labels: List[str] = []
             for source, target, edge_key, edge_data in outgoing_edges:
+                logger.info(f"👉 edge_data: {edge_data}")
                 # edge ID is stored in the edge data
-                edge_id = edge_data.get("id")
-                edge_ids.append(edge_id)
+                edge_custom_data_field = edge_data.get("data", None)
 
-            if not edge_ids:
+                if not edge_custom_data_field:
+                    logger.warning(
+                        f"Edge from {source} to {target} with key {edge_key} is missing 'data' field."
+                    )
+                    continue
+
+                edge_text_label = edge_custom_data_field.get("text", "")
+
+                if edge_text_label:
+                    edge_route_labels.append(edge_text_label)
+                else:
+                    logger.warning(
+                        f"Edge from {source} to {target} with key {edge_key} has empty 'text' field."
+                    )
+                    continue
+
+            if not edge_route_labels:
                 logger.warning(
                     f"No outgoing edges found for Node {NODE_LABEL_CONSTS.ROUTER} {node_id}"
                 )
                 return node_data
 
-            # Create the comma-separated string of edge IDs
-            edge_ids_string = ",".join(edge_ids)
-            logger.info(f"👉 edge_ids_string: {edge_ids_string}")
+            # Unique the labels
+            edge_route_labels = list(set(edge_route_labels))
 
             node_data.input_values[SPECIAL_NODE_INPUT_CONSTS.ROUTER_ROUTE_LABELS] = (
-                edge_ids_string
-            )
-
-            logger.debug(
-                f"Router node {node_id} prepared with edge IDs: {edge_ids_string}"
+                json.dumps(edge_route_labels)
             )
 
             return node_data
