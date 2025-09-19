@@ -18,9 +18,11 @@ export const nodeStyles = {
         padding: '8px',
         borderBottom: '1px solid #eee',
         color: '#ebebe7ff',
-        backgroundColor: '#272623ff',
+        background:
+            'linear-gradient(30deg, #1a1a1a 0%, #2d2d2d 30%, #3a3a3a 60%, #4a4a4a 100%)',
         borderRadius: '6px',
-        cursor: 'move' as const,
+        cursor: 'grab' as const,
+        boxShadow: 'inset 0 1px 2px rgba(0, 0, 0, 0.3)',
 
         nodeFooter: {
             marginTop: '8px',
@@ -397,6 +399,7 @@ export const nodeStyles = {
         justifyContent: 'space-between',
         alignItems: 'center',
         position: 'relative' as const,
+        overflow: 'hidden' as const,
     },
 
     // Header label styles
@@ -404,7 +407,6 @@ export const nodeStyles = {
         fontWeight: 'bold' as const,
         fontSize: '12px',
         whiteSpace: 'nowrap' as const,
-        overflow: 'hidden' as const,
         textOverflow: 'ellipsis' as const,
         maxWidth: '120px',
     },
