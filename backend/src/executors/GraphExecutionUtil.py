@@ -44,23 +44,28 @@ class GraphExecutionUtil:
             node_data = graph.nodes[node_id].get("data", NodeData())
             return node_data.execution_status != NODE_EXECUTION_STATUS.SKIPPED
 
-        # Check if any predecessor is SKIPPED
+        # Check if all predecessors are SKIPPED
+        all_predecessors_skipped = True
         for pred_id in predecessors:
             pred_node = graph.nodes[pred_id]
             pred_data = pred_node.get("data", NodeData())
 
-            if pred_data.execution_status == NODE_EXECUTION_STATUS.SKIPPED:
-                # At least one predecessor is skipped, so this node should be skipped too
-                logger.info(
-                    f"Node {node_id} should be skipped due to skipped predecessor {pred_id}"
-                )
+            if pred_data.execution_status != NODE_EXECUTION_STATUS.SKIPPED:
+                all_predecessors_skipped = False
+                break
 
-                # Mark this node as SKIPPED
-                current_node_data = graph.nodes[node_id].get("data", NodeData())
-                current_node_data.execution_status = NODE_EXECUTION_STATUS.SKIPPED
-                graph.nodes[node_id]["data"] = current_node_data
+        if all_predecessors_skipped:
+            # All predecessors are skipped, so this node should be skipped too
+            logger.info(
+                f"Node {node_id} should be skipped due to all predecessors being skipped"
+            )
 
-                return False
+            # Mark this node as SKIPPED
+            current_node_data = graph.nodes[node_id].get("data", NodeData())
+            current_node_data.execution_status = NODE_EXECUTION_STATUS.SKIPPED
+            graph.nodes[node_id]["data"] = current_node_data
+
+            return False
 
         # All predecessors are not skipped, check the node's own status
         node_data = graph.nodes[node_id].get("data", NodeData())
