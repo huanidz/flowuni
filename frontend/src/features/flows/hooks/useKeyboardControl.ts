@@ -25,7 +25,11 @@ const matchesCombo = (event: KeyboardEvent, combo: string): boolean => {
         ].filter(Boolean) as string[]
     );
 
-    return eventKey === key && [...modifiers].every(m => eventModifiers.has(m));
+    return (
+        eventKey === key &&
+        modifiers.size === eventModifiers.size &&
+        [...modifiers].every(m => eventModifiers.has(m))
+    );
 };
 
 export const useKeyboardControl = (shortcuts: KeyboardShortcut[]) => {
