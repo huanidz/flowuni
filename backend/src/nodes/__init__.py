@@ -2,6 +2,8 @@ from src.nodes.customs import (
     AgentNode,
     CalculatorNode,
     ComparisonRouterNode,
+    FanInNode,
+    FanOutNode,
     HttpRequestNode,
     LLMProviderNode,
     MemoryNode,
@@ -26,4 +28,6 @@ __all__ = [
     ComparisonRouterNode,
     MemoryNode,
     LLMProviderNode,
+    FanInNode,
+    FanOutNode,
 ]
