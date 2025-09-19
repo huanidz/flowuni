@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, memo } from 'react';
 import type { Node, ReactFlowInstance } from '@xyflow/react';
 import { Position } from '@xyflow/react';
 import { useNodeRegistry } from '@/features/nodes';

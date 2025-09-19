@@ -7,19 +7,20 @@ PROJECT_NAME="flowuni"
 COMPOSE_FILE="docker/docker-compose.dev.yml"
 
 echo "🚀 Starting fresh Docker Compose build..."
-sudo docker compose -f "$COMPOSE_FILE" -p "$PROJECT_NAME" up --build -d
+sudo docker compose -f "$COMPOSE_FILE" -p "$PROJECT_NAME" down -v
+sudo docker compose -f "$COMPOSE_FILE" -p "$PROJECT_NAME" up --build
 
-echo "🧹 Cleaning Celery result tables..."
-# Wait for database to be ready
-sleep 1
+# echo "🧹 Cleaning Celery result tables..."
+# # Wait for database to be ready
+# sleep 1
 
-# Clean celery tables
-sudo docker compose -f "$COMPOSE_FILE" -p "$PROJECT_NAME" exec db_service psql -U postgres -d flowuni-celery-backend-db -c "
-TRUNCATE celery_taskmeta, celery_tasksetmeta;
-"
+# # Clean celery tables
+# sudo docker compose -f "$COMPOSE_FILE" -p "$PROJECT_NAME" exec db_service psql -U postgres -d flowuni-celery-backend-db -c "
+# TRUNCATE celery_taskmeta, celery_tasksetmeta;
+# "
 
-echo "✅ Celery tables cleaned. Restarting celery worker..."
-sudo docker compose -f "$COMPOSE_FILE" -p "$PROJECT_NAME" restart celery-worker
+# echo "✅ Celery tables cleaned. Restarting celery worker..."
+# sudo docker compose -f "$COMPOSE_FILE" -p "$PROJECT_NAME" restart celery-worker
 
-# Bring containers to foreground
-sudo docker compose -f "$COMPOSE_FILE" -p "$PROJECT_NAME" logs -f
+# # Bring containers to foreground
+# sudo docker compose -f "$COMPOSE_FILE" -p "$PROJECT_NAME" logs -f
