@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 import FlowToolbar from './FlowToolBar';
 import NodePalette from './FlowNodePallete';
 import {
@@ -28,6 +28,7 @@ import { useNodeStore } from '@/features/nodes';
 import useNodeConnectionLogic from '@/features/flows/hooks/useNodeConnectionLogic';
 
 import { useKeyboardControl } from '@/features/flows/hooks/useKeyboardControl';
+import { useUndoRedo } from '../../hooks/useUndoRedo';
 
 interface FlowBuilderContentProps {
     flow_id: string;
@@ -62,6 +63,14 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
         flowError,
     } = useCurrentFlowState(flow_id);
 
+    // Undo/Redo functionality
+    const { undo, redo } = useUndoRedo({
+        nodes: currentNodes,
+        edges: currentEdges,
+        setNodes,
+        setEdges,
+    });
+
     // Auto-save and other flow utilities (non-blocking)
     const { forceSave, trySave } = useFlowUltilities(
         currentNodes,
@@ -73,6 +82,14 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
         {
             combo: 'Ctrl+S',
             handler: trySave,
+        },
+        {
+            combo: 'Ctrl+Z',
+            handler: undo,
+        },
+        {
+            combo: 'Ctrl+Shift+Z',
+            handler: redo,
         },
     ]);
 

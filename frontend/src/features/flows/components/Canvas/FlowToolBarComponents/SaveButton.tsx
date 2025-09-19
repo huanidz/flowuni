@@ -17,11 +17,9 @@ const SaveButton: React.FC<SaveButtonProps> = ({ onSave }) => {
             disabled={isSaved}
             style={{
                 ...saveButton,
-                backgroundColor: isSaved
-                    ? '#10B981'
-                    : saveButton.backgroundColor,
+                backgroundColor: saveButton.backgroundColor,
                 cursor: isSaved ? 'default' : 'pointer',
-                opacity: isSaved ? 0.8 : 1,
+                opacity: isSaved ? 0.5 : 1,
             }}
             onMouseEnter={e => {
                 if (!isSaved) {
@@ -36,7 +34,7 @@ const SaveButton: React.FC<SaveButtonProps> = ({ onSave }) => {
                 }
             }}
         >
-            {isSaved ? 'Saved' : 'Save'}
+            {isSaved ? 'Saved' : '  Save'}
         </button>
     );
 };
