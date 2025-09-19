@@ -3,7 +3,7 @@ import { addEdge, type Connection } from '@xyflow/react';
 import type { Node, Edge } from '@xyflow/react';
 import { useConnectionValidation } from './useConnectionValidator';
 import { useNodeStore } from '@/features/nodes';
-import { getSourceOutputTypeName } from '../utils';
+import { getSourceOutputTypeName, generateRouteLabel } from '../utils';
 
 interface UseNodeConnectionLogicProps {
     // current nodes and edges are provided for validation hook (if needed by consumer)
@@ -48,7 +48,6 @@ export const useNodeConnectionLogic = ({
         (params: Connection) => {
             // Keep logging for debugging
             // eslint-disable-next-line no-console
-            console.log('Params:', params);
             if (isValidConnection(params)) {
                 const edgeType = determineEdgeTypeFromSource(params);
                 const edgePayload: any = {
@@ -57,7 +56,12 @@ export const useNodeConnectionLogic = ({
 
                 if (edgeType === 'custom') {
                     edgePayload.type = 'custom';
-                    edgePayload.data = { text: 'Custom Label 🎉' };
+                    const routeLabel = generateRouteLabel(
+                        params.source,
+                        params.sourceHandle,
+                        edges
+                    );
+                    edgePayload.data = { text: routeLabel };
                 }
 
                 setEdges(eds => addEdge(edgePayload, eds));

@@ -234,3 +234,81 @@ export const getSourceOutputTypeName = (
     if (!outputSpec) return undefined;
     return outputSpec.type_detail?.type;
 };
+
+/**
+ * Generate incremental route labels for RouterOutputHandle connections
+ * @param source - The source node ID
+ * @param sourceHandle - The source handle ID (can be null)
+ * @param edges - Current edges array to check for existing labels
+ * @returns A route label like "Route A", "Route B", "Route AA", "Route AB", etc.
+ */
+export const generateRouteLabel = (
+    source: string,
+    sourceHandle: string | null,
+    edges: any[]
+): string => {
+    // Find all existing edges from this source node with RouterOutputHandle
+    const existingRouteEdges = edges.filter(
+        edge =>
+            edge.source === source &&
+            edge.sourceHandle === sourceHandle &&
+            edge.data &&
+            typeof edge.data === 'object' &&
+            'text' in edge.data &&
+            typeof edge.data.text === 'string' &&
+            edge.data.text.startsWith('Route ')
+    );
+
+    // Extract all existing route labels
+    const existingLabels = existingRouteEdges
+        .map(edge => {
+            if (
+                edge.data &&
+                typeof edge.data === 'object' &&
+                'text' in edge.data &&
+                typeof edge.data.text === 'string'
+            ) {
+                const match = edge.data.text.match(/Route (.+)/);
+                return match ? match[1] : null;
+            }
+            return null;
+        })
+        .filter(Boolean) as string[];
+
+    // Function to convert letters to numbers (A=1, B=2, ..., Z=26, AA=27, AB=28, etc.)
+    const lettersToNumber = (letters: string): number => {
+        let number = 0;
+        for (let i = 0; i < letters.length; i++) {
+            number = number * 26 + (letters.charCodeAt(i) - 64); // A=65, so 65-64=1
+        }
+        return number;
+    };
+
+    // Function to convert number to letters (1=A, 2=B, ..., 26=Z, 27=AA, 28=AB, etc.)
+    const numberToLetters = (number: number): string => {
+        if (number <= 26) {
+            return String.fromCharCode(64 + number);
+        }
+
+        let result = '';
+        let n = number;
+        while (n > 0) {
+            n--; // Adjust to 0-based index
+            const remainder = n % 26;
+            result = String.fromCharCode(65 + remainder) + result;
+            n = Math.floor(n / 26);
+        }
+        return result;
+    };
+
+    // Find the next available number
+    let nextNumber = 1;
+    while (
+        existingLabels.some(label => lettersToNumber(label) === nextNumber)
+    ) {
+        nextNumber++;
+    }
+
+    const nextLetters = numberToLetters(nextNumber);
+    return `Route ${nextLetters}`;
+};
