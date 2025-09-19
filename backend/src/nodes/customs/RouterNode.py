@@ -1,7 +1,12 @@
+import json
 from typing import Any, Dict, Union
 
 from loguru import logger
-from src.consts.node_consts import NODE_LABEL_CONSTS, SPECIAL_NODE_INPUT_CONSTS
+from src.consts.node_consts import (
+    NODE_LABEL_CONSTS,
+    NODE_TAGS_CONSTS,
+    SPECIAL_NODE_INPUT_CONSTS,
+)
 from src.nodes.core.NodeIcon import NodeIconIconify
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
@@ -15,7 +20,7 @@ from src.schemas.nodes.node_data_parsers import BuildToolResult
 
 class RouterNode(Node):
     spec: NodeSpec = NodeSpec(
-        name=NODE_LABEL_CONSTS.ROUTER,
+        name="Router",
         description="Router node that will route input to other nodes.",
         inputs=[
             NodeInput(
@@ -40,17 +45,18 @@ class RouterNode(Node):
         ],
         parameters=[],
         icon=NodeIconIconify(icon_value="tabler:route-alt-right"),
+        tags=[NODE_TAGS_CONSTS.ROUTING],
     )
 
     def process(
         self, inputs: Dict[str, Any], parameters: Dict[str, Any]
     ) -> Dict[str, Union[float, int, str]]:
         sample_label_decisions = inputs[SPECIAL_NODE_INPUT_CONSTS.ROUTER_ROUTE_LABELS]
-        logger.info(f"👉 sample_label_decisions: {sample_label_decisions}")
+        sample_label_decisions_list = json.loads(sample_label_decisions)
 
         output_data = RouterOutputData(
             route_value=inputs["input_text"],
-            route_label_decisons=sample_label_decisions,
+            route_label_decisons=sample_label_decisions_list,
         )
 
         return {"routed_output": output_data.model_dump()}

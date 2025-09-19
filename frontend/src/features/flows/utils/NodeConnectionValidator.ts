@@ -98,6 +98,17 @@ export class ConnectionValidator {
             return false;
         }
 
+        // Check if RouterOutputHandle already has a connection to this target node
+        if (
+            sourceOutputHandle.type_detail.type === 'RouterOutputHandle' &&
+            !this.canRouterOutputConnectToTarget(source, target)
+        ) {
+            console.warn(
+                'RouterOutputHandle already has a connection to this target node'
+            );
+            return false;
+        }
+
         return true;
     };
 
@@ -220,5 +231,39 @@ export class ConnectionValidator {
 
         // Allow connection if no existing connections (single connection rule)
         return existingConnections.length === 0;
+    }
+
+    private canRouterOutputConnectToTarget(
+        sourceNodeId: string,
+        targetNodeId: string
+    ): boolean {
+        // Check if there's already a connection from any RouterOutputHandle to this target node
+        const existingRouterConnections = this.edges.filter(edge => {
+            // Find the source node to check if it has RouterOutputHandle
+            const sourceNode = this.nodes.find(n => n.id === edge.source);
+            if (!sourceNode) return false;
+
+            // Get the source node specification
+            const sourceNodeSpec = this.getNodeSpecByRFNodeType(
+                sourceNode.type ?? ''
+            );
+            if (!sourceNodeSpec) return false;
+
+            // Get the source output handle
+            const sourceOutputHandle = this.getSourceOutputHandle(
+                edge.sourceHandle ?? null,
+                sourceNodeSpec
+            );
+            if (!sourceOutputHandle) return false;
+
+            // Check if this is a RouterOutputHandle and connected to our target node
+            return (
+                sourceOutputHandle.type_detail.type === 'RouterOutputHandle' &&
+                edge.target === targetNodeId
+            );
+        });
+
+        // Allow connection if no existing RouterOutputHandle connections to this target node
+        return existingRouterConnections.length === 0;
     }
 }

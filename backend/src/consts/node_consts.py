@@ -30,3 +30,4 @@ class NODE_GROUP_CONSTS:
 
 class NODE_TAGS_CONSTS:
     SESSION_ENABLED = "session-enabled"
+    ROUTING = "routing"

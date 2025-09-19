@@ -7,10 +7,11 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 import networkx as nx
 from loguru import logger
+from src.consts.execution_consts import ROUTER_LABEL_SPLIT_JOIN_STRING
 from src.consts.node_consts import (
     NODE_DATA_MODE,
     NODE_EXECUTION_STATUS,
-    NODE_LABEL_CONSTS,
+    NODE_TAGS_CONSTS,
 )
 from src.exceptions.execution_exceptions import GraphExecutorError
 from src.executors.DataClass import NodeExecutionResult
@@ -473,6 +474,7 @@ class GraphExecutor:
             edge_data = MultiDiGraphUtils.get_edge_data_by_key(
                 self.graph, node_id, successor_node_id, edge_key
             )
+            logger.info(f"👉 edge_data ZXC: {edge_data}")
 
             if not edge_data:
                 logger.warning(
@@ -481,6 +483,7 @@ class GraphExecutor:
                 return
 
             edge_id = edge_data.get("id")
+            edge_label = edge_data.get("data", {}).get("text", "")
             logger.info(f"👉 edge_id: {edge_id}")
 
             # Step 0: Retrieve the current_node from the graph
@@ -560,18 +563,23 @@ class GraphExecutor:
                 source_handle
             ]
 
-            if current_node_label == NODE_LABEL_CONSTS.ROUTER:
+            logger.info(f"👉 current_node_label: {current_node_label}")
+            currnet_node_spec = self.graph.nodes[node_id].get("spec", None)
+            current_node_tags = currnet_node_spec.tags if currnet_node_spec else []
+            if NODE_TAGS_CONSTS.ROUTING in current_node_tags:
                 parsed_router_output_value = RouterOutputData(
                     **output_value_to_transfer
                 )
 
                 # Extract the output route labels.
                 route_label_decisons: List[str] = (
-                    parsed_router_output_value.route_label_decisons.split(",")
-                )[:1]
+                    parsed_router_output_value.route_label_decisons
+                )
 
                 # If the edge_id is not in the label decisons, then the exec_status of that succesor node will be set to SKIPPED. # noqa E501
-                if edge_id not in route_label_decisons:
+                logger.info(f"👉 route_label_decisons: {route_label_decisons}")
+                logger.info(f"👉 edge_label: {edge_label}")
+                if edge_label not in route_label_decisons:
                     successor_node_data.execution_status = NODE_EXECUTION_STATUS.SKIPPED
                     self.graph.nodes[successor_node_id]["data"] = successor_node_data
                     return

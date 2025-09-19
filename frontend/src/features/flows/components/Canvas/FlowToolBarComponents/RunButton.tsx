@@ -17,6 +17,7 @@ import {
     runSelectedOnlyMenuItem,
     runSelectedOnlyMenuItemHover,
 } from '@/features/flows/styles/flowToolBarStyles';
+import { flushSync } from 'react-dom';
 
 interface RunButtonProps {
     onRun: () => void;
@@ -39,6 +40,9 @@ const RunButton: React.FC<RunButtonProps> = ({
         <div style={splitRunButtonContainer}>
             <button
                 onClick={() => {
+                    // flushSync(() => {
+                    //     onResetExecutionData();
+                    // });
                     onResetExecutionData();
                     onRun();
                 }}

@@ -1,7 +1,7 @@
 // NodeFactory.tsx
 
 import React from 'react';
-
+import { memo } from 'react';
 // Types
 import type {
     NodeSpec,
@@ -146,7 +146,7 @@ class NodeFactoryClass {
         // Set a helpful display name for debugging in React DevTools
         CustomNode.displayName = `${nodeSpec.name.replace(/\s+/g, '')}Node`;
 
-        return CustomNode;
+        return memo(CustomNode);
     }
 }
 

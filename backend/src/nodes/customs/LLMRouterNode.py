@@ -1,13 +1,15 @@
-from typing import Any, Dict, Union
+import json
+from typing import Any, Dict, List, Union
 
 from loguru import logger
+from pydantic import BaseModel, Field
+from src.components.agents.AgentBase import Agent
 from src.components.llm.models.core import (
     ChatMessage,
-    ChatResponse,
 )
 from src.components.llm.providers.adapters.LLMProviderInterface import LLMProviderBase
 from src.components.llm.providers.LLMProviderFactory import LLMProviderFactory
-from src.consts.node_consts import NODE_LABEL_CONSTS, SPECIAL_NODE_INPUT_CONSTS
+from src.consts.node_consts import NODE_TAGS_CONSTS, SPECIAL_NODE_INPUT_CONSTS
 from src.models.parsers.LLMProviderParser import LLMProviderParser
 from src.nodes.core.NodeIcon import NodeIconIconify
 from src.nodes.core.NodeInput import NodeInput
@@ -21,7 +23,6 @@ from src.nodes.handles.basics.outputs.RouterOutputHandle import RouterOutputData
 from src.nodes.NodeBase import Node, NodeSpec
 from src.schemas.flowbuilder.flow_graph_schemas import ToolConfig
 from src.schemas.nodes.node_data_parsers import BuildToolResult
-from src.components.agents.AgentBase import Agent
 
 
 class LLMRouterNode(Node):
@@ -66,6 +67,7 @@ class LLMRouterNode(Node):
         ],
         parameters=[],
         icon=NodeIconIconify(icon_value="tabler:route-alt-right"),
+        tags=[NODE_TAGS_CONSTS.ROUTING],
     )
 
     def process(
@@ -75,7 +77,8 @@ class LLMRouterNode(Node):
         input_text = inputs["input_text"]
         additional_instruction = inputs.get("additional_instruction", "")
         sample_label_decisions = inputs[SPECIAL_NODE_INPUT_CONSTS.ROUTER_ROUTE_LABELS]
-
+        logger.info(f"👉 sample_label_decisions: {sample_label_decisions}")
+        sample_label_decisions = json.loads(sample_label_decisions)
         logger.info(f"👉 input_text: {input_text}")
         logger.info(f"👉 sample_label_decisions: {sample_label_decisions}")
 
@@ -89,9 +92,7 @@ class LLMRouterNode(Node):
         llm_provider_instance: LLMProviderBase = LLMProviderFactory.get_provider(
             provider_name=parsed_provider.provider
         )
-        routing_prompt = self._get_routing_prompt(
-            input_text, sample_label_decisions, additional_instruction
-        )
+        routing_prompt = self._get_routing_prompt(input_text, sample_label_decisions)
         llm_provider_instance.init(
             model=parsed_provider.model,
             system_prompt=self._get_routing_system_prompt(additional_instruction),
@@ -104,12 +105,18 @@ class LLMRouterNode(Node):
             system_prompt=self._get_routing_system_prompt(additional_instruction),
             tools=[],
         )
-        chat_response: ChatResponse = agent.chat_structured(
-            message=chat_message, prev_histories=[]
+        route_decision_structured_output = agent.chat_structured(
+            message=chat_message,
+            prev_histories=[],
+            output_schema=self._get_routing_structured_schema(),
         )
 
-        # Extract the route decision from the LLM response
-        route_decision = chat_response.content.strip()
+        route_decision: List[str] = (
+            route_decision_structured_output.route_label_decisons
+        )
+
+        # Unique the labels
+        route_decision = list(set(route_decision))
 
         output_data = RouterOutputData(
             route_value=input_text,
@@ -148,3 +155,14 @@ Please respond with only the route name that best matches this input.
         if additional_instruction:
             base_prompt += f" {additional_instruction}"
         return base_prompt
+
+    def _get_routing_structured_schema(self) -> BaseModel:
+        """Get the structured schema for the routing output."""
+
+        class RoutingOutputSchema(BaseModel):
+            route_label_decisons: List[str] = Field(
+                default_factory=list,
+                description="The decided route labels. It can be empty or multiple labels.",
+            )  # noqa
+
+        return RoutingOutputSchema

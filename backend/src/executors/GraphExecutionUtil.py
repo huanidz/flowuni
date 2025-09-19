@@ -1,6 +1,14 @@
+import json
+from typing import List
+
 import networkx as nx
 from loguru import logger
-from src.consts.node_consts import NODE_EXECUTION_STATUS
+from src.consts.node_consts import (
+    NODE_EXECUTION_STATUS,
+    NODE_LABEL_CONSTS,
+    NODE_TAGS_CONSTS,
+    SPECIAL_NODE_INPUT_CONSTS,
+)
 from src.executors.MultiDiGraphUtils import MultiDiGraphUtils
 from src.schemas.flowbuilder.flow_graph_schemas import NodeData
 
@@ -36,23 +44,28 @@ class GraphExecutionUtil:
             node_data = graph.nodes[node_id].get("data", NodeData())
             return node_data.execution_status != NODE_EXECUTION_STATUS.SKIPPED
 
-        # Check if any predecessor is SKIPPED
+        # Check if all predecessors are SKIPPED
+        all_predecessors_skipped = True
         for pred_id in predecessors:
             pred_node = graph.nodes[pred_id]
             pred_data = pred_node.get("data", NodeData())
 
-            if pred_data.execution_status == NODE_EXECUTION_STATUS.SKIPPED:
-                # At least one predecessor is skipped, so this node should be skipped too
-                logger.info(
-                    f"Node {node_id} should be skipped due to skipped predecessor {pred_id}"
-                )
+            if pred_data.execution_status != NODE_EXECUTION_STATUS.SKIPPED:
+                all_predecessors_skipped = False
+                break
 
-                # Mark this node as SKIPPED
-                current_node_data = graph.nodes[node_id].get("data", NodeData())
-                current_node_data.execution_status = NODE_EXECUTION_STATUS.SKIPPED
-                graph.nodes[node_id]["data"] = current_node_data
+        if all_predecessors_skipped:
+            # All predecessors are skipped, so this node should be skipped too
+            logger.info(
+                f"Node {node_id} should be skipped due to all predecessors being skipped"
+            )
 
-                return False
+            # Mark this node as SKIPPED
+            current_node_data = graph.nodes[node_id].get("data", NodeData())
+            current_node_data.execution_status = NODE_EXECUTION_STATUS.SKIPPED
+            graph.nodes[node_id]["data"] = current_node_data
+
+            return False
 
         # All predecessors are not skipped, check the node's own status
         node_data = graph.nodes[node_id].get("data", NodeData())
@@ -82,9 +95,10 @@ class GraphExecutionUtil:
     ) -> NodeData:
         """Prepare method for node_data before execution."""
 
-        from src.consts.node_consts import NODE_LABEL_CONSTS, SPECIAL_NODE_INPUT_CONSTS
+        node_spec = graph.nodes[node_id].get("spec", None)
+        node_tags = node_spec.tags if node_spec else []
 
-        if node_data.label == NODE_LABEL_CONSTS.ROUTER:
+        if NODE_TAGS_CONSTS.ROUTING in node_tags:
             # First, get the outgoing edges from this node
             # make a string that contain edge ids separated by comma. e.g. "edge_id_1,edge_id_2,edge_id_3"
 
@@ -94,28 +108,37 @@ class GraphExecutionUtil:
             )
 
             # Extract edge IDs and create comma-separated string
-            edge_ids = []
+            edge_route_labels: List[str] = []
             for source, target, edge_key, edge_data in outgoing_edges:
+                logger.info(f"👉 edge_data: {edge_data}")
                 # edge ID is stored in the edge data
-                edge_id = edge_data.get("id")
-                edge_ids.append(edge_id)
+                edge_custom_data_field = edge_data.get("data", None)
 
-            if not edge_ids:
-                logger.warning(
-                    f"No outgoing edges found for Node {NODE_LABEL_CONSTS.ROUTER} {node_id}"
-                )
+                if not edge_custom_data_field:
+                    logger.warning(
+                        f"Edge from {source} to {target} with key {edge_key} is missing 'data' field."
+                    )
+                    continue
+
+                edge_text_label = edge_custom_data_field.get("text", "")
+
+                if edge_text_label:
+                    edge_route_labels.append(edge_text_label)
+                else:
+                    logger.warning(
+                        f"Edge from {source} to {target} with key {edge_key} has empty 'text' field."
+                    )
+                    continue
+
+            if not edge_route_labels:
+                logger.warning(f"No outgoing edges found for Routing Node {node_id}")
                 return node_data
 
-            # Create the comma-separated string of edge IDs
-            edge_ids_string = ",".join(edge_ids)
-            logger.info(f"👉 edge_ids_string: {edge_ids_string}")
+            # Unique the labels
+            edge_route_labels = list(set(edge_route_labels))
 
             node_data.input_values[SPECIAL_NODE_INPUT_CONSTS.ROUTER_ROUTE_LABELS] = (
-                edge_ids_string
-            )
-
-            logger.debug(
-                f"Router node {node_id} prepared with edge IDs: {edge_ids_string}"
+                json.dumps(edge_route_labels)
             )
 
             return node_data
