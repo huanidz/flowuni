@@ -1,4 +1,48 @@
-import React, { useCallback } from 'react';
+/**
+ * useFlowActions.ts
+ *
+ * Lưu ý về việc sử dụng ref trong việc access các state của nodes và edges
+ * (Summarized and Generated using ChatGPT)
+ * ---------------------------------------------------------------
+ * Hook này gom tất cả "flow actions" (compile, run, save, reset, v.v.)
+ * để các component (toolbar, buttons,...) có thể gọi mà không phải
+ * biết chi tiết bên trong.
+ *
+ * ⚡ Quan trọng: Chúng ta dùng `useRef` để giữ `nodes` và `edges` luôn "fresh"
+ * ---------------------------------------------------------------
+ * - Bình thường trong React, callback được khai báo với `useCallback`
+ *   sẽ "chụp" (capture) state ở thời điểm render. Nếu ta gọi callback ngay
+ *   sau khi vừa `setNodes`, callback vẫn sẽ thấy state cũ (stale closure).
+ *
+ * - Ở đây chúng ta có nút "Reset & Run" gọi `onResetExecutionData(); onRunFlow();`
+ *   trong cùng một tick. Nếu chỉ dựa vào state + render, `onRunFlow` sẽ không
+ *   thấy các node đã reset, gây bug.
+ *
+ * - Vì vậy, chúng ta dùng `nodesRef` và `edgesRef`:
+ *   + Mỗi lần `nodes` hoặc `edges` đổi → cập nhật `.current`.
+ *   + Trong `setNodes`, chúng ta cũng cập nhật ref đồng bộ ngay trong updater.
+ *   + Các hàm `onRunFlow`, `onSaveFlow`,... luôn đọc từ ref → luôn thấy snapshot mới nhất.
+ *
+ * ✔ Ưu điểm:
+ *   - Predictable: không bao giờ stale, kể cả reset+run trong cùng tick.
+ *   - API đơn giản: `onRunFlow()` không cần nhận tham số `nodes, edges`.
+ *
+ * ✘ Nhược điểm:
+ *   - Callback không còn "pure function of props/state" nữa.
+ *   - Có thể hơi khó hiểu cho người mới → nên giữ comment này.
+ *
+ * ---------------------------------------------------------------
+ * 🛠 Nếu muốn refactor bỏ `ref`:
+ * - Cách 1: Đổi chữ ký `onRunFlow(n, e)` để caller truyền `nodes, edges` snapshot vào.
+ * - Cách 2: Gộp "reset + run" thành một hàm duy nhất, tự tính `nextNodes`
+ *   rồi dùng nó cho cả `setNodes` và `runFlow`.
+ * Nhưng cả hai cách trên đều làm API phức tạp hơn hoặc bớt flexible.
+ *
+ * 👉 Do đó, hiện tại cách dùng `ref` này là giải pháp **chuẩn và ổn định nhất**
+ * cho use case "Reset & Run trong cùng tick".
+ */
+
+import React, { useCallback, useRef, useEffect } from 'react';
 import type { Node, Edge } from '@xyflow/react';
 import useFlowStore from '@/features/flows/stores/flow_stores';
 import { getFlowGraphData, logNodeDetails } from '@/features/flows/utils';
@@ -57,18 +101,38 @@ export const useFlowActions = (
 
     const handleSSEEvent = createSSEEventHandler(nodeUpdateHandlers);
 
+    // ---- refs always read the freshest snapshot ----
+    const nodesRef = useRef(nodes);
+    const edgesRef = useRef(edges);
+
+    useEffect(() => {
+        nodesRef.current = nodes;
+    }, [nodes]);
+    useEffect(() => {
+        edgesRef.current = edges;
+    }, [edges]);
+    // ------------------------------------------------
+
     const onCompileFlow = useCallback(() => {
-        return handleFlowRequest(nodes, edges, compileFlow, 'COMPILATION');
-    }, [nodes, edges]);
+        return handleFlowRequest(
+            nodesRef.current,
+            edgesRef.current,
+            compileFlow,
+            'COMPILATION'
+        );
+    }, []);
 
     const onRunFlow = useCallback(async () => {
+        const n = nodesRef.current;
+        const e = edgesRef.current;
+
         const validation = validateFlowExecution(current_flow, null, true);
         if (!validation.isValid) return;
 
         console.log('[onRunFlow] Running flow...');
 
         try {
-            const response = await runFlow(nodes, edges);
+            const response = await runFlow(n, e);
             const { task_id } = response;
 
             console.log('[onRunFlow] Flow run response:', response);
@@ -77,13 +141,16 @@ export const useFlowActions = (
                 task_id
             );
 
-            const eventSource = handleSSEEvent(task_id);
+            handleSSEEvent(task_id);
         } catch (err) {
             handleFlowExecutionError(err, 'onRunFlow');
         }
-    }, [nodes, edges, current_flow, nodeUpdateHandlers]);
+    }, [current_flow, handleSSEEvent]);
 
     const onRunFlowFromSelectedNode = useCallback(async () => {
+        const n = nodesRef.current;
+        const e = edgesRef.current;
+
         const validation = validateFlowExecution(
             current_flow,
             selectedNode,
@@ -92,64 +159,54 @@ export const useFlowActions = (
         if (!validation.isValid) return;
 
         console.log(
-            '[onRunFlowFromSelectedNode] Running flow from selected node...',
+            '[onRunFlowFromSelectedNode] Running from node...',
             selectedNode?.id
         );
 
         try {
-            // Use the modified runFlow function with start_node and scope parameters
             const response = await runFlow(
-                nodes,
-                edges,
+                n,
+                e,
                 selectedNode?.id || '',
                 'downstream'
             );
             const { task_id } = response;
-
             console.log(
                 '[onRunFlowFromSelectedNode] Flow run response:',
                 response
             );
-            console.log(
-                '[onRunFlowFromSelectedNode] Watching execution with task_id:',
-                task_id
-            );
-
-            const eventSource = handleSSEEvent(task_id);
+            handleSSEEvent(task_id);
         } catch (err) {
             handleFlowExecutionError(err, 'onRunFlowFromSelectedNode');
         }
-    }, [nodes, edges, current_flow, selectedNode, nodeUpdateHandlers]);
+    }, [current_flow, selectedNode, handleSSEEvent]);
 
     const onRunSelectedOnly = useCallback(async () => {
+        const n = nodesRef.current;
+        const e = edgesRef.current;
+
         const validation = validateFlowExecution(current_flow, selectedNode);
         if (!validation.isValid) return;
 
         console.log(
-            '[onRunSelectedOnly] Running selected node only...',
+            '[onRunSelectedOnly] Running selected only...',
             selectedNode?.id
         );
 
         try {
             const response = await runFlow(
-                nodes,
-                edges,
+                n,
+                e,
                 selectedNode?.id || '',
-                'node_only' // <- Only different in this value
+                'node_only'
             );
             const { task_id } = response;
-
             console.log('[onRunSelectedOnly] Flow run response:', response);
-            console.log(
-                '[onRunSelectedOnly] Watching execution with task_id:',
-                task_id
-            );
-
-            const eventSource = handleSSEEvent(task_id);
+            handleSSEEvent(task_id);
         } catch (err) {
             handleFlowExecutionError(err, 'onRunSelectedOnly');
         }
-    }, [nodes, edges, current_flow, selectedNode, nodeUpdateHandlers]);
+    }, [current_flow, selectedNode, handleSSEEvent]);
 
     const onSaveFlow = useCallback(async () => {
         if (!current_flow) {
@@ -162,67 +219,83 @@ export const useFlowActions = (
             name: current_flow.name,
             description: current_flow.description,
             is_active: current_flow.is_active,
-            flow_definition: getFlowGraphData(nodes, edges),
+            flow_definition: getFlowGraphData(
+                nodesRef.current,
+                edgesRef.current
+            ),
         });
 
         toast.success('Flow saved successfully.', {
             description: 'Flow has been saved successfully.',
         });
-    }, [nodes, edges]);
+    }, [current_flow]);
 
     const onClearFlow = useCallback(() => {
+        // Update ref synchronously so subsequent actions see cleared state immediately
+        nodesRef.current = [];
+        edgesRef.current = [];
         setNodes([]);
         setEdges([]);
-        // Node ID reset is no longer needed as we're using timestamp-based IDs
     }, [setNodes, setEdges]);
 
+    // --------- UPDATED: single set + sync ref update ----------
     const onResetAllData = useCallback(() => {
-        // Reset all node data to initial state (inputs, outputs, execution results, and status)
-        nodes.forEach(node => {
-            // Reset input values to empty objects
-            Object.keys(node.data?.input_values || {}).forEach(inputName => {
-                nodeUpdateHandlers.updateNodeInputData(node.id, inputName, '');
-            });
-
-            // Reset output values to empty objects
-            Object.keys(node.data?.output_values || {}).forEach(outputName => {
-                nodeUpdateHandlers.updateNodeOutputData(
-                    node.id,
-                    outputName,
-                    ''
+        setNodes(prev => {
+            const next = prev.map(node => {
+                const nextInputValues = Object.fromEntries(
+                    Object.keys(node.data?.input_values || {}).map(k => [k, ''])
                 );
+                const nextOutputValues = Object.fromEntries(
+                    Object.keys(node.data?.output_values || {}).map(k => [
+                        k,
+                        '',
+                    ])
+                );
+                return {
+                    ...node,
+                    data: {
+                        ...node.data,
+                        input_values: nextInputValues,
+                        output_values: nextOutputValues,
+                        execution_result: null,
+                        execution_status: 'draft',
+                    },
+                };
             });
-
-            // Reset execution result to null
-            nodeUpdateHandlers.updateNodeExecutionResult(node.id, null);
-
-            // Reset execution status to DRAFT
-            nodeUpdateHandlers.updateNodeExecutionStatus(node.id, 'draft');
+            // critical: set ref now, in the same tick
+            nodesRef.current = next;
+            return next;
         });
-    }, [nodes, nodeUpdateHandlers]);
+        // edges unchanged here; if you ever change them, assign edgesRef.current similarly
+    }, [setNodes]);
 
     const onResetExecutionData = useCallback(() => {
-        // Reset only execution-related data (outputs, execution results, and status)
-        nodes.forEach(node => {
-            // Reset output values to empty objects
-            Object.keys(node.data?.output_values || {}).forEach(outputName => {
-                nodeUpdateHandlers.updateNodeOutputData(
-                    node.id,
-                    outputName,
-                    ''
+        setNodes(prev => {
+            const next = prev.map(node => {
+                const nextOutputValues = Object.fromEntries(
+                    Object.keys(node.data?.output_values || {}).map(k => [
+                        k,
+                        '',
+                    ])
                 );
+                return {
+                    ...node,
+                    data: {
+                        ...node.data,
+                        output_values: nextOutputValues,
+                        execution_result: null,
+                        execution_status: 'draft',
+                    },
+                };
             });
-
-            // Reset execution result to null
-            nodeUpdateHandlers.updateNodeExecutionResult(node.id, null);
-
-            // Reset execution status to DRAFT
-            nodeUpdateHandlers.updateNodeExecutionStatus(node.id, 'draft');
+            // critical: set ref now, in the same tick
+            nodesRef.current = next;
+            return next;
         });
-    }, [nodes, nodeUpdateHandlers]);
+    }, [setNodes]);
+    // ----------------------------------------------------------
 
     const onPlaygroundFlow = useCallback(() => {
-        // Dummy function for playground action
         console.log('Playground action triggered');
     }, []);
 
