@@ -6,23 +6,36 @@ import {
 
 interface SaveButtonProps {
     onSave: () => void;
+    isSaved: boolean;
 }
 
-const SaveButton: React.FC<SaveButtonProps> = ({ onSave }) => {
+const SaveButton: React.FC<SaveButtonProps> = ({ onSave, isSaved }) => {
     return (
         <button
             onClick={onSave}
-            style={saveButton}
+            disabled={isSaved}
+            style={{
+                ...saveButton,
+                backgroundColor: isSaved
+                    ? '#10B981'
+                    : saveButton.backgroundColor,
+                cursor: isSaved ? 'default' : 'pointer',
+                opacity: isSaved ? 0.8 : 1,
+            }}
             onMouseEnter={e => {
-                e.currentTarget.style.backgroundColor =
-                    saveButtonHover.backgroundColor;
+                if (!isSaved) {
+                    e.currentTarget.style.backgroundColor =
+                        saveButtonHover.backgroundColor;
+                }
             }}
             onMouseLeave={e => {
-                e.currentTarget.style.backgroundColor =
-                    saveButton.backgroundColor;
+                if (!isSaved) {
+                    e.currentTarget.style.backgroundColor =
+                        saveButton.backgroundColor;
+                }
             }}
         >
-            Save
+            {isSaved ? 'Saved' : 'Save'}
         </button>
     );
 };

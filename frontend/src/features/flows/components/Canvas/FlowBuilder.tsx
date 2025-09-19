@@ -37,12 +37,13 @@ const edgeTypes = { custom: CustomEdge };
 const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
     const nodePaletteRef = useRef<HTMLDivElement>(null);
 
-    // Use store for playground chat box state
+    // Use store for playground chat box state and save status
     const {
         isPlaygroundOpen,
         setPlaygroundOpen,
         playgroundPosition,
         setPlaygroundPosition,
+        isSaved,
     } = useFlowStore();
 
     // Use consolidated flow state hook (simplified without duplicate state)
@@ -61,7 +62,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
     } = useCurrentFlowState(flow_id);
 
     // Auto-save and other flow utilities (non-blocking)
-    useFlowUltilities(currentNodes, currentEdges);
+    const { forceSave } = useFlowUltilities(currentNodes, currentEdges);
 
     // Use selected node state
     const {
@@ -204,10 +205,11 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
                     onClear={onClearFlow}
                     onResetAllData={onResetAllData}
                     onResetExecutionData={onResetExecutionData}
-                    onSave={onSaveFlow}
+                    onSave={forceSave}
                     onPlayground={handlePlaygroundClick}
                     nodes={currentNodes}
                     edges={currentEdges}
+                    isSaved={isSaved}
                 />
 
                 <ReactFlow

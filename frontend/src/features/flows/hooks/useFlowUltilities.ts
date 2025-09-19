@@ -59,6 +59,15 @@ export const useFlowUltilities = (
     const lastComputedHashRef = useRef<number | null>(null);
     const lastSavedHashRef = useRef<number | null>(null);
 
+    // Initialize the saved hash when the component mounts
+    useEffect(() => {
+        if (nodes.length > 0 || edges.length > 0) {
+            const initialHash = computeHash(nodes, edges);
+            lastSavedHashRef.current = initialHash;
+            setCurrentHash(initialHash);
+        }
+    }, []); // Empty dependency array means this runs once on mount
+
     // Track whether a save is in progress to avoid concurrent saves
     const savingRef = useRef(false);
 
@@ -107,6 +116,11 @@ export const useFlowUltilities = (
                 const h = computeHash(ns, es);
                 lastSavedHashRef.current = h;
                 setCurrentHash(h);
+
+                // Update the saved status in the store
+                const { setSaved } = useFlowStore.getState();
+                setSaved(true);
+
                 toast.success('Auto-saved flow.');
                 return true;
             } catch (err) {
@@ -129,6 +143,10 @@ export const useFlowUltilities = (
         const h = computeHash(nodes, edges);
         lastComputedHashRef.current = h;
         setCurrentHash(h);
+
+        // When nodes or edges change, mark the flow as unsaved
+        const { setSaved } = useFlowStore.getState();
+        setSaved(false);
     }, [nodes, edges, computeHash]);
 
     // Effect: autosave interval
@@ -141,12 +159,6 @@ export const useFlowUltilities = (
             try {
                 const computed = computeHash(nodes, edges);
                 if (computed === null) return;
-
-                // If no previous saved hash, initialize it to current computed to avoid immediate save on mount.
-                if (lastSavedHashRef.current === null) {
-                    lastSavedHashRef.current = computed;
-                    return;
-                }
 
                 if (computed !== lastSavedHashRef.current) {
                     if (!savingRef.current) {
@@ -166,8 +178,12 @@ export const useFlowUltilities = (
         };
     }, [enabled, intervalMs, nodes, edges, computeHash, doSave]);
 
+    // Determine if the flow is saved (current hash matches last saved hash)
+    const isSaved = currentHash === lastSavedHashRef.current;
+
     return {
         currentHash,
+        isSaved,
         forceSave,
     };
 };
