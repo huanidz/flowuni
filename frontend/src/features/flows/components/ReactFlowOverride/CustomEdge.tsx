@@ -38,12 +38,12 @@ function CustomEdge({
     });
 
     const edgeStyle: CSSProperties = {
-        stroke: '#333',
+        stroke: '#0b8b2bff',
         strokeWidth: 1.5,
         ...style,
     };
 
-    const handleSave = () => {
+    const handleLabelSave = () => {
         setIsEditing(false);
         setEdges(eds =>
             eds.map(e =>
@@ -76,9 +76,9 @@ function CustomEdge({
                             autoFocus
                             value={value}
                             onChange={e => setValue(e.target.value)}
-                            onBlur={handleSave}
+                            onBlur={handleLabelSave}
                             onKeyDown={e => {
-                                if (e.key === 'Enter') handleSave();
+                                if (e.key === 'Enter') handleLabelSave();
                             }}
                             style={{
                                 width: '100%',

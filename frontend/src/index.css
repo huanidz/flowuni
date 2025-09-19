@@ -120,9 +120,19 @@
 }
 
 .react-flow__edge path {
-  stroke: #0d0d0e !important;
+  stroke: transparent;
+  stroke-width: 30px; /* Adjust this value for a larger/smaller hover area */
+  pointer-events: stroke;
+}
+
+/* 2. Visible Layer: Slim and Colored */
+/* This more specific selector targets the visible path and draws your slim line on top. */
+/* It overrides the transparent style above. */
+.react-flow__edge-path {
+  stroke: #0d0d0e;
   stroke-width: 3px !important;
-  filter: drop-shadow(0 0 3px rgba(0, 15, 14, 0.4));
+  filter: drop-shadow(0 0 1px rgba(0, 15, 14, 0.4));
+  pointer-events: none; /* The interaction is handled by the invisible layer */
 }
 
 /* Styles for selected nodes */

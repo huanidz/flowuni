@@ -62,6 +62,8 @@ export const useNodeConnectionLogic = ({
                         edges
                     );
                     edgePayload.data = { text: routeLabel };
+                } else {
+                    edgePayload.type = 'default';
                 }
 
                 setEdges(eds => addEdge(edgePayload, eds));

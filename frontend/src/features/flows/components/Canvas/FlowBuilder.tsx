@@ -21,6 +21,7 @@ import { useConnectionValidation } from '../../hooks/useConnectionValidator';
 import { useConnectionHighlighting } from '../../hooks/useHandleConnectionHighlighting';
 import { useSelectedNode } from '@/features/flows/hooks/useSelectedNode';
 import CustomEdge from '../ReactFlowOverride/CustomEdge';
+import DefaultEdge from '../ReactFlowOverride/DefaultEdge';
 import { NodeConfigSidebar } from '@/features/flows/components/Sidebar/NodeConfigSidebar';
 import PlaygroundChatBox from './PlaygroundChatBox';
 import useFlowStore from '@/features/flows/stores/flow_stores';
@@ -34,7 +35,7 @@ interface FlowBuilderContentProps {
     flow_id: string;
 }
 
-const edgeTypes = { custom: CustomEdge };
+const edgeTypes = { custom: CustomEdge, default: DefaultEdge };
 
 // Separate the main flow component to use ReactFlow hooks
 const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
