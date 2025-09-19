@@ -2,7 +2,11 @@ import json
 from typing import Any, Dict, Union
 
 from loguru import logger
-from src.consts.node_consts import NODE_LABEL_CONSTS, SPECIAL_NODE_INPUT_CONSTS
+from src.consts.node_consts import (
+    NODE_LABEL_CONSTS,
+    NODE_TAGS_CONSTS,
+    SPECIAL_NODE_INPUT_CONSTS,
+)
 from src.nodes.core.NodeIcon import NodeIconIconify
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
@@ -16,7 +20,7 @@ from src.schemas.nodes.node_data_parsers import BuildToolResult
 
 class RouterNode(Node):
     spec: NodeSpec = NodeSpec(
-        name=NODE_LABEL_CONSTS.ROUTER,
+        name="Router",
         description="Router node that will route input to other nodes.",
         inputs=[
             NodeInput(
@@ -41,6 +45,7 @@ class RouterNode(Node):
         ],
         parameters=[],
         icon=NodeIconIconify(icon_value="tabler:route-alt-right"),
+        tags=[NODE_TAGS_CONSTS.ROUTING],
     )
 
     def process(

@@ -11,7 +11,7 @@ from src.consts.execution_consts import ROUTER_LABEL_SPLIT_JOIN_STRING
 from src.consts.node_consts import (
     NODE_DATA_MODE,
     NODE_EXECUTION_STATUS,
-    NODE_LABEL_CONSTS,
+    NODE_TAGS_CONSTS,
 )
 from src.exceptions.execution_exceptions import GraphExecutorError
 from src.executors.DataClass import NodeExecutionResult
@@ -564,7 +564,9 @@ class GraphExecutor:
             ]
 
             logger.info(f"👉 current_node_label: {current_node_label}")
-            if current_node_label == NODE_LABEL_CONSTS.ROUTER:
+            currnet_node_spec = self.graph.nodes[node_id].get("spec", None)
+            current_node_tags = currnet_node_spec.tags if currnet_node_spec else []
+            if NODE_TAGS_CONSTS.ROUTING in current_node_tags:
                 parsed_router_output_value = RouterOutputData(
                     **output_value_to_transfer
                 )
@@ -572,7 +574,7 @@ class GraphExecutor:
                 # Extract the output route labels.
                 route_label_decisons: List[str] = (
                     parsed_router_output_value.route_label_decisons
-                )[:1]
+                )
 
                 # If the edge_id is not in the label decisons, then the exec_status of that succesor node will be set to SKIPPED. # noqa E501
                 logger.info(f"👉 route_label_decisons: {route_label_decisons}")

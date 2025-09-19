@@ -6,6 +6,7 @@ from src.nodes.customs import (
     FanOutNode,
     HttpRequestNode,
     LLMProviderNode,
+    LLMRouterNode,
     MemoryNode,
     RouterNode,
     StringAggregatorNode,
@@ -28,6 +29,7 @@ __all__ = [
     ComparisonRouterNode,
     MemoryNode,
     LLMProviderNode,
+    LLMRouterNode,
     FanInNode,
     FanOutNode,
 ]

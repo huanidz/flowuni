@@ -3,8 +3,12 @@ from typing import List
 
 import networkx as nx
 from loguru import logger
-from src.consts.execution_consts import ROUTER_LABEL_SPLIT_JOIN_STRING
-from src.consts.node_consts import NODE_EXECUTION_STATUS
+from src.consts.node_consts import (
+    NODE_EXECUTION_STATUS,
+    NODE_LABEL_CONSTS,
+    NODE_TAGS_CONSTS,
+    SPECIAL_NODE_INPUT_CONSTS,
+)
 from src.executors.MultiDiGraphUtils import MultiDiGraphUtils
 from src.schemas.flowbuilder.flow_graph_schemas import NodeData
 
@@ -86,9 +90,10 @@ class GraphExecutionUtil:
     ) -> NodeData:
         """Prepare method for node_data before execution."""
 
-        from src.consts.node_consts import NODE_LABEL_CONSTS, SPECIAL_NODE_INPUT_CONSTS
+        node_spec = graph.nodes[node_id].get("spec", None)
+        node_tags = node_spec.tags if node_spec else []
 
-        if node_data.label == NODE_LABEL_CONSTS.ROUTER:
+        if NODE_TAGS_CONSTS.ROUTING in node_tags:
             # First, get the outgoing edges from this node
             # make a string that contain edge ids separated by comma. e.g. "edge_id_1,edge_id_2,edge_id_3"
 
@@ -121,9 +126,7 @@ class GraphExecutionUtil:
                     continue
 
             if not edge_route_labels:
-                logger.warning(
-                    f"No outgoing edges found for Node {NODE_LABEL_CONSTS.ROUTER} {node_id}"
-                )
+                logger.warning(f"No outgoing edges found for Routing Node {node_id}")
                 return node_data
 
             # Unique the labels
