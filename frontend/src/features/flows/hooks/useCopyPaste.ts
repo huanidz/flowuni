@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { Node } from '@xyflow/react';
 import { Position } from '@xyflow/react';
 import { useKeyboardControl } from './useKeyboardControl';
@@ -11,6 +11,13 @@ interface UseCopyPasteProps {
 
 export const useCopyPaste = ({ selectedNode, setNodes }: UseCopyPasteProps) => {
     const [copiedNode, setCopiedNode] = useState<Omit<Node, 'id'> | null>(null);
+
+    // Clear copied state when selectedNode changes or becomes null
+    useEffect(() => {
+        if (!selectedNode) {
+            setCopiedNode(null);
+        }
+    }, [selectedNode]);
 
     const handleCopy = useCallback(() => {
         if (selectedNode) {

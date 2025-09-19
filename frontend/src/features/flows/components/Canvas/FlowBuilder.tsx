@@ -106,8 +106,8 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
         closeSidebar,
     } = useSelectedNode(setNodes);
 
-    // Use copy-paste functionality
-    useCopyPaste({ selectedNode, setNodes });
+    // Use copy-paste functionality (Disable because it conflict with field edit Ctrl_C Ctrl_V)
+    // useCopyPaste({ selectedNode, setNodes });
 
     // Use ReactFlow's instance hook instead of managing state manually
     const reactFlowInstance = useReactFlow();
