@@ -127,6 +127,7 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
     const eventSourceRef = useRef<EventSource | null>(null);
     const flowTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const flowWatchEventSourceRef = useRef<EventSource | null>(null);
+    const messageUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const { updateNodeInputData } = nodeUpdateHandlers;
 
@@ -169,6 +170,10 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
         if (flowTimeoutRef.current) {
             clearTimeout(flowTimeoutRef.current);
             flowTimeoutRef.current = null;
+        }
+        if (messageUpdateTimeoutRef.current) {
+            clearTimeout(messageUpdateTimeoutRef.current);
+            messageUpdateTimeoutRef.current = null;
         }
     }, []);
 
@@ -306,6 +311,12 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
         const trimmedMessage = message.trim();
         if (!trimmedMessage || isFlowRunning) return;
 
+        // Clear any pending debounced update
+        if (messageUpdateTimeoutRef.current) {
+            clearTimeout(messageUpdateTimeoutRef.current);
+            messageUpdateTimeoutRef.current = null;
+        }
+
         // Reset execution data before sending a new message
         resetExecutionData();
 
@@ -359,9 +370,17 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
             const value = e.target.value;
             setMessage(value);
 
-            // Real-time update of input node (optional - you might want to remove this)
+            // Debounce the node data update to improve performance
             if (chatInputNode?.id) {
-                updateNodeInputData(chatInputNode.id, 'message_in', value);
+                // Clear any existing timeout
+                if (messageUpdateTimeoutRef.current) {
+                    clearTimeout(messageUpdateTimeoutRef.current);
+                }
+
+                // Set a new timeout to update the node data after a short delay
+                messageUpdateTimeoutRef.current = setTimeout(() => {
+                    updateNodeInputData(chatInputNode.id, 'message_in', value);
+                }, 300); // 300ms delay
             }
         },
         [chatInputNode?.id, updateNodeInputData]
