@@ -44,6 +44,7 @@ interface PlaygroundChatBoxProps {
     onPositionChange: (position: PlaygroundChatBoxPosition) => void;
     nodeUpdateHandlers: any;
     flowId: string;
+    resetExecutionData: () => void;
 }
 
 const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
@@ -53,15 +54,28 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
     onPositionChange,
     nodeUpdateHandlers,
     flowId,
+    resetExecutionData,
 }) => {
     const nodes = useNodes();
     const edges = useEdges();
 
+    // Refs to always access the latest nodes and edges
+    const nodesRef = useRef(nodes);
+    const edgesRef = useRef(edges);
+
+    useEffect(() => {
+        nodesRef.current = nodes;
+    }, [nodes]);
+
+    useEffect(() => {
+        edgesRef.current = edges;
+    }, [edges]);
+
     // Node validation
-    const chatInputNode = nodes.find(
+    const chatInputNode = nodesRef.current.find(
         node => node.type === CHAT_INPUT_NODE_TYPE
     );
-    const chatOutputNode = nodes.find(
+    const chatOutputNode = nodesRef.current.find(
         node => node.type === CHAT_OUTPUT_NODE_TYPE
     );
     const hasChatInputNode = !!chatInputNode;
@@ -211,8 +225,8 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
             const current_session_id = currentSession?.user_defined_session_id;
 
             const response = await runFlow(
-                nodes,
-                edges,
+                nodesRef.current,
+                edgesRef.current,
                 null,
                 'downstream',
                 current_session_id
@@ -268,8 +282,6 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
             setIsFlowRunning(false);
         }
     }, [
-        nodes,
-        edges,
         isFlowRunning,
         cleanupEventSource,
         cleanupTimeout,
@@ -293,6 +305,9 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
     const handleSendMessage = useCallback(async () => {
         const trimmedMessage = message.trim();
         if (!trimmedMessage || isFlowRunning) return;
+
+        // Reset execution data before sending a new message
+        resetExecutionData();
 
         // Add user message to store
         if (currentSession) {
@@ -326,6 +341,7 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
         currentSession,
         addChatMessageMutation,
         addChatMessage,
+        resetExecutionData,
     ]);
 
     const handleKeyPress = useCallback(
