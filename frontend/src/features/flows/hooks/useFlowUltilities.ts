@@ -80,15 +80,6 @@ export const useFlowUltilities = (
         }
     }, []);
 
-    // Initialize the saved hash when the component mounts
-    useEffect(() => {
-        if (nodes.length > 0 || edges.length > 0) {
-            const initialHash = computeHash(nodes, edges);
-            lastSavedHashRef.current = initialHash;
-            setCurrentHash(initialHash);
-        }
-    }, []); // run once on mount
-
     // Async save function used by autosave and manual trigger
     const doSave = useCallback(
         async (ns: Node[], es: Edge[]) => {
@@ -139,20 +130,27 @@ export const useFlowUltilities = (
         return await doSave(nodes, edges);
     }, [doSave, nodes, edges]);
 
-    // Effect: compute current hash whenever nodes/edges change (skip first mount)
     useEffect(() => {
-        if (!mountedRef.current) {
-            mountedRef.current = true;
+        // Don't do anything if there's no data to process yet.
+        if (nodes.length === 0 && edges.length === 0) {
             return;
         }
 
         const h = computeHash(nodes, edges);
         lastComputedHashRef.current = h;
-        setCurrentHash(h);
+        setCurrentHash(h); // **Initialization**: If we haven't set a "saved" hash yet,
+        // this must be the initial data load. Set it and consider it saved.
 
-        // When nodes or edges change, mark the flow as unsaved
-        const { setSaved } = useFlowStore.getState();
-        setSaved(false);
+        if (lastSavedHashRef.current === null) {
+            lastSavedHashRef.current = h;
+            return; // Exit without marking as unsaved.
+        } // **Change Detection**: If a saved hash exists, compare it to the
+        // current hash to detect actual changes.
+
+        if (h !== lastSavedHashRef.current) {
+            const { setSaved } = useFlowStore.getState();
+            setSaved(false);
+        }
     }, [nodes, edges, computeHash]);
 
     // Effect: autosave interval

@@ -21,7 +21,7 @@ import { useGetFlowDetail } from '@/features/flows/hooks';
  * - Loading and error states
  */
 export const useCurrentFlowState = (flow_id: string) => {
-    const { current_flow } = useFlowStore();
+    const { current_flow, setSaved } = useFlowStore();
     const { loaded: nodeRegistryLoaded } = useNodeRegistry();
 
     // Initialize node and edge state using XYFlow hooks
@@ -46,6 +46,7 @@ export const useCurrentFlowState = (flow_id: string) => {
     const initializeFlow = useCallback(() => {
         setNodes(initialNodes);
         setEdges(initialEdges);
+        setSaved(true); // Mark as saved after initialization
     }, [initialNodes, initialEdges, setNodes, setEdges]);
 
     // Get loading and error states
