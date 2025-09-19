@@ -14,6 +14,7 @@ export interface FlowStore {
     isSidebarCollapsed: boolean;
     isPlaygroundOpen: boolean;
     playgroundPosition: Position;
+    isSaved: boolean;
     setCurrentFlow: (flow: Flow | null) => void;
     setFlows: (flows: Flow[]) => void;
     setLoaded: (loaded: boolean) => void;
@@ -21,6 +22,7 @@ export interface FlowStore {
     setSidebarCollapsed: (collapsed: boolean) => void;
     setPlaygroundOpen: (open: boolean) => void;
     setPlaygroundPosition: (position: Position) => void;
+    setSaved: (saved: boolean) => void;
     getFlow: (flowId: string) => Flow | undefined;
     getAllFlows: () => Flow[];
     getFlowNames: () => string[];
@@ -34,6 +36,7 @@ const useFlowStore = create<FlowStore>((set, get) => ({
     isSidebarCollapsed: false,
     isPlaygroundOpen: false,
     playgroundPosition: { x: 0, y: 0 },
+    isSaved: true, // Assume flow is saved when first loaded
 
     setCurrentFlow: flow => set({ current_flow: flow }),
 
@@ -48,6 +51,8 @@ const useFlowStore = create<FlowStore>((set, get) => ({
     setPlaygroundOpen: open => set({ isPlaygroundOpen: open }),
 
     setPlaygroundPosition: position => set({ playgroundPosition: position }),
+
+    setSaved: saved => set({ isSaved: saved }),
 
     getFlow: flowId => {
         const { flows } = get();

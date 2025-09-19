@@ -3,26 +3,40 @@ import {
     saveButton,
     saveButtonHover,
 } from '@/features/flows/styles/flowToolBarStyles';
+import useFlowStore from '@/features/flows/stores/flow_stores';
 
 interface SaveButtonProps {
     onSave: () => void;
 }
 
 const SaveButton: React.FC<SaveButtonProps> = ({ onSave }) => {
+    const { isSaved } = useFlowStore();
     return (
         <button
             onClick={onSave}
-            style={saveButton}
+            disabled={isSaved}
+            style={{
+                ...saveButton,
+                backgroundColor: isSaved
+                    ? '#10B981'
+                    : saveButton.backgroundColor,
+                cursor: isSaved ? 'default' : 'pointer',
+                opacity: isSaved ? 0.8 : 1,
+            }}
             onMouseEnter={e => {
-                e.currentTarget.style.backgroundColor =
-                    saveButtonHover.backgroundColor;
+                if (!isSaved) {
+                    e.currentTarget.style.backgroundColor =
+                        saveButtonHover.backgroundColor;
+                }
             }}
             onMouseLeave={e => {
-                e.currentTarget.style.backgroundColor =
-                    saveButton.backgroundColor;
+                if (!isSaved) {
+                    e.currentTarget.style.backgroundColor =
+                        saveButton.backgroundColor;
+                }
             }}
         >
-            Save
+            {isSaved ? 'Saved' : 'Save'}
         </button>
     );
 };

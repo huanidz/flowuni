@@ -214,20 +214,31 @@ export const useFlowActions = (
             return;
         }
 
-        await saveFlow({
-            flow_id: current_flow.flow_id,
-            name: current_flow.name,
-            description: current_flow.description,
-            is_active: current_flow.is_active,
-            flow_definition: getFlowGraphData(
-                nodesRef.current,
-                edgesRef.current
-            ),
-        });
+        try {
+            await saveFlow({
+                flow_id: current_flow.flow_id,
+                name: current_flow.name,
+                description: current_flow.description,
+                is_active: current_flow.is_active,
+                flow_definition: getFlowGraphData(
+                    nodesRef.current,
+                    edgesRef.current
+                ),
+            });
 
-        toast.success('Flow saved successfully.', {
-            description: 'Flow has been saved successfully.',
-        });
+            // Update the saved status in the store
+            const { setSaved } = useFlowStore.getState();
+            setSaved(true);
+
+            toast.success('Flow saved successfully.', {
+                description: 'Flow has been saved successfully.',
+            });
+        } catch (error) {
+            console.error('Error saving flow:', error);
+            toast.error('Failed to save flow.', {
+                description: 'There was an error saving your flow.',
+            });
+        }
     }, [current_flow]);
 
     const onClearFlow = useCallback(() => {

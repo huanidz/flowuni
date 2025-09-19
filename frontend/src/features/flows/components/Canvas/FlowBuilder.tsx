@@ -16,6 +16,7 @@ import { useNodeUpdate } from '../../hooks/useNodeUpdate';
 import { useDragDropHandler } from '@/features/flows/hooks/useDragAndDropHandler';
 import { useFlowActions } from '@/features/flows/hooks/useFlowActions';
 import { useCurrentFlowState } from '../../hooks/useCurrentFlowState';
+import useFlowUltilities from '@/features/flows/hooks/useFlowUltilities';
 import { useConnectionValidation } from '../../hooks/useConnectionValidator';
 import { useConnectionHighlighting } from '../../hooks/useHandleConnectionHighlighting';
 import { useSelectedNode } from '@/features/flows/hooks/useSelectedNode';
@@ -36,12 +37,13 @@ const edgeTypes = { custom: CustomEdge };
 const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
     const nodePaletteRef = useRef<HTMLDivElement>(null);
 
-    // Use store for playground chat box state
+    // Use store for playground chat box state and save status
     const {
         isPlaygroundOpen,
         setPlaygroundOpen,
         playgroundPosition,
         setPlaygroundPosition,
+        setSaved,
     } = useFlowStore();
 
     // Use consolidated flow state hook (simplified without duplicate state)
@@ -58,6 +60,9 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
         isLoading,
         flowError,
     } = useCurrentFlowState(flow_id);
+
+    // Auto-save and other flow utilities (non-blocking)
+    const { forceSave } = useFlowUltilities(currentNodes, currentEdges);
 
     // Use selected node state
     const {
@@ -110,6 +115,16 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
         setNodes,
         setEdges,
     ]);
+
+    // Track when flow is fully rendered
+    const [isFlowRendered, setIsFlowRendered] = React.useState(false);
+
+    // Mark flow as saved when all conditions are met
+    useEffect(() => {
+        if (isFlowRendered && currentNodes.length > 0 && nodeTypesLoaded) {
+            setSaved(true);
+        }
+    }, [isFlowRendered, currentNodes, nodeTypesLoaded, setSaved]);
 
     const { onDragStart, onDrop, onDragOver } = useDragDropHandler(
         reactFlowInstance,
@@ -200,7 +215,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
                     onClear={onClearFlow}
                     onResetAllData={onResetAllData}
                     onResetExecutionData={onResetExecutionData}
-                    onSave={onSaveFlow}
+                    onSave={forceSave}
                     onPlayground={handlePlaygroundClick}
                     nodes={currentNodes}
                     edges={currentEdges}
@@ -225,6 +240,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
                     snapToGrid={true}
                     snapGrid={[15, 15]}
                     attributionPosition="top-right"
+                    onInit={() => setIsFlowRendered(true)}
                     onNodeClick={(_, node) => {
                         // Only handle node click if it's not already selected
                         if (!selectedNode || selectedNode.id !== node.id) {
