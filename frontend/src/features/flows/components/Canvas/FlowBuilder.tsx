@@ -27,6 +27,8 @@ import useFlowStore from '@/features/flows/stores/flow_stores';
 import { useNodeStore } from '@/features/nodes';
 import useNodeConnectionLogic from '@/features/flows/hooks/useNodeConnectionLogic';
 
+import { useKeyboardControl } from '@/features/flows/hooks/useKeyboardControl';
+
 interface FlowBuilderContentProps {
     flow_id: string;
 }
@@ -43,7 +45,6 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
         setPlaygroundOpen,
         playgroundPosition,
         setPlaygroundPosition,
-        setSaved,
     } = useFlowStore();
 
     // Use consolidated flow state hook (simplified without duplicate state)
@@ -62,7 +63,18 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
     } = useCurrentFlowState(flow_id);
 
     // Auto-save and other flow utilities (non-blocking)
-    const { forceSave } = useFlowUltilities(currentNodes, currentEdges);
+    const { forceSave, trySave } = useFlowUltilities(
+        currentNodes,
+        currentEdges
+    );
+
+    // Keyboard shortcuts
+    useKeyboardControl([
+        {
+            combo: 'Ctrl+S',
+            handler: trySave,
+        },
+    ]);
 
     // Use selected node state
     const {
@@ -130,7 +142,6 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
         onClearFlow,
         onResetAllData,
         onResetExecutionData,
-        onSaveFlow,
         onPlaygroundFlow,
     } = useFlowActions(
         currentNodes,

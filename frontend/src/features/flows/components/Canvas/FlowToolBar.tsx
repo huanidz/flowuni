@@ -48,21 +48,21 @@ const FlowToolbar: React.FC<FlowToolbarProps> = ({
         onPlayground();
     };
 
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-            const isSaveShortcut =
-                (isMac && e.metaKey) || (!isMac && e.ctrlKey);
+    // useEffect(() => {
+    //     const handleKeyDown = (e: KeyboardEvent) => {
+    //         const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+    //         const isSaveShortcut =
+    //             (isMac && e.metaKey) || (!isMac && e.ctrlKey);
 
-            if (isSaveShortcut && e.key === 's') {
-                e.preventDefault();
-                onSave();
-            }
-        };
+    //         if (isSaveShortcut && e.key === 's') {
+    //             e.preventDefault();
+    //             onSave();
+    //         }
+    //     };
 
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [onSave]);
+    //     window.addEventListener('keydown', handleKeyDown);
+    //     return () => window.removeEventListener('keydown', handleKeyDown);
+    // }, [onSave]);
 
     return (
         <div style={toolbarContainer}>
