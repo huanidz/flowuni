@@ -30,6 +30,7 @@ import useNodeConnectionLogic from '@/features/flows/hooks/useNodeConnectionLogi
 
 import { useKeyboardControl } from '@/features/flows/hooks/useKeyboardControl';
 import { useUndoRedo } from '../../hooks/useUndoRedo';
+import { useCopyPaste } from '../../hooks/useCopyPaste';
 
 interface FlowBuilderContentProps {
     flow_id: string;
@@ -104,6 +105,9 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
         toggleSidebarCollapse,
         closeSidebar,
     } = useSelectedNode(setNodes);
+
+    // Use copy-paste functionality
+    useCopyPaste({ selectedNode, setNodes });
 
     // Use ReactFlow's instance hook instead of managing state manually
     const reactFlowInstance = useReactFlow();
