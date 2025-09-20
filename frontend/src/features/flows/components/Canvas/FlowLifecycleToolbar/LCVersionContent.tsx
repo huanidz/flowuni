@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, Archive, Activity, TrendingUp, Layers } from 'lucide-react';
+import { Plus, Archive } from 'lucide-react';
 import FlowSnapshotItem from '@/features/flows/sub_features/flow_snapshots/components/FlowSnapshotItem';
 import { type FlowSnapshot } from '@/features/flows/sub_features/flow_snapshots/components/FlowSnapshotItem';
 
@@ -114,12 +114,17 @@ const LCVersionContent: React.FC = () => {
                         <div className="flex items-center gap-3">
                             <Archive className="h-6 w-6 text-slate-600 dark:text-slate-400" />
                             <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
-                                Version Management System
+                                Flow Snapshots Management
                             </h2>
                             <div className="h-6 w-px bg-slate-300 dark:bg-slate-600"></div>
-                            <span className="text-sm font-mono text-slate-500 dark:text-slate-400">
-                                FLOW.ID.001
-                            </span>
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                                    TotalSnapshots:
+                                </span>
+                                <span className="text-sm font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded">
+                                    {totalSnapshots}
+                                </span>
+                            </div>
                         </div>
 
                         <Button
