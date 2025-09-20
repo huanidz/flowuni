@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { TrashIcon, RotateCcwIcon } from 'lucide-react';
+import { Trash2, RotateCcw, FileText, Clock, Database } from 'lucide-react';
 
 // Define TypeScript interface for FlowSnapshot based on backend model
 export interface FlowSnapshot {
@@ -28,57 +28,152 @@ const FlowSnapshotItem: React.FC<FlowSnapshotItemProps> = ({
     onDelete,
     onRestore,
 }) => {
+    const formatDate = (dateStr?: string) => {
+        if (!dateStr) return 'N/A';
+        const date = new Date(dateStr);
+        return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+    };
+
+    const getNodeCount = () => {
+        return snapshot.flow_definition?.nodes?.length || 0;
+    };
+
+    const getEdgeCount = () => {
+        return snapshot.flow_definition?.edges?.length || 0;
+    };
+
     return (
-        <div className="border rounded-lg p-4 mb-3 bg-white dark:bg-gray-800">
-            <div className="flex justify-between items-start">
-                <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium">
-                            Version {snapshot.version}
-                        </span>
-                        {snapshot.is_current && (
-                            <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
-                                Current
+        <div
+            className={`relative border-l-4 ${snapshot.is_current ? 'border-l-emerald-500 bg-emerald-50 dark:bg-emerald-950/20' : 'border-l-slate-300 dark:border-l-slate-600 bg-white dark:bg-slate-900'} border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all duration-200`}
+        >
+            {/* Header Bar */}
+            <div
+                className={`px-3 py-2 ${snapshot.is_current ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-slate-50 dark:bg-slate-800'} border-b border-slate-200 dark:border-slate-700`}
+            >
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs font-mono text-slate-500 dark:text-slate-400">
+                                VER
                             </span>
+                            <span className="font-bold text-lg leading-none">
+                                {String(snapshot.version).padStart(3, '0')}
+                            </span>
+                        </div>
+                        {snapshot.is_current && (
+                            <div className="bg-emerald-500 text-white text-xs font-bold px-2 py-1 rounded-sm">
+                                ACTIVE
+                            </div>
                         )}
+                        <div className="h-4 w-px bg-slate-300 dark:bg-slate-600"></div>
+                        <span className="text-xs font-mono text-slate-500 dark:text-slate-400">
+                            ID:{snapshot.id}
+                        </span>
                     </div>
+
+                    <div className="flex gap-1">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onRestore(snapshot.id)}
+                            className="h-7 px-2 text-xs font-medium hover:bg-blue-100 dark:hover:bg-blue-900/30"
+                            disabled={snapshot.is_current}
+                        >
+                            <RotateCcw className="h-3 w-3 mr-1" />
+                            RESTORE
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onDelete(snapshot.id)}
+                            className="h-7 px-2 text-xs font-medium hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400"
+                        >
+                            <Trash2 className="h-3 w-3 mr-1" />
+                            DEL
+                        </Button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Content Area */}
+            <div className="p-3">
+                {/* Title and Description */}
+                <div className="mb-3">
                     {snapshot.name && (
-                        <h4 className="font-semibold text-lg mb-1">
+                        <h4 className="font-semibold text-sm mb-1 text-slate-900 dark:text-slate-100">
                             {snapshot.name}
                         </h4>
                     )}
                     {snapshot.description && (
-                        <p className="text-gray-600 dark:text-gray-300 text-sm mb-2">
+                        <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                             {snapshot.description}
                         </p>
                     )}
-                    {snapshot.created_at && (
-                        <p className="text-gray-500 dark:text-gray-400 text-xs">
-                            Created:{' '}
-                            {new Date(snapshot.created_at).toLocaleString()}
-                        </p>
+                </div>
+
+                {/* Metadata Grid */}
+                <div className="grid grid-cols-3 gap-3 text-xs">
+                    {/* Timestamp */}
+                    <div className="flex items-center gap-1">
+                        <Clock className="h-3 w-3 text-slate-400" />
+                        <div>
+                            <div className="text-slate-500 dark:text-slate-400 uppercase tracking-wide font-mono text-[10px]">
+                                Created
+                            </div>
+                            <div className="font-mono text-slate-700 dark:text-slate-300">
+                                {formatDate(snapshot.created_at)}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Flow Composition */}
+                    <div className="flex items-center gap-1">
+                        <Database className="h-3 w-3 text-slate-400" />
+                        <div>
+                            <div className="text-slate-500 dark:text-slate-400 uppercase tracking-wide font-mono text-[10px]">
+                                Nodes/Edges
+                            </div>
+                            <div className="font-mono text-slate-700 dark:text-slate-300">
+                                {getNodeCount()}N / {getEdgeCount()}E
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Schema Version */}
+                    <div className="flex items-center gap-1">
+                        <FileText className="h-3 w-3 text-slate-400" />
+                        <div>
+                            <div className="text-slate-500 dark:text-slate-400 uppercase tracking-wide font-mono text-[10px]">
+                                Schema
+                            </div>
+                            <div className="font-mono text-slate-700 dark:text-slate-300">
+                                {snapshot.flow_schema_version || 'v1.0'}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Additional metadata if available */}
+                {snapshot.snapshot_metadata &&
+                    Object.keys(snapshot.snapshot_metadata).length > 0 && (
+                        <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700">
+                            <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wide font-mono mb-1">
+                                Metadata
+                            </div>
+                            <div className="flex flex-wrap gap-1">
+                                {Object.entries(snapshot.snapshot_metadata).map(
+                                    ([key, value]) => (
+                                        <span
+                                            key={key}
+                                            className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-[10px] font-mono"
+                                        >
+                                            {key}: {String(value)}
+                                        </span>
+                                    )
+                                )}
+                            </div>
+                        </div>
                     )}
-                </div>
-                <div className="flex gap-2">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onRestore(snapshot.id)}
-                        className="flex items-center gap-1"
-                    >
-                        <RotateCcwIcon className="h-4 w-4" />
-                        Restore
-                    </Button>
-                    <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => onDelete(snapshot.id)}
-                        className="flex items-center gap-1"
-                    >
-                        <TrashIcon className="h-4 w-4" />
-                        Delete
-                    </Button>
-                </div>
             </div>
         </div>
     );
