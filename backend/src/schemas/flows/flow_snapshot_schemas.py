@@ -68,7 +68,5 @@ class FlowSnapshotListResponseItem(BaseModel):
 class FlowSnapshotListResponse(BaseModel):
     """Represents the response for a list of flow snapshots."""
 
-    data: List[FlowSnapshotListResponseItem] = Field(
-        ..., description="List of flow snapshots"
-    )
+    data: List[FlowSnapshotResponse] = Field(..., description="List of flow snapshots")
     total_count: int = Field(..., description="Total number of snapshots")

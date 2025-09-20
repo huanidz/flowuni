@@ -13,6 +13,8 @@ const FlowSnapshotItem: React.FC<FlowSnapshotItemProps> = ({
     snapshot,
     onDelete,
 }) => {
+    console.log('snapshot: ', snapshot);
+
     const formatDate = (dateStr?: string) => {
         if (!dateStr) return 'N/A';
         const date = new Date(dateStr);

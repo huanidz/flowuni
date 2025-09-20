@@ -13,7 +13,6 @@ from src.schemas.flows.flow_schemas import Pagination
 from src.schemas.flows.flow_snapshot_schemas import (
     FlowSnapshotCreateRequest,
     FlowSnapshotListResponse,
-    FlowSnapshotListResponseItem,
     FlowSnapshotResponse,
     FlowSnapshotUpdateRequest,
 )
@@ -119,14 +118,19 @@ async def get_flow_snapshots(
             flow_id=flow_id, page=page, per_page=per_page
         )
 
-        # Map to response format
+        # Map to response format using the full FlowSnapshotResponse
         mapped_snapshots = [
-            FlowSnapshotListResponseItem(
+            FlowSnapshotResponse(
                 id=snapshot.id,
                 flow_id=snapshot.flow_id,
                 version=snapshot.version,
                 name=snapshot.name,
+                description=snapshot.description,
+                flow_definition=snapshot.flow_definition,
+                snapshot_metadata=snapshot.snapshot_metadata,
+                flow_schema_version=snapshot.flow_schema_version,
                 created_at=snapshot.created_at.isoformat(),
+                modified_at=snapshot.modified_at.isoformat(),
             )
             for snapshot in snapshots
         ]
