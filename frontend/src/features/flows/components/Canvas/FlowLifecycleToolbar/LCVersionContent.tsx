@@ -2,107 +2,77 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, Archive } from 'lucide-react';
 import FlowSnapshotItem from '@/features/flows/sub_features/flow_snapshots/components/FlowSnapshotItem';
-import { type FlowSnapshot } from '@/features/flows/sub_features/flow_snapshots/components/FlowSnapshotItem';
+import {
+    useFlowSnapshots,
+    useCreateFlowSnapshot,
+    useSetCurrentFlowSnapshot,
+    useDeleteFlowSnapshot,
+} from '@/features/flows/sub_features/flow_snapshots/hooks';
+import { getFlowGraphData } from '@/features/flows/utils';
+import { useReactFlow } from '@xyflow/react';
+import type { FlowSnapshot } from '@/features/flows/sub_features/flow_snapshots/types';
 
 // LCVersionContent component with "Create Snapshot" button and list of FlowSnapshotItems
-const LCVersionContent: React.FC = () => {
-    // Dummy data that matches the backend FlowSnapshotModel structure
-    const [snapshots, setSnapshots] = useState<FlowSnapshot[]>([
-        {
-            id: 1,
-            flow_id: 1,
-            version: 1,
-            name: 'Initial Version',
-            description:
-                'First version of the flow with basic setup and configuration',
-            flow_definition: { nodes: [], edges: [] },
-            is_current: false,
-            created_at: '2023-01-15T10:30:00Z',
-            flow_schema_version: 'v1.0',
-            snapshot_metadata: { author: 'system', source: 'auto' },
-        },
-        {
-            id: 2,
-            flow_id: 1,
-            version: 2,
-            name: 'Added LLM Node',
-            description:
-                'Added LLM processing node to the flow with OpenAI integration',
-            flow_definition: { nodes: [{ id: '1', type: 'llm' }], edges: [] },
-            is_current: true,
-            created_at: '2023-01-20T14:45:00Z',
-            flow_schema_version: 'v1.1',
-            snapshot_metadata: {
-                author: 'user',
-                source: 'manual',
-                model: 'gpt-4',
-            },
-        },
-        {
-            id: 3,
-            flow_id: 1,
-            version: 3,
-            name: 'Enhanced Flow',
-            description:
-                'Added conditional routing and data transformation with advanced error handling',
-            flow_definition: {
-                nodes: [
-                    { id: '1', type: 'llm' },
-                    { id: '2', type: 'router' },
-                ],
-                edges: [{ id: 'e1', source: '1', target: '2' }],
-            },
-            is_current: false,
-            created_at: '2023-02-05T09:15:00Z',
-            flow_schema_version: 'v1.2',
-            snapshot_metadata: {
-                author: 'user',
-                source: 'manual',
-                complexity: 'high',
-            },
-        },
-    ]);
+const LCVersionContent: React.FC<{ flowId: string }> = ({ flowId }) => {
+    const { getNodes, getEdges } = useReactFlow();
+    const [page, setPage] = useState(1);
+    const [perPage] = useState(10);
+
+    // Get flow snapshots using React Query
+    const {
+        data: snapshotsData,
+        isLoading,
+        error,
+    } = useFlowSnapshots({
+        flow_id: flowId,
+        page,
+        per_page: perPage,
+    });
+
+    // Mutations for CRUD operations
+    const createSnapshotMutation = useCreateFlowSnapshot();
+    const setCurrentSnapshotMutation = useSetCurrentFlowSnapshot();
+    const deleteSnapshotMutation = useDeleteFlowSnapshot();
+
+    // Extract snapshots from the response data
+    const snapshots: FlowSnapshot[] = snapshotsData?.data || [];
+    const totalCount = snapshotsData?.total_count || 0;
 
     // Function to handle creating a new snapshot
     const handleCreateSnapshot = () => {
-        const newVersion = Math.max(...snapshots.map(s => s.version), 0) + 1;
-        const newSnapshot: FlowSnapshot = {
-            id: snapshots.length + 1,
-            flow_id: 1,
-            version: newVersion,
-            name: `Version ${newVersion}`,
-            description: `Snapshot created on ${new Date().toLocaleDateString()} - Auto-generated snapshot`,
-            flow_definition: { nodes: [], edges: [] }, // In a real app, this would be the current flow definition
-            is_current: false,
-            created_at: new Date().toISOString(),
-            flow_schema_version: 'v1.2',
-            snapshot_metadata: { author: 'user', source: 'manual' },
+        // Get current flow definition
+        const nodes = getNodes();
+        const edges = getEdges();
+        const flowDefinition = getFlowGraphData(nodes, edges);
+
+        // Create the snapshot request
+        const newSnapshot = {
+            flow_id: flowId,
+            name: `Version ${new Date().toLocaleDateString()}`,
+            description: `Snapshot created on ${new Date().toLocaleString()}`,
+            flow_definition: flowDefinition,
+            is_current: true, // Set as current when created
+            flow_schema_version: 'v1.0',
+            snapshot_metadata: {
+                author: 'user',
+                source: 'manual',
+                created_at: new Date().toISOString(),
+            },
         };
 
-        // Mark all others as not current and set new one as current
-        setSnapshots([
-            ...snapshots.map(s => ({ ...s, is_current: false })),
-            { ...newSnapshot, is_current: true },
-        ]);
+        // Call the API to create the snapshot
+        createSnapshotMutation.mutate(newSnapshot);
     };
 
     // Function to handle deleting a snapshot
     const handleDeleteSnapshot = (id: number) => {
-        setSnapshots(snapshots.filter(snapshot => snapshot.id !== id));
+        deleteSnapshotMutation.mutate(id);
     };
 
     // Function to handle restoring from a snapshot
     const handleRestoreSnapshot = (id: number) => {
-        setSnapshots(
-            snapshots.map(snapshot => ({
-                ...snapshot,
-                is_current: snapshot.id === id,
-            }))
-        );
+        setCurrentSnapshotMutation.mutate(id);
     };
-
-    // Calculate statistics
-    const totalSnapshots = snapshots.length;
 
     return (
         <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-900">
@@ -119,20 +89,23 @@ const LCVersionContent: React.FC = () => {
                             <div className="h-6 w-px bg-slate-300 dark:bg-slate-600"></div>
                             <div className="flex items-center gap-2">
                                 <span className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                                    TotalSnapshots:
+                                    Total Snapshots:
                                 </span>
                                 <span className="text-sm font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded">
-                                    {totalSnapshots}
+                                    {totalCount}
                                 </span>
                             </div>
                         </div>
 
                         <Button
                             onClick={handleCreateSnapshot}
+                            disabled={createSnapshotMutation.isPending}
                             className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 text-sm shadow-sm"
                         >
                             <Plus className="h-4 w-4 mr-2" />
-                            CREATE SNAPSHOT
+                            {createSnapshotMutation.isPending
+                                ? 'CREATING...'
+                                : 'CREATE SNAPSHOT'}
                         </Button>
                     </div>
                 </div>
@@ -141,7 +114,28 @@ const LCVersionContent: React.FC = () => {
             {/* Content Area */}
             <div className="flex-grow overflow-hidden flex flex-col">
                 <div className="flex-grow overflow-y-auto p-4">
-                    {snapshots.length === 0 ? (
+                    {isLoading ? (
+                        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-sm p-8 text-center">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
+                                Loading Snapshots
+                            </h3>
+                            <p className="text-slate-500 dark:text-slate-400 text-sm max-w-md mx-auto">
+                                Please wait while we load your flow snapshots...
+                            </p>
+                        </div>
+                    ) : error ? (
+                        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-sm p-8 text-center">
+                            <Archive className="h-12 w-12 text-red-400 mx-auto mb-4" />
+                            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
+                                Error Loading Snapshots
+                            </h3>
+                            <p className="text-slate-500 dark:text-slate-400 text-sm max-w-md mx-auto">
+                                There was an error loading your snapshots.
+                                Please try again later.
+                            </p>
+                        </div>
+                    ) : snapshots.length === 0 ? (
                         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-sm p-8 text-center">
                             <Archive className="h-12 w-12 text-slate-400 mx-auto mb-4" />
                             <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
@@ -154,10 +148,13 @@ const LCVersionContent: React.FC = () => {
                             </p>
                             <Button
                                 onClick={handleCreateSnapshot}
+                                disabled={createSnapshotMutation.isPending}
                                 className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium"
                             >
                                 <Plus className="h-4 w-4 mr-2" />
-                                Create First Snapshot
+                                {createSnapshotMutation.isPending
+                                    ? 'CREATING...'
+                                    : 'Create First Snapshot'}
                             </Button>
                         </div>
                     ) : (
@@ -170,7 +167,7 @@ const LCVersionContent: React.FC = () => {
                                     </span>
                                     <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700"></div>
                                     <span className="text-xs font-mono text-slate-500 dark:text-slate-400">
-                                        {snapshots.length} items
+                                        {totalCount} items
                                     </span>
                                 </div>
                             </div>

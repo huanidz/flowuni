@@ -1,20 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Trash2, RotateCcw, FileText, Clock, Database } from 'lucide-react';
-
-// Define TypeScript interface for FlowSnapshot based on backend model
-export interface FlowSnapshot {
-    id: number;
-    flow_id: number;
-    version: number;
-    name?: string;
-    description?: string;
-    flow_definition: Record<string, any>;
-    is_current: boolean;
-    snapshot_metadata?: Record<string, any>;
-    flow_schema_version?: string;
-    created_at?: string;
-}
+import type { FlowSnapshot } from '../types';
 
 // FlowSnapshotItem component to display individual snapshot
 interface FlowSnapshotItemProps {

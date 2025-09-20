@@ -10,6 +10,7 @@ import {
 import LCVersionContent from './LCVersionContent';
 import LCEvalContent from './LCEvalContent';
 import LCPublishContent from './LCPublishContent';
+import useFlowStore from '@/features/flows/stores/flow_stores';
 
 type ModalType = 'version' | 'eval' | 'publish';
 
@@ -50,10 +51,18 @@ const LifecycleModal: React.FC<LifecycleModalProps> = ({
     onOpenChange,
     type,
 }) => {
+    const { current_flow } = useFlowStore();
+
+    const flowId = current_flow?.flow_id;
+
     const renderContent = () => {
         switch (type) {
             case 'version':
-                return <LCVersionContent />;
+                return flowId ? (
+                    <LCVersionContent flowId={flowId} />
+                ) : (
+                    <div>Flow ID is required</div>
+                );
             case 'eval':
                 return <LCEvalContent />;
             case 'publish':
@@ -73,12 +82,12 @@ const LifecycleModal: React.FC<LifecycleModalProps> = ({
                 className="h-[80vh] flex flex-col"
                 style={{ maxWidth: '1400px', width: '50vw' }}
             >
-                {/* <DialogHeader className="flex-shrink-0">
+                <DialogHeader className="flex-shrink-0">
                     <DialogTitle>{getTitle(type)}</DialogTitle>
                     <DialogDescription>
                         {getDescription(type)}
                     </DialogDescription>
-                </DialogHeader> */}
+                </DialogHeader>
                 <div className="flex-grow overflow-y-auto py-4">
                     {renderContent()}
                 </div>

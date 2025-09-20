@@ -6,7 +6,6 @@ import {
 import VersionButton from './FlowLifecycleToolbar/VersionButton';
 import EvalButton from './FlowLifecycleToolbar/EvalButton';
 import PublishButton from './FlowLifecycleToolbar/PublishButton';
-
 // Interface for the toolbar props
 interface FlowLifecycleToolbarProps {
     onVersion: () => void;
