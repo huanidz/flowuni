@@ -71,6 +71,7 @@ async def create_flow_snapshot(
             raise UNAUTHORIZED_EXCEPTION
 
         # Create the snapshot
+        # The service will automatically calculate the next version if not provided
         snapshot = flow_snapshot_service.create_snapshot(
             snapshot_request=request, user_id=auth_user_id
         )
@@ -125,7 +126,6 @@ async def get_flow_snapshots(
                 flow_id=snapshot.flow_id,
                 version=snapshot.version,
                 name=snapshot.name,
-                is_current=snapshot.is_current,
                 created_at=snapshot.created_at.isoformat(),
             )
             for snapshot in snapshots

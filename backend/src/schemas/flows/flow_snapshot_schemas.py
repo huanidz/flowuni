@@ -7,7 +7,7 @@ class FlowSnapshotCreateRequest(BaseModel):
     """Represents the request to create a flow snapshot."""
 
     flow_id: str = Field(..., description="Flow ID")
-    version: int = Field(..., description="Snapshot version")
+    version: Optional[int] = Field(None, description="Snapshot version")
     name: Optional[str] = Field(None, description="Flow name at snapshot time")
     description: Optional[str] = Field(
         None, description="Flow description at snapshot time"

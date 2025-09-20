@@ -108,15 +108,18 @@ class FlowSnapshotService(FlowSnapshotServiceInterface):
         Create a new flow snapshot
         """
         try:
-            # Get the next version number
-            next_version = self.snapshot_repository.get_next_version(
-                flow_id=snapshot_request.flow_id
-            )
+            # Get the next version number if not provided in the request
+            if snapshot_request.version is not None:
+                version = snapshot_request.version
+            else:
+                version = self.snapshot_repository.get_next_version(
+                    flow_id=snapshot_request.flow_id
+                )
 
             # Create the snapshot model
             snapshot = FlowSnapshotModel(
                 flow_id=snapshot_request.flow_id,
-                version=next_version,
+                version=version,
                 name=snapshot_request.name,
                 description=snapshot_request.description,
                 flow_definition=snapshot_request.flow_definition,
