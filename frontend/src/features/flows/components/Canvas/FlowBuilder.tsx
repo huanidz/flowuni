@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import FlowToolbar from './FlowToolBar';
+import FlowEditorToolBar from './FlowEditorToolBar';
 import NodePalette from './FlowNodePallete';
 import {
     ReactFlow,
@@ -230,7 +230,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
                 tabIndex={1}
             >
                 <NodePalette onDragStart={onDragStart} ref={nodePaletteRef} />
-                <FlowToolbar
+                <FlowEditorToolBar
                     onCompile={onCompileFlow}
                     onRun={onRunFlow}
                     onRunFromSelected={onRunFlowFromSelectedNode}

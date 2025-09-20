@@ -2,7 +2,7 @@ import React from 'react';
 import {
     compileButton,
     compileButtonHover,
-} from '@/features/flows/styles/flowToolBarStyles';
+} from '@/features/flows/styles/flowEditorToolBarStyles';
 
 interface CompileButtonProps {
     onCompile: () => void;

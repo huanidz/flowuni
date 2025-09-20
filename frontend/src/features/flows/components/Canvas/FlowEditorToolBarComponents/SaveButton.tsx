@@ -2,7 +2,7 @@ import React from 'react';
 import {
     saveButton,
     saveButtonHover,
-} from '@/features/flows/styles/flowToolBarStyles';
+} from '@/features/flows/styles/flowEditorToolBarStyles';
 import useFlowStore from '@/features/flows/stores/flow_stores';
 
 interface SaveButtonProps {
