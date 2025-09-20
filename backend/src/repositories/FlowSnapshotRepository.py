@@ -99,28 +99,6 @@ class FlowSnapshotRepository(BaseRepository):
             self.db_session.rollback()
             raise
 
-    def get_current_snapshot(self, flow_id: int) -> Optional[FlowSnapshotModel]:
-        """
-        Get the current snapshot for a specific flow
-        """
-        try:
-            snapshot = (
-                self.db_session.query(FlowSnapshotModel)
-                .filter_by(flow_id=flow_id, is_current=True)
-                .one_or_none()
-            )
-            if snapshot:
-                logger.info(f"Retrieved current snapshot for flow ID: {flow_id}")
-            else:
-                logger.info(f"No current snapshot found for flow ID: {flow_id}")
-            return snapshot
-        except Exception as e:
-            logger.error(
-                f"Error retrieving current snapshot for flow ID {flow_id}: {e}"
-            )
-            self.db_session.rollback()
-            raise e
-
     def get_by_flow_and_version(
         self, flow_id: int, version: int
     ) -> Optional[FlowSnapshotModel]:
@@ -247,45 +225,6 @@ class FlowSnapshotRepository(BaseRepository):
         except Exception as e:
             self.db_session.rollback()
             logger.error(f"Error deleting snapshot with ID {snapshot_id}: {e}")
-            raise e
-
-    def set_current_snapshot(self, flow_id: int, snapshot_id: int) -> None:
-        """
-        Set a specific snapshot as the current version for a flow
-        This will unset any previously current snapshot
-        """
-        try:
-            # First, unset all current snapshots for this flow
-            self.db_session.query(FlowSnapshotModel).filter_by(
-                flow_id=flow_id, is_current=True
-            ).update({"is_current": False})
-
-            # Then set the specified snapshot as current
-            snapshot = (
-                self.db_session.query(FlowSnapshotModel)
-                .filter_by(id=snapshot_id, flow_id=flow_id)
-                .first()
-            )
-            if not snapshot:
-                logger.warning(
-                    f"Attempted to set non-existent snapshot as current: {snapshot_id}"
-                )
-                raise NoResultFound(
-                    f"Snapshot with ID {snapshot_id} not found for flow {flow_id}."
-                )
-
-            snapshot.is_current = True
-            self.db_session.commit()
-            logger.info(f"Set snapshot {snapshot_id} as current for flow {flow_id}")
-        except NoResultFound as e:
-            self.db_session.rollback()
-            logger.error(
-                f"NoResultFound error when setting current snapshot {snapshot_id}: {e}"
-            )
-            raise e
-        except Exception as e:
-            self.db_session.rollback()
-            logger.error(f"Error setting current snapshot {snapshot_id}: {e}")
             raise e
 
     def get_next_version(self, flow_id: int) -> int:

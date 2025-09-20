@@ -1,11 +1,8 @@
 from sqlalchemy import (
-    Boolean,
     Column,
     ForeignKey,
-    Index,
     Integer,
     String,
-    UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
@@ -29,7 +26,6 @@ class FlowSnapshotModel(AppBaseModel):
     description = Column(String, nullable=True)
 
     flow_definition = Column(JSONB, nullable=False)
-    is_current = Column(Boolean, default=False, nullable=False)
 
     # optional extras
     snapshot_metadata = Column(JSONB, nullable=True)
@@ -41,5 +37,5 @@ class FlowSnapshotModel(AppBaseModel):
     def __repr__(self):
         return (
             f"<FlowSnapshotModel(id={self.id}, flow_id={self.flow_id}, "
-            f"version={self.version}, name={self.name}, is_current={self.is_current})>"
+            f"version={self.version}, name={self.name})>"
         )

@@ -8,8 +8,6 @@ from src.repositories.FlowSnapshotRepository import FlowSnapshotRepository
 from src.schemas.flows.flow_snapshot_schemas import (
     FlowSnapshotCreateRequest,
     FlowSnapshotResponse,
-    FlowSnapshotSetCurrentRequest,
-    FlowSnapshotSetCurrentResponse,
     FlowSnapshotUpdateRequest,
 )
 
@@ -36,13 +34,6 @@ class FlowSnapshotServiceInterface(ABC):
         pass
 
     @abstractmethod
-    def get_current_snapshot(self, flow_id: int) -> Optional[FlowSnapshotResponse]:
-        """
-        Get the current snapshot for a flow
-        """
-        pass
-
-    @abstractmethod
     def create_snapshot(
         self, snapshot_request: FlowSnapshotCreateRequest, user_id: int
     ) -> FlowSnapshotResponse:
@@ -64,15 +55,6 @@ class FlowSnapshotServiceInterface(ABC):
     def delete_snapshot(self, snapshot_id: int, user_id: int) -> None:
         """
         Delete a flow snapshot
-        """
-        pass
-
-    @abstractmethod
-    def set_current_snapshot(
-        self, request: FlowSnapshotSetCurrentRequest, user_id: int
-    ) -> FlowSnapshotSetCurrentResponse:
-        """
-        Set a snapshot as the current version
         """
         pass
 
@@ -119,24 +101,6 @@ class FlowSnapshotService(FlowSnapshotServiceInterface):
             logger.error(f"Error retrieving snapshots for flow {flow_id}: {str(e)}")
             raise
 
-    def get_current_snapshot(self, flow_id: int) -> Optional[FlowSnapshotResponse]:
-        """
-        Get the current snapshot for a flow
-        """
-        try:
-            snapshot = self.snapshot_repository.get_current_snapshot(flow_id=flow_id)
-            if not snapshot:
-                logger.info(f"No current snapshot found for flow {flow_id}")
-                return None
-
-            logger.info(f"Successfully retrieved current snapshot for flow {flow_id}")
-            return self._map_to_response(snapshot)
-        except Exception as e:
-            logger.error(
-                f"Error retrieving current snapshot for flow {flow_id}: {str(e)}"
-            )
-            raise
-
     def create_snapshot(
         self, snapshot_request: FlowSnapshotCreateRequest, user_id: int
     ) -> FlowSnapshotResponse:
@@ -156,7 +120,6 @@ class FlowSnapshotService(FlowSnapshotServiceInterface):
                 name=snapshot_request.name,
                 description=snapshot_request.description,
                 flow_definition=snapshot_request.flow_definition,
-                is_current=snapshot_request.is_current,
                 snapshot_metadata=snapshot_request.snapshot_metadata,
                 flow_schema_version=snapshot_request.flow_schema_version,
             )
@@ -165,12 +128,6 @@ class FlowSnapshotService(FlowSnapshotServiceInterface):
             created_snapshot = self.snapshot_repository.create_snapshot(
                 snapshot=snapshot
             )
-
-            # If this is marked as current, set it as current after creation
-            if snapshot_request.is_current:
-                self.snapshot_repository.set_current_snapshot(
-                    flow_id=snapshot_request.flow_id, snapshot_id=created_snapshot.id
-                )
 
             logger.info(
                 f"Successfully created snapshot for flow {snapshot_request.flow_id}"
@@ -219,9 +176,6 @@ class FlowSnapshotService(FlowSnapshotServiceInterface):
                 flow_definition=snapshot_request.flow_definition
                 if snapshot_request.flow_definition is not None
                 else existing_snapshot.flow_definition,
-                is_current=snapshot_request.is_current
-                if snapshot_request.is_current is not None
-                else existing_snapshot.is_current,
                 snapshot_metadata=snapshot_request.snapshot_metadata
                 if snapshot_request.snapshot_metadata is not None
                 else existing_snapshot.snapshot_metadata,
@@ -229,12 +183,6 @@ class FlowSnapshotService(FlowSnapshotServiceInterface):
                 if snapshot_request.flow_schema_version is not None
                 else existing_snapshot.flow_schema_version,
             )
-
-            # If this is marked as current, unset any other current snapshots
-            if snapshot_request.is_current and not existing_snapshot.is_current:
-                self.snapshot_repository.set_current_snapshot(
-                    flow_id=existing_snapshot.flow_id, snapshot_id=snapshot_request.id
-                )
 
             # Update the snapshot
             result = self.snapshot_repository.update_snapshot(snapshot=updated_snapshot)
@@ -272,48 +220,6 @@ class FlowSnapshotService(FlowSnapshotServiceInterface):
             logger.error(f"Error deleting snapshot {snapshot_id}: {str(e)}")
             raise
 
-    def set_current_snapshot(
-        self, request: FlowSnapshotSetCurrentRequest, user_id: int
-    ) -> FlowSnapshotSetCurrentResponse:
-        """
-        Set a snapshot as the current version
-        """
-        try:
-            # Get the existing snapshot
-            existing_snapshot = self.snapshot_repository.get_by_id(
-                snapshot_id=request.snapshot_id
-            )
-            if not existing_snapshot:
-                logger.warning(f"Snapshot with id {request.snapshot_id} not found")
-                raise NOT_FOUND_EXCEPTION
-
-            # Check if the user owns the flow this snapshot belongs to
-            if existing_snapshot.flow.user_id != user_id:
-                logger.warning(
-                    f"User {user_id} attempted to set snapshot {request.snapshot_id} "
-                    f"as current for a flow owned by different user"
-                )
-                raise MISMATCH_EXCEPTION
-
-            # Set the snapshot as current
-            self.snapshot_repository.set_current_snapshot(
-                flow_id=existing_snapshot.flow_id, snapshot_id=request.snapshot_id
-            )
-            logger.info(
-                f"Successfully set snapshot {request.snapshot_id} as current for flow {existing_snapshot.flow_id}"
-            )
-
-            return FlowSnapshotSetCurrentResponse(
-                success=True,
-                message=f"Snapshot {request.snapshot_id} set as current version",
-                current_snapshot_id=request.snapshot_id,
-            )
-        except Exception as e:
-            logger.error(
-                f"Error setting snapshot {request.snapshot_id} as current: {str(e)}"
-            )
-            raise
-
     def _map_to_response(self, snapshot: FlowSnapshotModel) -> FlowSnapshotResponse:
         """
         Map a FlowSnapshotModel to a FlowSnapshotResponse
@@ -325,7 +231,6 @@ class FlowSnapshotService(FlowSnapshotServiceInterface):
             name=snapshot.name,
             description=snapshot.description,
             flow_definition=snapshot.flow_definition,
-            is_current=snapshot.is_current,
             snapshot_metadata=snapshot.snapshot_metadata,
             flow_schema_version=snapshot.flow_schema_version,
             created_at=snapshot.created_at.isoformat(),

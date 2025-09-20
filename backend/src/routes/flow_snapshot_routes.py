@@ -15,8 +15,6 @@ from src.schemas.flows.flow_snapshot_schemas import (
     FlowSnapshotListResponse,
     FlowSnapshotListResponseItem,
     FlowSnapshotResponse,
-    FlowSnapshotSetCurrentRequest,
-    FlowSnapshotSetCurrentResponse,
     FlowSnapshotUpdateRequest,
 )
 from src.services.FlowService import FlowService
@@ -270,35 +268,6 @@ async def update_flow_snapshot(
         raise HTTPException(
             status_code=500,
             detail="An error occurred while updating the flow snapshot.",
-        )
-
-
-@flow_snapshot_router.post(
-    "/set-current", response_model=FlowSnapshotSetCurrentResponse
-)
-async def set_current_flow_snapshot(
-    request: FlowSnapshotSetCurrentRequest,
-    flow_snapshot_service: FlowSnapshotService = Depends(get_flow_snapshot_service),
-    auth_user_id: int = Depends(get_current_user),
-):
-    """
-    Set a flow snapshot as the current version
-    """
-    try:
-        # Set the snapshot as current
-        response = flow_snapshot_service.set_current_snapshot(
-            request=request, user_id=auth_user_id
-        )
-
-        return response
-
-    except Exception as e:
-        logger.error(
-            f"Error setting current flow snapshot: {e}. traceback: {traceback.format_exc()}"
-        )
-        raise HTTPException(
-            status_code=500,
-            detail="An error occurred while setting the current flow snapshot.",
         )
 
 
