@@ -1,33 +1,47 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     versionButton,
     versionButtonHover,
 } from '@/features/flows/styles/flowLifecycleToolbarStyles';
+
+import LifecycleModal from './LifecycleModal';
 
 interface VersionButtonProps {
     onVersion: () => void;
 }
 
 const VersionButton: React.FC<VersionButtonProps> = ({ onVersion }) => {
+    const [isOpen, setIsOpen] = useState(false);
+
     return (
-        <button
-            onClick={onVersion}
-            style={{
-                ...versionButton,
-                backgroundColor: versionButton.backgroundColor,
-                cursor: 'pointer',
-            }}
-            onMouseEnter={e => {
-                e.currentTarget.style.backgroundColor =
-                    versionButtonHover.backgroundColor;
-            }}
-            onMouseLeave={e => {
-                e.currentTarget.style.backgroundColor =
-                    versionButton.backgroundColor;
-            }}
-        >
-            Version
-        </button>
+        <>
+            <button
+                onClick={() => {
+                    onVersion();
+                    setIsOpen(true);
+                }}
+                style={{
+                    ...versionButton,
+                    backgroundColor: versionButton.backgroundColor,
+                    cursor: 'pointer',
+                }}
+                onMouseEnter={e => {
+                    e.currentTarget.style.backgroundColor =
+                        versionButtonHover.backgroundColor;
+                }}
+                onMouseLeave={e => {
+                    e.currentTarget.style.backgroundColor =
+                        versionButton.backgroundColor;
+                }}
+            >
+                Version
+            </button>
+            <LifecycleModal
+                open={isOpen}
+                onOpenChange={setIsOpen}
+                type="version"
+            />
+        </>
     );
 };
 
