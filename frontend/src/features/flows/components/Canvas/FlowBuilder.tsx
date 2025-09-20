@@ -166,6 +166,9 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
         onResetAllData,
         onResetExecutionData,
         onPlaygroundFlow,
+        onVersion,
+        onEval,
+        onPublish,
     } = useFlowActions(
         currentNodes,
         currentEdges,
@@ -244,7 +247,11 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
                     nodes={currentNodes}
                     edges={currentEdges}
                 />
-                <FlowLifecycleToolbar />
+                <FlowLifecycleToolbar
+                    onVersion={onVersion}
+                    onEval={onEval}
+                    onPublish={onPublish}
+                />
 
                 <ReactFlow
                     nodes={currentNodes}

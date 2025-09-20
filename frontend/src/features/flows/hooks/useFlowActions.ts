@@ -310,6 +310,28 @@ export const useFlowActions = (
         console.log('Playground action triggered');
     }, []);
 
+    // Lifecycle actions - placeholders for now
+    const onVersion = useCallback(() => {
+        console.log('Version action triggered - placeholder');
+        toast.info('Version feature coming soon!', {
+            description: 'This feature is under development.',
+        });
+    }, []);
+
+    const onEval = useCallback(() => {
+        console.log('Eval action triggered - placeholder');
+        toast.info('Evaluation feature coming soon!', {
+            description: 'This feature is under development.',
+        });
+    }, []);
+
+    const onPublish = useCallback(() => {
+        console.log('Publish action triggered - placeholder');
+        toast.info('Publish feature coming soon!', {
+            description: 'This feature is under development.',
+        });
+    }, []);
+
     return {
         onCompileFlow,
         onRunFlow,
@@ -320,5 +342,8 @@ export const useFlowActions = (
         onResetExecutionData,
         onSaveFlow,
         onPlaygroundFlow,
+        onVersion,
+        onEval,
+        onPublish,
     };
 };
