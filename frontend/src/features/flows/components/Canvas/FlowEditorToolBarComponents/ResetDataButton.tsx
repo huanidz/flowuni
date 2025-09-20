@@ -11,7 +11,7 @@ import {
 import {
     clearButton,
     clearButtonHover,
-} from '@/features/flows/styles/flowToolBarStyles';
+} from '@/features/flows/styles/flowEditorToolBarStyles';
 
 interface ResetDataButtonProps {
     onResetAllData: () => void;

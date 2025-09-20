@@ -2,7 +2,7 @@ import React from 'react';
 import {
     playgroundButton,
     playgroundButtonHover,
-} from '@/features/flows/styles/flowToolBarStyles';
+} from '@/features/flows/styles/flowEditorToolBarStyles';
 
 interface PlaygroundButtonProps {
     onPlayground: () => void;

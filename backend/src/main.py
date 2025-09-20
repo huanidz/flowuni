@@ -10,6 +10,7 @@ from src.routes.common_routes import common_router
 from src.routes.flow_playground_session_routes import playground_router
 from src.routes.flow_routes import flow_router
 from src.routes.flow_runner_routes import flow_execution_router
+from src.routes.flow_snapshot_routes import flow_snapshot_router
 from src.routes.node_routes import node_router
 from src.utils.launch_utils import check_db_connection, check_redis_connection
 
@@ -50,4 +51,5 @@ app.include_router(api_key_router)
 app.include_router(node_router)
 app.include_router(flow_router)
 app.include_router(flow_execution_router)
+app.include_router(flow_snapshot_router)
 app.include_router(playground_router)

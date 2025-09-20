@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
-import FlowToolbar from './FlowToolBar';
+import FlowEditorToolBar from './FlowEditorToolBar';
+import FlowLifecycleToolbar from './FlowLifecycleToolbar';
 import NodePalette from './FlowNodePallete';
 import {
     ReactFlow,
@@ -165,6 +166,9 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
         onResetAllData,
         onResetExecutionData,
         onPlaygroundFlow,
+        onVersion,
+        onEval,
+        onPublish,
     } = useFlowActions(
         currentNodes,
         currentEdges,
@@ -230,7 +234,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
                 tabIndex={1}
             >
                 <NodePalette onDragStart={onDragStart} ref={nodePaletteRef} />
-                <FlowToolbar
+                <FlowEditorToolBar
                     onCompile={onCompileFlow}
                     onRun={onRunFlow}
                     onRunFromSelected={onRunFlowFromSelectedNode}
@@ -242,6 +246,11 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
                     onPlayground={handlePlaygroundClick}
                     nodes={currentNodes}
                     edges={currentEdges}
+                />
+                <FlowLifecycleToolbar
+                    onVersion={onVersion}
+                    onEval={onEval}
+                    onPublish={onPublish}
                 />
 
                 <ReactFlow

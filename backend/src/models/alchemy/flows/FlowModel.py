@@ -18,6 +18,9 @@ class FlowModel(AppBaseModel):
     flow_definition = Column(JSONB, nullable=True)
     is_active = Column(Boolean, default=False)
     flow_executions = relationship("FlowExecutionModel", back_populates="flow")
+    snapshots = relationship(
+        "FlowSnapshotModel", back_populates="flow", cascade="all, delete-orphan"
+    )
     sessions = relationship(
         "SessionModel", back_populates="flow", cascade="all, delete-orphan"
     )

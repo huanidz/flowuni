@@ -4,17 +4,17 @@ import {
     toolbarWrapper,
     rightAlignedButtonsContainer,
     secondRowContainer,
-} from '@/features/flows/styles/flowToolBarStyles';
-import RunButton from './FlowToolBarComponents/RunButton';
-import CompileButton from './FlowToolBarComponents/CompileButton';
-import SaveButton from './FlowToolBarComponents/SaveButton';
-import PlaygroundButton from './FlowToolBarComponents/PlaygroundButton';
-import ClearButton from './FlowToolBarComponents/ClearButton';
-import ResetDataButton from './FlowToolBarComponents/ResetDataButton';
-import ExportButton from './FlowToolBarComponents/ExportButton';
+} from '@/features/flows/styles/flowEditorToolBarStyles';
+import RunButton from './FlowEditorToolBarComponents/RunButton';
+import CompileButton from './FlowEditorToolBarComponents/CompileButton';
+import SaveButton from './FlowEditorToolBarComponents/SaveButton';
+import PlaygroundButton from './FlowEditorToolBarComponents/PlaygroundButton';
+import ClearButton from './FlowEditorToolBarComponents/ClearButton';
+import ResetDataButton from './FlowEditorToolBarComponents/ResetDataButton';
+import ExportButton from './FlowEditorToolBarComponents/ExportButton';
 import type { Node, Edge } from '@xyflow/react';
 
-interface FlowToolbarProps {
+interface FlowEditorToolBarProps {
     onRun: () => void;
     onRunFromSelected: () => void;
     onRunSelectedOnly: () => void;
@@ -28,7 +28,7 @@ interface FlowToolbarProps {
     edges: Edge[];
 }
 
-const FlowToolbar: React.FC<FlowToolbarProps> = ({
+const FlowEditorToolBar: React.FC<FlowEditorToolBarProps> = ({
     onRun,
     onRunFromSelected,
     onRunSelectedOnly,
@@ -101,4 +101,4 @@ const FlowToolbar: React.FC<FlowToolbarProps> = ({
     );
 };
 
-export default FlowToolbar;
+export default FlowEditorToolBar;

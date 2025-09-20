@@ -16,7 +16,7 @@ import {
     runFromSelectedMenuItemHover,
     runSelectedOnlyMenuItem,
     runSelectedOnlyMenuItemHover,
-} from '@/features/flows/styles/flowToolBarStyles';
+} from '@/features/flows/styles/flowEditorToolBarStyles';
 import { flushSync } from 'react-dom';
 
 interface RunButtonProps {
