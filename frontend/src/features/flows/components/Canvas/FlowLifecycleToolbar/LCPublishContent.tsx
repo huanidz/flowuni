@@ -34,6 +34,210 @@ const examples: Record<string, { code: string; lang: string; label: string }> =
 const result = await response.json();
 console.log(result);`,
         },
+        python: {
+            label: 'Python',
+            lang: 'python',
+            code: `import requests
+import json
+
+url = 'http://localhost:5002/api/exec/<YOUR_FLOW_ID>'
+headers = {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer <YOUR_API_KEY>'
+}
+data = {
+    'messages': [{'type': 'text', 'content': 'hello'}],
+    'session_id': None
+}
+
+response = requests.post(url, headers=headers, json=data)
+result = response.json()
+print(result)`,
+        },
+        java: {
+            label: 'Java',
+            lang: 'java',
+            code: `import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.Scanner;
+
+public class ApiExample {
+    public static void main(String[] args) throws Exception {
+        URL url = new URL("http://localhost:5002/api/exec/<YOUR_FLOW_ID>");
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestMethod("POST");
+        conn.setRequestProperty("Content-Type", "application/json");
+        conn.setRequestProperty("Authorization", "Bearer <YOUR_API_KEY>");
+        conn.setDoOutput(true);
+        
+        String jsonInputString = "{\\"messages\\":[{\\"type\\":\\"text\\",\\"content\\":\\"hello\\"}],\\"session_id\\":null}";
+        
+        try (OutputStream os = conn.getOutputStream()) {
+            byte[] input = jsonInputString.getBytes(StandardCharsets.UTF_8);
+            os.write(input, 0, input.length);
+        }
+        
+        try (Scanner scanner = new Scanner(conn.getInputStream(), StandardCharsets.UTF_8.name())) {
+            String response = scanner.useDelimiter("\\\\A").next();
+            System.out.println(response);
+        }
+    }
+}`,
+        },
+        csharp: {
+            label: 'C#',
+            lang: 'csharp',
+            code: `using System;
+using System.Net.Http;
+using System.Text;
+using System.Threading.Tasks;
+
+class Program
+{
+    static async Task Main()
+    {
+        using (var client = new HttpClient())
+        {
+            client.DefaultRequestHeaders.Add("Authorization", "Bearer <YOUR_API_KEY>");
+            
+            var payload = new
+            {
+                messages = new[] { new { type = "text", content = "hello" } },
+                session_id = (object)null
+            };
+            
+            var content = new StringContent(
+                System.Text.Json.JsonSerializer.Serialize(payload),
+                Encoding.UTF8,
+                "application/json"
+            );
+            
+            var response = await client.PostAsync(
+                "http://localhost:5002/api/exec/<YOUR_FLOW_ID>",
+                content
+            );
+            
+            var result = await response.Content.ReadAsStringAsync();
+            Console.WriteLine(result);
+        }
+    }
+}`,
+        },
+        go: {
+            label: 'Go',
+            lang: 'go',
+            code: `package main
+
+import (
+    "bytes"
+    "encoding/json"
+    "fmt"
+    "io"
+    "net/http"
+)
+
+type Message struct {
+    Type    string \`json:"type"\`
+    Content string \`json:"content"\`
+}
+
+type RequestBody struct {
+    Messages  []Message \`json:"messages"\`
+    SessionID *string   \`json:"session_id"\`
+}
+
+func main() {
+    url := "http://localhost:5002/api/exec/<YOUR_FLOW_ID>"
+    
+    requestBody := RequestBody{
+        Messages: []Message{
+            {Type: "text", Content: "hello"},
+        },
+        SessionID: nil,
+    }
+    
+    jsonBody, err := json.Marshal(requestBody)
+    if err != nil {
+        panic(err)
+    }
+    
+    req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonBody))
+    if err != nil {
+        panic(err)
+    }
+    
+    req.Header.Set("Content-Type", "application/json")
+    req.Header.Set("Authorization", "Bearer <YOUR_API_KEY>")
+    
+    client := &http.Client{}
+    resp, err := client.Do(req)
+    if err != nil {
+        panic(err)
+    }
+    defer resp.Body.Close()
+    
+    body, err := io.ReadAll(resp.Body)
+    if err != nil {
+        panic(err)
+    }
+    
+    fmt.Println(string(body))
+}`,
+        },
+        ruby: {
+            label: 'Ruby',
+            lang: 'ruby',
+            code: `require 'net/http'
+require 'uri'
+require 'json'
+
+uri = URI.parse('http://localhost:5002/api/exec/<YOUR_FLOW_ID>')
+request = Net::HTTP::Post.new(uri)
+request.content_type = 'application/json'
+request['Authorization'] = 'Bearer <YOUR_API_KEY>'
+
+request.body = JSON.generate({
+  messages: [{ type: 'text', content: 'hello' }],
+  session_id: nil
+})
+
+response = Net::HTTP.start(uri.hostname, uri.port) do |http|
+  http.request(request)
+end
+
+puts response.body`,
+        },
+        php: {
+            label: 'PHP',
+            lang: 'php',
+            code: `<?php
+$url = 'http://localhost:5002/api/exec/<YOUR_FLOW_ID>';
+$data = [
+    'messages' => [
+        ['type' => 'text', 'content' => 'hello']
+    ],
+    'session_id' => null
+];
+
+$payload = json_encode($data);
+
+$ch = curl_init($url);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+curl_setopt($ch, CURLOPT_HTTPHEADER, [
+    'Content-Type: application/json',
+    'Authorization: Bearer <YOUR_API_KEY>'
+]);
+
+$response = curl_exec($ch);
+curl_close($ch);
+
+echo $response;
+?>`,
+        },
     };
 
 const TabButton = ({
@@ -58,7 +262,9 @@ const TabButton = ({
 );
 
 const LCPublishContent: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<'curl' | 'js'>('curl');
+    const [activeTab, setActiveTab] = useState<
+        'curl' | 'js' | 'python' | 'java' | 'csharp' | 'go' | 'ruby' | 'php'
+    >('curl');
     const [copied, setCopied] = useState(false);
 
     const { code, lang, label } = examples[activeTab];
@@ -83,7 +289,7 @@ const LCPublishContent: React.FC = () => {
 
             <div className="flex-1 px-6 py-4 overflow-y-auto">
                 {/* Tabs */}
-                <div className="flex border-b border-gray-200 mb-4">
+                <div className="flex border-b border-gray-200 mb-4 flex-wrap">
                     <TabButton
                         active={activeTab === 'curl'}
                         onClick={() => setActiveTab('curl')}
@@ -95,6 +301,42 @@ const LCPublishContent: React.FC = () => {
                         onClick={() => setActiveTab('js')}
                     >
                         JavaScript
+                    </TabButton>
+                    <TabButton
+                        active={activeTab === 'python'}
+                        onClick={() => setActiveTab('python')}
+                    >
+                        Python
+                    </TabButton>
+                    <TabButton
+                        active={activeTab === 'java'}
+                        onClick={() => setActiveTab('java')}
+                    >
+                        Java
+                    </TabButton>
+                    <TabButton
+                        active={activeTab === 'csharp'}
+                        onClick={() => setActiveTab('csharp')}
+                    >
+                        C#
+                    </TabButton>
+                    <TabButton
+                        active={activeTab === 'go'}
+                        onClick={() => setActiveTab('go')}
+                    >
+                        Go
+                    </TabButton>
+                    <TabButton
+                        active={activeTab === 'ruby'}
+                        onClick={() => setActiveTab('ruby')}
+                    >
+                        Ruby
+                    </TabButton>
+                    <TabButton
+                        active={activeTab === 'php'}
+                        onClick={() => setActiveTab('php')}
+                    >
+                        PHP
                     </TabButton>
                 </div>
 
