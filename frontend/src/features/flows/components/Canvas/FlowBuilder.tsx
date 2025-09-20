@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import FlowEditorToolBar from './FlowEditorToolBar';
+import FlowLifecycleToolbar from './FlowLifecycleToolbar';
 import NodePalette from './FlowNodePallete';
 import {
     ReactFlow,
@@ -243,6 +244,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
                     nodes={currentNodes}
                     edges={currentEdges}
                 />
+                <FlowLifecycleToolbar />
 
                 <ReactFlow
                     nodes={currentNodes}
