@@ -11,45 +11,46 @@ export const toolbarContainer = {
 export const toolbarWrapper = {
     fontFamily: 'sans-serif',
     border: '1px solid #ddd',
-    borderRadius: '8px',
-    padding: '10px',
+    borderRadius: '25px',
+    padding: '4px',
     display: 'flex',
     alignItems: 'center',
-    gap: '10px',
+    gap: '2px',
     backgroundColor: '#f9f9f9',
     boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
 };
 
 // Version button styles
 export const versionButton = {
-    backgroundColor: '#6f42c1',
-    color: 'white',
+    backgroundColor: '#e5e7eb',
+    color: 'black',
     border: 'none',
-    padding: '10px 15px',
-    borderRadius: '5px',
+    padding: '6px 12px',
+    borderRadius: '20px 0 0 20px',
     fontWeight: 'bold',
     cursor: 'pointer',
     fontSize: '14px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+    boxShadow: 'none',
     transition: 'background-color 0.2s ease',
 };
 
 // Version button hover state
 export const versionButtonHover = {
-    backgroundColor: '#5a359a',
+    backgroundColor: '#9e9e9eff',
+    color: 'white',
 };
 
 // Eval button styles
 export const evalButton = {
-    backgroundColor: '#fd7e14',
+    backgroundColor: '#f59e0b',
     color: 'white',
     border: 'none',
-    padding: '10px 15px',
-    borderRadius: '5px',
+    padding: '6px 12px',
+    borderRadius: '0',
     fontWeight: 'bold',
     cursor: 'pointer',
     fontSize: '14px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+    boxShadow: 'none',
     transition: 'background-color 0.2s ease',
 };
 
@@ -60,15 +61,15 @@ export const evalButtonHover = {
 
 // Publish button styles
 export const publishButton = {
-    backgroundColor: '#28a745',
+    backgroundColor: '#10b981',
     color: 'white',
     border: 'none',
-    padding: '10px 15px',
-    borderRadius: '5px',
+    padding: '6px 12px',
+    borderRadius: '0 20px 20px 0',
     fontWeight: 'bold',
     cursor: 'pointer',
     fontSize: '14px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+    boxShadow: 'none',
     transition: 'background-color 0.2s ease',
 };
 

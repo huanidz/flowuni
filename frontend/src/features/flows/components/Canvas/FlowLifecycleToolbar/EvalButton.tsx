@@ -26,7 +26,7 @@ const EvalButton: React.FC<EvalButtonProps> = ({ onEval }) => {
                     evalButton.backgroundColor;
             }}
         >
-            Eval
+            Evaluate
         </button>
     );
 };
