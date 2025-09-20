@@ -62,7 +62,7 @@ const FlowSnapshotItem: React.FC<FlowSnapshotItemProps> = ({
                         </div>
                         {snapshot.is_current && (
                             <div className="bg-emerald-500 text-white text-xs font-bold px-2 py-1 rounded-sm">
-                                ACTIVE
+                                CURRENT
                             </div>
                         )}
                         <div className="h-4 w-px bg-slate-300 dark:bg-slate-600"></div>

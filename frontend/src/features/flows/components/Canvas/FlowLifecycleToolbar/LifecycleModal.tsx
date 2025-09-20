@@ -70,16 +70,18 @@ const LifecycleModal: React.FC<LifecycleModalProps> = ({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
-                className="h-[80vh] overflow-y-auto"
+                className="h-[80vh] flex flex-col"
                 style={{ maxWidth: '1400px', width: '50vw' }}
             >
-                <DialogHeader>
+                <DialogHeader className="flex-shrink-0">
                     <DialogTitle>{getTitle(type)}</DialogTitle>
                     <DialogDescription>
                         {getDescription(type)}
                     </DialogDescription>
                 </DialogHeader>
-                <div className="py-4">{renderContent()}</div>
+                <div className="flex-grow overflow-y-auto py-4">
+                    {renderContent()}
+                </div>
             </DialogContent>
         </Dialog>
     );

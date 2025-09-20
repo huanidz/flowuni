@@ -103,20 +103,11 @@ const LCVersionContent: React.FC = () => {
 
     // Calculate statistics
     const totalSnapshots = snapshots.length;
-    const currentSnapshot = snapshots.find(s => s.is_current);
-    const totalNodes = snapshots.reduce(
-        (sum, s) => sum + (s.flow_definition?.nodes?.length || 0),
-        0
-    );
-    const totalEdges = snapshots.reduce(
-        (sum, s) => sum + (s.flow_definition?.edges?.length || 0),
-        0
-    );
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+        <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-900">
             {/* Header Section */}
-            <div className="bg-white dark:bg-slate-800 border-b-2 border-slate-200 dark:border-slate-700 shadow-sm">
+            <div className="flex-shrink-0 bg-white dark:bg-slate-800 border-b-2 border-slate-200 dark:border-slate-700 shadow-sm">
                 <div className="p-4">
                     {/* Title Bar */}
                     <div className="flex items-center justify-between mb-4">
@@ -139,115 +130,66 @@ const LCVersionContent: React.FC = () => {
                             CREATE SNAPSHOT
                         </Button>
                     </div>
-
-                    {/* Statistics Dashboard */}
-                    <div className="grid grid-cols-4 gap-4">
-                        {/* Total Snapshots */}
-                        <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3 rounded-sm">
-                            <div className="flex items-center gap-2 mb-1">
-                                <Layers className="h-4 w-4 text-blue-500" />
-                                <span className="text-xs font-mono text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-                                    Total Snapshots
-                                </span>
-                            </div>
-                            <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                                {totalSnapshots}
-                            </div>
-                        </div>
-
-                        {/* Active Version */}
-                        <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3 rounded-sm">
-                            <div className="flex items-center gap-2 mb-1">
-                                <Activity className="h-4 w-4 text-emerald-500" />
-                                <span className="text-xs font-mono text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-                                    Active Version
-                                </span>
-                            </div>
-                            <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                                {currentSnapshot
-                                    ? String(currentSnapshot.version).padStart(
-                                          3,
-                                          '0'
-                                      )
-                                    : '---'}
-                            </div>
-                        </div>
-
-                        {/* Total Nodes */}
-                        <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3 rounded-sm">
-                            <div className="flex items-center gap-2 mb-1">
-                                <TrendingUp className="h-4 w-4 text-orange-500" />
-                                <span className="text-xs font-mono text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-                                    Total Nodes
-                                </span>
-                            </div>
-                            <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                                {totalNodes}
-                            </div>
-                        </div>
-
-                        {/* Total Edges */}
-                        <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3 rounded-sm">
-                            <div className="flex items-center gap-2 mb-1">
-                                <TrendingUp className="h-4 w-4 text-purple-500" />
-                                <span className="text-xs font-mono text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-                                    Total Edges
-                                </span>
-                            </div>
-                            <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                                {totalEdges}
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
 
             {/* Content Area */}
-            <div className="p-4">
-                {snapshots.length === 0 ? (
-                    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-sm p-8 text-center">
-                        <Archive className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-                        <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
-                            No Snapshots Available
-                        </h3>
-                        <p className="text-slate-500 dark:text-slate-400 text-sm max-w-md mx-auto">
-                            Create a snapshot to save the current state of your
-                            flow. Snapshots allow you to preserve different
-                            versions and restore them when needed.
-                        </p>
-                        <Button
-                            onClick={handleCreateSnapshot}
-                            className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium"
-                        >
-                            <Plus className="h-4 w-4 mr-2" />
-                            Create First Snapshot
-                        </Button>
-                    </div>
-                ) : (
-                    <div className="space-y-2">
-                        {/* Section Header */}
-                        <div className="flex items-center gap-2 mb-4">
-                            <span className="text-xs font-mono text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-                                Snapshot History
-                            </span>
-                            <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700"></div>
-                            <span className="text-xs font-mono text-slate-500 dark:text-slate-400">
-                                {snapshots.length} items
-                            </span>
+            <div className="flex-grow overflow-hidden flex flex-col">
+                <div className="flex-grow overflow-y-auto p-4">
+                    {snapshots.length === 0 ? (
+                        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-sm p-8 text-center">
+                            <Archive className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+                            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
+                                No Snapshots Available
+                            </h3>
+                            <p className="text-slate-500 dark:text-slate-400 text-sm max-w-md mx-auto">
+                                Create a snapshot to save the current state of
+                                your flow. Snapshots allow you to preserve
+                                different versions and restore them when needed.
+                            </p>
+                            <Button
+                                onClick={handleCreateSnapshot}
+                                className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium"
+                            >
+                                <Plus className="h-4 w-4 mr-2" />
+                                Create First Snapshot
+                            </Button>
                         </div>
+                    ) : (
+                        <div className="space-y-2">
+                            {/* Section Header - Sticky */}
+                            <div className="sticky top-0 bg-slate-50 dark:bg-slate-900 z-10 py-2">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <span className="text-xs font-mono text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                                        Snapshot History
+                                    </span>
+                                    <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700"></div>
+                                    <span className="text-xs font-mono text-slate-500 dark:text-slate-400">
+                                        {snapshots.length} items
+                                    </span>
+                                </div>
+                            </div>
 
-                        {snapshots
-                            .sort((a, b) => b.version - a.version)
-                            .map(snapshot => (
-                                <FlowSnapshotItem
-                                    key={snapshot.id}
-                                    snapshot={snapshot}
-                                    onDelete={handleDeleteSnapshot}
-                                    onRestore={handleRestoreSnapshot}
-                                />
-                            ))}
-                    </div>
-                )}
+                            {snapshots
+                                .sort((a, b) => {
+                                    // Current snapshot should always be at the top
+                                    if (a.is_current && !b.is_current)
+                                        return -1;
+                                    if (!a.is_current && b.is_current) return 1;
+                                    // For non-current snapshots, sort by version (highest first)
+                                    return b.version - a.version;
+                                })
+                                .map(snapshot => (
+                                    <FlowSnapshotItem
+                                        key={snapshot.id}
+                                        snapshot={snapshot}
+                                        onDelete={handleDeleteSnapshot}
+                                        onRestore={handleRestoreSnapshot}
+                                    />
+                                ))}
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );
