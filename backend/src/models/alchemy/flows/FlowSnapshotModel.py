@@ -20,7 +20,7 @@ class FlowSnapshotModel(AppBaseModel):
     __tablename__ = "flow_snapshots"
 
     flow_id = Column(
-        Integer, ForeignKey("flows.id", ondelete="CASCADE"), nullable=False
+        String, ForeignKey("flows.flow_id", ondelete="CASCADE"), nullable=False
     )
     version = Column(Integer, nullable=False)
 
@@ -37,11 +37,6 @@ class FlowSnapshotModel(AppBaseModel):
 
     # relationships
     flow = relationship("FlowModel", back_populates="snapshots")
-
-    __table_args__ = (
-        UniqueConstraint("flow_id", "version", name="uq_flow_snapshot_flow_version"),
-        Index("ix_flow_snapshots_flow_id", "flow_id"),
-    )
 
     def __repr__(self):
         return (

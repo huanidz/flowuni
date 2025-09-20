@@ -76,16 +76,14 @@ class FlowSnapshotRepository(BaseRepository):
             )
 
             # 2) paged items
-            query = (
-                self.db_session.query(FlowSnapshotModel)
-                .filter_by(flow_id=flow_id)
-                .offset((page - 1) * per_page)
-                .limit(per_page)
-            )
+            query = self.db_session.query(FlowSnapshotModel).filter_by(flow_id=flow_id)
 
             # 3) sort by version descending
             if sort_by_version_desc:
                 query = query.order_by(FlowSnapshotModel.version.desc())
+
+            # Apply pagination after ordering
+            query = query.offset((page - 1) * per_page).limit(per_page)
 
             snapshots = query.all()
 

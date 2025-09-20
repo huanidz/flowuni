@@ -91,7 +91,7 @@ async def create_flow_snapshot(
 
 @flow_snapshot_router.get("/", response_model=FlowSnapshotListResponse)
 async def get_flow_snapshots(
-    flow_id: int = Query(..., description="Flow ID"),
+    flow_id: str = Query(..., description="Flow ID"),
     page: int = Query(1, description="Page number", ge=1),
     per_page: int = Query(10, description="Number of items per page", ge=1, le=100),
     flow_snapshot_service: FlowSnapshotService = Depends(get_flow_snapshot_service),
@@ -152,7 +152,7 @@ async def get_flow_snapshots(
 
 @flow_snapshot_router.get("/current/{flow_id}", response_model=FlowSnapshotResponse)
 async def get_current_flow_snapshot(
-    flow_id: int,
+    flow_id: str,
     flow_snapshot_service: FlowSnapshotService = Depends(get_flow_snapshot_service),
     flow_service: FlowService = Depends(get_flow_service),
     auth_user_id: int = Depends(get_current_user),

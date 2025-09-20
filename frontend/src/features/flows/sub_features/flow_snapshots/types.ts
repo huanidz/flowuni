@@ -3,7 +3,7 @@ import type { Node, Edge } from '@xyflow/react';
 // FlowSnapshot interface based on the backend FlowSnapshotModel
 export interface FlowSnapshot {
     id: number;
-    flow_id: number;
+    flow_id: string;
     version: number;
     name?: string;
     description?: string;
@@ -19,7 +19,7 @@ export interface FlowSnapshot {
 
 // Request type for creating a flow snapshot
 export interface CreateFlowSnapshotRequest {
-    flow_id: number;
+    flow_id: string;
     name?: string;
     description?: string;
     flow_definition: {
@@ -42,7 +42,7 @@ export interface FlowSnapshotListResponse {
 
 // Parameters for getting flow snapshots
 export interface GetFlowSnapshotsParams {
-    flow_id: number;
+    flow_id: string;
     page?: number;
     per_page?: number;
 }
