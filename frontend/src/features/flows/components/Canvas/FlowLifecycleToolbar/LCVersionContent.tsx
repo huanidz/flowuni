@@ -13,7 +13,7 @@ import type { FlowSnapshot } from '@/features/flows/sub_features/flow_snapshots/
 
 // LCVersionContent component with "Create Snapshot" button and list of FlowSnapshotItems
 const LCVersionContent: React.FC<{ flowId: string }> = ({ flowId }) => {
-    const { getNodes, getEdges } = useReactFlow();
+    const { setNodes, setEdges, getEdges, getNodes } = useReactFlow();
     const [page, setPage] = useState(1);
     const [perPage] = useState(10);
 
@@ -64,6 +64,16 @@ const LCVersionContent: React.FC<{ flowId: string }> = ({ flowId }) => {
     // Function to handle deleting a snapshot
     const handleDeleteSnapshot = (id: number) => {
         deleteSnapshotMutation.mutate(id);
+    };
+
+    // Function to handle restoring a snapshot
+    const handleRestoreSnapshot = (flowData: {
+        nodes: any[];
+        edges: any[];
+    }) => {
+        console.log('Restore: ', flowData);
+        setNodes(flowData.nodes);
+        setEdges(flowData.edges);
     };
 
     return (
@@ -174,6 +184,7 @@ const LCVersionContent: React.FC<{ flowId: string }> = ({ flowId }) => {
                                         key={snapshot.id}
                                         snapshot={snapshot}
                                         onDelete={handleDeleteSnapshot}
+                                        onRestore={handleRestoreSnapshot}
                                     />
                                 ))}
                         </div>

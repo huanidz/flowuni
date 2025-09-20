@@ -2,16 +2,20 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Trash2, RotateCcw, FileText, Clock, Database } from 'lucide-react';
 import type { FlowSnapshot } from '../types';
+import { parseFlowDefinition } from '@/features/flows/utils';
+import type { ParsedFlowData } from '@/features/flows/utils';
 
 // FlowSnapshotItem component to display individual snapshot
 interface FlowSnapshotItemProps {
     snapshot: FlowSnapshot;
     onDelete: (id: number) => void;
+    onRestore: (flowData: ParsedFlowData) => void;
 }
 
 const FlowSnapshotItem: React.FC<FlowSnapshotItemProps> = ({
     snapshot,
     onDelete,
+    onRestore,
 }) => {
     console.log('snapshot: ', snapshot);
 
@@ -27,6 +31,17 @@ const FlowSnapshotItem: React.FC<FlowSnapshotItemProps> = ({
 
     const getEdgeCount = () => {
         return snapshot.flow_definition?.edges?.length || 0;
+    };
+
+    const handleRestore = () => {
+        try {
+            // The flow_definition might already be in the correct format, so we need to handle it properly
+            const flowDefinition = snapshot.flow_definition as any;
+            const parsedFlowData = parseFlowDefinition(flowDefinition);
+            onRestore(parsedFlowData);
+        } catch (error) {
+            console.error('Error restoring flow snapshot:', error);
+        }
     };
 
     return (
@@ -54,6 +69,15 @@ const FlowSnapshotItem: React.FC<FlowSnapshotItemProps> = ({
                     </div>
 
                     <div className="flex gap-1">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleRestore}
+                            className="h-7 px-2 text-xs font-medium hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                        >
+                            <RotateCcw className="h-3 w-3 mr-1" />
+                            RESTORE
+                        </Button>
                         <Button
                             variant="ghost"
                             size="sm"
