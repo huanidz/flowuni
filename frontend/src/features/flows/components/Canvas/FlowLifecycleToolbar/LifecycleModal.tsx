@@ -82,7 +82,10 @@ const LifecycleModal: React.FC<LifecycleModalProps> = ({
                 className="h-[80vh] flex flex-col"
                 style={{ maxWidth: '1400px', width: '50vw' }}
             >
-                <DialogHeader className="flex-shrink-0">
+                <DialogHeader
+                    className="flex-shrink-0"
+                    style={{ display: 'none' }}
+                >
                     <DialogTitle>{getTitle(type)}</DialogTitle>
                     <DialogDescription>
                         {getDescription(type)}

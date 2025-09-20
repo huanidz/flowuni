@@ -25,8 +25,6 @@ const FlowSnapshotItem: React.FC<FlowSnapshotItemProps> = ({
     onDelete,
     onRestore,
 }) => {
-    console.log('snapshot: ', snapshot);
-
     // State for confirmation modals
     const [restoreConfirmOpen, setRestoreConfirmOpen] = useState(false);
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
