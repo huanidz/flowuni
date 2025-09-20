@@ -312,24 +312,24 @@ export const useFlowActions = (
 
     // Lifecycle actions - placeholders for now
     const onVersion = useCallback(() => {
-        console.log('Version action triggered - placeholder');
-        toast.info('Version feature coming soon!', {
-            description: 'This feature is under development.',
-        });
+        // console.log('Version action triggered - placeholder');
+        // toast.info('Version feature coming soon!', {
+        //     description: 'This feature is under development.',
+        // });
     }, []);
 
     const onEval = useCallback(() => {
-        console.log('Eval action triggered - placeholder');
-        toast.info('Evaluation feature coming soon!', {
-            description: 'This feature is under development.',
-        });
+        // console.log('Eval action triggered - placeholder');
+        // toast.info('Evaluation feature coming soon!', {
+        //     description: 'This feature is under development.',
+        // });
     }, []);
 
     const onPublish = useCallback(() => {
-        console.log('Publish action triggered - placeholder');
-        toast.info('Publish feature coming soon!', {
-            description: 'This feature is under development.',
-        });
+        // console.log('Publish action triggered - placeholder');
+        // toast.info('Publish feature coming soon!', {
+        //     description: 'This feature is under development.',
+        // });
     }, []);
 
     return {
