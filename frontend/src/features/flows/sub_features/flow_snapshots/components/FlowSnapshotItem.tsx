@@ -7,13 +7,11 @@ import type { FlowSnapshot } from '../types';
 interface FlowSnapshotItemProps {
     snapshot: FlowSnapshot;
     onDelete: (id: number) => void;
-    onRestore: (id: number) => void;
 }
 
 const FlowSnapshotItem: React.FC<FlowSnapshotItemProps> = ({
     snapshot,
     onDelete,
-    onRestore,
 }) => {
     const formatDate = (dateStr?: string) => {
         if (!dateStr) return 'N/A';
@@ -31,11 +29,11 @@ const FlowSnapshotItem: React.FC<FlowSnapshotItemProps> = ({
 
     return (
         <div
-            className={`relative border-l-4 ${snapshot.is_current ? 'border-l-emerald-500 bg-emerald-50 dark:bg-emerald-950/20' : 'border-l-slate-300 dark:border-l-slate-600 bg-white dark:bg-slate-900'} border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all duration-200`}
+            className={`relative border-l-4 border-l-slate-300 dark:border-l-slate-600 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all duration-200`}
         >
             {/* Header Bar */}
             <div
-                className={`px-3 py-2 ${snapshot.is_current ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-slate-50 dark:bg-slate-800'} border-b border-slate-200 dark:border-slate-700`}
+                className={`px-3 py-2 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700`}
             >
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -47,11 +45,6 @@ const FlowSnapshotItem: React.FC<FlowSnapshotItemProps> = ({
                                 {String(snapshot.version).padStart(3, '0')}
                             </span>
                         </div>
-                        {snapshot.is_current && (
-                            <div className="bg-emerald-500 text-white text-xs font-bold px-2 py-1 rounded-sm">
-                                CURRENT
-                            </div>
-                        )}
                         <div className="h-4 w-px bg-slate-300 dark:bg-slate-600"></div>
                         <span className="text-xs font-mono text-slate-500 dark:text-slate-400">
                             ID:{snapshot.id}
@@ -59,16 +52,6 @@ const FlowSnapshotItem: React.FC<FlowSnapshotItemProps> = ({
                     </div>
 
                     <div className="flex gap-1">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onRestore(snapshot.id)}
-                            className="h-7 px-2 text-xs font-medium hover:bg-blue-100 dark:hover:bg-blue-900/30"
-                            disabled={snapshot.is_current}
-                        >
-                            <RotateCcw className="h-3 w-3 mr-1" />
-                            RESTORE
-                        </Button>
                         <Button
                             variant="ghost"
                             size="sm"

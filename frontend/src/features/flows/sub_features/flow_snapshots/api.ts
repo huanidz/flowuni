@@ -45,18 +45,6 @@ export const getFlowSnapshotById = async (
 };
 
 /**
- * Get the current flow snapshot for a flow
- */
-export const getCurrentFlowSnapshot = async (
-    flowId: number
-): Promise<GetFlowSnapshotResponse> => {
-    const { data } = await apiClient.get(
-        `${FLOW_SNAPSHOTS_ENDPOINT}/current/${flowId}`
-    );
-    return data;
-};
-
-/**
  * Update a flow snapshot
  */
 export const updateFlowSnapshot = async (
@@ -68,25 +56,6 @@ export const updateFlowSnapshot = async (
         {
             ...request,
             id: snapshotId,
-        }
-    );
-    return data;
-};
-
-/**
- * Set a flow snapshot as the current version
- */
-export const setCurrentFlowSnapshot = async (
-    snapshotId: number
-): Promise<{
-    success: boolean;
-    message: string;
-    current_snapshot_id: number;
-}> => {
-    const { data } = await apiClient.post(
-        `${FLOW_SNAPSHOTS_ENDPOINT}/set-current`,
-        {
-            snapshot_id: snapshotId,
         }
     );
     return data;

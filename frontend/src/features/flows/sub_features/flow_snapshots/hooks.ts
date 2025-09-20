@@ -3,9 +3,7 @@ import {
     createFlowSnapshot,
     getFlowSnapshots,
     getFlowSnapshotById,
-    getCurrentFlowSnapshot,
     updateFlowSnapshot,
-    setCurrentFlowSnapshot,
     deleteFlowSnapshot,
 } from './api';
 import type {
@@ -24,8 +22,6 @@ export const FLOW_SNAPSHOTS_QUERY_KEYS = {
     details: () => [...FLOW_SNAPSHOTS_QUERY_KEYS.all, 'detail'] as const,
     detail: (id: number) =>
         [...FLOW_SNAPSHOTS_QUERY_KEYS.details(), id] as const,
-    current: (flowId: number) =>
-        [...FLOW_SNAPSHOTS_QUERY_KEYS.all, 'current', flowId] as const,
 };
 
 /**
@@ -56,17 +52,6 @@ export const useFlowSnapshot = (snapshotId: number) => {
 };
 
 /**
- * Hook for getting the current flow snapshot for a flow
- */
-export const useCurrentFlowSnapshot = (flowId: number) => {
-    return useQuery<GetFlowSnapshotResponse, Error>({
-        queryKey: FLOW_SNAPSHOTS_QUERY_KEYS.current(flowId),
-        queryFn: () => getCurrentFlowSnapshot(flowId),
-        enabled: !!flowId,
-    });
-};
-
-/**
  * Hook for creating a flow snapshot
  */
 export const useCreateFlowSnapshot = () => {
@@ -82,11 +67,6 @@ export const useCreateFlowSnapshot = () => {
             // Invalidate the list query for this flow
             queryClient.invalidateQueries({
                 queryKey: FLOW_SNAPSHOTS_QUERY_KEYS.lists(),
-            });
-
-            // Invalidate the current snapshot query for this flow
-            queryClient.invalidateQueries({
-                queryKey: FLOW_SNAPSHOTS_QUERY_KEYS.current(variables.flow_id),
             });
         },
     });
@@ -116,42 +96,6 @@ export const useUpdateFlowSnapshot = () => {
             // Invalidate the list query for this flow
             queryClient.invalidateQueries({
                 queryKey: FLOW_SNAPSHOTS_QUERY_KEYS.lists(),
-            });
-
-            // Invalidate the current snapshot query for this flow
-            queryClient.invalidateQueries({
-                queryKey: FLOW_SNAPSHOTS_QUERY_KEYS.current(data.flow_id),
-            });
-        },
-    });
-};
-
-/**
- * Hook for setting a flow snapshot as the current version
- */
-export const useSetCurrentFlowSnapshot = () => {
-    const queryClient = useQueryClient();
-
-    return useMutation<
-        { success: boolean; message: string; current_snapshot_id: number },
-        Error,
-        number
-    >({
-        mutationFn: setCurrentFlowSnapshot,
-        onSuccess: (data, snapshotId) => {
-            // We need to get the flow ID from the snapshot data
-            // Since we don't have it directly, we'll invalidate all list queries
-            // and the current snapshot queries will be invalidated when the component
-            // using this hook gets the updated data
-
-            // Invalidate all list queries
-            queryClient.invalidateQueries({
-                queryKey: FLOW_SNAPSHOTS_QUERY_KEYS.lists(),
-            });
-
-            // Invalidate the detail query for this snapshot
-            queryClient.invalidateQueries({
-                queryKey: FLOW_SNAPSHOTS_QUERY_KEYS.detail(snapshotId),
             });
         },
     });

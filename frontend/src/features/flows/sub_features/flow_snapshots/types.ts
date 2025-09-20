@@ -11,7 +11,6 @@ export interface FlowSnapshot {
         nodes: Node[];
         edges: Edge[];
     };
-    is_current: boolean;
     snapshot_metadata?: Record<string, any>;
     flow_schema_version?: string;
     created_at?: string;
@@ -26,7 +25,6 @@ export interface CreateFlowSnapshotRequest {
         nodes: Node[];
         edges: Edge[];
     };
-    is_current?: boolean;
     snapshot_metadata?: Record<string, any>;
     flow_schema_version?: string;
 }

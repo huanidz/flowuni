@@ -5,7 +5,6 @@ import FlowSnapshotItem from '@/features/flows/sub_features/flow_snapshots/compo
 import {
     useFlowSnapshots,
     useCreateFlowSnapshot,
-    useSetCurrentFlowSnapshot,
     useDeleteFlowSnapshot,
 } from '@/features/flows/sub_features/flow_snapshots/hooks';
 import { getFlowGraphData } from '@/features/flows/utils';
@@ -31,7 +30,6 @@ const LCVersionContent: React.FC<{ flowId: string }> = ({ flowId }) => {
 
     // Mutations for CRUD operations
     const createSnapshotMutation = useCreateFlowSnapshot();
-    const setCurrentSnapshotMutation = useSetCurrentFlowSnapshot();
     const deleteSnapshotMutation = useDeleteFlowSnapshot();
 
     // Extract snapshots from the response data
@@ -51,7 +49,6 @@ const LCVersionContent: React.FC<{ flowId: string }> = ({ flowId }) => {
             name: `Version ${new Date().toLocaleDateString()}`,
             description: `Snapshot created on ${new Date().toLocaleString()}`,
             flow_definition: flowDefinition,
-            is_current: true, // Set as current when created
             flow_schema_version: 'v1.0',
             snapshot_metadata: {
                 author: 'user',
@@ -67,11 +64,6 @@ const LCVersionContent: React.FC<{ flowId: string }> = ({ flowId }) => {
     // Function to handle deleting a snapshot
     const handleDeleteSnapshot = (id: number) => {
         deleteSnapshotMutation.mutate(id);
-    };
-
-    // Function to handle restoring from a snapshot
-    const handleRestoreSnapshot = (id: number) => {
-        setCurrentSnapshotMutation.mutate(id);
     };
 
     return (
@@ -174,11 +166,7 @@ const LCVersionContent: React.FC<{ flowId: string }> = ({ flowId }) => {
 
                             {snapshots
                                 .sort((a, b) => {
-                                    // Current snapshot should always be at the top
-                                    if (a.is_current && !b.is_current)
-                                        return -1;
-                                    if (!a.is_current && b.is_current) return 1;
-                                    // For non-current snapshots, sort by version (highest first)
+                                    // Sort by version (highest first)
                                     return b.version - a.version;
                                 })
                                 .map(snapshot => (
@@ -186,7 +174,6 @@ const LCVersionContent: React.FC<{ flowId: string }> = ({ flowId }) => {
                                         key={snapshot.id}
                                         snapshot={snapshot}
                                         onDelete={handleDeleteSnapshot}
-                                        onRestore={handleRestoreSnapshot}
                                     />
                                 ))}
                         </div>
