@@ -1,0 +1,37 @@
+from sqlalchemy import Boolean, Column, ForeignKey, String
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import relationship
+from src.models.alchemy.shared.AppBaseModel import AppBaseModel
+
+
+class FlowTestSuiteModel(AppBaseModel):
+    """
+    Flow test suite model for organizing test cases within a flow.
+
+    A test suite represents a collection of test cases that can be executed
+    together to validate different aspects of a flow's functionality.
+    """
+
+    __tablename__ = "flow_test_suites"
+
+    flow_id = Column(
+        String, ForeignKey("flows.flow_id", ondelete="CASCADE"), nullable=False
+    )
+    name = Column(String, nullable=False)
+    description = Column(String, nullable=True)
+    is_active = Column(Boolean, default=True)
+    suite_metadata = Column(JSONB, nullable=True)
+
+    # relationships
+    flow = relationship("FlowModel", back_populates="test_suites")
+    test_cases = relationship(
+        "FlowTestCaseModel",
+        back_populates="test_suite",
+        cascade="all, delete-orphan",
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<FlowTestSuiteModel(id={self.id}, suite_id={self.suite_id}, "
+            f"name={self.name}, flow_id={self.flow_id}, is_active={self.is_active})>"
+        )
