@@ -24,6 +24,9 @@ class FlowModel(AppBaseModel):
     sessions = relationship(
         "SessionModel", back_populates="flow", cascade="all, delete-orphan"
     )
+    test_suites = relationship(
+        "FlowTestSuiteModel", back_populates="flow", cascade="all, delete-orphan"
+    )
     user = relationship("UserModel", back_populates="flows")
 
     def __repr__(self):
