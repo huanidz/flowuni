@@ -21,7 +21,8 @@ const TestCaseItem: React.FC<TestCaseItemProps> = ({
     showSuiteName = false,
     suiteName,
 }) => {
-    const handleClick = () => {
+    const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        e.stopPropagation();
         if (onSelect) {
             onSelect(testCase.case_id);
         }
@@ -36,22 +37,31 @@ const TestCaseItem: React.FC<TestCaseItemProps> = ({
     return (
         <div
             className={`
-        p-2 border rounded cursor-pointer
+        p-2 border rounded
         ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}
       `}
-            onClick={handleClick}
         >
             <div className="flex items-start justify-between gap-2">
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1 mb-1">
-                        <h4 className="text-xs font-medium truncate">
-                            {testCase.name}
-                        </h4>
-                        {showSuiteName && suiteName && (
-                            <span className="text-xs text-gray-500 bg-gray-100 px-1 py-0.5 rounded">
-                                {suiteName}
-                            </span>
-                        )}
+                <div className="flex items-center gap-2">
+                    {onSelect && (
+                        <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={handleCheckboxChange}
+                            className="mt-0.5"
+                        />
+                    )}
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1 mb-1">
+                            <h4 className="text-xs font-medium truncate">
+                                {testCase.name}
+                            </h4>
+                            {showSuiteName && suiteName && (
+                                <span className="text-xs text-gray-500 bg-gray-100 px-1 py-0.5 rounded">
+                                    {suiteName}
+                                </span>
+                            )}
+                        </div>
                     </div>
 
                     {testCase.description && (

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import type { FlowTestSuiteWithCases } from '../types';
 import { TestCaseStatus } from '../types';
 import TestCaseItem from './TestCaseItem';
@@ -51,7 +51,9 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
     };
 
     return (
-        <div className="border rounded bg-white">
+        <div
+            className={`border rounded bg-white transition-all duration-300 ${isExpanded ? 'bg-gray-50' : ''}`}
+        >
             {/* Suite Header */}
             <div className="p-3 cursor-pointer" onClick={toggleExpand}>
                 <div className="flex items-center justify-between">
@@ -116,7 +118,13 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
             </div>
 
             {/* Test Cases */}
-            {isExpanded && (
+            <div
+                className={`overflow-hidden transition-all duration-300 ${
+                    isExpanded
+                        ? 'max-h-[2000px] opacity-100'
+                        : 'max-h-0 opacity-0'
+                }`}
+            >
                 <div className="border-t">
                     <div className="p-1 space-y-1">
                         {testSuite.test_cases.map(testCase => (
@@ -133,7 +141,7 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
                         ))}
                     </div>
                 </div>
-            )}
+            </div>
         </div>
     );
 };
