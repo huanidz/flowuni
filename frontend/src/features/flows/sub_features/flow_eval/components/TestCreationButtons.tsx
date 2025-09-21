@@ -1,4 +1,5 @@
 import React from 'react';
+import { Folder, Plus } from 'lucide-react';
 
 /**
  * Component with test creation action buttons
@@ -24,19 +25,7 @@ const TestCreationButtons: React.FC = () => {
           bg-purple-600 text-white hover:bg-purple-700 active:bg-purple-800
         `}
             >
-                <svg
-                    className="w-3.5 h-3.5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                >
-                    <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"
-                    />
-                </svg>
+                <Folder className="w-3.5 h-3.5" />
                 Create Test Suite
             </button>
 
@@ -48,19 +37,7 @@ const TestCreationButtons: React.FC = () => {
           bg-indigo-600 text-white hover:bg-indigo-700 active:bg-indigo-800
         `}
             >
-                <svg
-                    className="w-3.5 h-3.5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                >
-                    <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                    />
-                </svg>
+                <Plus className="w-3.5 h-3.5" />
                 Create Test Case
             </button>
         </div>
