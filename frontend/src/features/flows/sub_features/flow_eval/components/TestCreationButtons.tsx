@@ -1,46 +1,74 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Folder, Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import CreateTestSuiteModal from './CreateTestSuiteModal';
+import CreateTestCaseModal from './CreateTestCaseModal';
 
 /**
  * Component with test creation action buttons
  */
 const TestCreationButtons: React.FC = () => {
+    const [isTestSuiteModalOpen, setIsTestSuiteModalOpen] = useState(false);
+    const [isTestCaseModalOpen, setIsTestCaseModalOpen] = useState(false);
+
     const handleCreateTestSuite = () => {
-        // For now, do nothing as requested
-        console.log('Create Test Suite clicked');
+        setIsTestSuiteModalOpen(true);
+    };
+
+    const handleCloseTestSuiteModal = () => {
+        setIsTestSuiteModalOpen(false);
+    };
+
+    const handleSubmitTestSuite = (
+        suiteName: string,
+        suiteDescription: string
+    ) => {
+        // TODO: Implement API call to create test suite
+        console.log('Creating test suite:', { suiteName, suiteDescription });
     };
 
     const handleCreateTestCase = () => {
-        // For now, do nothing as requested
-        console.log('Create Test Case clicked');
+        setIsTestCaseModalOpen(true);
+    };
+
+    const handleCloseTestCaseModal = () => {
+        setIsTestCaseModalOpen(false);
     };
 
     return (
-        <div className="flex flex-wrap gap-2 p-2 bg-gray-50 border-b">
-            {/* Create Test Suite Button */}
-            <button
-                onClick={handleCreateTestSuite}
-                className={`
-          flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors
-          bg-purple-600 text-white hover:bg-purple-700 active:bg-purple-800
-        `}
-            >
-                <Folder className="w-3.5 h-3.5" />
-                Create Test Suite
-            </button>
+        <>
+            <div className="flex flex-wrap gap-2 p-2 bg-gray-50 border-b">
+                {/* Create Test Suite Button */}
+                <Button
+                    onClick={handleCreateTestSuite}
+                    className="bg-purple-600 hover:bg-purple-700"
+                >
+                    <Folder className="w-3.5 h-3.5 mr-1" />
+                    Create Test Suite
+                </Button>
 
-            {/* Create Test Case Button */}
-            <button
-                onClick={handleCreateTestCase}
-                className={`
-          flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors
-          bg-indigo-600 text-white hover:bg-indigo-700 active:bg-indigo-800
-        `}
-            >
-                <Plus className="w-3.5 h-3.5" />
-                Create Test Case
-            </button>
-        </div>
+                {/* Create Test Case Button */}
+                <Button
+                    onClick={handleCreateTestCase}
+                    variant="secondary"
+                    className="bg-indigo-600 hover:bg-indigo-700"
+                >
+                    <Plus className="w-3.5 h-3.5 mr-1" />
+                    Create Test Case
+                </Button>
+            </div>
+
+            <CreateTestSuiteModal
+                isOpen={isTestSuiteModalOpen}
+                onClose={handleCloseTestSuiteModal}
+                onSubmit={handleSubmitTestSuite}
+            />
+
+            <CreateTestCaseModal
+                isOpen={isTestCaseModalOpen}
+                onClose={handleCloseTestCaseModal}
+            />
+        </>
     );
 };
 
