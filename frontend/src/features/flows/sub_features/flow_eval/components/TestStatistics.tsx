@@ -12,8 +12,8 @@ const TestStatisticsDisplay: React.FC<TestStatisticsDisplayProps> = ({
     statistics,
 }) => {
     return (
-        <div className="flex items-center justify-end p-4 bg-gray-50 border-b text-sm text-gray-600">
-            <div className="flex items-center gap-4">
+        <div className="flex items-center justify-end p-2 bg-gray-50 border-b text-xs text-gray-600">
+            <div className="flex items-center gap-3">
                 <span>
                     Total: <strong>{statistics.total}</strong>
                 </span>

@@ -15,17 +15,17 @@ const TestCreationButtons: React.FC = () => {
     };
 
     return (
-        <div className="flex flex-wrap gap-3 p-4 bg-gray-50 border-b">
+        <div className="flex flex-wrap gap-2 p-2 bg-gray-50 border-b">
             {/* Create Test Suite Button */}
             <button
                 onClick={handleCreateTestSuite}
                 className={`
-          flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors
+          flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors
           bg-purple-600 text-white hover:bg-purple-700 active:bg-purple-800
         `}
             >
                 <svg
-                    className="w-4 h-4"
+                    className="w-3.5 h-3.5"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -44,12 +44,12 @@ const TestCreationButtons: React.FC = () => {
             <button
                 onClick={handleCreateTestCase}
                 className={`
-          flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors
+          flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors
           bg-indigo-600 text-white hover:bg-indigo-700 active:bg-indigo-800
         `}
             >
                 <svg
-                    className="w-4 h-4"
+                    className="w-3.5 h-3.5"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
