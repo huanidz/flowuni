@@ -51,20 +51,17 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
     };
 
     return (
-        <div className="border border-gray-200 rounded-lg bg-white">
+        <div className="border rounded bg-white">
             {/* Suite Header */}
-            <div
-                className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
-                onClick={toggleExpand}
-            >
+            <div className="p-3 cursor-pointer" onClick={toggleExpand}>
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
                             <button
-                                className={`p-1 rounded transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                                className={`p-1 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
                             >
                                 <svg
-                                    className="w-4 h-4 text-gray-400"
+                                    className="w-3 h-3 text-gray-400"
                                     fill="none"
                                     stroke="currentColor"
                                     viewBox="0 0 24 24"
@@ -77,16 +74,16 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
                                     />
                                 </svg>
                             </button>
-                            <h3 className="text-base font-semibold text-gray-900">
+                            <h3 className="text-sm font-medium">
                                 {testSuite.name}
                             </h3>
                         </div>
                         <TestStatusIndicator status={getSuiteStatus()} />
                     </div>
 
-                    <div className="flex items-center gap-4 text-sm text-gray-500">
+                    <div className="flex items-center gap-2 text-xs text-gray-500">
                         <span>{totalTests} tests</span>
-                        <div className="flex gap-3">
+                        <div className="flex gap-2">
                             {passedTests > 0 && (
                                 <span className="text-emerald-600">
                                     {passedTests} passed
@@ -112,7 +109,7 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
                 </div>
 
                 {testSuite.description && (
-                    <p className="text-sm text-gray-600 mt-2">
+                    <p className="text-xs text-gray-600 mt-1">
                         {testSuite.description}
                     </p>
                 )}
@@ -120,8 +117,8 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
 
             {/* Test Cases */}
             {isExpanded && (
-                <div className="border-t border-gray-200">
-                    <div className="p-2 space-y-2">
+                <div className="border-t">
+                    <div className="p-1 space-y-1">
                         {testSuite.test_cases.map(testCase => (
                             <TestCaseItem
                                 key={testCase.case_id}

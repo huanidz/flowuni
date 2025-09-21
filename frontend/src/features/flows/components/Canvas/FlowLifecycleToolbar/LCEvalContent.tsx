@@ -1,19 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import {
     TestActionButtons,
-    TestCaseItem,
-    TestStatusIndicator,
     TestSuiteGroup,
 } from '../../../sub_features/flow_eval/components';
 import { TestCaseStatus } from '../../../sub_features/flow_eval/types';
-import type {
-    TestStatistics,
-    FlowTestSuiteWithCases,
-} from '../../../sub_features/flow_eval/types';
-import {
-    DUMMY_TEST_SUITES,
-    TEST_STATUS_COLORS,
-} from '../../../sub_features/flow_eval/const';
+import type { TestStatistics } from '../../../sub_features/flow_eval/types';
+import { DUMMY_TEST_SUITES } from '../../../sub_features/flow_eval/const';
 
 /**
  * Main Flow Evaluation Content Component
@@ -107,11 +99,9 @@ const LCEvalContent: React.FC = () => {
 
     return (
         <div className="h-full flex flex-col bg-white">
-            <div className="p-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">
-                    Flow Evaluation
-                </h3>
-                <p className="text-sm text-gray-600 mt-1">
+            <div className="p-3 border-b">
+                <h3 className="text-base font-medium">Flow Evaluation</h3>
+                <p className="text-xs text-gray-600 mt-1">
                     Run and monitor your flow test suites
                 </p>
             </div>
@@ -126,7 +116,7 @@ const LCEvalContent: React.FC = () => {
             />
 
             <div className="flex-1 overflow-auto">
-                <div className="p-4 space-y-4">
+                <div className="p-3 space-y-3">
                     {DUMMY_TEST_SUITES.map(suite => (
                         <TestSuiteGroup
                             key={suite.suite_id}
@@ -139,9 +129,9 @@ const LCEvalContent: React.FC = () => {
                     ))}
 
                     {DUMMY_TEST_SUITES.length === 0 && (
-                        <div className="text-center py-12 text-gray-500">
+                        <div className="text-center py-8 text-gray-500">
                             <svg
-                                className="w-12 h-12 mx-auto mb-4 text-gray-300"
+                                className="w-8 h-8 mx-auto mb-3 text-gray-300"
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
@@ -153,10 +143,10 @@ const LCEvalContent: React.FC = () => {
                                     d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                                 />
                             </svg>
-                            <h3 className="text-lg font-medium text-gray-900 mb-2">
+                            <h3 className="text-sm font-medium mb-1">
                                 No Test Suites
                             </h3>
-                            <p className="text-sm">
+                            <p className="text-xs">
                                 Create test suites to start evaluating your
                                 flow.
                             </p>

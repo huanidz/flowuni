@@ -36,51 +36,43 @@ const TestCaseItem: React.FC<TestCaseItemProps> = ({
     return (
         <div
             className={`
-        p-3 border rounded-lg transition-colors cursor-pointer
-        ${
-            isSelected
-                ? 'border-blue-500 bg-blue-50'
-                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-        }
+        p-2 border rounded cursor-pointer
+        ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}
       `}
             onClick={handleClick}
         >
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                        <h4 className="text-sm font-medium text-gray-900 truncate">
+                    <div className="flex items-center gap-1 mb-1">
+                        <h4 className="text-xs font-medium truncate">
                             {testCase.name}
                         </h4>
                         {showSuiteName && suiteName && (
-                            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                            <span className="text-xs text-gray-500 bg-gray-100 px-1 py-0.5 rounded">
                                 {suiteName}
                             </span>
                         )}
                     </div>
 
                     {testCase.description && (
-                        <p className="text-xs text-gray-600 mb-2 line-clamp-2">
+                        <p className="text-xs text-gray-600 mb-1 line-clamp-2">
                             {testCase.description}
                         </p>
                     )}
 
-                    <div className="flex items-center gap-4 text-xs text-gray-500">
-                        <span>Case ID: {testCase.case_id}</span>
+                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <span>ID: {testCase.case_id}</span>
                         {testCase.execution_time_ms && (
                             <span>
-                                Duration:{' '}
                                 {formatExecutionTime(
                                     testCase.execution_time_ms
                                 )}
                             </span>
                         )}
-                        <span>
-                            Timeout: {formatExecutionTime(testCase.timeout_ms)}
-                        </span>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
                     <TestStatusIndicator
                         status={testCase.status || TestCaseStatus.PENDING}
                         executionTimeMs={testCase.execution_time_ms}
@@ -90,7 +82,7 @@ const TestCaseItem: React.FC<TestCaseItemProps> = ({
             </div>
 
             {testCase.error_message && (
-                <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                <div className="mt-1 p-1 bg-red-50 border border-red-200 rounded text-xs text-red-700">
                     <div className="font-medium mb-1">Error:</div>
                     <div className="whitespace-pre-wrap">
                         {testCase.error_message}
