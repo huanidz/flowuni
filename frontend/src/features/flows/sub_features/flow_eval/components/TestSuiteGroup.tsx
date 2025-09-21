@@ -1,4 +1,6 @@
 import React from 'react';
+import { Button } from '@/components/ui/button';
+import { Edit, Trash2 } from 'lucide-react';
 import type { FlowTestSuiteWithCases } from '../types';
 import { TestCaseStatus } from '../types';
 import TestCaseItem from './TestCaseItem';
@@ -92,38 +94,77 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
                                     />
                                 </svg>
                             </button>
-                            <h3 className="text-sm font-medium">
-                                {testSuite.name}
+                            <h3 className="text-sm font-medium flex items-center gap-1">
+                                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-100 px-2 py-0.5 rounded">
+                                    SUITE
+                                </span>
+                                <span>{testSuite.name}</span>
+                                <span className="text-xs font-normal text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                                    {totalTests}{' '}
+                                    {totalTests === 1 ? 'case' : 'cases'}
+                                </span>
                             </h3>
                         </div>
                         <TestStatusIndicator status={getSuiteStatus()} />
                     </div>
 
-                    <div className="flex flex-col items-end gap-1">
-                        <div className="flex items-center gap-2 text-xs text-gray-500">
-                            <span>{totalTests} tests</span>
-                            <div className="flex gap-2">
-                                {passedTests > 0 && (
-                                    <span className="text-emerald-600">
-                                        {passedTests} passed
-                                    </span>
-                                )}
-                                {failedTests > 0 && (
-                                    <span className="text-red-600">
-                                        {failedTests} failed
-                                    </span>
-                                )}
-                                {runningTests > 0 && (
-                                    <span className="text-blue-600">
-                                        {runningTests} running
-                                    </span>
-                                )}
-                                {pendingTests > 0 && (
-                                    <span className="text-gray-600">
-                                        {pendingTests} pending
-                                    </span>
-                                )}
-                            </div>
+                    <div className="flex items-center gap-3">
+                        {/* Enhanced Statistics Display */}
+                        <div className="flex items-center gap-1">
+                            {passedTests > 0 && (
+                                <div className="flex items-center gap-1 bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-medium">
+                                    <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                                    {passedTests}
+                                </div>
+                            )}
+                            {failedTests > 0 && (
+                                <div className="flex items-center gap-1 bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-medium">
+                                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                                    {failedTests}
+                                </div>
+                            )}
+                            {runningTests > 0 && (
+                                <div className="flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-medium">
+                                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                                    {runningTests}
+                                </div>
+                            )}
+                            {pendingTests > 0 && (
+                                <div className="flex items-center gap-1 bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-medium">
+                                    <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                                    {pendingTests}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Action Buttons with Text */}
+                        <div className="flex items-center gap-1">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 px-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 text-xs"
+                                onClick={e => {
+                                    e.stopPropagation();
+                                    // TODO: Implement edit functionality
+                                }}
+                                title="Edit test suite"
+                            >
+                                <Edit className="h-3 w-3 mr-1" />
+                                Edit
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 px-2 text-gray-500 hover:text-red-600 hover:bg-red-50 text-xs"
+                                onClick={e => {
+                                    e.stopPropagation();
+                                    // TODO: Implement delete functionality
+                                }}
+                                title="Delete test suite"
+                            >
+                                <Trash2 className="h-3 w-3 mr-1" />
+                                Delete
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -137,7 +178,7 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
                     <span
                         className={`text-xs font-medium transition-opacity duration-200 ${
                             selectedTestCaseCount > 0
-                                ? 'text-blue-600 opacity-100'
+                                ? 'text-blue-600 opacity-100 bg-blue-100 px-2 py-0.5 rounded-full'
                                 : 'opacity-0'
                         }`}
                     >
