@@ -24,6 +24,16 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
 }) => {
     const isExpanded = expandedSuites.has(testSuite.suite_id);
 
+    // Check if any test case in this suite is selected
+    const hasSelectedTestCase = testSuite.test_cases.some(testCase =>
+        selectedTestCases.has(testCase.case_id)
+    );
+
+    // Count selected test cases in this suite
+    const selectedTestCaseCount = testSuite.test_cases.filter(testCase =>
+        selectedTestCases.has(testCase.case_id)
+    ).length;
+
     // Calculate suite statistics
     const totalTests = testSuite.test_cases.length;
     const passedTests = testSuite.test_cases.filter(
@@ -52,7 +62,13 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
 
     return (
         <div
-            className={`border rounded bg-white transition-all duration-300 ${isExpanded ? 'bg-gray-50' : ''}`}
+            className={`border rounded transition-all duration-300 ${
+                hasSelectedTestCase
+                    ? 'bg-blue-50'
+                    : isExpanded
+                      ? 'bg-gray-50'
+                      : 'bg-white'
+            }`}
         >
             {/* Suite Header */}
             <div className="p-3 cursor-pointer" onClick={toggleExpand}>
@@ -83,38 +99,53 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
                         <TestStatusIndicator status={getSuiteStatus()} />
                     </div>
 
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                        <span>{totalTests} tests</span>
-                        <div className="flex gap-2">
-                            {passedTests > 0 && (
-                                <span className="text-emerald-600">
-                                    {passedTests} passed
-                                </span>
-                            )}
-                            {failedTests > 0 && (
-                                <span className="text-red-600">
-                                    {failedTests} failed
-                                </span>
-                            )}
-                            {runningTests > 0 && (
-                                <span className="text-blue-600">
-                                    {runningTests} running
-                                </span>
-                            )}
-                            {pendingTests > 0 && (
-                                <span className="text-gray-600">
-                                    {pendingTests} pending
-                                </span>
-                            )}
+                    <div className="flex flex-col items-end gap-1">
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                            <span>{totalTests} tests</span>
+                            <div className="flex gap-2">
+                                {passedTests > 0 && (
+                                    <span className="text-emerald-600">
+                                        {passedTests} passed
+                                    </span>
+                                )}
+                                {failedTests > 0 && (
+                                    <span className="text-red-600">
+                                        {failedTests} failed
+                                    </span>
+                                )}
+                                {runningTests > 0 && (
+                                    <span className="text-blue-600">
+                                        {runningTests} running
+                                    </span>
+                                )}
+                                {pendingTests > 0 && (
+                                    <span className="text-gray-600">
+                                        {pendingTests} pending
+                                    </span>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {testSuite.description && (
-                    <p className="text-xs text-gray-600 mt-1">
-                        {testSuite.description}
-                    </p>
-                )}
+                <div className="flex items-start justify-between mt-1">
+                    {testSuite.description && (
+                        <p className="text-xs text-gray-600">
+                            {testSuite.description}
+                        </p>
+                    )}
+                    <span
+                        className={`text-xs font-medium transition-opacity duration-200 ${
+                            selectedTestCaseCount > 0
+                                ? 'text-blue-600 opacity-100'
+                                : 'opacity-0'
+                        }`}
+                    >
+                        {selectedTestCaseCount > 0
+                            ? `${selectedTestCaseCount} selected`
+                            : '0 selected'}
+                    </span>
+                </div>
             </div>
 
             {/* Test Cases - Tree Style */}
