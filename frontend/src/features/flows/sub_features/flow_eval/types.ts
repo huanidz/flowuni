@@ -3,14 +3,22 @@
  * Based on backend FlowTestSuiteModel and FlowTestCaseModel
  */
 
-export enum TestCaseStatus {
-    PENDING = 'PENDING',
-    QUEUED = 'QUEUED',
-    RUNNING = 'RUNNING',
-    PASSED = 'PASSED',
-    FAILED = 'FAILED',
-    CANCEL = 'CANCEL',
-}
+export type TestCaseStatus =
+    | 'PENDING'
+    | 'QUEUED'
+    | 'RUNNING'
+    | 'PASSED'
+    | 'FAILED'
+    | 'CANCEL';
+
+export const TestCaseStatus = {
+    PENDING: 'PENDING' as TestCaseStatus,
+    QUEUED: 'QUEUED' as TestCaseStatus,
+    RUNNING: 'RUNNING' as TestCaseStatus,
+    PASSED: 'PASSED' as TestCaseStatus,
+    FAILED: 'FAILED' as TestCaseStatus,
+    CANCEL: 'CANCEL' as TestCaseStatus,
+};
 
 export interface TestSuiteMetadata {
     [key: string]: any;
