@@ -41,6 +41,9 @@ async def create_empty_flow(
 
         return response
 
+    except HTTPException as http_exc:
+        raise http_exc  # Re-raise known HTTP exceptions
+
     except Exception as e:
         logger.error(
             f"Error queuing compilation task: {e}. traceback: {traceback.format_exc()}"
@@ -74,6 +77,9 @@ async def create_flow_with_data(
         )
 
         return response
+
+    except HTTPException as http_exc:
+        raise http_exc  # Re-raise known HTTP exceptions
 
     except Exception as e:
         logger.error(
@@ -122,6 +128,9 @@ async def get_by_user_id(
         )
 
         return response
+    except HTTPException as http_exc:
+        raise http_exc  # Re-raise known HTTP exceptions
+
     except Exception as e:
         logger.error(
             f"Error retrieving flows by user ID {user_id}: {e}. Traceback: {traceback.format_exc()}"
@@ -164,6 +173,9 @@ async def get_flow_detail_by_id(
         )
         return response
 
+    except HTTPException as http_exc:
+        raise http_exc  # Re-raise known HTTP exceptions
+
     except Exception as e:
         logger.error(
             f"Error retrieving flow by ID {flow_id}: {e}. Traceback: {traceback.format_exc()}"
@@ -200,6 +212,9 @@ async def update_flow_by_id(
         )
 
         return response
+
+    except HTTPException as http_exc:
+        raise http_exc  # Re-raise known HTTP exceptions
 
     except Exception as e:
         logger.error(
@@ -238,6 +253,9 @@ async def delete_flow_by_id(
 
         # No response body for 204 No Content
         return
+
+    except HTTPException as http_exc:
+        raise http_exc  # Re-raise known HTTP exceptions
 
     except Exception as e:
         logger.error(
