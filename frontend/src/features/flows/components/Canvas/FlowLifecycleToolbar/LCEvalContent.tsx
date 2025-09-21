@@ -1,10 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import {
     TestActionButtons,
+    TestCreationButtons,
+    TestStatistics,
     TestSuiteGroup,
 } from '../../../sub_features/flow_eval/components';
 import { TestCaseStatus } from '../../../sub_features/flow_eval/types';
-import type { TestStatistics } from '../../../sub_features/flow_eval/types';
+import type { TestStatistics as TestStatisticsType } from '../../../sub_features/flow_eval/types';
 import { DUMMY_TEST_SUITES } from '../../../sub_features/flow_eval/const';
 
 /**
@@ -20,7 +22,7 @@ const LCEvalContent: React.FC = () => {
     );
     const [isRunning, setIsRunning] = useState(false);
 
-    const statistics = useMemo((): TestStatistics => {
+    const statistics = useMemo((): TestStatisticsType => {
         const allTestCases = DUMMY_TEST_SUITES.flatMap(
             suite => suite.test_cases
         );
@@ -106,16 +108,11 @@ const LCEvalContent: React.FC = () => {
                 </p>
             </div>
 
-            <TestActionButtons
-                statistics={statistics}
-                selectedCount={selectedTestCases.size}
-                onRunAll={handleRunAll}
-                onRunFailed={handleRunFailed}
-                onRunSelected={handleRunSelected}
-                isRunning={isRunning}
-            />
+            <TestCreationButtons />
 
-            <div className="flex-1 overflow-auto">
+            <TestStatistics statistics={statistics} />
+
+            <div className="flex-1 overflow-auto border border-gray-200 rounded-lg m-3">
                 <div className="p-3 space-y-3">
                     {DUMMY_TEST_SUITES.map(suite => (
                         <TestSuiteGroup
@@ -154,6 +151,15 @@ const LCEvalContent: React.FC = () => {
                     )}
                 </div>
             </div>
+
+            <TestActionButtons
+                statistics={statistics}
+                selectedCount={selectedTestCases.size}
+                onRunAll={handleRunAll}
+                onRunFailed={handleRunFailed}
+                onRunSelected={handleRunSelected}
+                isRunning={isRunning}
+            />
         </div>
     );
 };

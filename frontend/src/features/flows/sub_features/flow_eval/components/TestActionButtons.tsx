@@ -25,7 +25,7 @@ const TestActionButtons: React.FC<TestActionButtonsProps> = ({
     const hasSelectedTests = selectedCount > 0;
 
     return (
-        <div className="flex flex-wrap gap-3 p-4 bg-gray-50 border-b">
+        <div className="flex flex-wrap gap-3 p-4 bg-gray-50 border-t">
             {/* Run All Tests Button */}
             <button
                 onClick={onRunAll}
@@ -118,27 +118,6 @@ const TestActionButtons: React.FC<TestActionButtonsProps> = ({
                     ? 'Running Tests...'
                     : `Run Selected Tests (${selectedCount})`}
             </button>
-
-            {/* Statistics Display */}
-            <div className="flex items-center gap-4 ml-auto text-sm text-gray-600">
-                <div className="flex items-center gap-4">
-                    <span>
-                        Total: <strong>{statistics.total}</strong>
-                    </span>
-                    <span className="text-emerald-600">
-                        Passed: <strong>{statistics.passed}</strong>
-                    </span>
-                    <span className="text-red-600">
-                        Failed: <strong>{statistics.failed}</strong>
-                    </span>
-                    <span className="text-blue-600">
-                        Running: <strong>{statistics.running}</strong>
-                    </span>
-                    <span className="text-gray-600">
-                        Pending: <strong>{statistics.pending}</strong>
-                    </span>
-                </div>
-            </div>
         </div>
     );
 };
