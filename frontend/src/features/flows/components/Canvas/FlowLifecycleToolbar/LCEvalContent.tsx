@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { Button } from '@/components/ui/button';
 import {
     TestActionButtons,
     TestCreationButtons,
@@ -21,6 +22,7 @@ const LCEvalContent: React.FC = () => {
         new Set()
     );
     const [isRunning, setIsRunning] = useState(false);
+    const [showStatistics, setShowStatistics] = useState(true);
 
     const statistics = useMemo((): TestStatisticsType => {
         const allTestCases = DUMMY_TEST_SUITES.flatMap(
@@ -102,15 +104,29 @@ const LCEvalContent: React.FC = () => {
     return (
         <div className="h-full flex flex-col bg-white">
             <div className="p-3 border-b">
-                <h3 className="text-base font-medium">Flow Evaluation</h3>
-                <p className="text-xs text-gray-600 mt-1">
-                    Run and monitor your flow test suites
-                </p>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h3 className="text-base font-medium">
+                            Flow Evaluation
+                        </h3>
+                        <p className="text-xs text-gray-600 mt-1">
+                            Run and monitor your flow test suites
+                        </p>
+                    </div>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowStatistics(!showStatistics)}
+                        className="shrink-0"
+                    >
+                        {showStatistics ? 'Hide Stats' : 'Show Stats'}
+                    </Button>
+                </div>
             </div>
 
             <TestCreationButtons />
 
-            <TestStatistics statistics={statistics} />
+            {showStatistics && <TestStatistics statistics={statistics} />}
 
             <div className="flex-1 overflow-auto border border-gray-200 rounded-lg m-3">
                 <div className="p-3 space-y-3">
