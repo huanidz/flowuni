@@ -117,7 +117,7 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
                 )}
             </div>
 
-            {/* Test Cases */}
+            {/* Test Cases - Tree Style */}
             <div
                 className={`overflow-hidden transition-all duration-300 ${
                     isExpanded
@@ -125,19 +125,39 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
                         : 'max-h-0 opacity-0'
                 }`}
             >
-                <div className="border-t">
+                <div className="border-t relative">
+                    {/* Tree connector line */}
+                    {isExpanded && (
+                        <div
+                            className="absolute left-4 top-0 w-px h-full bg-gray-300"
+                            style={{ height: `calc(100% - 0.5rem)` }}
+                        />
+                    )}
+
                     <div className="p-1 space-y-1">
-                        {testSuite.test_cases.map(testCase => (
-                            <TestCaseItem
+                        {testSuite.test_cases.map((testCase, index) => (
+                            <div
                                 key={testCase.case_id}
-                                testCase={testCase}
-                                isSelected={selectedTestCases.has(
-                                    testCase.case_id
+                                className="relative flex items-start"
+                            >
+                                {/* Horizontal connector line */}
+                                {isExpanded && (
+                                    <div className="absolute left-4 top-4 w-4 h-px bg-gray-300" />
                                 )}
-                                onSelect={onTestCaseSelect}
-                                suiteName={testSuite.name}
-                                showSuiteName={false}
-                            />
+
+                                {/* Tree item with indentation */}
+                                <div className="pl-8 flex-1">
+                                    <TestCaseItem
+                                        testCase={testCase}
+                                        isSelected={selectedTestCases.has(
+                                            testCase.case_id
+                                        )}
+                                        onSelect={onTestCaseSelect}
+                                        suiteName={testSuite.name}
+                                        showSuiteName={false}
+                                    />
+                                </div>
+                            </div>
                         ))}
                     </div>
                 </div>
