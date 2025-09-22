@@ -8,6 +8,10 @@ import TestStatusIndicator from './TestStatusIndicator';
 import TestSuiteEdit from './TestSuiteEdit';
 import { useDeleteTestSuite } from '../hooks';
 import { useConfirmation } from '@/hooks/useConfirmationModal';
+// Constants for test case display
+const INITIAL_TEST_CASES_DISPLAYED = 3;
+const TEST_CASE_THRESHOLD_FOR_BUTTONS = 3;
+
 interface TestSuiteGroupProps {
     testSuite: FlowTestSuiteWithCases;
     selectedTestCases: Set<string>;
@@ -30,6 +34,7 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
     const isExpanded = expandedSuites.has(testSuite.suite_id);
     const { confirm, ConfirmationDialog } = useConfirmation();
     const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
+    const [showAllTestCases, setShowAllTestCases] = React.useState(false);
 
     // Check if any test case in this suite is selected
     const hasSelectedTestCase = testSuite.test_cases.some(testCase =>
@@ -226,30 +231,67 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
                         )}
 
                         <div className="p-1 space-y-1">
-                            {testSuite.test_cases.map((testCase, index) => (
-                                <div
-                                    key={String(testCase.case_id)}
-                                    className="relative flex items-start"
-                                >
-                                    {/* Horizontal connector line */}
-                                    {isExpanded && (
-                                        <div className="absolute left-4 top-4 w-4 h-px bg-gray-300" />
-                                    )}
+                            {testSuite.test_cases
+                                .slice(
+                                    0,
+                                    showAllTestCases ||
+                                        testSuite.test_cases.length <=
+                                            TEST_CASE_THRESHOLD_FOR_BUTTONS
+                                        ? testSuite.test_cases.length
+                                        : INITIAL_TEST_CASES_DISPLAYED
+                                )
+                                .map((testCase, index) => (
+                                    <div
+                                        key={String(testCase.case_id)}
+                                        className="relative flex items-start"
+                                    >
+                                        {/* Horizontal connector line */}
+                                        {isExpanded && (
+                                            <div className="absolute left-4 top-4 w-4 h-px bg-gray-300" />
+                                        )}
 
-                                    {/* Tree item with indentation */}
-                                    <div className="pl-8 flex-1">
-                                        <TestCaseItem
-                                            testCase={testCase}
-                                            isSelected={selectedTestCases.has(
-                                                String(testCase.case_id)
-                                            )}
-                                            onSelect={onTestCaseSelect}
-                                            suiteName={testSuite.name}
-                                            showSuiteName={false}
-                                        />
+                                        {/* Tree item with indentation */}
+                                        <div className="pl-8 flex-1">
+                                            <TestCaseItem
+                                                testCase={testCase}
+                                                isSelected={selectedTestCases.has(
+                                                    String(testCase.case_id)
+                                                )}
+                                                onSelect={onTestCaseSelect}
+                                                suiteName={testSuite.name}
+                                                showSuiteName={false}
+                                            />
+                                        </div>
                                     </div>
+                                ))}
+
+                            {/* Show More/Show All buttons when there are more than 3 test cases */}
+                            {testSuite.test_cases.length >
+                                TEST_CASE_THRESHOLD_FOR_BUTTONS && (
+                                <div className="pl-8 pt-1 flex items-center gap-2">
+                                    {!showAllTestCases && (
+                                        <span className="text-xs text-gray-500">
+                                            {testSuite.test_cases.length -
+                                                INITIAL_TEST_CASES_DISPLAYED}{' '}
+                                            more
+                                        </span>
+                                    )}
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-6 px-2 text-xs text-gray-500 hover:text-blue-600 hover:bg-blue-50"
+                                        onClick={() =>
+                                            setShowAllTestCases(
+                                                !showAllTestCases
+                                            )
+                                        }
+                                    >
+                                        {showAllTestCases
+                                            ? 'Show Less'
+                                            : 'Show All'}
+                                    </Button>
                                 </div>
-                            ))}
+                            )}
                         </div>
                     </div>
                 </div>
