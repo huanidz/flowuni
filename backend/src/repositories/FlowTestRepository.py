@@ -115,3 +115,32 @@ class FlowTestRepository(BaseRepository):
             logger.error(f"Error retrieving test suites for flow {flow_id}: {e}")
             self.db_session.rollback()
             raise e
+
+    def get_test_suites_with_cases_by_flow_id(
+        self, flow_id: str
+    ) -> list[FlowTestSuiteModel]:
+        """
+        Get all test suites with their test cases for a specific flow.
+        """
+        try:
+            test_suites = (
+                self.db_session.query(FlowTestSuiteModel)
+                .filter_by(flow_id=flow_id)
+                .all()
+            )
+
+            # Load test cases for each suite
+            for suite in test_suites:
+                # Accessing test_cases will load them due to the relationship
+                _ = suite.test_cases
+
+            logger.info(
+                f"Retrieved {len(test_suites)} test suites with cases for flow {flow_id}"
+            )
+            return test_suites
+        except Exception as e:
+            logger.error(
+                f"Error retrieving test suites with cases for flow {flow_id}: {e}"
+            )
+            self.db_session.rollback()
+            raise e

@@ -42,6 +42,15 @@ class FlowTestServiceInterface(ABC):
         """
         pass
 
+    @abstractmethod
+    def get_test_suites_with_cases_by_flow_id(
+        self, flow_id: str
+    ) -> list[FlowTestSuiteModel]:
+        """
+        Get all test suites with their test cases for a specific flow
+        """
+        pass
+
 
 class FlowTestService(FlowTestServiceInterface):
     """
@@ -113,4 +122,24 @@ class FlowTestService(FlowTestServiceInterface):
             return test_suites
         except Exception as e:
             logger.error(f"Error retrieving test suites for flow {flow_id}: {str(e)}")
+            raise
+
+    def get_test_suites_with_cases_by_flow_id(
+        self, flow_id: str
+    ) -> list[FlowTestSuiteModel]:
+        """
+        Get all test suites with their test cases for a specific flow
+        """
+        try:
+            test_suites = self.test_repository.get_test_suites_with_cases_by_flow_id(
+                flow_id=flow_id
+            )
+            logger.info(
+                f"Successfully retrieved {len(test_suites)} test suites with cases for flow {flow_id}"
+            )
+            return test_suites
+        except Exception as e:
+            logger.error(
+                f"Error retrieving test suites with cases for flow {flow_id}: {str(e)}"
+            )
             raise
