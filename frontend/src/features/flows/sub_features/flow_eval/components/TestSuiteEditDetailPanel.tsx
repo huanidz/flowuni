@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import type { FlowTestCase } from '../types';
 import { TestCaseStatus } from '../types';
 import { getStatusBadge } from '../utils';
-import TestCriteriaBuilder from './TestCriteriaBuilder';
+import TestCriteriaBuilder from './RuleCriteria/TestCriteriaBuilder';
 
 interface TestSuiteEditDetailPanelProps {
     selectedTestCase: FlowTestCase | null;
@@ -19,7 +19,7 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
     const [description, setDescription] = useState(
         selectedTestCase?.description || ''
     );
-    const [input, setInput] = useState(selectedTestCase?.input || '');
+    const [input, setInput] = useState(selectedTestCase?.input_data || '');
     const [expectedOutput, setExpectedOutput] = useState(
         selectedTestCase?.expected_output || ''
     );
@@ -30,7 +30,7 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
     // Update local state when selectedTestCase changes
     React.useEffect(() => {
         setDescription(selectedTestCase?.description || '');
-        setInput(selectedTestCase?.input || '');
+        setInput(selectedTestCase?.input_data || '');
         setExpectedOutput(selectedTestCase?.expected_output || '');
         setTestCriteria(selectedTestCase?.test_criteria || '');
     }, [selectedTestCase]);
@@ -79,7 +79,7 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
                         INPUT
                     </label>
                     <textarea
-                        value={input}
+                        value={input as string}
                         onChange={e => {
                             setInput(e.target.value);
                             handleFieldChange('input', e.target.value);
@@ -95,7 +95,7 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
                         EXPECTED OUTPUT
                     </label>
                     <textarea
-                        value={expectedOutput}
+                        value={expectedOutput as string}
                         onChange={e => {
                             setExpectedOutput(e.target.value);
                             handleFieldChange(
@@ -115,7 +115,7 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
                     TEST PASS CRITERIA
                 </label>
                 <TestCriteriaBuilder
-                    criteria={testCriteria}
+                    criteria={testCriteria as string}
                     onChange={criteria => {
                         setTestCriteria(criteria);
                         handleFieldChange('test_criteria', criteria);

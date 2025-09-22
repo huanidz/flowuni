@@ -76,6 +76,8 @@ export interface FlowTestCase {
     actual_output?: TestCaseActualOutput;
     error_message?: string;
     execution_time_ms?: number;
+
+    test_criteria?: Record<string, any>;
 }
 
 /**
