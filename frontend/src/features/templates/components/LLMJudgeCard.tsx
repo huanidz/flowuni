@@ -49,28 +49,40 @@ const LLMJudgeCard: React.FC<LLMJudgeCardProps> = ({
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                {llmJudge.judge_config && (
+                {llmJudge.data && (
                     <div className="space-y-2">
                         <div>
-                            <span className="font-medium">Judge Name:</span>{' '}
-                            {llmJudge.judge_config.judge_name}
-                        </div>
-                        {llmJudge.judge_config.judge_description && (
-                            <div>
-                                <span className="font-medium">
-                                    Judge Description:
-                                </span>{' '}
-                                {llmJudge.judge_config.judge_description}
-                            </div>
-                        )}
-                        <div>
                             <span className="font-medium">Provider:</span>{' '}
-                            {llmJudge.judge_config.judge_llm_provider.provider}
+                            {llmJudge.data.provider}
                         </div>
                         <div>
                             <span className="font-medium">Model:</span>{' '}
-                            {llmJudge.judge_config.judge_llm_provider.model}
+                            {llmJudge.data.model}
                         </div>
+                        {llmJudge.data.system_prompt && (
+                            <div>
+                                <span className="font-medium">
+                                    System Prompt:
+                                </span>{' '}
+                                {llmJudge.data.system_prompt}
+                            </div>
+                        )}
+                        {llmJudge.data.temperature !== undefined && (
+                            <div>
+                                <span className="font-medium">
+                                    Temperature:
+                                </span>{' '}
+                                {llmJudge.data.temperature}
+                            </div>
+                        )}
+                        {llmJudge.data.max_output_tokens !== undefined && (
+                            <div>
+                                <span className="font-medium">
+                                    Max Output Tokens:
+                                </span>{' '}
+                                {llmJudge.data.max_output_tokens}
+                            </div>
+                        )}
                     </div>
                 )}
             </CardContent>

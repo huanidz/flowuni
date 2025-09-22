@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from sqlalchemy import and_
 from sqlalchemy.orm import Session
@@ -6,7 +6,7 @@ from src.models.alchemy.users.UserGlobalTemplateModel import (
     TemplateType,
     UserGlobalTemplateModel,
 )
-from src.models.parsers.LLMJudgeParser import LLMJudgeParser
+from src.models.parsers.LLMProviderParser import LLMProviderParser
 from src.repositories.BaseRepository import BaseRepository
 
 
@@ -63,13 +63,12 @@ class UserGlobalTemplateRepository(BaseRepository):
         template_type: TemplateType,
         name: Optional[str] = None,
         description: Optional[str] = None,
-        data: Optional[Dict[str, Any]] = None,
-        judge_config: Optional[LLMJudgeParser] = None,
+        data: Optional[Union[Dict[str, Any], LLMProviderParser]] = None,
     ) -> UserGlobalTemplateModel:
         """Create a new template"""
-        # Convert judge_config to dict if provided
-        if judge_config:
-            data = judge_config.model_dump()
+        # Convert LLMProviderParser to dict if provided
+        if isinstance(data, LLMProviderParser):
+            data = data.model_dump()
 
         template = UserGlobalTemplateModel(
             user_id=user_id,
@@ -85,8 +84,7 @@ class UserGlobalTemplateRepository(BaseRepository):
         user_id: int,
         name: Optional[str] = None,
         description: Optional[str] = None,
-        data: Optional[Dict[str, Any]] = None,
-        judge_config: Optional[LLMJudgeParser] = None,
+        data: Optional[Union[Dict[str, Any], LLMProviderParser]] = None,
     ) -> UserGlobalTemplateModel:
         """Create a new LLM judge template"""
         return self.create_template(
@@ -95,7 +93,6 @@ class UserGlobalTemplateRepository(BaseRepository):
             name=name,
             description=description,
             data=data,
-            judge_config=judge_config,
         )
 
     def update_template(
@@ -104,8 +101,7 @@ class UserGlobalTemplateRepository(BaseRepository):
         user_id: int,
         name: Optional[str] = None,
         description: Optional[str] = None,
-        data: Optional[Dict[str, Any]] = None,
-        judge_config: Optional[LLMJudgeParser] = None,
+        data: Optional[Union[Dict[str, Any], LLMProviderParser]] = None,
     ) -> Optional[UserGlobalTemplateModel]:
         """Update a template"""
         template = self.get_by_id_and_user_id(template_id, user_id)
@@ -116,8 +112,8 @@ class UserGlobalTemplateRepository(BaseRepository):
             template.name = name
         if description is not None:
             template.description = description
-        if judge_config is not None:
-            template.data = judge_config.model_dump()
+        if isinstance(data, LLMProviderParser):
+            template.data = data.model_dump()
         elif data is not None:
             template.data = data
 

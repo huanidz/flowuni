@@ -15,7 +15,6 @@ import type {
     LLMJudge,
     CreateLLMJudgeRequest,
     UpdateLLMJudgeRequest,
-    LLMJudgeParser,
     LLMProviderParser,
 } from '../types';
 
@@ -34,8 +33,6 @@ const LLMJudgeForm: React.FC<LLMJudgeFormProps> = ({
 }) => {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
-    const [judgeName, setJudgeName] = useState('');
-    const [judgeDescription, setJudgeDescription] = useState('');
     const [provider, setProvider] = useState('');
     const [model, setModel] = useState('');
     const [apiKey, setApiKey] = useState('');
@@ -48,19 +45,13 @@ const LLMJudgeForm: React.FC<LLMJudgeFormProps> = ({
             setName(llmJudge.name || '');
             setDescription(llmJudge.description || '');
 
-            if (llmJudge.judge_config) {
-                setJudgeName(llmJudge.judge_config.judge_name);
-                setJudgeDescription(
-                    llmJudge.judge_config.judge_description || ''
-                );
-
-                const llmProvider = llmJudge.judge_config.judge_llm_provider;
-                setProvider(llmProvider.provider);
-                setModel(llmProvider.model);
-                setApiKey(llmProvider.api_key);
-                setSystemPrompt(llmProvider.system_prompt || '');
-                setTemperature(llmProvider.temperature || 0.0);
-                setMaxOutputTokens(llmProvider.max_output_tokens || 1024);
+            if (llmJudge.data) {
+                setProvider(llmJudge.data.provider);
+                setModel(llmJudge.data.model);
+                setApiKey(llmJudge.data.api_key);
+                setSystemPrompt(llmJudge.data.system_prompt || '');
+                setTemperature(llmJudge.data.temperature || 0.0);
+                setMaxOutputTokens(llmJudge.data.max_output_tokens || 1024);
             }
         }
     }, [llmJudge]);
@@ -68,7 +59,7 @@ const LLMJudgeForm: React.FC<LLMJudgeFormProps> = ({
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        const llmProvider: LLMProviderParser = {
+        const data: LLMProviderParser = {
             provider,
             model,
             api_key: apiKey,
@@ -77,18 +68,12 @@ const LLMJudgeForm: React.FC<LLMJudgeFormProps> = ({
             max_output_tokens: maxOutputTokens || undefined,
         };
 
-        const judgeConfig: LLMJudgeParser = {
-            judge_name: judgeName,
-            judge_description: judgeDescription || undefined,
-            judge_llm_provider: llmProvider,
-        };
-
         if (llmJudge) {
             // Update existing LLM Judge
             const updateRequest: UpdateLLMJudgeRequest = {
                 name: name || undefined,
                 description: description || undefined,
-                judge_config: judgeConfig,
+                data: data,
             };
             onSave(updateRequest);
         } else {
@@ -96,7 +81,7 @@ const LLMJudgeForm: React.FC<LLMJudgeFormProps> = ({
             const createRequest: CreateLLMJudgeRequest = {
                 name: name || undefined,
                 description: description || undefined,
-                judge_config: judgeConfig,
+                data: data,
             };
             onSave(createRequest);
         }
@@ -137,130 +122,91 @@ const LLMJudgeForm: React.FC<LLMJudgeFormProps> = ({
 
                     <div className="space-y-4 border-t pt-4">
                         <h3 className="text-lg font-medium">
-                            Judge Configuration
+                            LLM Provider Configuration
                         </h3>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="judgeName">Judge Name</Label>
-                            <Input
-                                id="judgeName"
-                                value={judgeName}
-                                onChange={e => setJudgeName(e.target.value)}
-                                placeholder="Enter a name for the judge"
-                                required
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="judgeDescription">
-                                Judge Description
-                            </Label>
-                            <Textarea
-                                id="judgeDescription"
-                                value={judgeDescription}
-                                onChange={e =>
-                                    setJudgeDescription(e.target.value)
-                                }
-                                placeholder="Describe the judge's purpose"
-                                rows={2}
-                            />
-                        </div>
-
-                        <div className="space-y-4 border-t pt-4">
-                            <h4 className="text-md font-medium">
-                                LLM Provider Configuration
-                            </h4>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="provider">Provider</Label>
-                                    <Input
-                                        id="provider"
-                                        value={provider}
-                                        onChange={e =>
-                                            setProvider(e.target.value)
-                                        }
-                                        placeholder="e.g., OpenAI, Anthropic"
-                                        required
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="model">Model</Label>
-                                    <Input
-                                        id="model"
-                                        value={model}
-                                        onChange={e => setModel(e.target.value)}
-                                        placeholder="e.g., gpt-4, claude-3"
-                                        required
-                                    />
-                                </div>
-                            </div>
-
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="apiKey">API Key</Label>
+                                <Label htmlFor="provider">Provider</Label>
                                 <Input
-                                    id="apiKey"
-                                    type="password"
-                                    value={apiKey}
-                                    onChange={e => setApiKey(e.target.value)}
-                                    placeholder="Enter your API key"
+                                    id="provider"
+                                    value={provider}
+                                    onChange={e => setProvider(e.target.value)}
+                                    placeholder="e.g., OpenAI, Anthropic"
                                     required
                                 />
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="systemPrompt">
-                                    System Prompt (Optional)
-                                </Label>
-                                <Textarea
-                                    id="systemPrompt"
-                                    value={systemPrompt}
+                                <Label htmlFor="model">Model</Label>
+                                <Input
+                                    id="model"
+                                    value={model}
+                                    onChange={e => setModel(e.target.value)}
+                                    placeholder="e.g., gpt-4, claude-3"
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="apiKey">API Key</Label>
+                            <Input
+                                id="apiKey"
+                                type="password"
+                                value={apiKey}
+                                onChange={e => setApiKey(e.target.value)}
+                                placeholder="Enter your API key"
+                                required
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="systemPrompt">
+                                System Prompt (Optional)
+                            </Label>
+                            <Textarea
+                                id="systemPrompt"
+                                value={systemPrompt}
+                                onChange={e => setSystemPrompt(e.target.value)}
+                                placeholder="Enter a system prompt for the LLM"
+                                rows={3}
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="temperature">Temperature</Label>
+                                <Input
+                                    id="temperature"
+                                    type="number"
+                                    step="0.1"
+                                    min="0"
+                                    max="2"
+                                    value={temperature}
                                     onChange={e =>
-                                        setSystemPrompt(e.target.value)
+                                        setTemperature(
+                                            parseFloat(e.target.value) || 0.0
+                                        )
                                     }
-                                    placeholder="Enter a system prompt for the LLM"
-                                    rows={3}
                                 />
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="temperature">
-                                        Temperature
-                                    </Label>
-                                    <Input
-                                        id="temperature"
-                                        type="number"
-                                        step="0.1"
-                                        min="0"
-                                        max="2"
-                                        value={temperature}
-                                        onChange={e =>
-                                            setTemperature(
-                                                parseFloat(e.target.value) ||
-                                                    0.0
-                                            )
-                                        }
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="maxOutputTokens">
-                                        Max Output Tokens
-                                    </Label>
-                                    <Input
-                                        id="maxOutputTokens"
-                                        type="number"
-                                        min="1"
-                                        value={maxOutputTokens}
-                                        onChange={e =>
-                                            setMaxOutputTokens(
-                                                parseInt(e.target.value) || 1024
-                                            )
-                                        }
-                                    />
-                                </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="maxOutputTokens">
+                                    Max Output Tokens
+                                </Label>
+                                <Input
+                                    id="maxOutputTokens"
+                                    type="number"
+                                    min="1"
+                                    value={maxOutputTokens}
+                                    onChange={e =>
+                                        setMaxOutputTokens(
+                                            parseInt(e.target.value) || 1024
+                                        )
+                                    }
+                                />
                             </div>
                         </div>
                     </div>

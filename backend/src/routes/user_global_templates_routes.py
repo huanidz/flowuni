@@ -49,8 +49,7 @@ async def create_llm_judge(
             user_id=auth_user_id,
             name=request.name,
             description=request.description,
-            data=None,  # Using judge_config instead
-            judge_config=request.judge_config,
+            data=request.data,
         )
 
         return LLMJudgeResponse(
@@ -59,7 +58,7 @@ async def create_llm_judge(
             type=template.type.value,
             name=template.name,
             description=template.description,
-            judge_config=request.judge_config,
+            data=request.data,
             created_at=template.created_at,
             modified_at=template.modified_at,
         )
@@ -96,7 +95,7 @@ async def get_llm_judges(
                 type=template.type.value,
                 name=template.name,
                 description=template.description,
-                judge_config=None,  # Will be populated from template.data if needed
+                data=None,  # Will be populated from template.data if needed
                 created_at=template.created_at,
                 modified_at=template.modified_at,
             )
@@ -137,8 +136,7 @@ async def update_llm_judge(
             user_id=auth_user_id,
             name=request.name,
             description=request.description,
-            data=None,  # Using judge_config instead
-            judge_config=request.judge_config,
+            data=request.data,
         )
 
         if not template:
@@ -156,7 +154,7 @@ async def update_llm_judge(
             type=template.type.value,
             name=template.name,
             description=template.description,
-            judge_config=request.judge_config,
+            data=request.data,
             created_at=template.created_at,
             modified_at=template.modified_at,
         )

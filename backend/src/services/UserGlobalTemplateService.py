@@ -1,11 +1,11 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from loguru import logger
 from src.models.alchemy.users.UserGlobalTemplateModel import (
     UserGlobalTemplateModel,
 )
-from src.models.parsers.LLMJudgeParser import LLMJudgeParser
+from src.models.parsers.LLMProviderParser import LLMProviderParser
 from src.repositories.UserGlobalTemplateRepository import UserGlobalTemplateRepository
 
 
@@ -16,8 +16,7 @@ class UserGlobalTemplateServiceInterface(ABC):
         user_id: int,
         name: Optional[str] = None,
         description: Optional[str] = None,
-        data: Optional[Dict[str, Any]] = None,
-        judge_config: Optional[LLMJudgeParser] = None,
+        data: Optional[Union[Dict[str, Any], LLMProviderParser]] = None,
     ) -> UserGlobalTemplateModel:
         """Create a new LLM judge template
 
@@ -25,8 +24,7 @@ class UserGlobalTemplateServiceInterface(ABC):
             user_id: The ID of the user creating the template
             name: The name of the template
             description: The description of the template
-            data: The template data
-            judge_config: The LLM judge configuration
+            data: The template data (can be a dict or LLMProviderParser)
 
         Returns:
             UserGlobalTemplateModel: The newly created template instance
@@ -52,8 +50,7 @@ class UserGlobalTemplateServiceInterface(ABC):
         user_id: int,
         name: Optional[str] = None,
         description: Optional[str] = None,
-        data: Optional[Dict[str, Any]] = None,
-        judge_config: Optional[LLMJudgeParser] = None,
+        data: Optional[Union[Dict[str, Any], LLMProviderParser]] = None,
     ) -> Optional[UserGlobalTemplateModel]:
         """Update an LLM judge template
 
@@ -62,8 +59,7 @@ class UserGlobalTemplateServiceInterface(ABC):
             user_id: The ID of the user who owns the template
             name: The new name of the template
             description: The new description of the template
-            data: The new template data
-            judge_config: The new LLM judge configuration
+            data: The new template data (can be a dict or LLMProviderParser)
 
         Returns:
             Optional[UserGlobalTemplateModel]: The updated template instance, or None if not found
@@ -93,8 +89,7 @@ class UserGlobalTemplateService(UserGlobalTemplateServiceInterface):
         user_id: int,
         name: Optional[str] = None,
         description: Optional[str] = None,
-        data: Optional[Dict[str, Any]] = None,
-        judge_config: Optional[LLMJudgeParser] = None,
+        data: Optional[Union[Dict[str, Any], LLMProviderParser]] = None,
     ) -> UserGlobalTemplateModel:
         """Create a new LLM judge template"""
         try:
@@ -103,7 +98,6 @@ class UserGlobalTemplateService(UserGlobalTemplateServiceInterface):
                 name=name,
                 description=description,
                 data=data,
-                judge_config=judge_config,
             )
             logger.info(f"LLM judge template created successfully: {template.id}")
             return template
@@ -129,8 +123,7 @@ class UserGlobalTemplateService(UserGlobalTemplateServiceInterface):
         user_id: int,
         name: Optional[str] = None,
         description: Optional[str] = None,
-        data: Optional[Dict[str, Any]] = None,
-        judge_config: Optional[LLMJudgeParser] = None,
+        data: Optional[Union[Dict[str, Any], LLMProviderParser]] = None,
     ) -> Optional[UserGlobalTemplateModel]:
         """Update an LLM judge template"""
         try:
@@ -140,7 +133,6 @@ class UserGlobalTemplateService(UserGlobalTemplateServiceInterface):
                 name=name,
                 description=description,
                 data=data,
-                judge_config=judge_config,
             )
 
             if template:

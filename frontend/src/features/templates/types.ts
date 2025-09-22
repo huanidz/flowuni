@@ -7,19 +7,13 @@ export interface LLMProviderParser {
     max_output_tokens?: number;
 }
 
-export interface LLMJudgeParser {
-    judge_name: string;
-    judge_description?: string;
-    judge_llm_provider: LLMProviderParser;
-}
-
 export interface LLMJudge {
     id: number;
     user_id: number;
     type: string;
     name?: string;
     description?: string;
-    judge_config?: LLMJudgeParser;
+    data?: LLMProviderParser;
     created_at: string;
     modified_at: string;
 }
@@ -31,11 +25,11 @@ export interface LLMJudgeListResponse {
 export interface CreateLLMJudgeRequest {
     name?: string;
     description?: string;
-    judge_config?: LLMJudgeParser;
+    data?: LLMProviderParser;
 }
 
 export interface UpdateLLMJudgeRequest {
     name?: string;
     description?: string;
-    judge_config?: LLMJudgeParser;
+    data?: LLMProviderParser;
 }
