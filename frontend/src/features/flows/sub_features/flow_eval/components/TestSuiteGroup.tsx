@@ -8,7 +8,6 @@ import TestStatusIndicator from './TestStatusIndicator';
 import TestSuiteEdit from './TestSuiteEdit';
 import { useDeleteTestSuite } from '../hooks';
 import { useConfirmation } from '@/hooks/useConfirmationModal';
-
 interface TestSuiteGroupProps {
     testSuite: FlowTestSuiteWithCases;
     selectedTestCases: Set<string>;
