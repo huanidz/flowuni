@@ -52,7 +52,7 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
                                     Test Case ID
                                 </h5>
                                 <p className="text-sm text-gray-700 font-mono">
-                                    {selectedTestCase.case_id}
+                                    {String(selectedTestCase.case_id)}
                                 </p>
                             </div>
                             {selectedTestCase.execution_time_ms && (

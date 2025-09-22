@@ -33,12 +33,12 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
 
     // Check if any test case in this suite is selected
     const hasSelectedTestCase = testSuite.test_cases.some(testCase =>
-        selectedTestCases.has(testCase.case_id)
+        selectedTestCases.has(String(testCase.case_id))
     );
 
     // Count selected test cases in this suite
     const selectedTestCaseCount = testSuite.test_cases.filter(testCase =>
-        selectedTestCases.has(testCase.case_id)
+        selectedTestCases.has(String(testCase.case_id))
     ).length;
 
     // Calculate suite statistics
@@ -228,7 +228,7 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
                         <div className="p-1 space-y-1">
                             {testSuite.test_cases.map((testCase, index) => (
                                 <div
-                                    key={testCase.case_id}
+                                    key={String(testCase.case_id)}
                                     className="relative flex items-start"
                                 >
                                     {/* Horizontal connector line */}
@@ -241,7 +241,7 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
                                         <TestCaseItem
                                             testCase={testCase}
                                             isSelected={selectedTestCases.has(
-                                                testCase.case_id
+                                                String(testCase.case_id)
                                             )}
                                             onSelect={onTestCaseSelect}
                                             suiteName={testSuite.name}

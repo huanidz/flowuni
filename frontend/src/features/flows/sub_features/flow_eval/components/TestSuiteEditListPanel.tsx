@@ -37,10 +37,10 @@ const TestSuiteEditListPanel: React.FC<TestSuiteEditListPanelProps> = ({
                     <div className="p-4 space-y-3">
                         {testCases.map(testCase => (
                             <Card
-                                key={testCase.case_id}
+                                key={String(testCase.case_id)}
                                 className={`cursor-pointer transition-colors ${
-                                    selectedTestCase?.case_id ===
-                                    testCase.case_id
+                                    String(selectedTestCase?.case_id) ===
+                                    String(testCase.case_id)
                                         ? 'border-blue-500 bg-blue-50'
                                         : 'hover:bg-gray-50'
                                 }`}
@@ -76,10 +76,9 @@ const TestSuiteEditListPanel: React.FC<TestSuiteEditListPanelProps> = ({
                                     <div className="flex items-center gap-1 text-xs text-gray-500">
                                         <span>
                                             ID:{' '}
-                                            {testCase.case_id?.substring(
-                                                0,
-                                                8
-                                            ) || 'N/A'}
+                                            {String(
+                                                testCase.case_id
+                                            )?.substring(0, 8) || 'N/A'}
                                         </span>
                                     </div>
                                 </CardContent>

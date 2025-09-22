@@ -23,7 +23,7 @@ const TestCaseItem: React.FC<TestCaseItemProps> = ({
 }) => {
     const handleSelect = () => {
         if (onSelect) {
-            onSelect(testCase.case_id);
+            onSelect(String(testCase.case_id));
         }
     };
 
@@ -92,7 +92,10 @@ const TestCaseItem: React.FC<TestCaseItemProps> = ({
                             <div className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded text-xs font-mono">
                                 <span className="text-gray-400">ID:</span>
                                 <span className="text-gray-600">
-                                    {testCase.case_id?.substring(0, 8) || 'N/A'}
+                                    {String(testCase.case_id)?.substring(
+                                        0,
+                                        8
+                                    ) || 'N/A'}
                                 </span>
                             </div>
                             {testCase.execution_time_ms && (
