@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from loguru import logger
 from src.dependencies.auth_dependency import get_current_user
 from src.dependencies.db_dependency import get_db
-from src.models.alchemy.users.UserGlobalTemplateModel import TemplateType
 from src.repositories.UserGlobalTemplateRepository import UserGlobalTemplateRepository
 from src.schemas.users.user_global_template_schemas import (
     CreateLLMJudgeRequest,
@@ -50,7 +49,8 @@ async def create_llm_judge(
             user_id=auth_user_id,
             name=request.name,
             description=request.description,
-            data=request.data,
+            data=None,  # Using judge_config instead
+            judge_config=request.judge_config,
         )
 
         return LLMJudgeResponse(
@@ -59,7 +59,7 @@ async def create_llm_judge(
             type=template.type.value,
             name=template.name,
             description=template.description,
-            data=template.data,
+            judge_config=request.judge_config,
             created_at=template.created_at,
             updated_at=template.updated_at,
         )
@@ -96,7 +96,7 @@ async def get_llm_judges(
                 type=template.type.value,
                 name=template.name,
                 description=template.description,
-                data=template.data,
+                judge_config=None,  # Will be populated from template.data if needed
                 created_at=template.created_at,
                 updated_at=template.updated_at,
             )
@@ -137,7 +137,8 @@ async def update_llm_judge(
             user_id=auth_user_id,
             name=request.name,
             description=request.description,
-            data=request.data,
+            data=None,  # Using judge_config instead
+            judge_config=request.judge_config,
         )
 
         if not template:
@@ -155,7 +156,7 @@ async def update_llm_judge(
             type=template.type.value,
             name=template.name,
             description=template.description,
-            data=template.data,
+            judge_config=request.judge_config,
             created_at=template.created_at,
             updated_at=template.updated_at,
         )

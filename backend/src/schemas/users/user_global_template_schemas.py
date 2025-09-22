@@ -1,7 +1,8 @@
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
+from src.models.parsers.LLMJudgeParser import LLMJudgeParser
 
 
 class CreateLLMJudgeRequest(BaseModel):
@@ -11,8 +12,8 @@ class CreateLLMJudgeRequest(BaseModel):
     description: Optional[str] = Field(
         None, description="Description of the LLM judge template"
     )
-    data: Optional[Dict[str, Any]] = Field(
-        None, description="LLM judge configuration data"
+    judge_config: Optional[LLMJudgeParser] = Field(
+        None, description="LLM judge configuration"
     )
 
 
@@ -23,8 +24,8 @@ class UpdateLLMJudgeRequest(BaseModel):
     description: Optional[str] = Field(
         None, description="Description of the LLM judge template"
     )
-    data: Optional[Dict[str, Any]] = Field(
-        None, description="LLM judge configuration data"
+    judge_config: Optional[LLMJudgeParser] = Field(
+        None, description="LLM judge configuration"
     )
 
 
@@ -36,7 +37,9 @@ class LLMJudgeResponse(BaseModel):
     type: str = Field(..., description="Type of the template")
     name: Optional[str] = Field(None, description="Name of the template")
     description: Optional[str] = Field(None, description="Description of the template")
-    data: Optional[Dict[str, Any]] = Field(None, description="Template data")
+    judge_config: Optional[LLMJudgeParser] = Field(
+        None, description="LLM judge configuration"
+    )
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last modification timestamp")
 
