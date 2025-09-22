@@ -43,6 +43,16 @@ const DashboardPage: React.FC = () => {
                             </Button>
                         )}
                     </NavLink>
+                    <NavLink to="/dashboard/templates" className="block">
+                        {({ isActive }) => (
+                            <Button
+                                className={`w-full transition-all duration-200 ${isActive ? 'bg-blue-500 text-white shadow-md' : 'hover:bg-gray-100'}`}
+                                variant={isActive ? 'default' : 'ghost'}
+                            >
+                                Templates
+                            </Button>
+                        )}
+                    </NavLink>
                     <Button
                         className="w-full transition-all duration-200 bg-red-500 text-white shadow-md hover:bg-red-600 mt-auto"
                         variant="default"
