@@ -65,7 +65,11 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
 
     if (isDraft) {
         return (
-            <Card key={item.id} className="border-primary">
+            <Card
+                key={item.id}
+                className="border-primary"
+                style={{ maxHeight: '100px' }}
+            >
                 <CardHeader className="p-2">
                     <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2 flex-1">
