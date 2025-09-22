@@ -3,7 +3,7 @@ import { useMutation } from '@tanstack/react-query';
 import {
     getLLMJudges,
     createLLMJudge,
-    updateLLMJudge,
+    updateLLMJudge as updateLLMJudgeAPI,
     deleteLLMJudge,
 } from './api';
 import type {
@@ -55,8 +55,13 @@ export const useUpdateLLMJudge = () => {
         Error,
         { templateId: number; request: UpdateLLMJudgeRequest }
     >({
-        mutationFn: ({ templateId, request }) =>
-            updateLLMJudge(templateId, request),
+        mutationFn: ({
+            templateId,
+            request,
+        }: {
+            templateId: number;
+            request: UpdateLLMJudgeRequest;
+        }): Promise<LLMJudge> => updateLLMJudgeAPI(templateId, request),
         onSuccess: data => {
             updateLLMJudge(data.id, data);
             queryClient.invalidateQueries({ queryKey: ['llmJudges'] });

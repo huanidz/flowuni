@@ -41,7 +41,7 @@ class LLMJudgeResponse(BaseModel):
         None, description="LLM judge configuration"
     )
     created_at: datetime = Field(..., description="Creation timestamp")
-    updated_at: datetime = Field(..., description="Last modification timestamp")
+    modified_at: datetime = Field(..., description="Last modification timestamp")
 
 
 class LLMJudgeListResponse(BaseModel):

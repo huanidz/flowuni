@@ -61,7 +61,7 @@ async def create_llm_judge(
             description=template.description,
             judge_config=request.judge_config,
             created_at=template.created_at,
-            updated_at=template.updated_at,
+            modified_at=template.modified_at,
         )
 
     except Exception as e:
@@ -98,7 +98,7 @@ async def get_llm_judges(
                 description=template.description,
                 judge_config=None,  # Will be populated from template.data if needed
                 created_at=template.created_at,
-                updated_at=template.updated_at,
+                modified_at=template.modified_at,
             )
             for template in templates
         ]
@@ -158,7 +158,7 @@ async def update_llm_judge(
             description=template.description,
             judge_config=request.judge_config,
             created_at=template.created_at,
-            updated_at=template.updated_at,
+            modified_at=template.modified_at,
         )
 
     except HTTPException:

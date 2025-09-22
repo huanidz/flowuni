@@ -21,7 +21,7 @@ export interface LLMJudge {
     description?: string;
     judge_config?: LLMJudgeParser;
     created_at: string;
-    updated_at: string;
+    modified_at: string;
 }
 
 export interface LLMJudgeListResponse {

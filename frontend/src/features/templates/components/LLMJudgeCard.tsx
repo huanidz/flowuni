@@ -76,11 +76,11 @@ const LLMJudgeCard: React.FC<LLMJudgeCardProps> = ({
             </CardContent>
             <CardFooter className="text-xs text-muted-foreground">
                 Created: {new Date(llmJudge.created_at).toLocaleDateString()}
-                {llmJudge.updated_at !== llmJudge.created_at && (
+                {llmJudge.modified_at !== llmJudge.created_at && (
                     <>
                         {' '}
                         • Updated:{' '}
-                        {new Date(llmJudge.updated_at).toLocaleDateString()}
+                        {new Date(llmJudge.modified_at).toLocaleDateString()}
                     </>
                 )}
             </CardFooter>
