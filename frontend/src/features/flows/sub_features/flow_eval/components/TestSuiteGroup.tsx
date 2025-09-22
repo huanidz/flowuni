@@ -266,6 +266,7 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
                     description: testSuite.description,
                     flow_id: testSuite.flow_id,
                 }}
+                testCases={testSuite.test_cases}
             />
 
             <ConfirmationDialog />
