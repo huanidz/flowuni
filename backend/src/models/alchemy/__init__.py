@@ -7,4 +7,5 @@ from src.models.alchemy.flows.FlowTestSuiteModel import FlowTestSuiteModel
 from src.models.alchemy.session.SessionChatHistoryModel import SessionChatHistoryModel
 from src.models.alchemy.session.SessionModel import SessionModel
 from src.models.alchemy.shared.AppBaseModel import AppBaseModel
+from src.models.alchemy.users.UserGlobalTemplateModel import UserGlobalTemplateModel
 from src.models.alchemy.users.UserModel import UserModel

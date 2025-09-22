@@ -17,6 +17,7 @@ class UserModel(AppBaseModel):
     # Relationships
     flows = relationship("FlowModel", back_populates="user")
     api_keys = relationship("ApiKeyModel", back_populates="user")
+    global_templates = relationship("UserGlobalTemplateModel", back_populates="user")
 
     def set_password(self, password):
         """Hash and set password"""
