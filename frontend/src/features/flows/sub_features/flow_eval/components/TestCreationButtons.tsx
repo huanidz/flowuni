@@ -1,69 +1,74 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Folder, Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import CreateTestSuiteModal from './CreateTestSuiteModal';
+import CreateTestCaseModal from './CreateTestCaseModal';
 
 /**
  * Component with test creation action buttons
  */
 const TestCreationButtons: React.FC = () => {
+    const [isTestSuiteModalOpen, setIsTestSuiteModalOpen] = useState(false);
+    const [isTestCaseModalOpen, setIsTestCaseModalOpen] = useState(false);
+
     const handleCreateTestSuite = () => {
-        // For now, do nothing as requested
-        console.log('Create Test Suite clicked');
+        setIsTestSuiteModalOpen(true);
+    };
+
+    const handleCloseTestSuiteModal = () => {
+        setIsTestSuiteModalOpen(false);
+    };
+
+    const handleSubmitTestSuite = (
+        suiteName: string,
+        suiteDescription: string
+    ) => {
+        // TODO: Implement API call to create test suite
+        console.log('Creating test suite:', { suiteName, suiteDescription });
     };
 
     const handleCreateTestCase = () => {
-        // For now, do nothing as requested
-        console.log('Create Test Case clicked');
+        setIsTestCaseModalOpen(true);
+    };
+
+    const handleCloseTestCaseModal = () => {
+        setIsTestCaseModalOpen(false);
     };
 
     return (
-        <div className="flex flex-wrap gap-3 p-4 bg-gray-50 border-b">
-            {/* Create Test Suite Button */}
-            <button
-                onClick={handleCreateTestSuite}
-                className={`
-          flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors
-          bg-purple-600 text-white hover:bg-purple-700 active:bg-purple-800
-        `}
-            >
-                <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+        <>
+            <div className="flex flex-wrap gap-2 p-2 bg-gray-50 border-b">
+                {/* Create Test Suite Button */}
+                <Button
+                    onClick={handleCreateTestSuite}
+                    className="bg-purple-600 hover:bg-purple-700"
                 >
-                    <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"
-                    />
-                </svg>
-                Create Test Suite
-            </button>
+                    <Folder className="w-3.5 h-3.5 mr-1" />
+                    Create Test Suite
+                </Button>
 
-            {/* Create Test Case Button */}
-            <button
-                onClick={handleCreateTestCase}
-                className={`
-          flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors
-          bg-indigo-600 text-white hover:bg-indigo-700 active:bg-indigo-800
-        `}
-            >
-                <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+                {/* Create Test Case Button */}
+                <Button
+                    onClick={handleCreateTestCase}
+                    variant="secondary"
+                    className="bg-indigo-600 hover:bg-indigo-700"
                 >
-                    <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                    />
-                </svg>
-                Create Test Case
-            </button>
-        </div>
+                    <Plus className="w-3.5 h-3.5 mr-1" />
+                    Create Test Case
+                </Button>
+            </div>
+
+            <CreateTestSuiteModal
+                isOpen={isTestSuiteModalOpen}
+                onClose={handleCloseTestSuiteModal}
+                onSubmit={handleSubmitTestSuite}
+            />
+
+            <CreateTestCaseModal
+                isOpen={isTestCaseModalOpen}
+                onClose={handleCloseTestCaseModal}
+            />
+        </>
     );
 };
 
