@@ -8,3 +8,5 @@ export { default as TestSuiteGroup } from './TestSuiteGroup';
 export { default as CreateTestSuiteModal } from './CreateTestSuiteModal';
 export { default as CreateTestCaseModal } from './CreateTestCaseModal';
 export { default as TestSuiteEdit } from './TestSuiteEdit';
+export { default as TestSuiteEditListPanel } from './TestSuiteEditListPanel';
+export { default as TestSuiteEditDetailPanel } from './TestSuiteEditDetailPanel';
