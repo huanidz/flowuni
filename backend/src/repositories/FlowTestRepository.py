@@ -152,7 +152,7 @@ class FlowTestRepository(BaseRepository):
         name: str,
         description: Optional[str] = None,
         input_data: Optional[dict] = None,
-        expected_output: Optional[dict] = None,
+        pass_criteria: Optional[dict] = None,
         test_metadata: Optional[dict] = None,
         run_detail: Optional[dict] = None,
         timeout_ms: Optional[float] = None,
@@ -167,7 +167,7 @@ class FlowTestRepository(BaseRepository):
                 description=description,
                 is_active=True,
                 input_data=input_data,
-                expected_output=expected_output,
+                pass_criteria=pass_criteria,
                 test_metadata=test_metadata,
                 run_detail=run_detail,
                 timeout_ms=timeout_ms,
@@ -219,7 +219,7 @@ class FlowTestRepository(BaseRepository):
         description: Optional[str] = None,
         is_active: Optional[bool] = None,
         input_data: Optional[dict] = None,
-        expected_output: Optional[dict] = None,
+        pass_criteria: Optional[dict] = None,
         test_metadata: Optional[dict] = None,
         run_detail: Optional[dict] = None,
         timeout_ms: Optional[float] = None,
@@ -250,8 +250,8 @@ class FlowTestRepository(BaseRepository):
                 test_case.is_active = is_active
             if input_data is not None:
                 test_case.input_data = input_data
-            if expected_output is not None:
-                test_case.expected_output = expected_output
+            if pass_criteria is not None:
+                test_case.pass_criteria = pass_criteria
             if test_metadata is not None:
                 test_case.test_metadata = test_metadata
             if run_detail is not None:

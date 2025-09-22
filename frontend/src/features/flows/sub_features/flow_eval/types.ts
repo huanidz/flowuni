@@ -32,7 +32,7 @@ export interface TestCaseInputData {
     [key: string]: any;
 }
 
-export interface TestCaseExpectedOutput {
+export interface TestCasePassCriteria {
     [key: string]: any;
 }
 
@@ -68,7 +68,7 @@ export interface FlowTestCase {
     description?: string;
     is_active: boolean;
     input_data?: TestCaseInputData;
-    expected_output?: TestCaseExpectedOutput;
+    pass_criteria?: TestCasePassCriteria;
     test_metadata?: TestCaseMetadata;
     run_detail?: TestRunDetail;
     timeout_ms?: number;
@@ -155,7 +155,7 @@ export interface TestCaseCreateRequest {
     name: string;
     description?: string;
     input_data?: TestCaseInputData;
-    expected_output?: TestCaseExpectedOutput;
+    pass_criteria?: TestCasePassCriteria;
     test_metadata?: TestCaseMetadata;
     run_detail?: TestRunDetail;
     timeout_ms?: number;
@@ -172,7 +172,7 @@ export interface TestCaseCreateResponse {
     description?: string;
     is_active: boolean;
     input_data?: TestCaseInputData;
-    expected_output?: TestCaseExpectedOutput;
+    pass_criteria?: TestCasePassCriteria;
     test_metadata?: TestCaseMetadata;
     run_detail?: TestRunDetail;
     timeout_ms?: number;

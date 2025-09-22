@@ -37,7 +37,7 @@ class TestCaseResponse(BaseModel):
     description: Optional[str] = Field(None, description="Test case description")
     is_active: bool = Field(True, description="Test case status")
     input_data: Optional[dict] = Field(None, description="Test case input data")
-    expected_output: Optional[dict] = Field(
+    pass_criteria: Optional[dict] = Field(
         None, description="Test case expected output"
     )
     test_metadata: Optional[dict] = Field(None, description="Test case metadata")
@@ -79,7 +79,7 @@ class TestCaseCreateRequest(BaseModel):
     name: str = Field(..., description="Test case name")
     description: Optional[str] = Field(None, description="Test case description")
     input_data: Optional[dict] = Field(None, description="Test case input data")
-    expected_output: Optional[dict] = Field(
+    pass_criteria: Optional[dict] = Field(
         None, description="Test case expected output"
     )
     test_metadata: Optional[dict] = Field(None, description="Test case metadata")
@@ -98,7 +98,7 @@ class TestCaseUpdateRequest(BaseModel):
     description: Optional[str] = Field(None, description="Test case description")
     is_active: Optional[bool] = Field(None, description="Test case status")
     input_data: Optional[dict] = Field(None, description="Test case input data")
-    expected_output: Optional[dict] = Field(
+    pass_criteria: Optional[dict] = Field(
         None, description="Test case expected output"
     )
     test_metadata: Optional[dict] = Field(None, description="Test case metadata")

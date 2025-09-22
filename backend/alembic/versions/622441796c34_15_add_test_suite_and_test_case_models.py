@@ -47,7 +47,7 @@ def upgrade() -> None:
         sa.Column("is_active", sa.Boolean(), nullable=True),
         sa.Column("input_data", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
         sa.Column(
-            "expected_output", postgresql.JSONB(astext_type=sa.Text()), nullable=True
+            "pass_criteria", postgresql.JSONB(astext_type=sa.Text()), nullable=True
         ),
         sa.Column(
             "test_metadata", postgresql.JSONB(astext_type=sa.Text()), nullable=True

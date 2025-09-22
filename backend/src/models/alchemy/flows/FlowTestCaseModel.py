@@ -53,7 +53,7 @@ class FlowTestCaseModel(AppBaseModel):
 
     # test case data
     input_data = Column(JSONB, nullable=True)
-    expected_output = Column(JSONB, nullable=True)
+    pass_criteria = Column(JSONB, nullable=True)
     test_metadata = Column(JSONB, nullable=True)
     run_detail = Column(JSONB, nullable=True)
 

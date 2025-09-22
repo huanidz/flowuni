@@ -20,9 +20,6 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
         selectedTestCase?.description || ''
     );
     const [input, setInput] = useState(selectedTestCase?.input_data || '');
-    const [expectedOutput, setExpectedOutput] = useState(
-        selectedTestCase?.expected_output || ''
-    );
     const [testCriteria, setTestCriteria] = useState(
         selectedTestCase?.test_criteria || ''
     );
@@ -31,7 +28,6 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
     React.useEffect(() => {
         setDescription(selectedTestCase?.description || '');
         setInput(selectedTestCase?.input_data || '');
-        setExpectedOutput(selectedTestCase?.expected_output || '');
         setTestCriteria(selectedTestCase?.test_criteria || '');
     }, [selectedTestCase]);
 
@@ -71,42 +67,20 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
                 )}
             </div>
 
-            {/* Two-Column Layout for Input and Expected Output */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-                {/* Input */}
-                <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                        INPUT
-                    </label>
-                    <textarea
-                        value={input as string}
-                        onChange={e => {
-                            setInput(e.target.value);
-                            handleFieldChange('input', e.target.value);
-                        }}
-                        placeholder="Enter test input..."
-                        className="w-full h-40 p-3 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-mono text-sm resize-none"
-                    />
-                </div>
-
-                {/* Expected Output */}
-                <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                        EXPECTED OUTPUT
-                    </label>
-                    <textarea
-                        value={expectedOutput as string}
-                        onChange={e => {
-                            setExpectedOutput(e.target.value);
-                            handleFieldChange(
-                                'expected_output',
-                                e.target.value
-                            );
-                        }}
-                        placeholder="Enter expected output..."
-                        className="w-full h-40 p-3 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-mono text-sm resize-none"
-                    />
-                </div>
+            {/* Input */}
+            <div className="mb-6">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    INPUT
+                </label>
+                <textarea
+                    value={input as string}
+                    onChange={e => {
+                        setInput(e.target.value);
+                        handleFieldChange('input', e.target.value);
+                    }}
+                    placeholder="Enter test input..."
+                    className="w-full h-40 p-3 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-mono text-sm resize-none"
+                />
             </div>
 
             {/* Test Pass Criteria - Rule Builder */}
