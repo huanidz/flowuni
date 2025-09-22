@@ -56,6 +56,13 @@ class ApiKeyServiceInterface(ABC):
         """
         pass
 
+    @abstractmethod
+    def set_last_used_at(self, key_id: str) -> bool:
+        """
+        Update the last used timestamp for an API key
+        """
+        pass
+
 
 class ApiKeyService(ApiKeyServiceInterface):
     """
@@ -167,4 +174,25 @@ class ApiKeyService(ApiKeyServiceInterface):
             return api_keys
         except Exception as e:
             logger.error(f"Error listing API keys for user {user_id}: {str(e)}")
+            raise
+
+    def set_last_used_at(self, key_id: str) -> bool:
+        """
+        Update the last used timestamp for an API key
+        """
+        try:
+            success = self.api_key_repository.update_api_key_usage(key_id)
+            if success:
+                logger.info(
+                    f"Successfully updated last_used_at for API key with key_id: {key_id}"
+                )
+            else:
+                logger.warning(
+                    f"Failed to update last_used_at for API key with key_id: {key_id} (key not found)"
+                )
+            return success
+        except Exception as e:
+            logger.error(
+                f"Error updating last_used_at for API key with key_id {key_id}: {str(e)}"
+            )
             raise

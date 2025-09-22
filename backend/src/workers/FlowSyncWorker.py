@@ -99,6 +99,9 @@ class FlowSyncWorker:
                 logger.warning("Invalid API key provided")
                 raise UNAUTHORIZED_EXCEPTION
 
+            # Update the last used timestamp for the API key
+            api_key_service.set_last_used_at(api_key_model.key_id)
+
             # Check if streaming is requested (not supported yet)
             if stream:
                 logger.warning("Flow streaming is not supported yet")
