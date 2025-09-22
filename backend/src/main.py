@@ -1,9 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
+from loguru import logger
 from rich.traceback import install
 from src.configs.config import get_settings
 from src.configs.LoggingConfig import setup_logger
+from src.dependencies.redis_dependency import get_redis_client
 from src.routes.api_key_routes import api_key_router
 from src.routes.auth_routes import auth_router
 from src.routes.common_routes import common_router
@@ -26,6 +28,18 @@ app = FastAPI(title="AI Service", description="AI Service API", version="0.0.1")
 origins = [
     "http://localhost:5173",  # Your frontend's origin
 ]
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Clear cached node catalog on app startup to ensure fresh data."""
+    try:
+        redis_client = get_redis_client()
+        redis_client.delete("node_catalog")
+        logger.info("Cleared node catalog cache on startup")
+    except Exception as e:
+        logger.error(f"Failed to clear node catalog cache on startup: {str(e)}")
+
 
 # Check external service connections
 if not check_db_connection():
