@@ -10,7 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import DeleteFlowButton from '@/features/flows/components/FlowList/DeleteFlowButton';
 import ActivateDeactivateButton from '@/features/flows/components/FlowList/ActivateDeactivateButton';
-import type { Flow } from '@/features/flows/types';
+import type { Flow, Pagination } from '@/features/flows/types';
 import { useNavigate } from 'react-router-dom';
 import {
     flowListStyles,
@@ -19,11 +19,22 @@ import {
 
 interface FlowListProps {
     flows: Flow[];
+    pagination?: Pagination;
+    onPageChange?: (page: number) => void;
+    currentPage?: number;
 }
 
-const FlowList: React.FC<FlowListProps> = ({ flows }) => {
+const FlowList: React.FC<FlowListProps> = ({
+    flows,
+    pagination,
+    onPageChange,
+    currentPage = 1,
+}) => {
     const navigate = useNavigate();
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+    // Debug: Log pagination data to help troubleshoot
+    console.log('FlowList pagination:', pagination);
 
     const toggleRow = (flowId: string) => {
         const newExpandedRows = new Set(expandedRows);
@@ -280,6 +291,46 @@ const FlowList: React.FC<FlowListProps> = ({ flows }) => {
                     ))}
                 </TableBody>
             </Table>
+
+            {/* Pagination Controls */}
+            {pagination && (
+                <div style={flowListStyles.paginationContainer}>
+                    <Button
+                        onClick={() => onPageChange?.(pagination.page - 1)}
+                        disabled={pagination.page <= 1}
+                        variant="outline"
+                        size="sm"
+                        style={flowListStyles.paginationButton}
+                    >
+                        Previous
+                    </Button>
+
+                    <span style={flowListStyles.paginationInfo}>
+                        {pagination.page} / {pagination.total_pages}
+                        {pagination.total_items !== undefined && (
+                            <span
+                                style={{
+                                    fontSize: '12px',
+                                    color: '#64748b',
+                                    marginLeft: '8px',
+                                }}
+                            >
+                                ({pagination.total_items} total)
+                            </span>
+                        )}
+                    </span>
+
+                    <Button
+                        onClick={() => onPageChange?.(pagination.page + 1)}
+                        disabled={pagination.page >= pagination.total_pages}
+                        variant="outline"
+                        size="sm"
+                        style={flowListStyles.paginationButton}
+                    >
+                        Next
+                    </Button>
+                </div>
+            )}
         </div>
     );
 };

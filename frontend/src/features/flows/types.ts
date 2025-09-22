@@ -10,9 +10,9 @@ export interface Flow {
 
 export interface Pagination {
     page: number;
-    pageSize: number;
-    totalPages: number;
-    totalItems: number;
+    page_size: number;
+    total_pages: number;
+    total_items: number;
 }
 
 export interface GetFlowsParams {

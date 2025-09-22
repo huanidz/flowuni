@@ -101,6 +101,27 @@ export const flowListStyles = {
         height: '32px',
         backgroundColor: '#f1f5f9',
     },
+    paginationContainer: {
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: '16px',
+        padding: '16px 0',
+        borderTop: '1px solid #e2e8f0',
+        marginTop: '16px',
+    },
+    paginationButton: {
+        padding: '8px 16px',
+        fontSize: '14px',
+        minWidth: '80px',
+    },
+    paginationInfo: {
+        fontSize: '14px',
+        fontWeight: 500,
+        color: '#475569',
+        minWidth: '60px',
+        textAlign: 'center' as const,
+    },
 };
 
 export const statusStyles = {
