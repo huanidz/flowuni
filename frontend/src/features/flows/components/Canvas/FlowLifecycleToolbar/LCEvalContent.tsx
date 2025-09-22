@@ -8,13 +8,22 @@ import {
 } from '../../../sub_features/flow_eval/components';
 import { TestCaseStatus } from '../../../sub_features/flow_eval/types';
 import type { TestStatistics as TestStatisticsType } from '../../../sub_features/flow_eval/types';
-import { DUMMY_TEST_SUITES } from '../../../sub_features/flow_eval/const';
+import { useTestSuitesWithCases } from '../../../sub_features/flow_eval/hooks';
+import useFlowStore from '@/features/flows/stores/flow_stores';
 
 /**
  * Main Flow Evaluation Content Component
  * Displays test suites and test cases with execution controls
  */
 const LCEvalContent: React.FC = () => {
+    // For now, using a hardcoded flow ID. In a real app, this would come from the context or route params
+    const { current_flow } = useFlowStore();
+    const flowId = current_flow?.flow_id;
+
+    if (!flowId) {
+        return;
+    }
+
     const [expandedSuites, setExpandedSuites] = useState<Set<string>>(
         new Set()
     );
@@ -22,12 +31,27 @@ const LCEvalContent: React.FC = () => {
         new Set()
     );
     const [isRunning, setIsRunning] = useState(false);
-    const [showStatistics, setShowStatistics] = useState(true);
+    const [showStatistics, setShowStatistics] = useState(false);
+
+    // Fetch test suites with cases
+    const {
+        data: testSuites,
+        isLoading,
+        error,
+    } = useTestSuitesWithCases(flowId);
 
     const statistics = useMemo((): TestStatisticsType => {
-        const allTestCases = DUMMY_TEST_SUITES.flatMap(
-            suite => suite.test_cases
-        );
+        if (!testSuites) {
+            return {
+                total: 0,
+                passed: 0,
+                failed: 0,
+                pending: 0,
+                running: 0,
+            };
+        }
+
+        const allTestCases = testSuites.flatMap(suite => suite.test_cases);
         return {
             total: allTestCases.length,
             passed: allTestCases.filter(
@@ -43,7 +67,7 @@ const LCEvalContent: React.FC = () => {
                 tc => tc.status === TestCaseStatus.RUNNING
             ).length,
         };
-    }, []);
+    }, [testSuites]);
 
     const handleToggleExpand = (suiteId: string) => {
         const newExpanded = new Set(expandedSuites);
@@ -95,11 +119,13 @@ const LCEvalContent: React.FC = () => {
     };
 
     React.useEffect(() => {
-        const allSuiteIds = new Set(
-            DUMMY_TEST_SUITES.map(suite => suite.suite_id)
-        );
-        setExpandedSuites(allSuiteIds);
-    }, []);
+        if (testSuites) {
+            const allSuiteIds = new Set(
+                testSuites.map(suite => suite.suite_id)
+            );
+            setExpandedSuites(allSuiteIds);
+        }
+    }, [testSuites]);
 
     return (
         <div className="h-full flex flex-col bg-white">
@@ -130,18 +156,50 @@ const LCEvalContent: React.FC = () => {
 
             <div className="flex-1 overflow-auto border border-gray-200 rounded-lg m-3">
                 <div className="p-3 space-y-3">
-                    {DUMMY_TEST_SUITES.map(suite => (
-                        <TestSuiteGroup
-                            key={suite.suite_id}
-                            testSuite={suite}
-                            selectedTestCases={selectedTestCases}
-                            onTestCaseSelect={handleTestCaseSelect}
-                            expandedSuites={expandedSuites}
-                            onToggleExpand={handleToggleExpand}
-                        />
-                    ))}
-
-                    {DUMMY_TEST_SUITES.length === 0 && (
+                    {isLoading ? (
+                        <div className="text-center py-8 text-gray-500">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400 mx-auto mb-3"></div>
+                            <h3 className="text-sm font-medium mb-1">
+                                Loading Test Suites
+                            </h3>
+                            <p className="text-xs">
+                                Please wait while we fetch your test suites.
+                            </p>
+                        </div>
+                    ) : error ? (
+                        <div className="text-center py-8 text-gray-500">
+                            <svg
+                                className="w-8 h-8 mx-auto mb-3 text-gray-300"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={1}
+                                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                />
+                            </svg>
+                            <h3 className="text-sm font-medium mb-1">
+                                Error Loading Test Suites
+                            </h3>
+                            <p className="text-xs">
+                                Failed to load test suites. Please try again.
+                            </p>
+                        </div>
+                    ) : testSuites && testSuites.length > 0 ? (
+                        testSuites.map(suite => (
+                            <TestSuiteGroup
+                                key={suite.suite_id}
+                                testSuite={suite}
+                                selectedTestCases={selectedTestCases}
+                                onTestCaseSelect={handleTestCaseSelect}
+                                expandedSuites={expandedSuites}
+                                onToggleExpand={handleToggleExpand}
+                            />
+                        ))
+                    ) : (
                         <div className="text-center py-8 text-gray-500">
                             <svg
                                 className="w-8 h-8 mx-auto mb-3 text-gray-300"

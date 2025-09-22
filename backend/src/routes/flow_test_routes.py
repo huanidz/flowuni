@@ -98,6 +98,7 @@ async def create_test_suite(
 async def delete_test_suite(
     suite_id: int = Path(..., description="Test suite ID"),
     flow_test_service: FlowTestService = Depends(get_flow_test_service),
+    flow_service: FlowService = Depends(get_flow_service),
     auth_user_id: int = Depends(get_current_user),
 ):
     """
@@ -111,7 +112,6 @@ async def delete_test_suite(
             raise NOT_FOUND_EXCEPTION
 
         # Get the flow to verify user ownership
-        flow_service = get_flow_service()
         flow = flow_service.get_flow_detail_by_id(flow_id=test_suite.flow_id)
         if not flow:
             logger.warning(f"Flow with ID {test_suite.flow_id} not found")
@@ -182,8 +182,8 @@ async def get_test_suites_with_cases(
             for case in suite.test_cases:
                 test_case = TestCaseResponse(
                     id=case.id,
-                    case_id=case.case_id,
-                    suite_id=case.suite_id,
+                    case_id=case.id,
+                    suite_id=case.id,
                     name=case.name,
                     description=case.description,
                     is_active=case.is_active,
@@ -201,7 +201,7 @@ async def get_test_suites_with_cases(
 
             suite_response = TestSuiteWithCasesResponse(
                 id=suite.id,
-                suite_id=suite.suite_id,
+                suite_id=suite.id,
                 flow_id=suite.flow_id,
                 name=suite.name,
                 description=suite.description,

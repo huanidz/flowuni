@@ -3,6 +3,8 @@ import { Folder, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import CreateTestSuiteModal from './CreateTestSuiteModal';
 import CreateTestCaseModal from './CreateTestCaseModal';
+import { useCreateTestSuite } from '../hooks';
+import useFlowStore from '@/features/flows/stores/flow_stores';
 
 /**
  * Component with test creation action buttons
@@ -10,6 +12,15 @@ import CreateTestCaseModal from './CreateTestCaseModal';
 const TestCreationButtons: React.FC = () => {
     const [isTestSuiteModalOpen, setIsTestSuiteModalOpen] = useState(false);
     const [isTestCaseModalOpen, setIsTestCaseModalOpen] = useState(false);
+
+    const { current_flow } = useFlowStore();
+    const flowId = current_flow?.flow_id;
+
+    if (!flowId) {
+        return;
+    }
+
+    const createTestSuiteMutation = useCreateTestSuite();
 
     const handleCreateTestSuite = () => {
         setIsTestSuiteModalOpen(true);
@@ -23,8 +34,12 @@ const TestCreationButtons: React.FC = () => {
         suiteName: string,
         suiteDescription: string
     ) => {
-        // TODO: Implement API call to create test suite
-        console.log('Creating test suite:', { suiteName, suiteDescription });
+        createTestSuiteMutation.mutate({
+            flow_id: flowId,
+            name: suiteName,
+            description: suiteDescription,
+        });
+        setIsTestSuiteModalOpen(false);
     };
 
     const handleCreateTestCase = () => {

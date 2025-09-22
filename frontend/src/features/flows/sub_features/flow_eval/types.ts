@@ -55,8 +55,6 @@ export interface FlowTestSuite {
     description?: string;
     is_active: boolean;
     suite_metadata?: TestSuiteMetadata;
-    created_at: string;
-    updated_at: string;
 }
 
 /**
@@ -78,8 +76,6 @@ export interface FlowTestCase {
     actual_output?: TestCaseActualOutput;
     error_message?: string;
     execution_time_ms?: number;
-    created_at: string;
-    updated_at: string;
 }
 
 /**
@@ -118,6 +114,26 @@ export interface TestStatistics {
     failed: number;
     pending: number;
     running: number;
+}
+
+/**
+ * Test suite creation request interface
+ */
+export interface TestSuiteCreateRequest {
+    flow_id: string;
+    name: string;
+    description?: string;
+}
+
+/**
+ * Test suite creation response interface
+ */
+export interface TestSuiteCreateResponse {
+    id: number;
+    flow_id: string;
+    name: string;
+    description?: string;
+    is_active: boolean;
 }
 
 /**

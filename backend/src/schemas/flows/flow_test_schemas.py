@@ -31,7 +31,7 @@ class TestCaseResponse(BaseModel):
     """
 
     id: int = Field(..., description="Test case ID")
-    case_id: str = Field(..., description="Test case unique ID")
+    case_id: int = Field(..., description="Test case unique ID")
     suite_id: int = Field(..., description="Test suite ID")
     name: str = Field(..., description="Test case name")
     description: Optional[str] = Field(None, description="Test case description")
@@ -59,7 +59,7 @@ class TestSuiteWithCasesResponse(BaseModel):
     """
 
     id: int = Field(..., description="Test suite ID")
-    suite_id: str = Field(..., description="Test suite unique ID")
+    suite_id: int = Field(..., description="Test suite unique ID")
     flow_id: str = Field(..., description="Flow ID")
     name: str = Field(..., description="Test suite name")
     description: Optional[str] = Field(None, description="Test suite description")
