@@ -15,6 +15,7 @@ from src.routes.flow_runner_routes import flow_execution_router
 from src.routes.flow_snapshot_routes import flow_snapshot_router
 from src.routes.flow_test_routes import flow_test_router
 from src.routes.node_routes import node_router
+from src.routes.user_global_templates_routes import user_global_templates_router
 from src.utils.launch_utils import check_db_connection, check_redis_connection
 
 install(show_locals=True)
@@ -69,3 +70,4 @@ app.include_router(flow_execution_router)
 app.include_router(flow_snapshot_router)
 app.include_router(flow_test_router)
 app.include_router(playground_router)
+app.include_router(user_global_templates_router)
