@@ -114,10 +114,10 @@ class FlowSyncWorker:
                 logger.warning(f"Flow not found: {flow_id}")
                 raise HTTPException(status_code=404, detail="Flow not found")
 
-            # Check if flow is active (currently commented out in original)
-            # if not flow.is_active:
-            #     logger.warning(f"Flow is not active: {flow_id}")
-            #     raise HTTPException(status_code=400, detail="Flow is not active")
+            # Check if flow is activate
+            if not flow.is_activate:
+                logger.warning(f"Flow is not activate: {flow_id}")
+                raise HTTPException(status_code=409, detail="Flow is not activated")
 
             flow_definition = flow.flow_definition
             if not flow_definition:
