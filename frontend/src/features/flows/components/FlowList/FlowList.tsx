@@ -70,7 +70,7 @@ const FlowList: React.FC<FlowListProps> = ({
         <div style={flowListStyles.container}>
             <Table>
                 <TableHeader style={flowListStyles.tableHeader}>
-                    <TableRow>
+                    <TableRow style={{ height: '40px' }}>
                         <TableHead style={flowListStyles.tableHeaderCell}>
                             FLOW
                         </TableHead>
@@ -85,7 +85,7 @@ const FlowList: React.FC<FlowListProps> = ({
                 <TableBody>
                     {flows.map(flow => (
                         <React.Fragment key={flow.flow_id}>
-                            <TableRow>
+                            <TableRow style={{ height: '40px' }}>
                                 <TableCell style={flowListStyles.tableCell}>
                                     <div>
                                         <div style={flowListStyles.flowName}>
@@ -115,10 +115,13 @@ const FlowList: React.FC<FlowListProps> = ({
                                         style={{
                                             backgroundColor: '#3b82f6',
                                             color: '#fff',
+                                            fontSize: '11px',
+                                            padding: '4px 8px',
+                                            height: '28px',
                                         }}
                                         size="sm"
                                     >
-                                        To FlowBuilder
+                                        Builder
                                     </Button>
                                     <ActivateDeactivateButton flow={flow} />
                                     <Button
@@ -220,22 +223,11 @@ const FlowList: React.FC<FlowListProps> = ({
                         size="sm"
                         style={flowListStyles.paginationButton}
                     >
-                        Previous
+                        Prev
                     </Button>
 
                     <span style={flowListStyles.paginationInfo}>
                         {pagination.page} / {pagination.total_pages}
-                        {pagination.total_items !== undefined && (
-                            <span
-                                style={{
-                                    fontSize: '12px',
-                                    color: '#64748b',
-                                    marginLeft: '8px',
-                                }}
-                            >
-                                ({pagination.total_items} total)
-                            </span>
-                        )}
                     </span>
 
                     <Button
