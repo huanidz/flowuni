@@ -11,6 +11,7 @@ import type { TestStatistics as TestStatisticsType } from '../../../sub_features
 import { useTestSuitesWithCases } from '../../../sub_features/flow_eval/hooks';
 import useFlowStore from '@/features/flows/stores/flow_stores';
 
+
 /**
  * Main Flow Evaluation Content Component
  * Displays test suites and test cases with execution controls
@@ -23,7 +24,6 @@ const LCEvalContent: React.FC = () => {
     if (!flowId) {
         return;
     }
-
     const [expandedSuites, setExpandedSuites] = useState<Set<string>>(
         new Set()
     );
@@ -31,6 +31,7 @@ const LCEvalContent: React.FC = () => {
         new Set()
     );
     const [isRunning, setIsRunning] = useState(false);
+
     const [showStatistics, setShowStatistics] = useState(false);
 
     // Fetch test suites with cases
@@ -52,6 +53,7 @@ const LCEvalContent: React.FC = () => {
         }
 
         const allTestCases = testSuites.flatMap(suite => suite.test_cases);
+
         return {
             total: allTestCases.length,
             passed: allTestCases.filter(

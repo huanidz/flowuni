@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
     Table,
     TableBody,
@@ -9,40 +9,68 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import DeleteFlowButton from '@/features/flows/components/FlowList/DeleteFlowButton';
-import type { Flow } from '@/features/flows/types';
+import ActivateDeactivateButton from '@/features/flows/components/FlowList/ActivateDeactivateButton';
+import type { Flow, Pagination } from '@/features/flows/types';
 import { useNavigate } from 'react-router-dom';
 import {
     flowListStyles,
     statusStyles,
 } from '@/features/flows/styles/flowListStyles';
 
+// Helper component for status display
+const StatusBadge: React.FC<{ isActive: boolean }> = ({ isActive }) => (
+    <span style={isActive ? statusStyles.active : statusStyles.inactive}>
+        {isActive ? 'ACTIVE' : 'INACTIVE'}
+    </span>
+);
+
+// Helper component for detail items
+const DetailItem: React.FC<{ label: string; value: React.ReactNode }> = ({
+    label,
+    value,
+}) => (
+    <div style={flowListStyles.detailItem}>
+        <span style={flowListStyles.detailLabel}>{label}:</span>
+        <span style={flowListStyles.detailValue}>{value}</span>
+    </div>
+);
+
 interface FlowListProps {
     flows: Flow[];
+    pagination?: Pagination;
+    onPageChange?: (page: number) => void;
+    currentPage?: number;
 }
 
-const FlowList: React.FC<FlowListProps> = ({ flows }) => {
+const FlowList: React.FC<FlowListProps> = ({
+    flows,
+    pagination,
+    onPageChange,
+    currentPage = 1,
+}) => {
     const navigate = useNavigate();
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
-    const toggleRow = (flowId: string) => {
-        const newExpandedRows = new Set(expandedRows);
-        if (newExpandedRows.has(flowId)) {
-            newExpandedRows.delete(flowId);
-        } else {
-            newExpandedRows.add(flowId);
-        }
-        setExpandedRows(newExpandedRows);
-    };
+    const toggleRow = useCallback((flowId: string) => {
+        setExpandedRows(prev => {
+            const newSet = new Set(prev);
+            newSet.has(flowId) ? newSet.delete(flowId) : newSet.add(flowId);
+            return newSet;
+        });
+    }, []);
 
-    const handleFlowClick = (flow: Flow) => {
-        navigate(`/flow/${flow.flow_id}`);
-    };
+    const handleFlowClick = useCallback(
+        (flow: Flow) => {
+            navigate(`/flow/${flow.flow_id}`);
+        },
+        [navigate]
+    );
 
     return (
         <div style={flowListStyles.container}>
             <Table>
                 <TableHeader style={flowListStyles.tableHeader}>
-                    <TableRow>
+                    <TableRow style={{ height: '40px' }}>
                         <TableHead style={flowListStyles.tableHeaderCell}>
                             FLOW
                         </TableHead>
@@ -57,7 +85,7 @@ const FlowList: React.FC<FlowListProps> = ({ flows }) => {
                 <TableBody>
                     {flows.map(flow => (
                         <React.Fragment key={flow.flow_id}>
-                            <TableRow>
+                            <TableRow style={{ height: '40px' }}>
                                 <TableCell style={flowListStyles.tableCell}>
                                     <div>
                                         <div style={flowListStyles.flowName}>
@@ -73,15 +101,7 @@ const FlowList: React.FC<FlowListProps> = ({ flows }) => {
                                     </div>
                                 </TableCell>
                                 <TableCell style={flowListStyles.tableCell}>
-                                    <span
-                                        style={
-                                            flow.is_active
-                                                ? statusStyles.active
-                                                : statusStyles.inactive
-                                        }
-                                    >
-                                        {flow.is_active ? 'ACTIVE' : 'INACTIVE'}
-                                    </span>
+                                    <StatusBadge isActive={flow.is_active} />
                                 </TableCell>
                                 <TableCell
                                     style={{
@@ -95,11 +115,15 @@ const FlowList: React.FC<FlowListProps> = ({ flows }) => {
                                         style={{
                                             backgroundColor: '#3b82f6',
                                             color: '#fff',
+                                            fontSize: '11px',
+                                            padding: '4px 8px',
+                                            height: '28px',
                                         }}
                                         size="sm"
                                     >
-                                        To FlowBuilder
+                                        Builder
                                     </Button>
+                                    <ActivateDeactivateButton flow={flow} />
                                     <Button
                                         onClick={() => toggleRow(flow.flow_id)}
                                         variant="ghost"
@@ -132,143 +156,53 @@ const FlowList: React.FC<FlowListProps> = ({ flows }) => {
                                                     flowListStyles.detailSection
                                                 }
                                             >
-                                                <div
-                                                    style={
-                                                        flowListStyles.detailItem
-                                                    }
-                                                >
-                                                    <span
-                                                        style={
-                                                            flowListStyles.detailLabel
-                                                        }
-                                                    >
-                                                        ID:
-                                                    </span>
-                                                    <span
-                                                        style={
-                                                            flowListStyles.detailValue
-                                                        }
-                                                    >
-                                                        {flow.flow_id}
-                                                    </span>
-                                                </div>
-                                                <div
-                                                    style={
-                                                        flowListStyles.detailItem
-                                                    }
-                                                >
-                                                    <span
-                                                        style={
-                                                            flowListStyles.detailLabel
-                                                        }
-                                                    >
-                                                        Ngày tạo:
-                                                    </span>
-                                                    <span
-                                                        style={
-                                                            flowListStyles.detailValue
-                                                        }
-                                                    >
-                                                        {new Date(
-                                                            flow.created_at as string
-                                                        ).toLocaleDateString(
-                                                            'vi-VN'
-                                                        )}
-                                                    </span>
-                                                </div>
-                                                <div
-                                                    style={
-                                                        flowListStyles.detailItem
-                                                    }
-                                                >
-                                                    <span
-                                                        style={
-                                                            flowListStyles.detailLabel
-                                                        }
-                                                    >
-                                                        Số lượng nút:
-                                                    </span>
-                                                    <span
-                                                        style={
-                                                            flowListStyles.detailValue
-                                                        }
-                                                    >
-                                                        {flow.node_count !==
+                                                <DetailItem
+                                                    label="ID"
+                                                    value={flow.flow_id}
+                                                />
+                                                <DetailItem
+                                                    label="Created Date"
+                                                    value={new Date(
+                                                        flow.created_at as string
+                                                    ).toLocaleDateString(
+                                                        'en-US'
+                                                    )}
+                                                />
+                                                <DetailItem
+                                                    label="Node Count"
+                                                    value={
+                                                        flow.node_count !==
                                                         undefined
                                                             ? flow.node_count
-                                                            : 'Không có số lượng nút'}
-                                                    </span>
-                                                </div>
-                                                <div
-                                                    style={
-                                                        flowListStyles.detailItem
+                                                            : 'No nodes available'
                                                     }
-                                                >
-                                                    <span
-                                                        style={
-                                                            flowListStyles.detailLabel
-                                                        }
-                                                    >
-                                                        Trạng thái:
-                                                    </span>
-                                                    <span
-                                                        style={
-                                                            flowListStyles.detailValue
-                                                        }
-                                                    >
-                                                        {flow.is_active
-                                                            ? 'Đang hoạt động'
-                                                            : 'Tạm dừng'}
-                                                    </span>
-                                                </div>
+                                                />
+                                                <DetailItem
+                                                    label="Status"
+                                                    value={
+                                                        flow.is_active
+                                                            ? 'Active'
+                                                            : 'Paused'
+                                                    }
+                                                />
                                             </div>
                                             <div
                                                 style={
                                                     flowListStyles.detailSection
                                                 }
                                             >
-                                                <div
-                                                    style={
-                                                        flowListStyles.detailItem
+                                                <DetailItem
+                                                    label="Description"
+                                                    value={flow.description}
+                                                />
+                                                <DetailItem
+                                                    label="Status"
+                                                    value={
+                                                        flow.is_active
+                                                            ? 'Flow is active'
+                                                            : 'Flow is paused'
                                                     }
-                                                >
-                                                    <span
-                                                        style={
-                                                            flowListStyles.detailLabel
-                                                        }
-                                                    >
-                                                        Mô tả:
-                                                    </span>
-                                                    <span
-                                                        style={
-                                                            flowListStyles.detailValue
-                                                        }
-                                                    >
-                                                        {flow.description}
-                                                    </span>
-                                                </div>
-                                                <div
-                                                    style={
-                                                        flowListStyles.detailItem
-                                                    }
-                                                >
-                                                    <span
-                                                        style={
-                                                            flowListStyles.detailLabel
-                                                        }
-                                                    >
-                                                        Tình trạng:
-                                                    </span>
-                                                    <span
-                                                        style={
-                                                            flowListStyles.detailValue
-                                                        }
-                                                    >
-                                                        {flow.is_active
-                                                            ? 'Dòng chảy đang hoạt động'
-                                                            : 'Dòng chảy tạm dừng'}
-                                                    </span>
-                                                </div>
+                                                />
                                             </div>
                                         </div>
                                     </TableCell>
@@ -278,6 +212,35 @@ const FlowList: React.FC<FlowListProps> = ({ flows }) => {
                     ))}
                 </TableBody>
             </Table>
+
+            {/* Pagination Controls */}
+            {pagination && (
+                <div style={flowListStyles.paginationContainer}>
+                    <Button
+                        onClick={() => onPageChange?.(pagination.page - 1)}
+                        disabled={pagination.page <= 1}
+                        variant="outline"
+                        size="sm"
+                        style={flowListStyles.paginationButton}
+                    >
+                        Prev
+                    </Button>
+
+                    <span style={flowListStyles.paginationInfo}>
+                        {pagination.page} / {pagination.total_pages}
+                    </span>
+
+                    <Button
+                        onClick={() => onPageChange?.(pagination.page + 1)}
+                        disabled={pagination.page >= pagination.total_pages}
+                        variant="outline"
+                        size="sm"
+                        style={flowListStyles.paginationButton}
+                    >
+                        Next
+                    </Button>
+                </div>
+            )}
         </div>
     );
 };

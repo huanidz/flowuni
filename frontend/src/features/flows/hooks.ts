@@ -8,6 +8,7 @@ import {
     getFlowDetail,
     deleteFlow,
     createFlowWithData,
+    activateFlow,
 } from './api';
 import {
     type GetFlowsResponse,
@@ -15,6 +16,8 @@ import {
     type GetFlowDetailResponse,
     type CreateFlowWithDataRequest,
     type CreateFlowWithDataResponse,
+    type FlowActivationRequest,
+    type FlowActivationResponse,
 } from './types';
 import useFlowStore from './stores/flow_stores';
 import { useEffect } from 'react';
@@ -101,4 +104,17 @@ export const useGetFlowDetail = ({
     }, [query.data, setCurrentFlow]);
 
     return query;
+};
+
+export const useActivateFlow = () => {
+    const queryClient = useQueryClient();
+    return useMutation<FlowActivationResponse, Error, FlowActivationRequest>({
+        mutationFn: activateFlow,
+        onSuccess: () => {
+            // Invalidate the flows query to force a refresh
+            queryClient.invalidateQueries({ queryKey: ['flows'] });
+            // Also invalidate any flow detail queries
+            queryClient.invalidateQueries({ queryKey: ['flowDetail'] });
+        },
+    });
 };

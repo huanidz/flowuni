@@ -10,9 +10,9 @@ export interface Flow {
 
 export interface Pagination {
     page: number;
-    pageSize: number;
-    totalPages: number;
-    totalItems: number;
+    page_size: number;
+    total_pages: number;
+    total_items: number;
 }
 
 export interface GetFlowsParams {
@@ -61,6 +61,20 @@ export interface SaveFlowResponse {
     description: string;
     is_active: boolean;
     flow_definition: any;
+}
+
+// --- Flow Activation ---
+
+export interface FlowActivationRequest {
+    flow_id: string;
+    is_active: boolean;
+}
+
+export interface FlowActivationResponse {
+    flow_id: string;
+    name: string;
+    description: string;
+    is_active: boolean;
 }
 
 // --- Playground ChatBox ---

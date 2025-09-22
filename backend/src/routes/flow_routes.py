@@ -13,6 +13,8 @@ from src.schemas.flowbuilder.flow_crud_schemas import (
     FlowCreateResponse,
 )
 from src.schemas.flows.flow_schemas import (
+    FlowActivationRequest,
+    FlowActivationResponse,
     FlowPatchRequest,
     FlowPatchResponse,
     GetFlowDetailResponse,
@@ -264,4 +266,57 @@ async def delete_flow_by_id(
         raise HTTPException(
             status_code=500,
             detail="An error occurred while deleting flow by ID.",
+        )
+
+
+@flow_router.post("/{flow_id}/activate", response_model=FlowActivationResponse)
+async def set_activating_status(
+    request: FlowActivationRequest,
+    flow_service: FlowService = Depends(get_flow_service),
+    auth_user_id: int = Depends(get_current_user),
+):
+    """
+    Set the activation status of a flow (activate/deactivate)
+    """
+    try:
+        # Verify flow exists and user owns it
+        flow = flow_service.get_flow_detail_by_id(flow_id=request.flow_id)
+
+        if not flow:
+            logger.warning(f"Flow with ID {request.flow_id} not found.")
+            raise NOT_FOUND_EXCEPTION
+
+        if auth_user_id != flow.user_id:
+            logger.warning(
+                f"User ID mismatch: flow owner is {flow.user_id}, \
+                but requester is {auth_user_id}"
+            )
+            raise UNAUTHORIZED_EXCEPTION
+
+        # Activate or deactivate based on request
+        if request.is_active:
+            updated_flow = flow_service.activate_flow(
+                flow_id=request.flow_id, user_id=auth_user_id
+            )
+        else:
+            updated_flow = flow_service.deactivate_flow(
+                flow_id=request.flow_id, user_id=auth_user_id
+            )
+
+        response = FlowActivationResponse(
+            flow_id=updated_flow.flow_id,
+            name=updated_flow.name,
+            description=updated_flow.description,
+            is_active=updated_flow.is_active,
+        )
+
+        return response
+
+    except Exception as e:
+        logger.error(
+            f"Error setting activation status for flow {request.flow_id}: {e}. Traceback: {traceback.format_exc()}"
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="An error occurred while setting the flow activation status.",
         )

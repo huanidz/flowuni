@@ -55,6 +55,21 @@ class FlowPatchResponse(BaseModel):
     flow_definition: Optional[Dict] = Field({}, description="Flow definition")
 
 
+# --- Flow Activation/Deactivation ---
+
+
+class FlowActivationRequest(BaseModel):
+    flow_id: str = Field(..., description="Flow ID")
+    is_active: bool = Field(..., description="Flow activation status")
+
+
+class FlowActivationResponse(BaseModel):
+    flow_id: str = Field(..., description="Flow ID")
+    name: str = Field(..., description="Flow name")
+    description: str = Field("", description="Flow description")
+    is_active: bool = Field(..., description="Flow status")
+
+
 # --- Flow Run ---
 
 
