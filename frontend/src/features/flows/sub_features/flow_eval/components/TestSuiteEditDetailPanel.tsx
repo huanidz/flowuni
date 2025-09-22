@@ -14,7 +14,7 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
     selectedTestCase,
 }) => {
     return (
-        <div className="w-full md:w-1/2 overflow-y-auto">
+        <div className="w-full md:w-2/3 overflow-y-auto">
             <div className="p-4 border-b bg-gray-50">
                 <h3 className="text-sm font-medium text-gray-700">
                     Test Case Details

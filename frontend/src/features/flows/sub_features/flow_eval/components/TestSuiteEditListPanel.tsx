@@ -2,7 +2,7 @@ import React from 'react';
 import type { FlowTestCase } from '../types';
 import { TestCaseStatus } from '../types';
 import { getStatusBadge } from '../utils';
-import { Card, CardHeader, CardContent } from '@/components/ui/card';
+import { Card, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
@@ -22,7 +22,7 @@ const TestSuiteEditListPanel: React.FC<TestSuiteEditListPanelProps> = ({
     onTestCaseSelect,
 }) => {
     return (
-        <div className="w-full md:w-1/2 border-r flex flex-col">
+        <div className="w-full md:w-1/3 border-r flex flex-col">
             <div className="p-4 border-b bg-gray-50">
                 <h3 className="text-sm font-medium text-gray-700">
                     Test Cases ({testCases.length})
@@ -67,21 +67,6 @@ const TestSuiteEditListPanel: React.FC<TestSuiteEditListPanelProps> = ({
                                         </div>
                                     </div>
                                 </CardHeader>
-                                <CardContent className="pt-0">
-                                    {testCase.description && (
-                                        <p className="text-xs text-gray-600 mb-2 line-clamp-2">
-                                            {testCase.description}
-                                        </p>
-                                    )}
-                                    <div className="flex items-center gap-1 text-xs text-gray-500">
-                                        <span>
-                                            ID:{' '}
-                                            {String(
-                                                testCase.case_id
-                                            )?.substring(0, 8) || 'N/A'}
-                                        </span>
-                                    </div>
-                                </CardContent>
                             </Card>
                         ))}
                     </div>
