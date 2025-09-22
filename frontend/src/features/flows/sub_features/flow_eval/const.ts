@@ -1,7 +1,6 @@
-
 import { TestCaseStatus } from './types';
 
-
+/*
  * Test execution run types
  */
 export const TEST_RUN_TYPES = {
