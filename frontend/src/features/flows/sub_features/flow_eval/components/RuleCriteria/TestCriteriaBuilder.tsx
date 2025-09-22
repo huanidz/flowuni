@@ -63,8 +63,7 @@ const TestCriteriaBuilder: React.FC<{
             case 'llm_judge':
                 newRule = {
                     type: 'llm_judge',
-                    model: 'gpt-4',
-                    temperature: 0.1,
+                    model: '', // Will be populated when user selects from dropdown
                     prompt: '',
                     id,
                 };
@@ -197,7 +196,9 @@ const TestCriteriaBuilder: React.FC<{
                         key={ruleSelectKey}
                         onValueChange={(
                             value: 'string' | 'regex' | 'llm_judge'
-                        ) => addRule(value)}
+                        ) => {
+                            addRule(value);
+                        }}
                     >
                         <SelectTrigger className="w-[180px] text-sm">
                             <SelectValue placeholder="+ Add Rule" />

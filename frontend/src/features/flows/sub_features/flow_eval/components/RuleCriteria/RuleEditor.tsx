@@ -1,4 +1,17 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { getLLMJudges } from '@/features/templates/api';
+import type { LLMJudge } from '@/features/templates/types';
+import { Button } from '@/components/ui/button';
+import { RefreshCw } from 'lucide-react';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 // Types for the rule builder
 export interface StringRule {
@@ -26,7 +39,6 @@ export interface RegexRule {
 export interface LLMRule {
     type: 'llm_judge';
     model: string;
-    temperature: number;
     prompt: string;
     id: string;
 }
@@ -46,171 +58,234 @@ const RuleEditor: React.FC<{
 }> = ({ rule, onChange, onDelete }) => {
     if (rule.type === 'string') {
         return (
-            <div className="border border-slate-300 dark:border-slate-600 rounded-md p-3 bg-slate-50 dark:bg-slate-800/50">
-                <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
-                        Rule {rule.id}
-                    </span>
-                    <button
-                        onClick={onDelete}
-                        className="ml-auto text-red-500 hover:text-red-700 text-sm"
-                    >
-                        ×
-                    </button>
-                </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                    <select
-                        value="string"
-                        className="px-2 py-1 border border-slate-300 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-900"
-                        disabled
-                    >
-                        <option value="string">String</option>
-                    </select>
-                    <select
-                        value={rule.operation}
-                        onChange={e =>
-                            onChange({
-                                ...rule,
-                                operation: e.target
-                                    .value as StringRule['operation'],
-                            })
-                        }
-                        className="px-2 py-1 border border-slate-300 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-900"
-                    >
-                        <option value="contains">contains</option>
-                        <option value="equals">equals</option>
-                        <option value="starts_with">starts with</option>
-                        <option value="ends_with">ends with</option>
-                        <option value="not_contains">does not contain</option>
-                        <option value="length_gt">length greater than</option>
-                        <option value="length_lt">length less than</option>
-                        <option value="length_eq">length equals</option>
-                    </select>
-                    <input
-                        type="text"
-                        value={rule.value}
-                        onChange={e =>
-                            onChange({ ...rule, value: e.target.value })
-                        }
-                        placeholder="Value"
-                        className="flex-1 px-2 py-1 border border-slate-300 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-900 min-w-[120px]"
-                    />
-                </div>
-            </div>
+            <Card className="bg-slate-50 dark:bg-slate-800/50">
+                <CardHeader className="pb-2">
+                    <CardTitle className="text-xs flex items-center justify-between">
+                        <span>Rule {rule.id}</span>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={onDelete}
+                            className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                        >
+                            ×
+                        </Button>
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <Select value="string" disabled>
+                            <SelectTrigger className="w-24">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="string">String</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <Select
+                            value={rule.operation}
+                            onValueChange={value =>
+                                onChange({
+                                    ...rule,
+                                    operation: value as StringRule['operation'],
+                                })
+                            }
+                        >
+                            <SelectTrigger className="w-40">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="contains">
+                                    contains
+                                </SelectItem>
+                                <SelectItem value="equals">equals</SelectItem>
+                                <SelectItem value="starts_with">
+                                    starts with
+                                </SelectItem>
+                                <SelectItem value="ends_with">
+                                    ends with
+                                </SelectItem>
+                                <SelectItem value="not_contains">
+                                    does not contain
+                                </SelectItem>
+                                <SelectItem value="length_gt">
+                                    length greater than
+                                </SelectItem>
+                                <SelectItem value="length_lt">
+                                    length less than
+                                </SelectItem>
+                                <SelectItem value="length_eq">
+                                    length equals
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <input
+                            type="text"
+                            value={rule.value}
+                            onChange={e =>
+                                onChange({ ...rule, value: e.target.value })
+                            }
+                            placeholder="Value"
+                            className="flex-1 px-2 py-1 border border-slate-300 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-900 min-w-[120px]"
+                        />
+                    </div>
+                </CardContent>
+            </Card>
         );
     }
 
     if (rule.type === 'regex') {
         return (
-            <div className="border border-slate-300 dark:border-slate-600 rounded-md p-3 bg-blue-50 dark:bg-blue-900/20">
-                <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
-                        Rule {rule.id}
-                    </span>
-                    <button
-                        onClick={onDelete}
-                        className="ml-auto text-red-500 hover:text-red-700 text-sm"
-                    >
-                        ×
-                    </button>
-                </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                    <select
-                        value="regex"
-                        className="px-2 py-1 border border-slate-300 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-900"
-                        disabled
-                    >
-                        <option value="regex">Regex</option>
-                    </select>
-                    <input
-                        type="text"
-                        value={rule.pattern}
-                        onChange={e =>
-                            onChange({ ...rule, pattern: e.target.value })
-                        }
-                        placeholder="Pattern (e.g., ^[0-9]+$)"
-                        className="flex-1 px-2 py-1 border border-slate-300 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-900 font-mono min-w-[200px]"
-                    />
-                    <input
-                        type="text"
-                        value={rule.flags || ''}
-                        onChange={e =>
-                            onChange({ ...rule, flags: e.target.value })
-                        }
-                        placeholder="Flags (i, g, m)"
-                        className="px-2 py-1 border border-slate-300 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-900 font-mono w-20"
-                    />
-                </div>
-            </div>
+            <Card className="bg-blue-50 dark:bg-blue-900/20">
+                <CardHeader className="pb-2">
+                    <CardTitle className="text-xs flex items-center justify-between">
+                        <span>Rule {rule.id}</span>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={onDelete}
+                            className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                        >
+                            ×
+                        </Button>
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <Select value="regex" disabled>
+                            <SelectTrigger className="w-24">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="regex">Regex</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <input
+                            type="text"
+                            value={rule.pattern}
+                            onChange={e =>
+                                onChange({ ...rule, pattern: e.target.value })
+                            }
+                            placeholder="Pattern (e.g., ^[0-9]+$)"
+                            className="flex-1 px-2 py-1 border border-slate-300 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-900 font-mono min-w-[200px]"
+                        />
+                        <input
+                            type="text"
+                            value={rule.flags || ''}
+                            onChange={e =>
+                                onChange({ ...rule, flags: e.target.value })
+                            }
+                            placeholder="Flags (i, g, m)"
+                            className="px-2 py-1 border border-slate-300 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-900 font-mono w-20"
+                        />
+                    </div>
+                </CardContent>
+            </Card>
         );
     }
 
     if (rule.type === 'llm_judge') {
+        const [llmJudges, setLlmJudges] = useState<LLMJudge[]>([]);
+        const [isLoading, setIsLoading] = useState(false);
+        const [reloadKey, setReloadKey] = useState(0);
+
+        const fetchLlmJudges = useCallback(async () => {
+            setIsLoading(true);
+            try {
+                const response = await getLLMJudges();
+                setLlmJudges(response.templates);
+            } catch (error) {
+                console.error('Failed to fetch LLM judges:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        }, []);
+
+        useEffect(() => {
+            fetchLlmJudges();
+        }, [fetchLlmJudges, reloadKey]);
+
+        const handleReload = () => {
+            setReloadKey(prev => prev + 1);
+        };
+
         return (
-            <div className="border border-slate-300 dark:border-slate-600 rounded-md p-3 bg-purple-50 dark:bg-purple-900/20">
-                <div className="flex items-center gap-2 mb-3">
-                    <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
-                        LLM Judge
-                    </span>
-                    <button
-                        onClick={onDelete}
-                        className="ml-auto text-red-500 hover:text-red-700 text-sm"
-                    >
-                        ×
-                    </button>
-                </div>
-                <div className="space-y-2">
+            <Card className="bg-purple-50 dark:bg-purple-900/20">
+                <CardHeader className="pb-2">
+                    <CardTitle className="text-xs flex items-center justify-between">
+                        <span>LLM Judge</span>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={onDelete}
+                            className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                        >
+                            ×
+                        </Button>
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4 pt-0">
                     <div className="flex items-center gap-2">
                         <span className="text-sm text-slate-600 dark:text-slate-400 w-20">
                             Model:
                         </span>
-                        <select
+                        <Select
                             value={rule.model}
-                            onChange={e =>
-                                onChange({ ...rule, model: e.target.value })
+                            onValueChange={value =>
+                                onChange({ ...rule, model: value })
                             }
-                            className="px-2 py-1 border border-slate-300 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-900"
+                            disabled={isLoading}
                         >
-                            <option value="gpt-4">GPT-4</option>
-                            <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                            <option value="claude-3-sonnet">
-                                Claude 3 Sonnet
-                            </option>
-                            <option value="claude-3-haiku">
-                                Claude 3 Haiku
-                            </option>
-                        </select>
-                        <span className="text-sm text-slate-600 dark:text-slate-400">
-                            Temperature:
-                        </span>
-                        <input
-                            type="number"
-                            min="0"
-                            max="2"
-                            step="0.1"
-                            value={rule.temperature}
-                            onChange={e =>
-                                onChange({
-                                    ...rule,
-                                    temperature:
-                                        parseFloat(e.target.value) || 0,
-                                })
-                            }
-                            className="px-2 py-1 border border-slate-300 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-900 w-16"
-                        />
+                            <SelectTrigger className="flex-1">
+                                <SelectValue placeholder="Select a judge" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {isLoading ? (
+                                    <div className="py-2 px-3 text-sm text-slate-500">
+                                        Loading...
+                                    </div>
+                                ) : llmJudges.length > 0 ? (
+                                    llmJudges.map(judge => (
+                                        <SelectItem
+                                            key={judge.id}
+                                            value={judge.id.toString()}
+                                        >
+                                            {judge.name
+                                                ? `${judge.name} (ID: ${judge.id})`
+                                                : `Judge ${judge.id}`}
+                                        </SelectItem>
+                                    ))
+                                ) : (
+                                    <div className="py-2 px-3 text-sm text-slate-500">
+                                        No judges available
+                                    </div>
+                                )}
+                            </SelectContent>
+                        </Select>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleReload}
+                            disabled={isLoading}
+                            className="p-1 h-8 w-8"
+                        >
+                            <RefreshCw
+                                className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`}
+                            />
+                        </Button>
                     </div>
                     <div>
-                        <textarea
+                        <Textarea
                             value={rule.prompt}
                             onChange={e =>
                                 onChange({ ...rule, prompt: e.target.value })
                             }
                             placeholder="Enter the prompt to evaluate the test output..."
-                            className="w-full px-2 py-1 border border-slate-300 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-900 h-20 resize-none"
+                            className="min-h-20"
                         />
                     </div>
-                </div>
-            </div>
+                </CardContent>
+            </Card>
         );
     }
 
