@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { getLLMJudges } from '@/features/templates/api';
 import type { LLMJudge } from '@/features/templates/types';
 import { Button } from '@/components/ui/button';
@@ -11,9 +11,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-// Types for the rule builder
 export interface StringRule {
     type: 'string';
     operation:
@@ -50,7 +48,6 @@ export interface TestCriteria {
     logic: 'AND' | 'OR';
 }
 
-// Component for individual rule editing
 const RuleEditor: React.FC<{
     rule: TestRule;
     onChange: (rule: TestRule) => void;
@@ -58,138 +55,107 @@ const RuleEditor: React.FC<{
 }> = ({ rule, onChange, onDelete }) => {
     if (rule.type === 'string') {
         return (
-            <Card className="bg-slate-50 dark:bg-slate-800/50">
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-xs flex items-center justify-between">
-                        <span>Rule {rule.id}</span>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={onDelete}
-                            className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                        >
-                            ×
-                        </Button>
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <Select value="string" disabled>
-                            <SelectTrigger className="w-24">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="string">String</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <Select
-                            value={rule.operation}
-                            onValueChange={value =>
-                                onChange({
-                                    ...rule,
-                                    operation: value as StringRule['operation'],
-                                })
-                            }
-                        >
-                            <SelectTrigger className="w-40">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="contains">
-                                    contains
-                                </SelectItem>
-                                <SelectItem value="equals">equals</SelectItem>
-                                <SelectItem value="starts_with">
-                                    starts with
-                                </SelectItem>
-                                <SelectItem value="ends_with">
-                                    ends with
-                                </SelectItem>
-                                <SelectItem value="not_contains">
-                                    does not contain
-                                </SelectItem>
-                                <SelectItem value="length_gt">
-                                    length greater than
-                                </SelectItem>
-                                <SelectItem value="length_lt">
-                                    length less than
-                                </SelectItem>
-                                <SelectItem value="length_eq">
-                                    length equals
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <input
-                            type="text"
-                            value={rule.value}
-                            onChange={e =>
-                                onChange({ ...rule, value: e.target.value })
-                            }
-                            placeholder="Value"
-                            className="flex-1 px-2 py-1 border border-slate-300 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-900 min-w-[120px]"
-                        />
-                    </div>
-                </CardContent>
-            </Card>
+            <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 bg-white dark:bg-slate-800">
+                <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">String</span>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={onDelete}
+                        className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                    >
+                        ×
+                    </Button>
+                </div>
+                <div className="flex gap-2">
+                    <Select
+                        value={rule.operation}
+                        onValueChange={value =>
+                            onChange({
+                                ...rule,
+                                operation: value as StringRule['operation'],
+                            })
+                        }
+                    >
+                        <SelectTrigger className="w-36 h-8">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="contains">contains</SelectItem>
+                            <SelectItem value="equals">equals</SelectItem>
+                            <SelectItem value="starts_with">
+                                starts with
+                            </SelectItem>
+                            <SelectItem value="ends_with">ends with</SelectItem>
+                            <SelectItem value="not_contains">
+                                does not contain
+                            </SelectItem>
+                            <SelectItem value="length_gt">
+                                length &gt;
+                            </SelectItem>
+                            <SelectItem value="length_lt">
+                                length &lt;
+                            </SelectItem>
+                            <SelectItem value="length_eq">length =</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <input
+                        type="text"
+                        value={rule.value}
+                        onChange={e =>
+                            onChange({ ...rule, value: e.target.value })
+                        }
+                        placeholder="Value"
+                        className="flex-1 px-2 py-1 border border-slate-300 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-900"
+                    />
+                </div>
+            </div>
         );
     }
 
     if (rule.type === 'regex') {
         return (
-            <Card className="bg-blue-50 dark:bg-blue-900/20">
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-xs flex items-center justify-between">
-                        <span>Rule {rule.id}</span>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={onDelete}
-                            className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                        >
-                            ×
-                        </Button>
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <Select value="regex" disabled>
-                            <SelectTrigger className="w-24">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="regex">Regex</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <input
-                            type="text"
-                            value={rule.pattern}
-                            onChange={e =>
-                                onChange({ ...rule, pattern: e.target.value })
-                            }
-                            placeholder="Pattern (e.g., ^[0-9]+$)"
-                            className="flex-1 px-2 py-1 border border-slate-300 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-900 font-mono min-w-[200px]"
-                        />
-                        <input
-                            type="text"
-                            value={rule.flags || ''}
-                            onChange={e =>
-                                onChange({ ...rule, flags: e.target.value })
-                            }
-                            placeholder="Flags (i, g, m)"
-                            className="px-2 py-1 border border-slate-300 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-900 font-mono w-20"
-                        />
-                    </div>
-                </CardContent>
-            </Card>
+            <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 bg-white dark:bg-slate-800">
+                <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">Regex</span>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={onDelete}
+                        className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                    >
+                        ×
+                    </Button>
+                </div>
+                <div className="flex gap-2">
+                    <input
+                        type="text"
+                        value={rule.pattern}
+                        onChange={e =>
+                            onChange({ ...rule, pattern: e.target.value })
+                        }
+                        placeholder="Pattern (e.g., ^[0-9]+$)"
+                        className="flex-1 px-2 py-1 border border-slate-300 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-900 font-mono"
+                    />
+                    <input
+                        type="text"
+                        value={rule.flags || ''}
+                        onChange={e =>
+                            onChange({ ...rule, flags: e.target.value })
+                        }
+                        placeholder="Flags"
+                        className="w-16 px-2 py-1 border border-slate-300 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-900 font-mono"
+                    />
+                </div>
+            </div>
         );
     }
 
     if (rule.type === 'llm_judge') {
         const [llmJudges, setLlmJudges] = useState<LLMJudge[]>([]);
         const [isLoading, setIsLoading] = useState(false);
-        const [reloadKey, setReloadKey] = useState(0);
 
-        const fetchLlmJudges = useCallback(async () => {
+        const fetchLlmJudges = async () => {
             setIsLoading(true);
             try {
                 const response = await getLLMJudges();
@@ -199,36 +165,31 @@ const RuleEditor: React.FC<{
             } finally {
                 setIsLoading(false);
             }
-        }, []);
+        };
 
         useEffect(() => {
             fetchLlmJudges();
-        }, [fetchLlmJudges, reloadKey]);
+        }, []);
 
         const handleReload = () => {
-            setReloadKey(prev => prev + 1);
+            fetchLlmJudges();
         };
 
         return (
-            <Card className="bg-purple-50 dark:bg-purple-900/20">
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-xs flex items-center justify-between">
-                        <span>LLM Judge</span>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={onDelete}
-                            className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                        >
-                            ×
-                        </Button>
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4 pt-0">
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm text-slate-600 dark:text-slate-400 w-20">
-                            Model:
-                        </span>
+            <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 bg-white dark:bg-slate-800">
+                <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">LLM Judge</span>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={onDelete}
+                        className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                    >
+                        ×
+                    </Button>
+                </div>
+                <div className="space-y-3">
+                    <div className="flex gap-2">
                         <Select
                             value={rule.model}
                             onValueChange={value =>
@@ -236,12 +197,12 @@ const RuleEditor: React.FC<{
                             }
                             disabled={isLoading}
                         >
-                            <SelectTrigger className="flex-1">
-                                <SelectValue placeholder="Select a judge" />
+                            <SelectTrigger className="flex-1 h-8">
+                                <SelectValue placeholder="Select judge" />
                             </SelectTrigger>
                             <SelectContent>
                                 {isLoading ? (
-                                    <div className="py-2 px-3 text-sm text-slate-500">
+                                    <div className="py-1 px-3 text-sm text-slate-500">
                                         Loading...
                                     </div>
                                 ) : llmJudges.length > 0 ? (
@@ -250,14 +211,12 @@ const RuleEditor: React.FC<{
                                             key={judge.id}
                                             value={judge.id.toString()}
                                         >
-                                            {judge.name
-                                                ? `${judge.name} (ID: ${judge.id})`
-                                                : `Judge ${judge.id}`}
+                                            {judge.name || `Judge ${judge.id}`}
                                         </SelectItem>
                                     ))
                                 ) : (
-                                    <div className="py-2 px-3 text-sm text-slate-500">
-                                        No judges available
+                                    <div className="py-1 px-3 text-sm text-slate-500">
+                                        No judges
                                     </div>
                                 )}
                             </SelectContent>
@@ -274,18 +233,16 @@ const RuleEditor: React.FC<{
                             />
                         </Button>
                     </div>
-                    <div>
-                        <Textarea
-                            value={rule.prompt}
-                            onChange={e =>
-                                onChange({ ...rule, prompt: e.target.value })
-                            }
-                            placeholder="Enter the prompt to evaluate the test output..."
-                            className="min-h-20"
-                        />
-                    </div>
-                </CardContent>
-            </Card>
+                    <Textarea
+                        value={rule.prompt}
+                        onChange={e =>
+                            onChange({ ...rule, prompt: e.target.value })
+                        }
+                        placeholder="Prompt to evaluate test output..."
+                        className="min-h-16 text-sm"
+                    />
+                </div>
+            </div>
         );
     }
 
