@@ -48,11 +48,13 @@ const TestSuiteEdit: React.FC<TestSuiteEditProps> = ({
         <Dialog open={isOpen} onOpenChange={handleClose}>
             <DialogContent className="sm:max-w-6xl max-h-[80vh]">
                 <DialogHeader>
-                    <DialogTitle>Edit Test Suite: {testSuite.name}</DialogTitle>
+                    <DialogTitle className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                        Edit Test Suite: {testSuite.name}
+                    </DialogTitle>
                 </DialogHeader>
 
                 {/* Split Layout */}
-                <div className="flex flex-col md:flex-row h-[60vh] border rounded-lg overflow-hidden gap-4 p-4">
+                <div className="flex flex-col md:flex-row h-[60vh] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
                     {/* Left Panel - List of Test Cases */}
                     <TestSuiteEditListPanel
                         testCases={testCases}

@@ -22,27 +22,54 @@ const TestSuiteEditListPanel: React.FC<TestSuiteEditListPanelProps> = ({
     onTestCaseSelect,
 }) => {
     return (
-        <div className="w-full md:w-1/3 border-r flex flex-col">
-            <div className="p-4 border-b bg-gray-50">
-                <h3 className="text-sm font-medium text-gray-700">
-                    Test Cases ({testCases.length})
-                </h3>
+        <div className="w-full md:w-1/3 border-r border-slate-200 dark:border-slate-700 flex flex-col bg-white dark:bg-slate-800">
+            {/* Header Section */}
+            <div className="flex-shrink-0 p-4 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+                <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                        Test Cases
+                    </h3>
+                    <span className="text-sm font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded">
+                        {testCases.length}
+                    </span>
+                </div>
             </div>
+
+            {/* Content Area */}
             <div className="flex-1 overflow-y-auto">
                 {testCases.length === 0 ? (
-                    <div className="p-4 text-center text-gray-500">
-                        No test cases found
+                    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-sm p-8 text-center m-4">
+                        <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
+                            No Test Cases Available
+                        </h3>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm max-w-md mx-auto">
+                            Create test cases to validate your flow
+                            functionality.
+                        </p>
                     </div>
                 ) : (
-                    <div className="p-4 space-y-3">
+                    <div className="p-4 space-y-2">
+                        {/* Section Header - Sticky */}
+                        <div className="sticky top-0 bg-white dark:bg-slate-800 z-10 py-2">
+                            <div className="flex items-center gap-2 mb-4">
+                                <span className="text-xs font-mono text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                                    Test Cases
+                                </span>
+                                <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700"></div>
+                                <span className="text-xs font-mono text-slate-500 dark:text-slate-400">
+                                    {testCases.length} items
+                                </span>
+                            </div>
+                        </div>
+
                         {testCases.map(testCase => (
                             <Card
                                 key={String(testCase.case_id)}
                                 className={`cursor-pointer transition-colors ${
                                     String(selectedTestCase?.case_id) ===
                                     String(testCase.case_id)
-                                        ? 'border-blue-500 bg-blue-50'
-                                        : 'hover:bg-gray-50'
+                                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                                        : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
                                 }`}
                                 onClick={() => onTestCaseSelect(testCase)}
                             >
@@ -51,11 +78,11 @@ const TestSuiteEditListPanel: React.FC<TestSuiteEditListPanelProps> = ({
                                         <div className="flex items-center gap-2">
                                             <Badge
                                                 variant="outline"
-                                                className="text-xs"
+                                                className="text-xs bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600"
                                             >
                                                 CASE
                                             </Badge>
-                                            <h4 className="text-sm font-medium truncate">
+                                            <h4 className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
                                                 {testCase.name}
                                             </h4>
                                         </div>
@@ -72,8 +99,13 @@ const TestSuiteEditListPanel: React.FC<TestSuiteEditListPanelProps> = ({
                     </div>
                 )}
             </div>
-            <div className="p-4 border-t bg-gray-50">
-                <Button variant="outline" className="w-full">
+
+            {/* Footer Section */}
+            <div className="p-4 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+                <Button
+                    variant="outline"
+                    className="w-full border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                >
                     <Plus className="mr-2 h-4 w-4" />
                     Add test case
                 </Button>
