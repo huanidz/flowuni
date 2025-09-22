@@ -5,6 +5,7 @@ import type { FlowTestSuiteWithCases } from '../types';
 import { TestCaseStatus } from '../types';
 import TestCaseItem from './TestCaseItem';
 import TestStatusIndicator from './TestStatusIndicator';
+import TestSuiteEdit from './TestSuiteEdit';
 import { useDeleteTestSuite } from '../hooks';
 import { useConfirmation } from '@/hooks/useConfirmationModal';
 
@@ -29,6 +30,7 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
     const deleteTestSuiteMutation = useDeleteTestSuite();
     const isExpanded = expandedSuites.has(testSuite.suite_id);
     const { confirm, ConfirmationDialog } = useConfirmation();
+    const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
 
     // Check if any test case in this suite is selected
     const hasSelectedTestCase = testSuite.test_cases.some(testCase =>
@@ -150,7 +152,7 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
                                     className="h-8 px-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 text-xs"
                                     onClick={e => {
                                         e.stopPropagation();
-                                        // TODO: Implement edit functionality
+                                        setIsEditModalOpen(true);
                                     }}
                                     title="Edit test suite"
                                 >
@@ -253,6 +255,18 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
                     </div>
                 </div>
             </div>
+
+            <TestSuiteEdit
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                testSuite={{
+                    id: testSuite.id,
+                    suite_id: testSuite.suite_id,
+                    name: testSuite.name,
+                    description: testSuite.description,
+                    flow_id: testSuite.flow_id,
+                }}
+            />
 
             <ConfirmationDialog />
         </>

@@ -7,3 +7,4 @@ export { default as TestStatistics } from './TestStatistics';
 export { default as TestSuiteGroup } from './TestSuiteGroup';
 export { default as CreateTestSuiteModal } from './CreateTestSuiteModal';
 export { default as CreateTestCaseModal } from './CreateTestCaseModal';
+export { default as TestSuiteEdit } from './TestSuiteEdit';
