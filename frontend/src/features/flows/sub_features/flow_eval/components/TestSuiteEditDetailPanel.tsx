@@ -99,7 +99,7 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
 
             {/* Bottom Info Row */}
             <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
-                <div className="flex items-center gap-2">
+                {/* <div className="flex items-center gap-2">
                     <span>Description:</span>
                     <input
                         type="text"
@@ -111,7 +111,7 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
                         placeholder="Optional description"
                         className="px-2 py-1 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm w-48"
                     />
-                </div>
+                </div> */}
 
                 {selectedTestCase.execution_time_ms && (
                     <div>
