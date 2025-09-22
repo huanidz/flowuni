@@ -2,6 +2,10 @@ import React from 'react';
 import type { FlowTestCase } from '../types';
 import { TestCaseStatus } from '../types';
 import { getStatusBadge } from '../utils';
+import { Card, CardHeader, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
 
 interface TestSuiteEditListPanelProps {
     testCases: FlowTestCase[];
@@ -18,38 +22,52 @@ const TestSuiteEditListPanel: React.FC<TestSuiteEditListPanelProps> = ({
     onTestCaseSelect,
 }) => {
     return (
-        <div className="w-full md:w-1/2 border-r overflow-y-auto">
+        <div className="w-full md:w-1/2 border-r flex flex-col">
             <div className="p-4 border-b bg-gray-50">
                 <h3 className="text-sm font-medium text-gray-700">
                     Test Cases ({testCases.length})
                 </h3>
             </div>
-            <div className="divide-y">
+            <div className="flex-1 overflow-y-auto">
                 {testCases.length === 0 ? (
                     <div className="p-4 text-center text-gray-500">
                         No test cases found
                     </div>
                 ) : (
-                    testCases.map(testCase => (
-                        <div
-                            key={testCase.case_id}
-                            className={`p-4 cursor-pointer transition-colors ${
-                                selectedTestCase?.case_id === testCase.case_id
-                                    ? 'bg-blue-50'
-                                    : 'hover:bg-gray-50'
-                            }`}
-                            onClick={() => onTestCaseSelect(testCase)}
-                        >
-                            <div className="flex items-start justify-between">
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-100 px-2 py-0.5 rounded">
-                                            CASE
-                                        </span>
-                                        <h4 className="text-sm font-medium truncate">
-                                            {testCase.name}
-                                        </h4>
+                    <div className="p-4 space-y-3">
+                        {testCases.map(testCase => (
+                            <Card
+                                key={testCase.case_id}
+                                className={`cursor-pointer transition-colors ${
+                                    selectedTestCase?.case_id ===
+                                    testCase.case_id
+                                        ? 'border-blue-500 bg-blue-50'
+                                        : 'hover:bg-gray-50'
+                                }`}
+                                onClick={() => onTestCaseSelect(testCase)}
+                            >
+                                <CardHeader className="pb-2">
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <Badge
+                                                variant="outline"
+                                                className="text-xs"
+                                            >
+                                                CASE
+                                            </Badge>
+                                            <h4 className="text-sm font-medium truncate">
+                                                {testCase.name}
+                                            </h4>
+                                        </div>
+                                        <div className="flex-shrink-0">
+                                            {getStatusBadge(
+                                                testCase.status ||
+                                                    TestCaseStatus.PENDING
+                                            )}
+                                        </div>
                                     </div>
+                                </CardHeader>
+                                <CardContent className="pt-0">
                                     {testCase.description && (
                                         <p className="text-xs text-gray-600 mb-2 line-clamp-2">
                                             {testCase.description}
@@ -64,17 +82,17 @@ const TestSuiteEditListPanel: React.FC<TestSuiteEditListPanelProps> = ({
                                             ) || 'N/A'}
                                         </span>
                                     </div>
-                                </div>
-                                <div className="flex-shrink-0 ml-2">
-                                    {getStatusBadge(
-                                        testCase.status ||
-                                            TestCaseStatus.PENDING
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    ))
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
                 )}
+            </div>
+            <div className="p-4 border-t bg-gray-50">
+                <Button variant="outline" className="w-full">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add test case
+                </Button>
             </div>
         </div>
     );
