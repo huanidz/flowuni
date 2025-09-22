@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import RuleEditor from './RuleEditor';
-import type { TestRule, TestCriteria } from './RuleEditor';
+import type { TestRule } from './RuleEditor';
 
 import {
     Select,
@@ -10,28 +10,37 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
+type CriteriaWithConnectors = {
+    rules: TestRule[];
+    connectors: ('AND' | 'OR')[]; // connectors between rules
+};
 
 const TestCriteriaBuilder: React.FC<{
     criteria: string;
     onChange: (criteria: string) => void;
 }> = ({ criteria, onChange }) => {
-    const parseCriteria = (str: string): TestCriteria => {
+    const parseCriteria = (str: string): CriteriaWithConnectors => {
         try {
-            return str ? JSON.parse(str) : { rules: [], logic: 'AND' };
+            const parsed = str
+                ? JSON.parse(str)
+                : { rules: [], connectors: [] };
+            return {
+                rules: parsed.rules ?? [],
+                connectors: parsed.connectors ?? [],
+            };
         } catch {
-            return { rules: [], logic: 'AND' };
+            return { rules: [], connectors: [] };
         }
     };
 
-    const [currentCriteria, setCurrentCriteria] = useState<TestCriteria>(
-        parseCriteria(criteria)
-    );
-    const [ruleSelectKey, setRuleSelectKey] = useState(0); // reset Select after choose
+    const [currentCriteria, setCurrentCriteria] =
+        useState<CriteriaWithConnectors>(parseCriteria(criteria));
+    const [ruleSelectKey, setRuleSelectKey] = useState(0);
 
-    const updateCriteria = (newCriteria: TestCriteria) => {
+    const updateCriteria = (newCriteria: CriteriaWithConnectors) => {
         setCurrentCriteria(newCriteria);
         onChange(JSON.stringify(newCriteria, null, 2));
     };
@@ -61,139 +70,102 @@ const TestCriteriaBuilder: React.FC<{
                 };
                 break;
         }
+
         updateCriteria({
-            ...currentCriteria,
             rules: [...currentCriteria.rules, newRule],
+            connectors: [
+                ...currentCriteria.connectors,
+                currentCriteria.rules.length > 0 ? 'AND' : undefined,
+            ].filter(Boolean) as ('AND' | 'OR')[],
         });
-        setRuleSelectKey(k => k + 1); // reset to "+ Add Rule"
+        setRuleSelectKey(k => k + 1);
     };
 
     const updateRule = (index: number, updatedRule: TestRule) => {
-        const newRules = [...currentCriteria.rules];
-        newRules[index] = updatedRule;
-        updateCriteria({ ...currentCriteria, rules: newRules });
+        const rules = [...currentCriteria.rules];
+        rules[index] = updatedRule;
+        updateCriteria({ ...currentCriteria, rules });
     };
 
     const deleteRule = (index: number) => {
-        const newRules = currentCriteria.rules.filter((_, i) => i !== index);
-        updateCriteria({ ...currentCriteria, rules: newRules });
+        const rules = currentCriteria.rules.filter((_, i) => i !== index);
+        const connectors = currentCriteria.connectors.filter(
+            (_, i) => i !== index && i !== index - 1
+        );
+        updateCriteria({ rules, connectors });
     };
 
-    // --- NEW: toggle logic by clicking the connector chip
-    const toggleGlobalLogic = () => {
-        const next = currentCriteria.logic === 'AND' ? 'OR' : 'AND';
-        updateCriteria({ ...currentCriteria, logic: next });
+    const toggleConnector = (index: number) => {
+        const connectors = [...currentCriteria.connectors];
+        connectors[index] = connectors[index] === 'AND' ? 'OR' : 'AND';
+        updateCriteria({ ...currentCriteria, connectors });
     };
 
-    // --- NEW: concise labels for summary panel
+    // --- Summary chain
     const ruleLabel = (r: TestRule) => {
-        if (r.type === 'string') {
-            const v = (r as any).value ?? '';
-            const op = (r as any).operation ?? 'contains';
-            return `String(${op} "${String(v).slice(0, 12)}${String(v).length > 12 ? '…' : ''}")`;
-        }
-        if (r.type === 'regex') {
-            const p = (r as any).pattern ?? '';
-            return `Regex(/${String(p).slice(0, 12)}${String(p).length > 12 ? '…' : ''}/)`;
-        }
-        if (r.type === 'llm_judge') {
-            const model = (r as any).model ?? 'LLM';
-            return `LLM(${model})`;
-        }
+        if (r.type === 'string') return `String("${(r as any).value || ''}")`;
+        if (r.type === 'regex') return `Regex(/${(r as any).pattern || ''}/)`;
+        if (r.type === 'llm_judge') return `LLM(${(r as any).model || 'LLM'})`;
         return 'Rule';
     };
 
     const logicChain = useMemo(() => {
-        const op = currentCriteria.logic;
-        const parts: string[] = [];
+        const chain: string[] = [];
         currentCriteria.rules.forEach((r, i) => {
-            parts.push(ruleLabel(r));
-            if (i < currentCriteria.rules.length - 1) parts.push(op);
+            chain.push(ruleLabel(r));
+            if (i < currentCriteria.connectors.length)
+                chain.push(currentCriteria.connectors[i]);
         });
-        return parts;
+        return chain;
     }, [currentCriteria]);
 
     return (
-        <div className="space-y-6">
-            {/* Summary panel */}
+        <div className="space-y-4">
+            {/* Summary */}
             {currentCriteria.rules.length > 0 && (
                 <Card className="border-muted">
-                    <CardHeader className="py-3">
-                        <CardTitle className="text-base">
-                            Logic summary
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                        <ScrollArea className="w-full">
-                            <div className="flex flex-wrap gap-2 items-center">
-                                {logicChain.map((token, i) =>
-                                    token === 'AND' || token === 'OR' ? (
-                                        <Badge
-                                            key={`op-${i}`}
-                                            variant="secondary"
-                                            // also toggles here for convenience
-                                            onClick={toggleGlobalLogic}
-                                            role="button"
-                                            tabIndex={0}
-                                            onKeyDown={e =>
-                                                (e.key === 'Enter' ||
-                                                    e.key === ' ') &&
-                                                toggleGlobalLogic()
-                                            }
-                                            className="cursor-pointer"
-                                            title="Click to toggle AND/OR"
-                                        >
-                                            {token}
-                                        </Badge>
-                                    ) : (
-                                        <Badge
-                                            key={`rule-${i}`}
-                                            variant="outline"
-                                        >
-                                            {token}
-                                        </Badge>
-                                    )
-                                )}
-                            </div>
-                            {currentCriteria.rules.length > 1 && (
-                                <p className="mt-2 text-xs text-muted-foreground">
-                                    Tip: Click any{' '}
-                                    <span className="font-medium">AND/OR</span>{' '}
-                                    badge (or the connector between rules) to
-                                    toggle. Applies to all connectors.
-                                </p>
+                    <CardContent className="py-2">
+                        <div className="flex flex-wrap gap-2 items-center text-sm">
+                            {logicChain.map((token, i) =>
+                                token === 'AND' || token === 'OR' ? (
+                                    <Badge
+                                        key={i}
+                                        variant="secondary"
+                                        onClick={() =>
+                                            toggleConnector(Math.floor(i / 2))
+                                        }
+                                        className="cursor-pointer"
+                                    >
+                                        {token}
+                                    </Badge>
+                                ) : (
+                                    <Badge key={i} variant="outline">
+                                        {token}
+                                    </Badge>
+                                )
                             )}
-                        </ScrollArea>
+                        </div>
                     </CardContent>
                 </Card>
             )}
 
+            {/* Rules list */}
             {currentCriteria.rules.map((rule, index) => (
-                <div
-                    key={rule.id}
-                    className="rounded-lg border border-slate-200 dark:border-slate-700 p-3"
-                >
+                <div key={rule.id} className="rounded-md border p-3">
                     <RuleEditor
                         rule={rule}
                         onChange={updatedRule => updateRule(index, updatedRule)}
                         onDelete={() => deleteRule(index)}
                     />
                     {index < currentCriteria.rules.length - 1 && (
-                        <div className="flex items-center my-4">
+                        <div className="flex items-center my-2">
                             <Separator className="flex-1" />
-                            {/* Clickable logic chip between rules */}
                             <button
                                 type="button"
-                                onClick={toggleGlobalLogic}
-                                onKeyDown={e =>
-                                    (e.key === 'Enter' || e.key === ' ') &&
-                                    toggleGlobalLogic()
-                                }
-                                className="mx-3 rounded-md border px-3 py-1 text-sm font-semibold text-primary hover:bg-accent hover:text-accent-foreground transition cursor-pointer"
-                                aria-label={`Toggle logic (currently ${currentCriteria.logic})`}
-                                title="Click to toggle AND/OR"
+                                onClick={() => toggleConnector(index)}
+                                className="mx-2 rounded-md border px-2 py-1 text-xs font-semibold text-primary hover:bg-accent hover:text-accent-foreground"
                             >
-                                {currentCriteria.logic}
+                                {currentCriteria.connectors[index]}
                             </button>
                             <Separator className="flex-1" />
                         </div>
@@ -201,7 +173,7 @@ const TestCriteriaBuilder: React.FC<{
                 </div>
             ))}
 
-            {/* Centered New Rule dropdown (resets after choose) */}
+            {/* Centered New Rule dropdown */}
             <div className="flex justify-center">
                 <Select
                     key={ruleSelectKey}
@@ -209,12 +181,12 @@ const TestCriteriaBuilder: React.FC<{
                         addRule(value)
                     }
                 >
-                    <SelectTrigger className="w-[200px]">
+                    <SelectTrigger className="w-[180px] text-sm">
                         <SelectValue placeholder="+ Add Rule" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="string">String Rule</SelectItem>
-                        <SelectItem value="regex">Regex Rule</SelectItem>
+                        <SelectItem value="string">String</SelectItem>
+                        <SelectItem value="regex">Regex</SelectItem>
                         <SelectItem value="llm_judge">LLM Judge</SelectItem>
                     </SelectContent>
                 </Select>
