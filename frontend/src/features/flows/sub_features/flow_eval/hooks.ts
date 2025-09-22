@@ -5,6 +5,7 @@ import {
     createTestSuite,
     createTestCase,
     deleteTestSuite,
+    deleteTestCase,
     getTestSuitesWithCases,
 } from './api';
 import type { TestCaseCreateRequest, TestSuiteCreateRequest } from './types';
@@ -62,6 +63,28 @@ export const useCreateTestCase = () => {
         onError: error => {
             console.error('Error creating test case:', error);
             toast.error('Failed to create test case');
+        },
+    });
+};
+
+/**
+ * Hook for deleting a test case
+ */
+export const useDeleteTestCase = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (caseId: number) => deleteTestCase(caseId),
+        onSuccess: () => {
+            // Invalidate and refetch test suites
+            queryClient.invalidateQueries({
+                queryKey: ['testSuitesWithCases'],
+            });
+            toast.success('Test case deleted successfully');
+        },
+        onError: error => {
+            console.error('Error deleting test case:', error);
+            toast.error('Failed to delete test case');
         },
     });
 };

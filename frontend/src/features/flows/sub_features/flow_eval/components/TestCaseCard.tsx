@@ -1,0 +1,157 @@
+import React, { useRef, type KeyboardEvent } from 'react';
+import type { DraftTestCase, FlowTestCase } from '../types';
+import { TestCaseStatus } from '../types';
+import { getStatusBadge } from '../utils';
+import { Card, CardHeader } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { CornerDownLeft, Trash2 } from 'lucide-react';
+import { useConfirmation } from '@/hooks/useConfirmationModal';
+import { useDeleteTestCase } from '../hooks';
+
+interface TestCaseCardProps {
+    item: FlowTestCase | DraftTestCase;
+    isSelected?: boolean;
+    selectedTestCase?: FlowTestCase | null;
+    onTestCaseSelect?: (testCase: FlowTestCase) => void;
+    draft?: DraftTestCase | null;
+    setDraft?: (draft: DraftTestCase | null) => void;
+    isCreating?: boolean;
+    onCreate?: () => void;
+    onCancel?: () => void;
+    onDraftNameChange?: (name: string) => void;
+}
+
+const TestCaseCard: React.FC<TestCaseCardProps> = ({
+    item,
+    isSelected = false,
+    selectedTestCase = null,
+    onTestCaseSelect,
+    draft = null,
+    setDraft,
+    isCreating = false,
+    onCreate,
+    onCancel,
+    onDraftNameChange,
+}) => {
+    const inputRef = useRef<HTMLInputElement>(null);
+    const { confirm, ConfirmationDialog } = useConfirmation();
+    const deleteTestCaseMutation = useDeleteTestCase();
+
+    const isDraft = typeof item.id === 'string' && item.id.startsWith('draft-');
+
+    const handleDelete = (e: React.MouseEvent, testCase: FlowTestCase) => {
+        e.stopPropagation(); // Prevent card selection when clicking delete
+
+        confirm({
+            title: 'Delete Test Case',
+            description: `Are you sure you want to delete the test case "${testCase.name}"? This action cannot be undone.`,
+            confirmText: 'Delete',
+            variant: 'destructive',
+            onConfirm: async () => {
+                await deleteTestCaseMutation.mutateAsync(testCase.id);
+            },
+        });
+    };
+
+    const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' && draft?.name.trim() && onCreate) {
+            onCreate();
+        } else if (e.key === 'Escape' && onCancel) {
+            onCancel();
+        }
+    };
+
+    if (isDraft) {
+        return (
+            <Card key={item.id} className="border-primary">
+                <CardHeader className="p-2">
+                    <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 flex-1">
+                            <Badge variant="outline">DRAFT</Badge>
+                            <Input
+                                ref={inputRef}
+                                value={draft?.name || ''}
+                                onChange={e =>
+                                    onDraftNameChange?.(e.target.value)
+                                }
+                                onKeyDown={handleKeyDown}
+                                placeholder="Enter test case name..."
+                                className="h-7 text-sm"
+                                disabled={isCreating}
+                            />
+                        </div>
+                        <div className="flex gap-1">
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 w-7 p-0"
+                                onClick={onCreate}
+                                disabled={!draft?.name.trim() || isCreating}
+                            >
+                                <CornerDownLeft className="h-3 w-3" />
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 w-7 p-0"
+                                onClick={onCancel}
+                                disabled={isCreating}
+                            >
+                                ×
+                            </Button>
+                        </div>
+                    </div>
+                </CardHeader>
+            </Card>
+        );
+    }
+
+    const testCase = item as FlowTestCase;
+    const isItemSelected =
+        String(selectedTestCase?.case_id) === String(testCase.case_id);
+
+    return (
+        <>
+            <Card
+                key={String(testCase.case_id)}
+                className={`cursor-pointer transition-colors ${
+                    isItemSelected
+                        ? 'border-primary bg-accent'
+                        : 'hover:bg-accent/50'
+                }`}
+                onClick={() => onTestCaseSelect?.(testCase)}
+            >
+                <CardHeader className="p-2">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Badge variant="outline">CASE</Badge>
+                            <h4 className="text-sm font-medium truncate">
+                                {testCase.name}
+                            </h4>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="flex-shrink-0">
+                                {getStatusBadge(
+                                    testCase.status || TestCaseStatus.PENDING
+                                )}
+                            </div>
+                            <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                                onClick={e => handleDelete(e, testCase)}
+                            >
+                                <Trash2 className="h-3 w-3" />
+                            </Button>
+                        </div>
+                    </div>
+                </CardHeader>
+            </Card>
+            <ConfirmationDialog />
+        </>
+    );
+};
+
+export default TestCaseCard;

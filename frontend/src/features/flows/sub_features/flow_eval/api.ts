@@ -35,6 +35,13 @@ export const deleteTestSuite = async (suiteId: number): Promise<void> => {
 };
 
 /**
+ * Delete a test case by its ID
+ */
+export const deleteTestCase = async (caseId: number): Promise<void> => {
+    await api.delete(`/flow-tests/cases/${caseId}`);
+};
+
+/**
  * Get all test suites with their test cases for a specific flow
  */
 export const getTestSuitesWithCases = async (
