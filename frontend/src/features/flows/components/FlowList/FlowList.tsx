@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import DeleteFlowButton from '@/features/flows/components/FlowList/DeleteFlowButton';
+import ActivateDeactivateButton from '@/features/flows/components/FlowList/ActivateDeactivateButton';
 import type { Flow } from '@/features/flows/types';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -100,6 +101,7 @@ const FlowList: React.FC<FlowListProps> = ({ flows }) => {
                                     >
                                         To FlowBuilder
                                     </Button>
+                                    <ActivateDeactivateButton flow={flow} />
                                     <Button
                                         onClick={() => toggleRow(flow.flow_id)}
                                         variant="ghost"
@@ -162,7 +164,7 @@ const FlowList: React.FC<FlowListProps> = ({ flows }) => {
                                                             flowListStyles.detailLabel
                                                         }
                                                     >
-                                                        Ngày tạo:
+                                                        Created Date:
                                                     </span>
                                                     <span
                                                         style={
@@ -172,7 +174,7 @@ const FlowList: React.FC<FlowListProps> = ({ flows }) => {
                                                         {new Date(
                                                             flow.created_at as string
                                                         ).toLocaleDateString(
-                                                            'vi-VN'
+                                                            'en-US'
                                                         )}
                                                     </span>
                                                 </div>
@@ -186,7 +188,7 @@ const FlowList: React.FC<FlowListProps> = ({ flows }) => {
                                                             flowListStyles.detailLabel
                                                         }
                                                     >
-                                                        Số lượng nút:
+                                                        Node Count:
                                                     </span>
                                                     <span
                                                         style={
@@ -196,7 +198,7 @@ const FlowList: React.FC<FlowListProps> = ({ flows }) => {
                                                         {flow.node_count !==
                                                         undefined
                                                             ? flow.node_count
-                                                            : 'Không có số lượng nút'}
+                                                            : 'No nodes available'}
                                                     </span>
                                                 </div>
                                                 <div
@@ -209,7 +211,7 @@ const FlowList: React.FC<FlowListProps> = ({ flows }) => {
                                                             flowListStyles.detailLabel
                                                         }
                                                     >
-                                                        Trạng thái:
+                                                        Status:
                                                     </span>
                                                     <span
                                                         style={
@@ -217,8 +219,8 @@ const FlowList: React.FC<FlowListProps> = ({ flows }) => {
                                                         }
                                                     >
                                                         {flow.is_active
-                                                            ? 'Đang hoạt động'
-                                                            : 'Tạm dừng'}
+                                                            ? 'Active'
+                                                            : 'Paused'}
                                                     </span>
                                                 </div>
                                             </div>
@@ -237,7 +239,7 @@ const FlowList: React.FC<FlowListProps> = ({ flows }) => {
                                                             flowListStyles.detailLabel
                                                         }
                                                     >
-                                                        Mô tả:
+                                                        Description:
                                                     </span>
                                                     <span
                                                         style={
@@ -257,7 +259,7 @@ const FlowList: React.FC<FlowListProps> = ({ flows }) => {
                                                             flowListStyles.detailLabel
                                                         }
                                                     >
-                                                        Tình trạng:
+                                                        Status:
                                                     </span>
                                                     <span
                                                         style={
@@ -265,8 +267,8 @@ const FlowList: React.FC<FlowListProps> = ({ flows }) => {
                                                         }
                                                     >
                                                         {flow.is_active
-                                                            ? 'Dòng chảy đang hoạt động'
-                                                            : 'Dòng chảy tạm dừng'}
+                                                            ? 'Flow is active'
+                                                            : 'Flow is paused'}
                                                     </span>
                                                 </div>
                                             </div>

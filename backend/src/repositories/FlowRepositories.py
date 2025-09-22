@@ -374,3 +374,61 @@ class FlowRepository(BaseRepository):
             self.db_session.rollback()
             logger.error(f"Error deleting flow with ID {flow_id}: {e}")
             raise e
+
+    def activate_flow(self, flow_id: str) -> FlowModel:
+        """
+        Activate a flow by setting is_active to True
+        """
+        try:
+            flow = self.db_session.query(FlowModel).filter_by(flow_id=flow_id).first()
+            if not flow:
+                logger.warning(
+                    f"Attempted to activate non-existent flow with ID: {flow_id}"
+                )
+                raise NoResultFound(f"Flow with ID {flow_id} not found.")
+
+            flow.is_active = True
+            flow.modified_at = datetime.utcnow()
+            self.db_session.commit()
+            self.db_session.refresh(flow)
+            logger.info(f"Activated flow with ID: {flow_id}")
+            return flow
+        except NoResultFound as e:
+            self.db_session.rollback()
+            logger.error(
+                f"NoResultFound error when activating flow with ID {flow_id}: {e}"
+            )
+            raise e
+        except Exception as e:
+            self.db_session.rollback()
+            logger.error(f"Error activating flow with ID {flow_id}: {e}")
+            raise e
+
+    def deactivate_flow(self, flow_id: str) -> FlowModel:
+        """
+        Deactivate a flow by setting is_active to False
+        """
+        try:
+            flow = self.db_session.query(FlowModel).filter_by(flow_id=flow_id).first()
+            if not flow:
+                logger.warning(
+                    f"Attempted to deactivate non-existent flow with ID: {flow_id}"
+                )
+                raise NoResultFound(f"Flow with ID {flow_id} not found.")
+
+            flow.is_active = False
+            flow.modified_at = datetime.utcnow()
+            self.db_session.commit()
+            self.db_session.refresh(flow)
+            logger.info(f"Deactivated flow with ID: {flow_id}")
+            return flow
+        except NoResultFound as e:
+            self.db_session.rollback()
+            logger.error(
+                f"NoResultFound error when deactivating flow with ID {flow_id}: {e}"
+            )
+            raise e
+        except Exception as e:
+            self.db_session.rollback()
+            logger.error(f"Error deactivating flow with ID {flow_id}: {e}")
+            raise e

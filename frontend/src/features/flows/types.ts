@@ -63,6 +63,20 @@ export interface SaveFlowResponse {
     flow_definition: any;
 }
 
+// --- Flow Activation ---
+
+export interface FlowActivationRequest {
+    flow_id: string;
+    is_active: boolean;
+}
+
+export interface FlowActivationResponse {
+    flow_id: string;
+    name: string;
+    description: string;
+    is_active: boolean;
+}
+
 // --- Playground ChatBox ---
 
 export interface PlaygroundChatBoxPosition {

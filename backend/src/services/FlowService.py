@@ -7,7 +7,12 @@ from src.models.alchemy.flows.FlowModel import FlowModel
 from src.nodes.GraphLoader import GraphLoader
 from src.repositories.FlowRepositories import FlowRepository
 from src.schemas.flowbuilder.flow_crud_schemas import FlowCreateRequest
-from src.schemas.flows.flow_schemas import FlowPatchRequest, GetFlowResponseItem
+from src.schemas.flows.flow_schemas import (
+    FlowActivationRequest,
+    FlowActivationResponse,
+    FlowPatchRequest,
+    GetFlowResponseItem,
+)
 
 
 class FlowServiceInterface(ABC):
@@ -58,6 +63,20 @@ class FlowServiceInterface(ABC):
     ) -> Optional[FlowModel]:
         """
         Save flow detail
+        """
+        pass
+
+    @abstractmethod
+    def activate_flow(self, flow_id: str, user_id: int) -> FlowModel:
+        """
+        Activate a flow by flow id
+        """
+        pass
+
+    @abstractmethod
+    def deactivate_flow(self, flow_id: str, user_id: int) -> FlowModel:
+        """
+        Deactivate a flow by flow id
         """
         pass
 
@@ -188,5 +207,61 @@ class FlowService(FlowServiceInterface):
         except Exception as e:
             logger.error(
                 f"Error saving flow detail for user {user_id}, flow {flow_request.flow_id}: {str(e)}"
+            )
+            raise
+
+    def activate_flow(self, flow_id: str, user_id: int) -> FlowModel:
+        """
+        Activate a flow by flow id
+        """
+        try:
+            # Get the flow to verify ownership
+            existing_flow = self.flow_repository.get_by_id(flow_id=flow_id)
+            if not existing_flow:
+                logger.warning(f"Flow with id {flow_id} not found")
+                raise NOT_FOUND_EXCEPTION
+
+            # Check if the user owns the flow
+            if existing_flow.user_id != user_id:
+                logger.warning(
+                    f"User {user_id} attempted to activate flow {flow_id} owned by different user"
+                )
+                raise MISMATCH_EXCEPTION
+
+            # Activate the flow
+            result = self.flow_repository.activate_flow(flow_id=flow_id)
+            logger.info(f"Successfully activated flow {flow_id} for user {user_id}")
+            return result
+        except Exception as e:
+            logger.error(
+                f"Error activating flow {flow_id} for user {user_id}: {str(e)}"
+            )
+            raise
+
+    def deactivate_flow(self, flow_id: str, user_id: int) -> FlowModel:
+        """
+        Deactivate a flow by flow id
+        """
+        try:
+            # Get the flow to verify ownership
+            existing_flow = self.flow_repository.get_by_id(flow_id=flow_id)
+            if not existing_flow:
+                logger.warning(f"Flow with id {flow_id} not found")
+                raise NOT_FOUND_EXCEPTION
+
+            # Check if the user owns the flow
+            if existing_flow.user_id != user_id:
+                logger.warning(
+                    f"User {user_id} attempted to deactivate flow {flow_id} owned by different user"
+                )
+                raise MISMATCH_EXCEPTION
+
+            # Deactivate the flow
+            result = self.flow_repository.deactivate_flow(flow_id=flow_id)
+            logger.info(f"Successfully deactivated flow {flow_id} for user {user_id}")
+            return result
+        except Exception as e:
+            logger.error(
+                f"Error deactivating flow {flow_id} for user {user_id}: {str(e)}"
             )
             raise
