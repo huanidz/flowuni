@@ -60,6 +60,7 @@ const TestSuiteEdit: React.FC<TestSuiteEditProps> = ({
                         testCases={testCases}
                         selectedTestCase={selectedTestCase}
                         onTestCaseSelect={handleTestCaseSelect}
+                        suiteId={testSuite.id}
                     />
 
                     {/* Right Panel - Test Case Details */}

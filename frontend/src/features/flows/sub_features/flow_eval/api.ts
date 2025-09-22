@@ -1,6 +1,8 @@
 import api from '@/api/secureClient';
 import type {
     FlowTestSuiteWithCases,
+    TestCaseCreateRequest,
+    TestCaseCreateResponse,
     TestSuiteCreateRequest,
     TestSuiteCreateResponse,
 } from './types';
@@ -12,6 +14,16 @@ export const createTestSuite = async (
     request: TestSuiteCreateRequest
 ): Promise<TestSuiteCreateResponse> => {
     const { data } = await api.post('/flow-tests/suites', request);
+    return data;
+};
+
+/**
+ * Create a new test case for a test suite
+ */
+export const createTestCase = async (
+    request: TestCaseCreateRequest
+): Promise<TestCaseCreateResponse> => {
+    const { data } = await api.post('/flow-tests/cases', request);
     return data;
 };
 

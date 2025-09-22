@@ -3,10 +3,11 @@ import { toast } from 'sonner';
 
 import {
     createTestSuite,
+    createTestCase,
     deleteTestSuite,
     getTestSuitesWithCases,
 } from './api';
-import type { TestSuiteCreateRequest } from './types';
+import type { TestCaseCreateRequest, TestSuiteCreateRequest } from './types';
 
 /**
  * Hook for fetching test suites with cases for a specific flow
@@ -39,6 +40,28 @@ export const useCreateTestSuite = () => {
         onError: error => {
             console.error('Error creating test suite:', error);
             toast.error('Failed to create test suite');
+        },
+    });
+};
+
+/**
+ * Hook for creating a new test case
+ */
+export const useCreateTestCase = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (request: TestCaseCreateRequest) => createTestCase(request),
+        onSuccess: (data, variables) => {
+            // Invalidate and refetch test suites for this flow
+            queryClient.invalidateQueries({
+                queryKey: ['testSuitesWithCases'],
+            });
+            toast.success('Test case created successfully');
+        },
+        onError: error => {
+            console.error('Error creating test case:', error);
+            toast.error('Failed to create test case');
         },
     });
 };
