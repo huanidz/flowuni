@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { Folder, Plus } from 'lucide-react';
+import { Folder } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import CreateTestSuiteModal from './CreateTestSuiteModal';
-import CreateTestCaseModal from './CreateTestCaseModal';
 import { useCreateTestSuite } from '../hooks';
 import useFlowStore from '@/features/flows/stores/flow_stores';
 
@@ -11,7 +10,6 @@ import useFlowStore from '@/features/flows/stores/flow_stores';
  */
 const TestCreationButtons: React.FC = () => {
     const [isTestSuiteModalOpen, setIsTestSuiteModalOpen] = useState(false);
-    const [isTestCaseModalOpen, setIsTestCaseModalOpen] = useState(false);
 
     const { current_flow } = useFlowStore();
     const flowId = current_flow?.flow_id;
@@ -42,14 +40,6 @@ const TestCreationButtons: React.FC = () => {
         setIsTestSuiteModalOpen(false);
     };
 
-    const handleCreateTestCase = () => {
-        setIsTestCaseModalOpen(true);
-    };
-
-    const handleCloseTestCaseModal = () => {
-        setIsTestCaseModalOpen(false);
-    };
-
     return (
         <>
             <div className="flex flex-wrap gap-2 p-2 bg-gray-50 border-b">
@@ -61,27 +51,12 @@ const TestCreationButtons: React.FC = () => {
                     <Folder className="w-3.5 h-3.5 mr-1" />
                     Create Test Suite
                 </Button>
-
-                {/* Create Test Case Button */}
-                <Button
-                    onClick={handleCreateTestCase}
-                    variant="secondary"
-                    className="bg-indigo-600 hover:bg-indigo-700"
-                >
-                    <Plus className="w-3.5 h-3.5 mr-1" />
-                    Create Test Case
-                </Button>
             </div>
 
             <CreateTestSuiteModal
                 isOpen={isTestSuiteModalOpen}
                 onClose={handleCloseTestSuiteModal}
                 onSubmit={handleSubmitTestSuite}
-            />
-
-            <CreateTestCaseModal
-                isOpen={isTestCaseModalOpen}
-                onClose={handleCloseTestCaseModal}
             />
         </>
     );
