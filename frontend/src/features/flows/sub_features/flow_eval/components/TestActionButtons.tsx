@@ -25,13 +25,13 @@ const TestActionButtons: React.FC<TestActionButtonsProps> = ({
     const hasSelectedTests = selectedCount > 0;
 
     return (
-        <div className="flex flex-wrap gap-3 p-4 bg-gray-50 border-t">
+        <div className="flex flex-wrap gap-2 p-2 bg-gray-50 border-t">
             {/* Run All Tests Button */}
             <button
                 onClick={onRunAll}
                 disabled={isRunning || statistics.total === 0}
                 className={`
-          flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors
+          flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors
           ${
               isRunning || statistics.total === 0
                   ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
@@ -40,7 +40,7 @@ const TestActionButtons: React.FC<TestActionButtonsProps> = ({
         `}
             >
                 <svg
-                    className="w-4 h-4"
+                    className="w-3.5 h-3.5"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -54,7 +54,7 @@ const TestActionButtons: React.FC<TestActionButtonsProps> = ({
                 </svg>
                 {isRunning
                     ? 'Running Tests...'
-                    : `Run All Tests (${statistics.total})`}
+                    : `Run All (${statistics.total})`}
             </button>
 
             {/* Run Failed Tests Button */}
@@ -62,7 +62,7 @@ const TestActionButtons: React.FC<TestActionButtonsProps> = ({
                 onClick={onRunFailed}
                 disabled={isRunning || !hasFailedTests}
                 className={`
-          flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors
+          flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors
           ${
               isRunning || !hasFailedTests
                   ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
@@ -71,7 +71,7 @@ const TestActionButtons: React.FC<TestActionButtonsProps> = ({
         `}
             >
                 <svg
-                    className="w-4 h-4"
+                    className="w-3.5 h-3.5"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -85,7 +85,7 @@ const TestActionButtons: React.FC<TestActionButtonsProps> = ({
                 </svg>
                 {isRunning
                     ? 'Running Tests...'
-                    : `Run Failed Tests (${statistics.failed})`}
+                    : `Run Failed (${statistics.failed})`}
             </button>
 
             {/* Run Selected Tests Button */}
@@ -93,7 +93,7 @@ const TestActionButtons: React.FC<TestActionButtonsProps> = ({
                 onClick={onRunSelected}
                 disabled={isRunning || !hasSelectedTests}
                 className={`
-          flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors
+          flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors
           ${
               isRunning || !hasSelectedTests
                   ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
@@ -102,7 +102,7 @@ const TestActionButtons: React.FC<TestActionButtonsProps> = ({
         `}
             >
                 <svg
-                    className="w-4 h-4"
+                    className="w-3.5 h-3.5"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -116,7 +116,7 @@ const TestActionButtons: React.FC<TestActionButtonsProps> = ({
                 </svg>
                 {isRunning
                     ? 'Running Tests...'
-                    : `Run Selected Tests (${selectedCount})`}
+                    : `Run Selected (${selectedCount})`}
             </button>
         </div>
     );

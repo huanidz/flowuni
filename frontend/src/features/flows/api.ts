@@ -14,6 +14,8 @@ import type {
     SaveFlowResponse,
     CreateFlowWithDataRequest,
     CreateFlowWithDataResponse,
+    FlowActivationRequest,
+    FlowActivationResponse,
 } from './types';
 import { getFlowGraphData } from './utils';
 import type { Node, Edge } from '@xyflow/react';
@@ -117,5 +119,18 @@ export const runFlow = async (
         requestPayload
     );
     console.log(data);
+    return data;
+};
+
+// --- Flow Activation ---
+
+export const activateFlow = async (
+    request: FlowActivationRequest
+): Promise<FlowActivationResponse> => {
+    const { data } = await apiClient.post(
+        `${FLOWS_ENDPOINT}/${request.flow_id}/activate`,
+        request
+    );
+
     return data;
 };
