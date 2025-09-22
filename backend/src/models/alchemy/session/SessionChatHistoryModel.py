@@ -1,4 +1,8 @@
 # SessionChatHistoryModel.py
+# Note: The id (primary key) of this model is declared at AppBaseModel.
+# This id is treated as database-level unique. All kind of id currently defined
+# is for app logic which may looks confusing at first but it does serve a purpose.
+
 from sqlalchemy import Column, Enum, ForeignKey, Index, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
