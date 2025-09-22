@@ -1,4 +1,5 @@
 import React from 'react';
+import TabContainer from '../features/templates/components/TabContainer';
 
 const TemplatesPage: React.FC = () => {
     return (
@@ -13,11 +14,7 @@ const TemplatesPage: React.FC = () => {
             </div>
 
             <div className="mt-6">
-                <div className="text-center py-8">
-                    <p className="text-gray-600">
-                        Templates content will be added here.
-                    </p>
-                </div>
+                <TabContainer />
             </div>
         </div>
     );
