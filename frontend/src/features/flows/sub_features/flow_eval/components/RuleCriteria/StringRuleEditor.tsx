@@ -9,25 +9,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { TEST_CRITERIA_RULE_TYPES } from '../../const';
-
-export interface StringRuleConfig {
-    operation:
-        | 'contains'
-        | 'equals'
-        | 'starts_with'
-        | 'ends_with'
-        | 'not_contains'
-        | 'length_gt'
-        | 'length_lt'
-        | 'length_eq';
-    value: string;
-}
-
-export interface StringRule {
-    type: typeof TEST_CRITERIA_RULE_TYPES.STRING;
-    config: StringRuleConfig;
-    id: number;
-}
+import type { StringRuleConfig, StringRule } from '../../types';
 
 interface StringRuleEditorProps {
     rule: StringRule;

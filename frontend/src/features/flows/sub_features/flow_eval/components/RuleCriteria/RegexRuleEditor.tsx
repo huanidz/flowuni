@@ -1,17 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { TEST_CRITERIA_RULE_TYPES } from '../../const';
-
-export interface RegexRuleConfig {
-    pattern: string;
-    flags?: string[];
-}
-
-export interface RegexRule {
-    type: typeof TEST_CRITERIA_RULE_TYPES.REGEX;
-    config: RegexRuleConfig;
-    id: number;
-}
+import type { RegexRuleConfig, RegexRule } from '../../types';
 
 interface RegexRuleEditorProps {
     rule: RegexRule;

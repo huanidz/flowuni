@@ -13,27 +13,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { TEST_CRITERIA_RULE_TYPES } from '../../const';
-
-export interface LLMProviderConfig {
-    provider: string;
-    model: string;
-    api_key: string;
-    system_prompt?: string;
-    temperature?: number;
-    max_output_tokens?: number;
-}
-
-export interface LLMRuleConfig {
-    name?: string;
-    description?: string;
-    data?: LLMProviderConfig;
-}
-
-export interface LLMRule {
-    type: typeof TEST_CRITERIA_RULE_TYPES.LLM_JUDGE;
-    config: LLMRuleConfig;
-    id: number;
-}
+import type { LLMProviderConfig, LLMRuleConfig, LLMRule } from '../../types';
 
 interface LLMRuleEditorProps {
     rule: LLMRule;

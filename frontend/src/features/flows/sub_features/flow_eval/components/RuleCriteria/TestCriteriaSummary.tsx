@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import type { TestRule } from './RuleEditor';
+import type { TestRule } from '../../types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TEST_CRITERIA_RULE_TYPES } from '../../const';
@@ -20,11 +20,11 @@ const TestCriteriaSummary: React.FC<TestCriteriaSummaryProps> = ({
 }) => {
     const ruleLabel = (r: TestRule) => {
         if (r.type === TEST_CRITERIA_RULE_TYPES.STRING)
-            return `String("${(r as any).value || ''}")`;
+            return `String("${(r as any).config?.value || ''}")`;
         if (r.type === TEST_CRITERIA_RULE_TYPES.REGEX)
-            return `Regex(/${(r as any).pattern || ''}/)`;
+            return `Regex(/${(r as any).config?.pattern || ''}/)`;
         if (r.type === TEST_CRITERIA_RULE_TYPES.LLM_JUDGE)
-            return `LLM(${(r as any).model || 'LLM'})`;
+            return `LLM(${(r as any).config?.data?.model || 'LLM'})`;
         return 'Rule';
     };
 

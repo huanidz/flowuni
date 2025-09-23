@@ -3,6 +3,60 @@
  * Based on backend FlowTestSuiteModel and FlowTestCaseModel
  */
 
+// Define TestRule types directly to avoid circular imports
+export interface StringRuleConfig {
+    operation:
+        | 'contains'
+        | 'equals'
+        | 'starts_with'
+        | 'ends_with'
+        | 'not_contains'
+        | 'length_gt'
+        | 'length_lt'
+        | 'length_eq';
+    value: string;
+}
+
+export interface RegexRuleConfig {
+    pattern: string;
+    flags?: string[];
+}
+
+export interface LLMProviderConfig {
+    provider: string;
+    model: string;
+    api_key: string;
+    system_prompt?: string;
+    temperature?: number;
+    max_output_tokens?: number;
+}
+
+export interface LLMRuleConfig {
+    name?: string;
+    description?: string;
+    data?: LLMProviderConfig;
+}
+
+export interface StringRule {
+    type: 'string';
+    config: StringRuleConfig;
+    id: number;
+}
+
+export interface RegexRule {
+    type: 'regex';
+    config: RegexRuleConfig;
+    id: number;
+}
+
+export interface LLMRule {
+    type: 'llm_judge';
+    config: LLMRuleConfig;
+    id: number;
+}
+
+export type TestRule = StringRule | RegexRule | LLMRule;
+
 export type TestCaseStatus =
     | 'PENDING'
     | 'QUEUED'
@@ -28,9 +82,12 @@ export interface TestCaseMetadata {
     [key: string]: any;
 }
 
-export interface TestCasePassCriteria {
-    [key: string]: any;
+export interface TestCriteria {
+    rules: TestRule[];
+    logic: 'AND' | 'OR';
 }
+
+export interface TestCasePassCriteria extends Array<TestCriteria> {}
 
 export interface TestCaseActualOutput {
     [key: string]: any;

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Edit2, Save, X } from 'lucide-react';
-import type { FlowTestCase } from '../types';
+import type { FlowTestCase, TestCriteria } from '../types';
 import { TestCaseStatus } from '../types';
 import getStatusBadge from '../utils';
 import TestCriteriaBuilder from './RuleCriteria/TestCriteriaBuilder';
@@ -22,7 +22,7 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
 }) => {
     const [input, setInput] = useState(selectedTestCase?.input_text || '');
     const [testCriteria, setTestCriteria] = useState(
-        JSON.stringify(selectedTestCase?.pass_criteria || {}, null, 2)
+        JSON.stringify(selectedTestCase?.pass_criteria || [], null, 2)
     );
     const [isEditingName, setIsEditingName] = useState(false);
     const [isEditingDescription, setIsEditingDescription] = useState(false);
@@ -37,7 +37,7 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
     React.useEffect(() => {
         setInput(selectedTestCase?.input_text || '');
         setTestCriteria(
-            JSON.stringify(selectedTestCase?.pass_criteria || {}, null, 2)
+            JSON.stringify(selectedTestCase?.pass_criteria || [], null, 2)
         );
         setName(selectedTestCase?.name || '');
         setDescription(selectedTestCase?.description || '');
