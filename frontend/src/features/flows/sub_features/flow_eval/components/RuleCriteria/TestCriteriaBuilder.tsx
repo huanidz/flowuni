@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import RuleEditor from './RuleEditor';
 import type { TestRule } from './RuleEditor';
 import TestCriteriaSummary from './TestCriteriaSummary';
+import { TEST_CRITERIA_RULE_TYPES } from '../../const';
+import type { TestCriteriaRuleType } from '../../const';
 
 import {
     Select,
@@ -43,24 +45,28 @@ const TestCriteriaBuilder: React.FC<{
         onChange(JSON.stringify(newCriteria, null, 2));
     };
 
-    const addRule = (type: 'string' | 'regex' | 'llm_judge') => {
+    const addRule = (type: TestCriteriaRuleType) => {
         const id = Date.now().toString();
         let newRule: TestRule;
         switch (type) {
-            case 'string':
+            case TEST_CRITERIA_RULE_TYPES.STRING:
                 newRule = {
-                    type: 'string',
+                    type: TEST_CRITERIA_RULE_TYPES.STRING,
                     operation: 'contains',
                     value: '',
                     id,
                 };
                 break;
-            case 'regex':
-                newRule = { type: 'regex', pattern: '', id };
-                break;
-            case 'llm_judge':
+            case TEST_CRITERIA_RULE_TYPES.REGEX:
                 newRule = {
-                    type: 'llm_judge',
+                    type: TEST_CRITERIA_RULE_TYPES.REGEX,
+                    pattern: '',
+                    id,
+                };
+                break;
+            case TEST_CRITERIA_RULE_TYPES.LLM_JUDGE:
+                newRule = {
+                    type: TEST_CRITERIA_RULE_TYPES.LLM_JUDGE,
                     model: '', // Will be populated when user selects from dropdown
                     prompt: '',
                     id,
@@ -142,9 +148,7 @@ const TestCriteriaBuilder: React.FC<{
                 <div className="flex justify-center pt-6">
                     <Select
                         key={ruleSelectKey}
-                        onValueChange={(
-                            value: 'string' | 'regex' | 'llm_judge'
-                        ) => {
+                        onValueChange={(value: TestCriteriaRuleType) => {
                             addRule(value);
                         }}
                     >
@@ -152,9 +156,17 @@ const TestCriteriaBuilder: React.FC<{
                             <SelectValue placeholder="+ Add Rule" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="string">String</SelectItem>
-                            <SelectItem value="regex">Regex</SelectItem>
-                            <SelectItem value="llm_judge">LLM Judge</SelectItem>
+                            <SelectItem value={TEST_CRITERIA_RULE_TYPES.STRING}>
+                                String
+                            </SelectItem>
+                            <SelectItem value={TEST_CRITERIA_RULE_TYPES.REGEX}>
+                                Regex
+                            </SelectItem>
+                            <SelectItem
+                                value={TEST_CRITERIA_RULE_TYPES.LLM_JUDGE}
+                            >
+                                LLM Judge
+                            </SelectItem>
                         </SelectContent>
                     </Select>
                 </div>

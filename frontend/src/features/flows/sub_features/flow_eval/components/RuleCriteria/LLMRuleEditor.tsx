@@ -12,9 +12,10 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { TEST_CRITERIA_RULE_TYPES } from '../../const';
 
 export interface LLMRule {
-    type: 'llm_judge';
+    type: typeof TEST_CRITERIA_RULE_TYPES.LLM_JUDGE;
     model: string;
     prompt: string;
     id: string;

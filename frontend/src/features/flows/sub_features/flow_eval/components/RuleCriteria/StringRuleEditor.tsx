@@ -8,9 +8,10 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { TEST_CRITERIA_RULE_TYPES } from '../../const';
 
 export interface StringRule {
-    type: 'string';
+    type: typeof TEST_CRITERIA_RULE_TYPES.STRING;
     operation:
         | 'contains'
         | 'equals'
