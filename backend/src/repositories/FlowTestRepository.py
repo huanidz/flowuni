@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from loguru import logger
 from sqlalchemy.exc import IntegrityError, NoResultFound
@@ -142,20 +142,15 @@ class FlowTestRepository(BaseRepository):
         suite_id: int,
         name: str,
         desc: Optional[str] = None,
-        flow_definition: Optional[dict] = None,
     ) -> FlowTestCaseModel:
         """
         Create a new empty test case for a test suite.
         """
         try:
-            if flow_definition is None:
-                flow_definition = {}
-
             test_case = FlowTestCaseModel(
                 suite_id=suite_id,
                 name=name,
                 description=desc,
-                flow_definition=flow_definition,
                 is_active=True,
             )
             self.db_session.add(test_case)
@@ -205,6 +200,83 @@ class FlowTestRepository(BaseRepository):
         except Exception as e:
             self.db_session.rollback()
             logger.error(f"Error deleting test case with ID {case_id}: {e}")
+            raise e
+
+    def update_test_case(
+        self,
+        case_id: int,
+        suite_id: Optional[int] = None,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        is_active: Optional[bool] = None,
+        input_data: Optional[Dict[str, Any]] = None,
+        input_metadata: Optional[Dict[str, Any]] = None,
+        pass_criteria: Optional[Dict[str, Any]] = None,
+        timeout_ms: Optional[float] = None,
+    ) -> FlowTestCaseModel:
+        """
+        Update a test case by its ID.
+
+        Args:
+            case_id: Test case ID to update
+            suite_id: New test suite ID (optional)
+            name: New test case name (optional)
+            description: New test case description (optional)
+            is_active: New active status (optional)
+            input_data: New input data (optional)
+            input_metadata: New input metadata (optional)
+            pass_criteria: New pass criteria (optional)
+            timeout_ms: New timeout in milliseconds (optional)
+
+        Returns:
+            Updated test case model
+
+        Raises:
+            NoResultFound: If test case with given ID is not found
+        """
+        try:
+            # Get the test case to update
+            test_case = (
+                self.db_session.query(FlowTestCaseModel).filter_by(id=case_id).first()
+            )
+            if not test_case:
+                logger.warning(
+                    f"Attempted to update non-existent test case with ID: {case_id}"
+                )
+                raise NoResultFound(f"Test case with ID {case_id} not found.")
+
+            # Update fields if provided
+            if suite_id is not None:
+                test_case.suite_id = suite_id
+            if name is not None:
+                test_case.name = name
+            if description is not None:
+                test_case.description = description
+            if is_active is not None:
+                test_case.is_active = is_active
+            if input_data is not None:
+                test_case.input_data = input_data
+            if input_metadata is not None:
+                test_case.input_metadata = input_metadata
+            if pass_criteria is not None:
+                test_case.pass_criteria = pass_criteria
+            if timeout_ms is not None:
+                test_case.timeout_ms = timeout_ms
+
+            self.db_session.commit()
+            self.db_session.refresh(test_case)
+            logger.info(f"Updated test case with ID: {case_id}")
+            return test_case
+
+        except NoResultFound as e:
+            self.db_session.rollback()
+            logger.error(
+                f"NoResultFound error when updating test case with ID {case_id}: {e}"
+            )
+            raise e
+        except Exception as e:
+            self.db_session.rollback()
+            logger.error(f"Error updating test case with ID {case_id}: {e}")
             raise e
 
     def get_test_suites_with_case_previews(self, flow_id: str) -> list[dict]:

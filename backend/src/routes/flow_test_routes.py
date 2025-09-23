@@ -14,6 +14,9 @@ from src.schemas.flows.flow_test_schemas import (
     TestCaseCreateRequest,
     TestCaseCreateResponse,
     TestCaseGetResponse,
+    TestCasePartialUpdateRequest,
+    TestCaseUpdateRequest,
+    TestCaseUpdateResponse,
     TestSuiteCreateRequest,
     TestSuiteCreateResponse,
     TestSuitesWithCasePreviewsResponse,
@@ -244,7 +247,6 @@ async def create_test_case(
             suite_id=request.suite_id,
             name=request.name,
             desc=request.desc,
-            flow_definition=request.flow_definition,
         )
 
         response = TestCaseCreateResponse(
@@ -253,7 +255,6 @@ async def create_test_case(
             name=test_case.name,
             description=test_case.description,
             is_active=test_case.is_active,
-            flow_definition=test_case.flow_definition,
         )
 
         return response
@@ -314,7 +315,6 @@ async def get_test_case(
             name=test_case.name,
             description=test_case.description,
             is_active=test_case.is_active,
-            flow_definition=test_case.flow_definition,
             input_data=test_case.input_data,
             input_metadata=test_case.input_metadata,
             pass_criteria=test_case.pass_criteria,
@@ -334,6 +334,164 @@ async def get_test_case(
         raise HTTPException(
             status_code=500,
             detail="An error occurred while getting the test case.",
+        )
+
+
+@flow_test_router.put("/cases/{case_id}", response_model=TestCaseUpdateResponse)
+async def update_test_case(
+    case_id: int = Path(..., description="Test case ID"),
+    request: TestCaseUpdateRequest = ...,
+    flow_test_service: FlowTestService = Depends(get_flow_test_service),
+    flow_service: FlowService = Depends(get_flow_service),
+    auth_user_id: int = Depends(get_current_user),
+):
+    """
+    Update a test case by its ID (full update with PUT)
+    """
+    try:
+        # First get the test case to verify it exists
+        test_case = flow_test_service.get_test_case_by_id(case_id=case_id)
+        if not test_case:
+            logger.warning(f"Test case with ID {case_id} not found")
+            raise NOT_FOUND_EXCEPTION
+
+        # Get the test suite to verify user ownership
+        test_suite = flow_test_service.get_test_suite_by_id(suite_id=test_case.suite_id)
+        if not test_suite:
+            logger.warning(f"Test suite with ID {test_case.suite_id} not found")
+            raise NOT_FOUND_EXCEPTION
+
+        # Get the flow to verify user ownership
+        flow = flow_service.get_flow_detail_by_id(flow_id=test_suite.flow_id)
+        if not flow:
+            logger.warning(f"Flow with ID {test_suite.flow_id} not found")
+            raise NOT_FOUND_EXCEPTION
+
+        # Check if the user is the owner of the flow
+        if flow.user_id != auth_user_id:
+            logger.warning(
+                f"User ID mismatch: flow owner is {flow.user_id}, "
+                f"but requester is {auth_user_id}"
+            )
+            raise UNAUTHORIZED_EXCEPTION
+
+        # Update the test case
+        updated_test_case = flow_test_service.update_test_case(
+            case_id=case_id,
+            suite_id=request.suite_id,
+            name=request.name,
+            description=request.description,
+            is_active=request.is_active,
+            input_data=request.input_data,
+            input_metadata=request.input_metadata,
+            pass_criteria=request.pass_criteria,
+            timeout_ms=request.timeout_ms,
+        )
+
+        response = TestCaseUpdateResponse(
+            id=updated_test_case.id,
+            suite_id=updated_test_case.suite_id,
+            name=updated_test_case.name,
+            description=updated_test_case.description,
+            is_active=updated_test_case.is_active,
+            input_data=updated_test_case.input_data,
+            input_metadata=updated_test_case.input_metadata,
+            pass_criteria=updated_test_case.pass_criteria,
+            timeout_ms=updated_test_case.timeout_ms,
+        )
+
+        return response
+
+    except HTTPException as http_exc:
+        raise http_exc  # Re-raise known HTTP exceptions
+
+    except Exception as e:
+        logger.error(
+            f"Error updating test case with ID {case_id}: {e}. "
+            f"traceback: {traceback.format_exc()}"
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="An error occurred while updating the test case.",
+        )
+
+
+@flow_test_router.patch("/cases/{case_id}", response_model=TestCaseUpdateResponse)
+async def partial_update_test_case(
+    case_id: int = Path(..., description="Test case ID"),
+    request: TestCasePartialUpdateRequest = ...,
+    flow_test_service: FlowTestService = Depends(get_flow_test_service),
+    flow_service: FlowService = Depends(get_flow_service),
+    auth_user_id: int = Depends(get_current_user),
+):
+    """
+    Partially update a test case by its ID (partial update with PATCH)
+    """
+    try:
+        # First get the test case to verify it exists
+        test_case = flow_test_service.get_test_case_by_id(case_id=case_id)
+        if not test_case:
+            logger.warning(f"Test case with ID {case_id} not found")
+            raise NOT_FOUND_EXCEPTION
+
+        # Get the test suite to verify user ownership
+        test_suite = flow_test_service.get_test_suite_by_id(suite_id=test_case.suite_id)
+        if not test_suite:
+            logger.warning(f"Test suite with ID {test_case.suite_id} not found")
+            raise NOT_FOUND_EXCEPTION
+
+        # Get the flow to verify user ownership
+        flow = flow_service.get_flow_detail_by_id(flow_id=test_suite.flow_id)
+        if not flow:
+            logger.warning(f"Flow with ID {test_suite.flow_id} not found")
+            raise NOT_FOUND_EXCEPTION
+
+        # Check if the user is the owner of the flow
+        if flow.user_id != auth_user_id:
+            logger.warning(
+                f"User ID mismatch: flow owner is {flow.user_id}, "
+                f"but requester is {auth_user_id}"
+            )
+            raise UNAUTHORIZED_EXCEPTION
+
+        # Update the test case with only the provided fields
+        updated_test_case = flow_test_service.update_test_case(
+            case_id=case_id,
+            suite_id=request.suite_id,
+            name=request.name,
+            description=request.description,
+            is_active=request.is_active,
+            input_data=request.input_data,
+            input_metadata=request.input_metadata,
+            pass_criteria=request.pass_criteria,
+            timeout_ms=request.timeout_ms,
+        )
+
+        response = TestCaseUpdateResponse(
+            id=updated_test_case.id,
+            suite_id=updated_test_case.suite_id,
+            name=updated_test_case.name,
+            description=updated_test_case.description,
+            is_active=updated_test_case.is_active,
+            input_data=updated_test_case.input_data,
+            input_metadata=updated_test_case.input_metadata,
+            pass_criteria=updated_test_case.pass_criteria,
+            timeout_ms=updated_test_case.timeout_ms,
+        )
+
+        return response
+
+    except HTTPException as http_exc:
+        raise http_exc  # Re-raise known HTTP exceptions
+
+    except Exception as e:
+        logger.error(
+            f"Error partially updating test case with ID {case_id}: {e}. "
+            f"traceback: {traceback.format_exc()}"
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="An error occurred while partially updating the test case.",
         )
 
 

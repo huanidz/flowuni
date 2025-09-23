@@ -69,7 +69,6 @@ export interface FlowTestCase {
     input_data?: TestCaseInputData;
     pass_criteria?: TestCasePassCriteria;
     input_metadata?: TestCaseMetadata;
-    flow_definition?: Record<string, any>;
     timeout_ms?: number;
 }
 
@@ -224,7 +223,6 @@ export interface TestCaseGetResponse {
     name: string;
     description?: string;
     is_active: boolean;
-    flow_definition?: Record<string, any>;
     input_data?: Record<string, any>;
     input_metadata?: Record<string, any>;
     pass_criteria?: Record<string, any>;
