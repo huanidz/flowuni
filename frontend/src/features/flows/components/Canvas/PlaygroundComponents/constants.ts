@@ -6,7 +6,7 @@ export const CHAT_BOX_HEIGHT = 500; // h-[500px]
 export const CHAT_BOX_MARGIN = 16;
 
 // Timeout constants
-export const FLOW_EXECUTION_TIMEOUT = 5000; // 30 seconds
+export const FLOW_EXECUTION_TIMEOUT = 30000; // 30 seconds
 
 // Message constants
 export const USER_ID = 1;
