@@ -5,7 +5,8 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import type { FlowTestCase } from '../types';
+import type { TestCasePreview, FlowTestCase } from '../types';
+import { getTestCase } from '../api';
 import TestSuiteEditListPanel from './TestSuiteEditListPanel';
 import TestSuiteEditDetailPanel from './TestSuiteEditDetailPanel';
 
@@ -19,7 +20,7 @@ interface TestSuiteEditProps {
         description?: string;
         flow_id: string;
     };
-    testCases?: FlowTestCase[];
+    testCases?: TestCasePreview[];
 }
 
 /**
@@ -32,16 +33,38 @@ const TestSuiteEdit: React.FC<TestSuiteEditProps> = ({
     testCases = [],
 }) => {
     const [selectedTestCase, setSelectedTestCase] =
-        React.useState<FlowTestCase | null>(
-            testCases.length > 0 ? testCases[0] : null
-        );
+        React.useState<FlowTestCase | null>(null);
+    const [isLoadingTestCase, setIsLoadingTestCase] = React.useState(false);
 
     const handleClose = () => {
         onClose();
     };
 
-    const handleTestCaseSelect = (testCase: FlowTestCase) => {
-        setSelectedTestCase(testCase);
+    const handleTestCaseSelect = async (testCase: TestCasePreview) => {
+        if (selectedTestCase && selectedTestCase.id === testCase.id) {
+            return;
+        }
+
+        try {
+            setIsLoadingTestCase(true);
+            // Fetch the full test case data from the API
+            const testCaseData = await getTestCase(testCase.id);
+
+            // Convert TestCaseGetResponse to FlowTestCase for the detail panel
+            setSelectedTestCase({ ...testCaseData });
+        } catch (error) {
+            console.error('Error fetching test case:', error);
+            // Handle error appropriately (e.g., show a toast notification)
+        } finally {
+            setIsLoadingTestCase(false);
+        }
+    };
+
+    const handleTestCaseDelete = (deletedTestCaseId: number) => {
+        // Clear the selected test case if it's the one being deleted
+        if (selectedTestCase && selectedTestCase.id === deletedTestCaseId) {
+            setSelectedTestCase(null);
+        }
     };
 
     return (
@@ -60,12 +83,14 @@ const TestSuiteEdit: React.FC<TestSuiteEditProps> = ({
                         testCases={testCases}
                         selectedTestCase={selectedTestCase}
                         onTestCaseSelect={handleTestCaseSelect}
+                        onTestCaseDelete={handleTestCaseDelete}
                         suiteId={testSuite.id}
                     />
 
                     {/* Right Panel - Test Case Details */}
                     <TestSuiteEditDetailPanel
                         selectedTestCase={selectedTestCase}
+                        isLoading={isLoadingTestCase}
                     />
                 </div>
             </DialogContent>

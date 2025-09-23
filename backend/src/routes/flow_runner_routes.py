@@ -1,4 +1,5 @@
 import asyncio
+import json
 import traceback
 from datetime import datetime
 
@@ -132,10 +133,32 @@ async def stream_execution(
     queue_name = task_id  # Optionally: f"task:{task_id}"
 
     async def event_generator():
-        while not await request.is_disconnected():
-            # Wait (blocking) for the next message from Redis
-            result = await asyncio.to_thread(redis_client.blpop, queue_name, timeout=5)
+        # First, get all existing messages (if any) in correct order
+        existing_messages = redis_client.lrange(queue_name, 0, -1)
 
+        for raw_data in existing_messages:
+            message = (
+                raw_data.decode("utf-8") if isinstance(raw_data, bytes) else raw_data
+            )
+            yield f"data: {message}\n\n"
+
+            # Check if this was the DONE message
+            try:
+                parsed = json.loads(message)
+                if parsed.get("event") == "DONE":
+                    redis_client.delete(queue_name)
+                    return
+            except json.JSONDecodeError:
+                if message == "DONE":  # Fallback for non-JSON messages
+                    redis_client.delete(queue_name)
+                    return
+
+        # Clear the list since we've sent all existing messages
+        redis_client.delete(queue_name)
+
+        # Now continue with blocking pop for new messages
+        while not await request.is_disconnected():
+            result = await asyncio.to_thread(redis_client.blpop, queue_name, timeout=5)
             if result:
                 _, raw_data = result
                 message = (
@@ -144,10 +167,15 @@ async def stream_execution(
                     else raw_data
                 )
                 yield f"data: {message}\n\n"
-                if message == "DONE":
-                    break
 
-        # Optional: Clean up the Redis list
+                try:
+                    parsed = json.loads(message)
+                    if parsed.get("event") == "DONE":
+                        break
+                except json.JSONDecodeError:
+                    if message == "DONE":
+                        break
+
         redis_client.delete(queue_name)
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")

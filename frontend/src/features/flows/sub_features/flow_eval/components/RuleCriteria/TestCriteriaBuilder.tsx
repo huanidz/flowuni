@@ -1,57 +1,73 @@
 import React, { useState } from 'react';
 import RuleEditor from './RuleEditor';
-import type {
-    TestRule,
-    TestCriteria,
-    StringRule,
-    RegexRule,
-    LLMRule,
-} from './RuleEditor';
+import type { TestRule } from './RuleEditor';
+import TestCriteriaSummary from './TestCriteriaSummary';
+import { TEST_CRITERIA_RULE_TYPES } from '../../const';
+import type { TestCriteriaRuleType } from '../../const';
 
-// Main criteria builder component
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+
+type CriteriaWithConnectors = {
+    rules: TestRule[];
+    connectors: ('AND' | 'OR')[]; // connectors between rules
+};
+
 const TestCriteriaBuilder: React.FC<{
     criteria: string;
     onChange: (criteria: string) => void;
 }> = ({ criteria, onChange }) => {
-    // Parse criteria from string (JSON) or initialize empty
-    const parseCriteria = (str: string): TestCriteria => {
+    const parseCriteria = (str: string): CriteriaWithConnectors => {
         try {
-            return str ? JSON.parse(str) : { rules: [], logic: 'AND' };
+            const parsed = str
+                ? JSON.parse(str)
+                : { rules: [], connectors: [] };
+            return {
+                rules: parsed.rules ?? [],
+                connectors: parsed.connectors ?? [],
+            };
         } catch {
-            return { rules: [], logic: 'AND' };
+            return { rules: [], connectors: [] };
         }
     };
 
-    const [currentCriteria, setCurrentCriteria] = useState<TestCriteria>(
-        parseCriteria(criteria)
-    );
+    const [currentCriteria, setCurrentCriteria] =
+        useState<CriteriaWithConnectors>(parseCriteria(criteria));
+    const [ruleSelectKey, setRuleSelectKey] = useState(0);
 
-    const updateCriteria = (newCriteria: TestCriteria) => {
+    const updateCriteria = (newCriteria: CriteriaWithConnectors) => {
         setCurrentCriteria(newCriteria);
         onChange(JSON.stringify(newCriteria, null, 2));
     };
 
-    const addRule = (type: 'string' | 'regex' | 'llm_judge') => {
+    const addRule = (type: TestCriteriaRuleType) => {
         const id = Date.now().toString();
         let newRule: TestRule;
-
         switch (type) {
-            case 'string':
+            case TEST_CRITERIA_RULE_TYPES.STRING:
                 newRule = {
-                    type: 'string',
+                    type: TEST_CRITERIA_RULE_TYPES.STRING,
                     operation: 'contains',
                     value: '',
                     id,
                 };
                 break;
-            case 'regex':
-                newRule = { type: 'regex', pattern: '', id };
-                break;
-            case 'llm_judge':
+            case TEST_CRITERIA_RULE_TYPES.REGEX:
                 newRule = {
-                    type: 'llm_judge',
-                    model: 'gpt-4',
-                    temperature: 0.1,
+                    type: TEST_CRITERIA_RULE_TYPES.REGEX,
+                    pattern: '',
+                    id,
+                };
+                break;
+            case TEST_CRITERIA_RULE_TYPES.LLM_JUDGE:
+                newRule = {
+                    type: TEST_CRITERIA_RULE_TYPES.LLM_JUDGE,
+                    model: '', // Will be populated when user selects from dropdown
                     prompt: '',
                     id,
                 };
@@ -59,103 +75,104 @@ const TestCriteriaBuilder: React.FC<{
         }
 
         updateCriteria({
-            ...currentCriteria,
             rules: [...currentCriteria.rules, newRule],
+            connectors: [
+                ...currentCriteria.connectors,
+                currentCriteria.rules.length > 0 ? 'AND' : undefined,
+            ].filter(Boolean) as ('AND' | 'OR')[],
         });
+        setRuleSelectKey(k => k + 1);
     };
 
     const updateRule = (index: number, updatedRule: TestRule) => {
-        const newRules = [...currentCriteria.rules];
-        newRules[index] = updatedRule;
-        updateCriteria({ ...currentCriteria, rules: newRules });
+        const rules = [...currentCriteria.rules];
+        rules[index] = updatedRule;
+        updateCriteria({ ...currentCriteria, rules });
     };
 
     const deleteRule = (index: number) => {
-        const newRules = currentCriteria.rules.filter((_, i) => i !== index);
-        updateCriteria({ ...currentCriteria, rules: newRules });
+        const rules = currentCriteria.rules.filter((_, i) => i !== index);
+        const connectors = currentCriteria.connectors.filter(
+            (_, i) => i !== index && i !== index - 1
+        );
+        updateCriteria({ rules, connectors });
+    };
+
+    const toggleConnector = (index: number) => {
+        const connectors = [...currentCriteria.connectors];
+        connectors[index] = connectors[index] === 'AND' ? 'OR' : 'AND';
+        updateCriteria({ ...currentCriteria, connectors });
     };
 
     return (
-        <div className="space-y-3">
-            {currentCriteria.rules.map((rule, index) => (
-                <div key={rule.id}>
-                    <RuleEditor
-                        rule={rule}
-                        onChange={updatedRule => updateRule(index, updatedRule)}
-                        onDelete={() => deleteRule(index)}
-                    />
-                    {index < currentCriteria.rules.length - 1 && (
-                        <div className="text-center py-2">
-                            <span className="bg-slate-200 dark:bg-slate-700 px-3 py-1 rounded text-sm font-medium text-slate-600 dark:text-slate-400">
-                                {currentCriteria.logic}
-                            </span>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Left column - Logic Chain Summary (static) */}
+            <div className="md:col-span-1">
+                <div className="text-xs text-gray-500 mb-2">
+                    All criteria must pass for test to pass
+                </div>
+                <TestCriteriaSummary
+                    criteria={currentCriteria}
+                    onToggleConnector={toggleConnector}
+                />
+            </div>
+
+            {/* Right column - Rules list */}
+            <div className="md:col-span-2 space-y-0">
+                {currentCriteria.rules.map((rule, index) => (
+                    <React.Fragment key={rule.id}>
+                        {/* Rule without border */}
+                        <div className="py-2">
+                            <RuleEditor
+                                rule={rule}
+                                onChange={updatedRule =>
+                                    updateRule(index, updatedRule)
+                                }
+                                onDelete={() => deleteRule(index)}
+                            />
                         </div>
-                    )}
-                </div>
-            ))}
 
-            <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-700">
-                <div className="flex items-center gap-2">
-                    <div className="relative">
-                        <select
-                            onChange={e => {
-                                const type = e.target.value as
-                                    | 'string'
-                                    | 'regex'
-                                    | 'llm_judge';
-                                if (type) {
-                                    addRule(type);
-                                    e.target.value = '';
-                                }
-                            }}
-                            className="px-3 py-2 border border-slate-300 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-900"
-                            defaultValue=""
-                        >
-                            <option value="">+ Add Rule</option>
-                            <option value="string">String Rule</option>
-                            <option value="regex">Regex Rule</option>
-                            <option value="llm_judge">LLM Judge</option>
-                        </select>
-                    </div>
-                </div>
+                        {/* Connector between rules */}
+                        {index < currentCriteria.rules.length - 1 && (
+                            <div className="flex items-center justify-center py-3">
+                                <button
+                                    type="button"
+                                    onClick={() => toggleConnector(index)}
+                                    className="rounded-md border px-3 py-1 text-sm font-semibold text-primary hover:bg-accent hover:text-accent-foreground transition-colors"
+                                >
+                                    {currentCriteria.connectors[index]}
+                                </button>
+                            </div>
+                        )}
+                    </React.Fragment>
+                ))}
 
-                {currentCriteria.rules.length > 1 && (
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm text-slate-600 dark:text-slate-400">
-                            Logic:
-                        </span>
-                        <label className="flex items-center gap-1">
-                            <input
-                                type="radio"
-                                name="logic"
-                                value="AND"
-                                checked={currentCriteria.logic === 'AND'}
-                                onChange={e =>
-                                    updateCriteria({
-                                        ...currentCriteria,
-                                        logic: e.target.value as 'AND' | 'OR',
-                                    })
-                                }
-                            />
-                            <span className="text-sm">AND</span>
-                        </label>
-                        <label className="flex items-center gap-1">
-                            <input
-                                type="radio"
-                                name="logic"
-                                value="OR"
-                                checked={currentCriteria.logic === 'OR'}
-                                onChange={e =>
-                                    updateCriteria({
-                                        ...currentCriteria,
-                                        logic: e.target.value as 'AND' | 'OR',
-                                    })
-                                }
-                            />
-                            <span className="text-sm">OR</span>
-                        </label>
-                    </div>
-                )}
+                {/* New Rule dropdown */}
+                <div className="flex justify-center pt-6">
+                    <Select
+                        key={ruleSelectKey}
+                        onValueChange={(value: TestCriteriaRuleType) => {
+                            addRule(value);
+                        }}
+                    >
+                        <SelectTrigger className="w-[180px] text-sm">
+                            <SelectValue placeholder="+ Add Rule" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value={TEST_CRITERIA_RULE_TYPES.STRING}>
+                                String
+                            </SelectItem>
+                            <SelectItem value={TEST_CRITERIA_RULE_TYPES.REGEX}>
+                                Regex
+                            </SelectItem>
+                            <SelectItem
+                                value={TEST_CRITERIA_RULE_TYPES.LLM_JUDGE}
+                            >
+                                LLM Judge
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
         </div>
     );

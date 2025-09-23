@@ -359,10 +359,27 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
         (e: React.KeyboardEvent) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
+
+                // Clear any pending debounced update
+                if (messageUpdateTimeoutRef.current) {
+                    clearTimeout(messageUpdateTimeoutRef.current);
+                    messageUpdateTimeoutRef.current = null;
+                }
+
+                // Immediately update node input data with current message value
+                const trimmedMessage = message.trim();
+                if (trimmedMessage && chatInputNode?.id) {
+                    updateNodeInputData(
+                        chatInputNode.id,
+                        'message_in',
+                        trimmedMessage
+                    );
+                }
+
                 handleSendMessage();
             }
         },
-        [handleSendMessage]
+        [handleSendMessage, message, chatInputNode?.id, updateNodeInputData]
     );
 
     const handleMessageChange = useCallback(

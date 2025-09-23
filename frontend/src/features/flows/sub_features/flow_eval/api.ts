@@ -1,10 +1,11 @@
 import api from '@/api/secureClient';
 import type {
-    FlowTestSuiteWithCases,
     TestCaseCreateRequest,
     TestCaseCreateResponse,
+    TestCaseGetResponse,
     TestSuiteCreateRequest,
     TestSuiteCreateResponse,
+    TestSuitesWithCasePreviewsResponse,
 } from './types';
 
 /**
@@ -42,13 +43,23 @@ export const deleteTestCase = async (caseId: number): Promise<void> => {
 };
 
 /**
- * Get all test suites with their test cases for a specific flow
+ * Get all test suites with their test case previews for a specific flow
  */
 export const getTestSuitesWithCases = async (
     flowId: string
-): Promise<FlowTestSuiteWithCases[]> => {
-    const { data } = await api.get('/flow-tests/suites', {
-        params: { flow_id: flowId },
-    });
+): Promise<TestSuitesWithCasePreviewsResponse> => {
+    const { data } = await api.get(
+        `/flow-tests/suites-with-previews/${flowId}`
+    );
+    return data;
+};
+
+/**
+ * Get a test case by its ID
+ */
+export const getTestCase = async (
+    caseId: number
+): Promise<TestCaseGetResponse> => {
+    const { data } = await api.get(`/flow-tests/cases/${caseId}`);
     return data;
 };

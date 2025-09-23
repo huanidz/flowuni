@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import type { DraftTestCase, FlowTestCase } from '../types';
+import React, { useState } from 'react';
+import type { DraftTestCase, TestCasePreview, FlowTestCase } from '../types';
 import TestCaseCard from './TestCaseCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,9 +7,10 @@ import { Plus } from 'lucide-react';
 import { useCreateTestCase } from '../hooks';
 
 interface TestSuiteEditListPanelProps {
-    testCases: FlowTestCase[];
+    testCases: TestCasePreview[];
     selectedTestCase: FlowTestCase | null;
-    onTestCaseSelect: (testCase: FlowTestCase) => void;
+    onTestCaseSelect: (testCase: TestCasePreview) => void;
+    onTestCaseDelete?: (deletedTestCaseId: number) => void;
     suiteId: number;
 }
 
@@ -17,6 +18,7 @@ const TestSuiteEditListPanel: React.FC<TestSuiteEditListPanelProps> = ({
     testCases,
     selectedTestCase,
     onTestCaseSelect,
+    onTestCaseDelete,
     suiteId,
 }) => {
     const [draft, setDraft] = useState<DraftTestCase | null>(null);
@@ -86,6 +88,7 @@ const TestSuiteEditListPanel: React.FC<TestSuiteEditListPanelProps> = ({
                                 item={item}
                                 selectedTestCase={selectedTestCase}
                                 onTestCaseSelect={onTestCaseSelect}
+                                onTestCaseDelete={onTestCaseDelete}
                                 draft={draft}
                                 setDraft={setDraft}
                                 isCreating={createMutation.isPending}

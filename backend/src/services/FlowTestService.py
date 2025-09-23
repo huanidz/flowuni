@@ -1,8 +1,12 @@
+import json
 from abc import ABC, abstractmethod
 from typing import Optional
 
 from loguru import logger
+from redis import Redis
+from src.consts.cache_consts import CACHE_PREFIX
 from src.exceptions.shared_exceptions import NOT_FOUND_EXCEPTION
+from src.helpers.CacheHelper import CacheHelper
 from src.models.alchemy.flows.FlowTestCaseModel import FlowTestCaseModel
 from src.models.alchemy.flows.FlowTestSuiteModel import FlowTestSuiteModel
 from src.repositories.FlowTestRepository import FlowTestRepository
@@ -44,28 +48,15 @@ class FlowTestServiceInterface(ABC):
         pass
 
     @abstractmethod
-    def get_test_suites_with_cases_by_flow_id(
-        self, flow_id: str
-    ) -> list[FlowTestSuiteModel]:
-        """
-        Get all test suites with their test cases for a specific flow
-        """
-        pass
-
-    @abstractmethod
-    def create_test_case(
+    def create_empty_test_case(
         self,
         suite_id: int,
         name: str,
-        description: Optional[str] = None,
-        input_data: Optional[dict] = None,
-        expected_output: Optional[dict] = None,
-        test_metadata: Optional[dict] = None,
-        run_detail: Optional[dict] = None,
-        timeout_ms: Optional[float] = None,
+        desc: Optional[str] = None,
+        flow_definition: Optional[dict] = None,
     ) -> FlowTestCaseModel:
         """
-        Create a new test case for a test suite
+        Create a new empty test case for a test suite
         """
         pass
 
@@ -77,31 +68,16 @@ class FlowTestServiceInterface(ABC):
         pass
 
     @abstractmethod
-    def update_test_case(
-        self,
-        case_id: int,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        is_active: Optional[bool] = None,
-        input_data: Optional[dict] = None,
-        expected_output: Optional[dict] = None,
-        test_metadata: Optional[dict] = None,
-        run_detail: Optional[dict] = None,
-        timeout_ms: Optional[float] = None,
-        status: Optional[str] = None,
-        actual_output: Optional[dict] = None,
-        error_message: Optional[str] = None,
-        execution_time_ms: Optional[float] = None,
-    ) -> FlowTestCaseModel:
+    def delete_test_case(self, case_id: int) -> None:
         """
-        Update a test case by its ID
+        Delete a test case by its ID
         """
         pass
 
     @abstractmethod
-    def delete_test_case(self, case_id: int) -> None:
+    def get_test_suites_with_case_previews(self, flow_id: str) -> list[dict]:
         """
-        Delete a test case by its ID
+        Get all test suites for a specific flow with test case previews
         """
         pass
 
@@ -111,8 +87,12 @@ class FlowTestService(FlowTestServiceInterface):
     Flow test service implementation
     """
 
-    def __init__(self, test_repository: FlowTestRepository):
+    def __init__(
+        self, test_repository: FlowTestRepository, redis_client: Optional[Redis] = None
+    ):
         self.test_repository = test_repository
+        self.redis_client = redis_client
+        self.cache_helper = CacheHelper(redis_client, ttl=3600)
 
     def create_test_suite(
         self, flow_id: str, name: str, description: Optional[str] = None
@@ -178,39 +158,48 @@ class FlowTestService(FlowTestServiceInterface):
             logger.error(f"Error retrieving test suites for flow {flow_id}: {str(e)}")
             raise
 
-    def get_test_suites_with_cases_by_flow_id(
-        self, flow_id: str
-    ) -> list[FlowTestSuiteModel]:
+    def get_test_case_by_id(self, case_id: int) -> Optional[FlowTestCaseModel]:
         """
-        Get all test suites with their test cases for a specific flow
+        Get a test case by its ID
         """
+        cache_key = f"{CACHE_PREFIX.TEST_CASE}:{case_id}"
+
         try:
-            test_suites = self.test_repository.get_test_suites_with_cases_by_flow_id(
-                flow_id=flow_id
-            )
-            logger.info(
-                f"Successfully retrieved {len(test_suites)} test suites with cases for flow {flow_id}"
-            )
-            return test_suites
+            # Try to get from cache first
+            cached_test_case = self.cache_helper.get(cache_key, FlowTestCaseModel)
+            if cached_test_case:
+                logger.info(f"Retrieved test case with ID {case_id} from cache")
+                return cached_test_case
+
+            # Get from database if not in cache
+            test_case = self.test_repository.get_test_case_by_id(case_id=case_id)
+
+            if test_case:
+                logger.info(
+                    f"Successfully retrieved test case with ID {case_id} from database"
+                )
+
+                # Store in cache
+                test_case_dict = test_case.to_dict()
+                self.cache_helper.set(cache_key, test_case_dict)
+                logger.info(f"Cached test case with ID {case_id}")
+            else:
+                logger.info(f"Test case with ID {case_id} not found in database")
+
+            return test_case
         except Exception as e:
-            logger.error(
-                f"Error retrieving test suites with cases for flow {flow_id}: {str(e)}"
-            )
+            logger.error(f"Error retrieving test case with ID {case_id}: {str(e)}")
             raise
 
-    def create_test_case(
+    def create_empty_test_case(
         self,
         suite_id: int,
         name: str,
-        description: Optional[str] = None,
-        input_data: Optional[dict] = None,
-        expected_output: Optional[dict] = None,
-        test_metadata: Optional[dict] = None,
-        run_detail: Optional[dict] = None,
-        timeout_ms: Optional[float] = None,
+        desc: Optional[str] = None,
+        flow_definition: Optional[dict] = None,
     ) -> FlowTestCaseModel:
         """
-        Create a new test case for a test suite
+        Create a new empty test case for a test suite
         """
         try:
             # First check if the test suite exists
@@ -219,92 +208,25 @@ class FlowTestService(FlowTestServiceInterface):
                 logger.warning(f"Test suite with ID {suite_id} not found")
                 raise NOT_FOUND_EXCEPTION
 
-            test_case = self.test_repository.create_test_case(
-                suite_id=suite_id,
-                name=name,
-                description=description,
-                input_data=input_data,
-                expected_output=expected_output,
-                test_metadata=test_metadata,
-                run_detail=run_detail,
-                timeout_ms=timeout_ms,
+            test_case = self.test_repository.create_empty_test_case(
+                suite_id=suite_id, name=name, desc=desc, flow_definition=flow_definition
             )
             logger.info(
-                f"Successfully created test case '{name}' for test suite {suite_id}"
+                f"Successfully created empty test case '{name}' for suite {suite_id}"
             )
             return test_case
         except Exception as e:
             logger.error(
-                f"Error creating test case for test suite {suite_id}: {str(e)}"
+                f"Error creating empty test case for suite {suite_id}: {str(e)}"
             )
-            raise
-
-    def get_test_case_by_id(self, case_id: int) -> Optional[FlowTestCaseModel]:
-        """
-        Get a test case by its ID
-        """
-        try:
-            test_case = self.test_repository.get_test_case_by_id(case_id=case_id)
-            if test_case:
-                logger.info(f"Successfully retrieved test case with ID {case_id}")
-            else:
-                logger.info(f"Test case with ID {case_id} not found")
-            return test_case
-        except Exception as e:
-            logger.error(f"Error retrieving test case with ID {case_id}: {str(e)}")
-            raise
-
-    def update_test_case(
-        self,
-        case_id: int,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        is_active: Optional[bool] = None,
-        input_data: Optional[dict] = None,
-        expected_output: Optional[dict] = None,
-        test_metadata: Optional[dict] = None,
-        run_detail: Optional[dict] = None,
-        timeout_ms: Optional[float] = None,
-        status: Optional[str] = None,
-        actual_output: Optional[dict] = None,
-        error_message: Optional[str] = None,
-        execution_time_ms: Optional[float] = None,
-    ) -> FlowTestCaseModel:
-        """
-        Update a test case by its ID
-        """
-        try:
-            # First check if the test case exists
-            test_case = self.test_repository.get_test_case_by_id(case_id=case_id)
-            if not test_case:
-                logger.warning(f"Test case with ID {case_id} not found")
-                raise NOT_FOUND_EXCEPTION
-
-            updated_test_case = self.test_repository.update_test_case(
-                case_id=case_id,
-                name=name,
-                description=description,
-                is_active=is_active,
-                input_data=input_data,
-                expected_output=expected_output,
-                test_metadata=test_metadata,
-                run_detail=run_detail,
-                timeout_ms=timeout_ms,
-                status=status,
-                actual_output=actual_output,
-                error_message=error_message,
-                execution_time_ms=execution_time_ms,
-            )
-            logger.info(f"Successfully updated test case with ID {case_id}")
-            return updated_test_case
-        except Exception as e:
-            logger.error(f"Error updating test case with ID {case_id}: {str(e)}")
             raise
 
     def delete_test_case(self, case_id: int) -> None:
         """
         Delete a test case by its ID
         """
+        cache_key = f"{CACHE_PREFIX.TEST_CASE}:{case_id}"
+
         try:
             # First check if the test case exists
             test_case = self.test_repository.get_test_case_by_id(case_id=case_id)
@@ -313,7 +235,31 @@ class FlowTestService(FlowTestServiceInterface):
                 raise NOT_FOUND_EXCEPTION
 
             self.test_repository.delete_test_case(case_id=case_id)
-            logger.info(f"Successfully deleted test case with ID {case_id}")
+            logger.info(
+                f"Successfully deleted test case with ID {case_id} from database"
+            )
+
+            # Invalidate cache
+            self.cache_helper.delete(cache_key)
+            logger.info(f"Invalidated cache for test case with ID {case_id}")
         except Exception as e:
             logger.error(f"Error deleting test case with ID {case_id}: {str(e)}")
+            raise
+
+    def get_test_suites_with_case_previews(self, flow_id: str) -> list[dict]:
+        """
+        Get all test suites for a specific flow with test case previews
+        """
+        try:
+            test_suites = self.test_repository.get_test_suites_with_case_previews(
+                flow_id=flow_id
+            )
+            logger.info(
+                f"Successfully retrieved {len(test_suites)} test suites with case previews for flow {flow_id}"
+            )
+            return test_suites
+        except Exception as e:
+            logger.error(
+                f"Error retrieving test suites with case previews for flow {flow_id}: {str(e)}"
+            )
             raise

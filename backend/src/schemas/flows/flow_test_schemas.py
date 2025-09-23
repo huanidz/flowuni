@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, Field
 
@@ -25,51 +25,6 @@ class TestSuiteCreateResponse(BaseModel):
     is_active: bool = Field(True, description="Test suite status")
 
 
-class TestCaseResponse(BaseModel):
-    """
-    Response model for test case
-    """
-
-    id: int = Field(..., description="Test case ID")
-    case_id: int = Field(..., description="Test case unique ID")
-    suite_id: int = Field(..., description="Test suite ID")
-    name: str = Field(..., description="Test case name")
-    description: Optional[str] = Field(None, description="Test case description")
-    is_active: bool = Field(True, description="Test case status")
-    input_data: Optional[dict] = Field(None, description="Test case input data")
-    expected_output: Optional[dict] = Field(
-        None, description="Test case expected output"
-    )
-    test_metadata: Optional[dict] = Field(None, description="Test case metadata")
-    run_detail: Optional[dict] = Field(None, description="Test run details")
-    timeout_ms: Optional[float] = Field(
-        None, description="Test case timeout in milliseconds"
-    )
-    status: Optional[str] = Field(None, description="Test case execution status")
-    actual_output: Optional[dict] = Field(None, description="Test case actual output")
-    error_message: Optional[str] = Field(None, description="Test case error message")
-    execution_time_ms: Optional[float] = Field(
-        None, description="Test case execution time in milliseconds"
-    )
-
-
-class TestSuiteWithCasesResponse(BaseModel):
-    """
-    Response model for test suite with test cases
-    """
-
-    id: int = Field(..., description="Test suite ID")
-    suite_id: int = Field(..., description="Test suite unique ID")
-    flow_id: str = Field(..., description="Flow ID")
-    name: str = Field(..., description="Test suite name")
-    description: Optional[str] = Field(None, description="Test suite description")
-    is_active: bool = Field(True, description="Test suite status")
-    suite_metadata: Optional[dict] = Field(None, description="Test suite metadata")
-    test_cases: List[TestCaseResponse] = Field(
-        default_factory=list, description="List of test cases in the suite"
-    )
-
-
 class TestCaseCreateRequest(BaseModel):
     """
     Request model for creating a test case
@@ -77,38 +32,78 @@ class TestCaseCreateRequest(BaseModel):
 
     suite_id: int = Field(..., description="Test suite ID")
     name: str = Field(..., description="Test case name")
-    description: Optional[str] = Field(None, description="Test case description")
-    input_data: Optional[dict] = Field(None, description="Test case input data")
-    expected_output: Optional[dict] = Field(
-        None, description="Test case expected output"
-    )
-    test_metadata: Optional[dict] = Field(None, description="Test case metadata")
-    run_detail: Optional[dict] = Field(None, description="Test run details")
-    timeout_ms: Optional[float] = Field(
-        None, description="Test case timeout in milliseconds"
+    desc: Optional[str] = Field(None, description="Test case description")
+    flow_definition: Optional[Dict[str, Any]] = Field(
+        None, description="Flow definition"
     )
 
 
-class TestCaseUpdateRequest(BaseModel):
+class TestCaseCreateResponse(BaseModel):
     """
-    Request model for updating a test case
+    Response model for test case creation
     """
 
-    name: Optional[str] = Field(None, description="Test case name")
+    id: int = Field(..., description="Test case ID")
+    suite_id: int = Field(..., description="Test suite ID")
+    name: str = Field(..., description="Test case name")
     description: Optional[str] = Field(None, description="Test case description")
-    is_active: Optional[bool] = Field(None, description="Test case status")
-    input_data: Optional[dict] = Field(None, description="Test case input data")
-    expected_output: Optional[dict] = Field(
-        None, description="Test case expected output"
+    is_active: bool = Field(True, description="Test case status")
+    flow_definition: Optional[Dict[str, Any]] = Field(
+        None, description="Flow definition"
     )
-    test_metadata: Optional[dict] = Field(None, description="Test case metadata")
-    run_detail: Optional[dict] = Field(None, description="Test run details")
-    timeout_ms: Optional[float] = Field(
-        None, description="Test case timeout in milliseconds"
+
+
+class TestCaseGetResponse(BaseModel):
+    """
+    Response model for getting a test case
+    """
+
+    id: int = Field(..., description="Test case ID")
+    suite_id: int = Field(..., description="Test suite ID")
+    name: str = Field(..., description="Test case name")
+    description: Optional[str] = Field(None, description="Test case description")
+    is_active: Optional[bool] = Field(True, description="Test case status")
+    flow_definition: Optional[Dict[str, Any]] = Field(
+        None, description="Flow definition"
     )
-    status: Optional[str] = Field(None, description="Test case execution status")
-    actual_output: Optional[dict] = Field(None, description="Test case actual output")
-    error_message: Optional[str] = Field(None, description="Test case error message")
-    execution_time_ms: Optional[float] = Field(
-        None, description="Test case execution time in milliseconds"
+    input_data: Optional[Dict[str, Any]] = Field(None, description="Input data")
+    input_metadata: Optional[Dict[str, Any]] = Field(None, description="Input metadata")
+    pass_criteria: Optional[Dict[str, Any]] = Field(None, description="Pass criteria")
+    timeout_ms: Optional[float] = Field(None, description="Timeout in milliseconds")
+
+
+class TestCasePreview(BaseModel):
+    """
+    Preview model for test case with limited fields
+    """
+
+    id: int = Field(..., description="Test case ID")
+    suite_id: int = Field(..., description="Test suite ID")
+    name: str = Field(..., description="Test case name")
+    description: Optional[str] = Field(None, description="Test case description")
+    is_active: bool = Field(True, description="Test case status")
+
+
+class TestSuiteWithCasePreviews(BaseModel):
+    """
+    Response model for test suite with case previews
+    """
+
+    id: int = Field(..., description="Test suite ID")
+    flow_id: str = Field(..., description="Flow ID")
+    name: str = Field(..., description="Test suite name")
+    description: Optional[str] = Field(None, description="Test suite description")
+    is_active: bool = Field(True, description="Test suite status")
+    test_cases: list[TestCasePreview] = Field(
+        [], description="List of test case previews"
+    )
+
+
+class TestSuitesWithCasePreviewsResponse(BaseModel):
+    """
+    Response model for getting all test suites with case previews
+    """
+
+    test_suites: list[TestSuiteWithCasePreviews] = Field(
+        [], description="List of test suites with case previews"
     )

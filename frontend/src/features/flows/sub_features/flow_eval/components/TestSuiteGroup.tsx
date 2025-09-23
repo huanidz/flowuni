@@ -1,9 +1,9 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Edit, Trash2 } from 'lucide-react';
-import type { FlowTestSuiteWithCases } from '../types';
+import type { TestSuiteWithCasePreviews } from '../types';
 import { TestCaseStatus } from '../types';
-import TestCaseItem from './TestCaseItem';
+import TestCasePreviewItem from './TestCasePreviewItem';
 import TestStatusIndicator from './TestStatusIndicator';
 import TestSuiteEdit from './TestSuiteEdit';
 import { useDeleteTestSuite } from '../hooks';
@@ -13,7 +13,7 @@ const INITIAL_TEST_CASES_DISPLAYED = 3;
 const TEST_CASE_THRESHOLD_FOR_BUTTONS = 3;
 
 interface TestSuiteGroupProps {
-    testSuite: FlowTestSuiteWithCases;
+    testSuite: TestSuiteWithCasePreviews;
     selectedTestCases: Set<string>;
     onTestCaseSelect: (testCaseId: string) => void;
     expandedSuites: Set<string>;
@@ -31,44 +31,37 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
     onToggleExpand,
 }) => {
     const deleteTestSuiteMutation = useDeleteTestSuite();
-    const isExpanded = expandedSuites.has(testSuite.suite_id);
+    const isExpanded = expandedSuites.has(testSuite.id.toString());
     const { confirm, ConfirmationDialog } = useConfirmation();
     const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
     const [showAllTestCases, setShowAllTestCases] = React.useState(false);
 
     // Check if any test case in this suite is selected
     const hasSelectedTestCase = testSuite.test_cases.some(testCase =>
-        selectedTestCases.has(String(testCase.case_id))
+        selectedTestCases.has(String(testCase.id))
     );
 
     // Count selected test cases in this suite
     const selectedTestCaseCount = testSuite.test_cases.filter(testCase =>
-        selectedTestCases.has(String(testCase.case_id))
+        selectedTestCases.has(String(testCase.id))
     ).length;
 
     // Calculate suite statistics
     const totalTests = testSuite.test_cases.length;
-    const passedTests = testSuite.test_cases.filter(
-        tc => tc.status === TestCaseStatus.PASSED
-    ).length;
-    const failedTests = testSuite.test_cases.filter(
-        tc => tc.status === TestCaseStatus.FAILED
-    ).length;
-    const runningTests = testSuite.test_cases.filter(
-        tc => tc.status === TestCaseStatus.RUNNING
-    ).length;
-    const pendingTests = testSuite.test_cases.filter(
-        tc => tc.status === TestCaseStatus.PENDING || !tc.status
-    ).length;
+    // Note: With the new preview schema, we don't have status information
+    // All test cases are considered pending until we fetch full details
+    const passedTests = 0;
+    const failedTests = 0;
+    const runningTests = 0;
+    const pendingTests = totalTests;
 
     const toggleExpand = () => {
-        onToggleExpand(testSuite.suite_id);
+        onToggleExpand(testSuite.id.toString());
     };
 
     const getSuiteStatus = (): TestCaseStatus => {
-        if (runningTests > 0) return TestCaseStatus.RUNNING;
-        if (failedTests > 0) return TestCaseStatus.FAILED;
-        if (passedTests > 0) return TestCaseStatus.PASSED;
+        // Note: With the new preview schema, we don't have status information
+        // All test cases are considered pending until we fetch full details
         return TestCaseStatus.PENDING;
     };
 
@@ -242,7 +235,7 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
                                 )
                                 .map((testCase, index) => (
                                     <div
-                                        key={String(testCase.case_id)}
+                                        key={String(testCase.id)}
                                         className="relative flex items-start"
                                     >
                                         {/* Horizontal connector line */}
@@ -252,10 +245,10 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
 
                                         {/* Tree item with indentation */}
                                         <div className="pl-8 flex-1">
-                                            <TestCaseItem
+                                            <TestCasePreviewItem
                                                 testCase={testCase}
                                                 isSelected={selectedTestCases.has(
-                                                    String(testCase.case_id)
+                                                    String(testCase.id)
                                                 )}
                                                 onSelect={onTestCaseSelect}
                                                 suiteName={testSuite.name}
@@ -302,7 +295,7 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
                 onClose={() => setIsEditModalOpen(false)}
                 testSuite={{
                     id: testSuite.id,
-                    suite_id: testSuite.suite_id,
+                    suite_id: testSuite.id.toString(),
                     name: testSuite.name,
                     description: testSuite.description,
                     flow_id: testSuite.flow_id,

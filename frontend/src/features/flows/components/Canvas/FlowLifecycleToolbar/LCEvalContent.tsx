@@ -7,10 +7,12 @@ import {
     TestSuiteGroup,
 } from '../../../sub_features/flow_eval/components';
 import { TestCaseStatus } from '../../../sub_features/flow_eval/types';
-import type { TestStatistics as TestStatisticsType } from '../../../sub_features/flow_eval/types';
+import type {
+    TestStatistics as TestStatisticsType,
+    TestSuitesWithCasePreviewsResponse,
+} from '../../../sub_features/flow_eval/types';
 import { useTestSuitesWithCases } from '../../../sub_features/flow_eval/hooks';
 import useFlowStore from '@/features/flows/stores/flow_stores';
-
 
 /**
  * Main Flow Evaluation Content Component
@@ -36,13 +38,16 @@ const LCEvalContent: React.FC = () => {
 
     // Fetch test suites with cases
     const {
-        data: testSuites,
+        data: testSuitesData,
         isLoading,
         error,
     } = useTestSuitesWithCases(flowId);
 
+    // Extract the test suites array from the response
+    const testSuites = testSuitesData?.test_suites || [];
+
     const statistics = useMemo((): TestStatisticsType => {
-        if (!testSuites) {
+        if (!testSuites || testSuites.length === 0) {
             return {
                 total: 0,
                 passed: 0,
@@ -54,20 +59,14 @@ const LCEvalContent: React.FC = () => {
 
         const allTestCases = testSuites.flatMap(suite => suite.test_cases);
 
+        // Note: With the new preview schema, we don't have status information
+        // All test cases are considered pending until we fetch full details
         return {
             total: allTestCases.length,
-            passed: allTestCases.filter(
-                tc => tc.status === TestCaseStatus.PASSED
-            ).length,
-            failed: allTestCases.filter(
-                tc => tc.status === TestCaseStatus.FAILED
-            ).length,
-            pending: allTestCases.filter(
-                tc => tc.status === TestCaseStatus.PENDING || !tc.status
-            ).length,
-            running: allTestCases.filter(
-                tc => tc.status === TestCaseStatus.RUNNING
-            ).length,
+            passed: 0,
+            failed: 0,
+            pending: allTestCases.length,
+            running: 0,
         };
     }, [testSuites]);
 
@@ -123,7 +122,7 @@ const LCEvalContent: React.FC = () => {
     React.useEffect(() => {
         if (testSuites) {
             const allSuiteIds = new Set(
-                testSuites.map(suite => suite.suite_id)
+                testSuites.map(suite => suite.id.toString())
             );
             setExpandedSuites(allSuiteIds);
         }
@@ -193,7 +192,7 @@ const LCEvalContent: React.FC = () => {
                     ) : testSuites && testSuites.length > 0 ? (
                         testSuites.map(suite => (
                             <TestSuiteGroup
-                                key={suite.suite_id}
+                                key={suite.id}
                                 testSuite={suite}
                                 selectedTestCases={selectedTestCases}
                                 onTestCaseSelect={handleTestCaseSelect}

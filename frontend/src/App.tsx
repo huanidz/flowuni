@@ -10,6 +10,7 @@ import DashboardPage from './pages/DashboardPage';
 import FlowPage from './pages/FlowPage';
 import ApiKeyPage from './pages/ApiKeyPage';
 import AuthenticationPage from './pages/AuthenticationPage';
+import TemplatesPage from './pages/TemplatesPage';
 import ProtectedLayout from './features/auth/components/ProtectedLayout';
 import { Toaster } from './components/ui/sonner';
 function App() {
@@ -34,6 +35,10 @@ function App() {
                                 element={<Navigate to="flow" replace />}
                             />
                             <Route path="flow" element={<FlowPage />} />
+                            <Route
+                                path="templates"
+                                element={<TemplatesPage />}
+                            />
                             <Route path="api-keys" element={<ApiKeyPage />} />
                         </Route>
                     </Route>

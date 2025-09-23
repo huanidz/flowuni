@@ -47,4 +47,4 @@ const getStatusBadge = (status: TestCaseStatus) => {
     }
 };
 
-export { getStatusBadge };
+export default getStatusBadge;

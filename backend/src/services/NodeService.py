@@ -1,9 +1,11 @@
+import json
 from abc import ABC, abstractmethod
 
 from fastapi import HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 from loguru import logger
 from src.core.cache import generate_catalog_etag
+from src.dependencies.redis_dependency import get_redis_client
 from src.scripts.generate_node_catalog import generate_node_catalog
 
 
@@ -22,6 +24,7 @@ class NodeService(NodeServiceInterface):
     def get_catalog(self, request: Request) -> JSONResponse:
         """
         Generate and return the node catalog with proper cache headers.
+        Uses Redis for server-side caching.
 
         Args:
             request (Request): The incoming HTTP request
@@ -33,17 +36,29 @@ class NodeService(NodeServiceInterface):
             HTTPException: If there's an error generating the catalog
         """
         try:
-            # Get the current time for Last-Modified header
-            now = __import__("datetime").datetime.utcnow()
+            redis_client = get_redis_client()
+            cache_key = "node_catalog"
 
-            # Generate the catalog and ETag
-            catalog = self.generate_catalog()
+            # Try to get catalog from Redis cache
+            cached_catalog = redis_client.get(cache_key)
+            if cached_catalog:
+                catalog = json.loads(cached_catalog)
+            else:
+                # Generate the catalog
+                catalog = self.generate_catalog()
+                # Cache it in Redis for 1 hour (3600 seconds)
+                redis_client.setex(cache_key, 3600, json.dumps(catalog))
+
+            # Generate ETag from catalog
             etag = self.generate_etag(catalog)
 
             # Check for 304 Not Modified
             if request.headers.get("If-None-Match") == etag:
                 logger.info("304 Not Modified")
                 return Response(status_code=304, headers={"ETag": etag})
+
+            # Get the current time for Last-Modified header
+            now = __import__("datetime").datetime.utcnow()
 
             # Set proper cache headers for public caching
             headers = {

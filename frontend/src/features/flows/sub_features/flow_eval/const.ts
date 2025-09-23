@@ -1,7 +1,6 @@
-
 import { TestCaseStatus } from './types';
 
-
+/*
  * Test execution run types
  */
 export const TEST_RUN_TYPES = {
@@ -21,3 +20,18 @@ export const TEST_STATUS_COLORS = {
     [TestCaseStatus.FAILED]: '#ef4444', // red-500
     [TestCaseStatus.CANCEL]: '#6b7280', // gray-500
 } as const;
+
+/**
+ * Test criteria rule types
+ */
+export const TEST_CRITERIA_RULE_TYPES = {
+    STRING: 'string',
+    REGEX: 'regex',
+    LLM_JUDGE: 'llm_judge',
+} as const;
+
+/**
+ * Test criteria rule type union
+ */
+export type TestCriteriaRuleType =
+    (typeof TEST_CRITERIA_RULE_TYPES)[keyof typeof TEST_CRITERIA_RULE_TYPES];

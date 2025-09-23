@@ -32,7 +32,7 @@ export interface TestCaseInputData {
     [key: string]: any;
 }
 
-export interface TestCaseExpectedOutput {
+export interface TestCasePassCriteria {
     [key: string]: any;
 }
 
@@ -62,21 +62,15 @@ export interface FlowTestSuite {
  */
 export interface FlowTestCase {
     id: number;
-    case_id: string;
     suite_id: number;
     name: string;
     description?: string;
     is_active: boolean;
     input_data?: TestCaseInputData;
-    expected_output?: TestCaseExpectedOutput;
-    test_metadata?: TestCaseMetadata;
-    run_detail?: TestRunDetail;
+    pass_criteria?: TestCasePassCriteria;
+    input_metadata?: TestCaseMetadata;
+    flow_definition?: Record<string, any>;
     timeout_ms?: number;
-    status?: TestCaseStatus;
-    actual_output?: TestCaseActualOutput;
-    error_message?: string;
-    execution_time_ms?: number;
-    test_criteria?: Record<string, any>;
 }
 
 /**
@@ -155,7 +149,7 @@ export interface TestCaseCreateRequest {
     name: string;
     description?: string;
     input_data?: TestCaseInputData;
-    expected_output?: TestCaseExpectedOutput;
+    pass_criteria?: TestCasePassCriteria;
     test_metadata?: TestCaseMetadata;
     run_detail?: TestRunDetail;
     timeout_ms?: number;
@@ -172,7 +166,7 @@ export interface TestCaseCreateResponse {
     description?: string;
     is_active: boolean;
     input_data?: TestCaseInputData;
-    expected_output?: TestCaseExpectedOutput;
+    pass_criteria?: TestCasePassCriteria;
     test_metadata?: TestCaseMetadata;
     run_detail?: TestRunDetail;
     timeout_ms?: number;
@@ -189,4 +183,50 @@ export interface DraftTestCase {
     id: string; // Temporary ID for UI purposes
     name: string;
     isEditing: boolean;
+}
+
+/**
+ * Test Case Preview interface based on backend TestCasePreview
+ */
+export interface TestCasePreview {
+    id: number;
+    suite_id: number;
+    name: string;
+    description?: string;
+    is_active: boolean;
+}
+
+/**
+ * Test Suite with Case Previews interface based on backend TestSuiteWithCasePreviews
+ */
+export interface TestSuiteWithCasePreviews {
+    id: number;
+    flow_id: string;
+    name: string;
+    description?: string;
+    is_active: boolean;
+    test_cases: TestCasePreview[];
+}
+
+/**
+ * Test Suites with Case Previews Response interface based on backend TestSuitesWithCasePreviewsResponse
+ */
+export interface TestSuitesWithCasePreviewsResponse {
+    test_suites: TestSuiteWithCasePreviews[];
+}
+
+/**
+ * Test Case Get Response interface based on backend TestCaseGetResponse
+ */
+export interface TestCaseGetResponse {
+    id: number;
+    suite_id: number;
+    name: string;
+    description?: string;
+    is_active: boolean;
+    flow_definition?: Record<string, any>;
+    input_data?: Record<string, any>;
+    input_metadata?: Record<string, any>;
+    pass_criteria?: Record<string, any>;
+    timeout_ms?: number;
 }

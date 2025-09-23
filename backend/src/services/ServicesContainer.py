@@ -11,6 +11,10 @@ if TYPE_CHECKING:
         PlaygroundService,
         PlaygroundServiceInterface,
     )
+    from src.services.UserGlobalTemplateService import (
+        UserGlobalTemplateService,
+        UserGlobalTemplateServiceInterface,
+    )
     from src.services.UserService import UserService, UserServiceInterface
 
 
@@ -39,6 +43,9 @@ class ServicesContainer:
         self.flow_service: Optional[FlowServiceInterface] = None
         self.node_service: Optional[NodeServiceInterface] = None
         self.playground_service: Optional[PlaygroundServiceInterface] = None
+        self.user_global_template_service: Optional[
+            UserGlobalTemplateServiceInterface
+        ] = None
         self.user_service: Optional[UserServiceInterface] = None
 
         # Set provided services
