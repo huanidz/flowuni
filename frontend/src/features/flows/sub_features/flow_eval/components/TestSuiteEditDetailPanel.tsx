@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { FlowTestCase } from '../types';
 import { TestCaseStatus } from '../types';
-import { getStatusBadge } from '../utils';
+import getStatusBadge from '../utils';
 import TestCriteriaBuilder from './RuleCriteria/TestCriteriaBuilder';
 
 interface TestSuiteEditDetailPanelProps {

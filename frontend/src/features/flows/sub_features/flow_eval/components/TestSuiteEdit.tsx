@@ -41,6 +41,10 @@ const TestSuiteEdit: React.FC<TestSuiteEditProps> = ({
     };
 
     const handleTestCaseSelect = async (testCase: TestCasePreview) => {
+        if (selectedTestCase && selectedTestCase.id === testCase.id) {
+            return;
+        }
+
         try {
             setIsLoadingTestCase(true);
             // Fetch the full test case data from the API

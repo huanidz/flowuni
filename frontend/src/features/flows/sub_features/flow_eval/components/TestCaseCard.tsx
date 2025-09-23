@@ -1,7 +1,7 @@
 import React, { useRef, type KeyboardEvent } from 'react';
 import type { DraftTestCase, TestCasePreview, FlowTestCase } from '../types';
 import { TestCaseStatus } from '../types';
-import { getStatusBadge } from '../utils';
+import getStatusBadge from '../utils';
 import { Card, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
