@@ -9,7 +9,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
@@ -164,34 +163,37 @@ const TestCriteriaBuilder: React.FC<{
             </div>
 
             {/* Right column - Rules list */}
-            <div className="md:col-span-2 space-y-4">
+            <div className="md:col-span-2 space-y-0">
                 {currentCriteria.rules.map((rule, index) => (
-                    <div key={rule.id} className="rounded-md border p-3">
-                        <RuleEditor
-                            rule={rule}
-                            onChange={updatedRule =>
-                                updateRule(index, updatedRule)
-                            }
-                            onDelete={() => deleteRule(index)}
-                        />
+                    <React.Fragment key={rule.id}>
+                        {/* Rule without border */}
+                        <div className="py-2">
+                            <RuleEditor
+                                rule={rule}
+                                onChange={updatedRule =>
+                                    updateRule(index, updatedRule)
+                                }
+                                onDelete={() => deleteRule(index)}
+                            />
+                        </div>
+
+                        {/* Connector between rules */}
                         {index < currentCriteria.rules.length - 1 && (
-                            <div className="flex items-center my-2">
-                                <Separator className="flex-1" />
+                            <div className="flex items-center justify-center py-3">
                                 <button
                                     type="button"
                                     onClick={() => toggleConnector(index)}
-                                    className="mx-2 rounded-md border px-2 py-1 text-xs font-semibold text-primary hover:bg-accent hover:text-accent-foreground"
+                                    className="rounded-md border px-3 py-1 text-sm font-semibold text-primary hover:bg-accent hover:text-accent-foreground transition-colors"
                                 >
                                     {currentCriteria.connectors[index]}
                                 </button>
-                                <Separator className="flex-1" />
                             </div>
                         )}
-                    </div>
+                    </React.Fragment>
                 ))}
 
                 {/* New Rule dropdown */}
-                <div className="flex justify-center pt-2">
+                <div className="flex justify-center pt-6">
                     <Select
                         key={ruleSelectKey}
                         onValueChange={(
