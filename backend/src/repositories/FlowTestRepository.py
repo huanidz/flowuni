@@ -202,14 +202,14 @@ class FlowTestRepository(BaseRepository):
             logger.error(f"Error deleting test case with ID {case_id}: {e}")
             raise e
 
-    def update_test_case(
+    def update_test_case(  # noqa
         self,
         case_id: int,
         suite_id: Optional[int] = None,
         name: Optional[str] = None,
         description: Optional[str] = None,
         is_active: Optional[bool] = None,
-        input_data: Optional[Dict[str, Any]] = None,
+        input_text: Optional[str] = None,
         input_metadata: Optional[Dict[str, Any]] = None,
         pass_criteria: Optional[Dict[str, Any]] = None,
         timeout_ms: Optional[float] = None,
@@ -223,7 +223,7 @@ class FlowTestRepository(BaseRepository):
             name: New test case name (optional)
             description: New test case description (optional)
             is_active: New active status (optional)
-            input_data: New input data (optional)
+            input_text: New input data (optional)
             input_metadata: New input metadata (optional)
             pass_criteria: New pass criteria (optional)
             timeout_ms: New timeout in milliseconds (optional)
@@ -254,8 +254,8 @@ class FlowTestRepository(BaseRepository):
                 test_case.description = description
             if is_active is not None:
                 test_case.is_active = is_active
-            if input_data is not None:
-                test_case.input_data = input_data
+            if input_text is not None:
+                test_case.input_text = input_text
             if input_metadata is not None:
                 test_case.input_metadata = input_metadata
             if pass_criteria is not None:
@@ -285,7 +285,7 @@ class FlowTestRepository(BaseRepository):
 
         Returns:
             list[dict]: List of test suites with their test case previews (only needed fields)
-        """
+        """  # noqa
         try:
             # Get all test suites for the flow
             test_suites = (
@@ -335,12 +335,12 @@ class FlowTestRepository(BaseRepository):
                 result.append(suite_dict)
 
             logger.info(
-                f"Retrieved {len(result)} test suites with case previews for flow {flow_id}"
+                f"Retrieved {len(result)} test suites with case previews for flow {flow_id}"  # noqa
             )
             return result
         except Exception as e:
             logger.error(
-                f"Error retrieving test suites with case previews for flow {flow_id}: {e}"
+                f"Error retrieving test suites with case previews for flow {flow_id}: {e}"  # noqa
             )
             self.db_session.rollback()
             raise e

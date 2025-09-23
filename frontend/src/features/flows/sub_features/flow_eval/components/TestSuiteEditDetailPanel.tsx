@@ -18,16 +18,14 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
     onUpdateTestCase,
     isLoading = false,
 }) => {
-    const [input, setInput] = useState(
-        JSON.stringify(selectedTestCase?.input_data || {}, null, 2)
-    );
+    const [input, setInput] = useState(selectedTestCase?.input_text || '');
     const [testCriteria, setTestCriteria] = useState(
         JSON.stringify(selectedTestCase?.pass_criteria || {}, null, 2)
     );
 
     // Update local state when selectedTestCase changes
     React.useEffect(() => {
-        setInput(JSON.stringify(selectedTestCase?.input_data || {}, null, 2));
+        setInput(selectedTestCase?.input_text || '');
         setTestCriteria(
             JSON.stringify(selectedTestCase?.pass_criteria || {}, null, 2)
         );
@@ -36,7 +34,13 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
     const handleFieldChange = (field: string, value: string) => {
         if (selectedTestCase && onUpdateTestCase) {
             try {
-                if (field === 'input_data' || field === 'pass_criteria') {
+                if (field === 'input_text') {
+                    // input_text is now a string, no need to parse
+                    onUpdateTestCase({
+                        ...selectedTestCase,
+                        [field]: value,
+                    });
+                } else if (field === 'pass_criteria') {
                     const parsedValue = JSON.parse(value);
                     onUpdateTestCase({
                         ...selectedTestCase,
@@ -55,11 +59,11 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
     const handleSave = () => {
         if (selectedTestCase && onUpdateTestCase) {
             try {
-                const parsedInput = JSON.parse(input);
+                // input is now a string, no need to parse
                 const parsedCriteria = JSON.parse(testCriteria);
                 onUpdateTestCase({
                     ...selectedTestCase,
-                    input_data: parsedInput,
+                    input_text: input,
                     pass_criteria: parsedCriteria,
                 });
             } catch (error) {
@@ -129,7 +133,7 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
                     value={input as string}
                     onChange={e => {
                         setInput(e.target.value);
-                        handleFieldChange('input_data', e.target.value);
+                        handleFieldChange('input_text', e.target.value);
                     }}
                     placeholder="Enter test input..."
                     className="w-full h-40 p-3 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-mono text-sm resize-none"

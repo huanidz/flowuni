@@ -81,7 +81,7 @@ class FlowTestServiceInterface(ABC):
         name: Optional[str] = None,
         description: Optional[str] = None,
         is_active: Optional[bool] = None,
-        input_data: Optional[Dict[str, Any]] = None,
+        input_text: Optional[str] = None,
         input_metadata: Optional[Dict[str, Any]] = None,
         pass_criteria: Optional[Dict[str, Any]] = None,
         timeout_ms: Optional[float] = None,
@@ -95,7 +95,7 @@ class FlowTestServiceInterface(ABC):
             name: New test case name (optional)
             description: New test case description (optional)
             is_active: New active status (optional)
-            input_data: New input data (optional)
+            input_text: New input data (optional)
             input_metadata: New input metadata (optional)
             pass_criteria: New pass criteria (optional)
             timeout_ms: New timeout in milliseconds (optional)
@@ -283,7 +283,7 @@ class FlowTestService(FlowTestServiceInterface):
         name: Optional[str] = None,
         description: Optional[str] = None,
         is_active: Optional[bool] = None,
-        input_data: Optional[Dict[str, Any]] = None,
+        input_text: Optional[str] = None,
         input_metadata: Optional[Dict[str, Any]] = None,
         pass_criteria: Optional[Dict[str, Any]] = None,
         timeout_ms: Optional[float] = None,
@@ -297,7 +297,7 @@ class FlowTestService(FlowTestServiceInterface):
             name: New test case name (optional)
             description: New test case description (optional)
             is_active: New active status (optional)
-            input_data: New input data (optional)
+            input_text: New input data (optional)
             input_metadata: New input metadata (optional)
             pass_criteria: New pass criteria (optional)
             timeout_ms: New timeout in milliseconds (optional)
@@ -321,7 +321,7 @@ class FlowTestService(FlowTestServiceInterface):
                 name=name,
                 description=description,
                 is_active=is_active,
-                input_data=input_data,
+                input_text=input_text,
                 input_metadata=input_metadata,
                 pass_criteria=pass_criteria,
                 timeout_ms=timeout_ms,

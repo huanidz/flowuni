@@ -28,10 +28,6 @@ export interface TestCaseMetadata {
     [key: string]: any;
 }
 
-export interface TestCaseInputData {
-    [key: string]: any;
-}
-
 export interface TestCasePassCriteria {
     [key: string]: any;
 }
@@ -66,7 +62,7 @@ export interface FlowTestCase {
     name: string;
     description?: string;
     is_active: boolean;
-    input_data?: TestCaseInputData;
+    input_text?: string;
     pass_criteria?: TestCasePassCriteria;
     input_metadata?: TestCaseMetadata;
     timeout_ms?: number;
@@ -147,7 +143,7 @@ export interface TestCaseCreateRequest {
     suite_id: number;
     name: string;
     description?: string;
-    input_data?: TestCaseInputData;
+    input_text?: string;
     pass_criteria?: TestCasePassCriteria;
     test_metadata?: TestCaseMetadata;
     run_detail?: TestRunDetail;
@@ -164,7 +160,7 @@ export interface TestCaseCreateResponse {
     name: string;
     description?: string;
     is_active: boolean;
-    input_data?: TestCaseInputData;
+    input_text?: string;
     pass_criteria?: TestCasePassCriteria;
     test_metadata?: TestCaseMetadata;
     run_detail?: TestRunDetail;
@@ -223,7 +219,7 @@ export interface TestCaseGetResponse {
     name: string;
     description?: string;
     is_active: boolean;
-    input_data?: Record<string, any>;
+    input_text?: string;
     input_metadata?: Record<string, any>;
     pass_criteria?: Record<string, any>;
     timeout_ms?: number;
@@ -237,7 +233,7 @@ export interface TestCasePartialUpdateRequest {
     name?: string;
     description?: string;
     is_active?: boolean;
-    input_data?: Record<string, any>;
+    input_text?: string;
     input_metadata?: Record<string, any>;
     pass_criteria?: Record<string, any>;
     timeout_ms?: number;
@@ -252,7 +248,7 @@ export interface TestCaseUpdateResponse {
     name: string;
     description?: string;
     is_active: boolean;
-    input_data?: Record<string, any>;
+    input_text?: string;
     input_metadata?: Record<string, any>;
     pass_criteria?: Record<string, any>;
     timeout_ms?: number;
