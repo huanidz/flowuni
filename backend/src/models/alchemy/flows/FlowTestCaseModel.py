@@ -13,7 +13,6 @@ from sqlalchemy import (
     String,
     Text,
 )
-from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from src.models.alchemy.shared.AppBaseModel import AppBaseModel
@@ -49,29 +48,30 @@ class FlowTestCaseModel(AppBaseModel):
     )
     name = Column(String, nullable=False)
     description = Column(Text, nullable=True)
-    is_active = Column(Boolean, default=True)
+    is_active = Column(Boolean, default=True)  # Un-used field for now
 
     # test case data
+    flow_definition = Column(JSONB, nullable=False)
     input_data = Column(JSONB, nullable=True)
+    input_metadata = Column(JSONB, nullable=True)  # Prepare for future image input.
+
+    # Criteria (List of json object that will be validate with Pydantic for flexible expansion) # noqa
     pass_criteria = Column(JSONB, nullable=True)
-    test_metadata = Column(JSONB, nullable=True)
-    run_detail = Column(JSONB, nullable=True)
 
     # execution control
-    timeout_ms = Column(Float, nullable=True, default=300)
-
-    # execution results
-    status = Column(
-        SQLEnum(TestCaseStatus, name="test_case_status"),
-        nullable=True,
-        default=TestCaseStatus.PENDING,
-    )
-    actual_output = Column(JSONB, nullable=True)
-    error_message = Column(Text, nullable=True)
-    execution_time_ms = Column(Float, nullable=True)
+    timeout_ms = Column(
+        Float, nullable=True, default=300
+    )  # Upper-bound (TODO: Use in future)
 
     # relationships
     test_suite = relationship("FlowTestSuiteModel", back_populates="test_cases")
+
+    runs = relationship(
+        "FlowTestCaseRunModel",
+        back_populates="test_case",
+        cascade="all, delete-orphan",
+        lazy="dynamic",
+    )
 
     def __repr__(self) -> str:
         return (
