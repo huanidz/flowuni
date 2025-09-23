@@ -38,7 +38,7 @@ class FlowTestCaseModel(AppBaseModel):
     is_active = Column(Boolean, default=True)  # Un-used field for now
 
     # test case data
-    flow_definition = Column(JSONB, nullable=False)
+    flow_definition = Column(JSONB, nullable=False)  # TODO: May not this.
     input_data = Column(JSONB, nullable=True)
     input_metadata = Column(JSONB, nullable=True)  # Prepare for future image input.
 

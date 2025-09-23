@@ -18,9 +18,6 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
     onUpdateTestCase,
     isLoading = false,
 }) => {
-    const [description, setDescription] = useState(
-        selectedTestCase?.description || ''
-    );
     const [input, setInput] = useState(
         JSON.stringify(selectedTestCase?.input_data || {}, null, 2)
     );
@@ -30,7 +27,6 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
 
     // Update local state when selectedTestCase changes
     React.useEffect(() => {
-        setDescription(selectedTestCase?.description || '');
         setInput(JSON.stringify(selectedTestCase?.input_data || {}, null, 2));
         setTestCriteria(
             JSON.stringify(selectedTestCase?.pass_criteria || {}, null, 2)
@@ -52,6 +48,22 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
             } catch (error) {
                 console.error(`Error parsing ${field}:`, error);
                 // Don't update if JSON is invalid
+            }
+        }
+    };
+
+    const handleSave = () => {
+        if (selectedTestCase && onUpdateTestCase) {
+            try {
+                const parsedInput = JSON.parse(input);
+                const parsedCriteria = JSON.parse(testCriteria);
+                onUpdateTestCase({
+                    ...selectedTestCase,
+                    input_data: parsedInput,
+                    pass_criteria: parsedCriteria,
+                });
+            } catch (error) {
+                console.error('Error saving test case:', error);
             }
         }
     };
@@ -97,7 +109,15 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
                         {selectedTestCase.name}
                     </h3>
                 </div>
-                {getStatusBadge(TestCaseStatus.PENDING)}
+                <div className="flex items-center gap-3">
+                    {getStatusBadge(TestCaseStatus.PENDING)}
+                    <button
+                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                        onClick={handleSave}
+                    >
+                        Save
+                    </button>
+                </div>
             </div>
 
             {/* Input */}
@@ -128,23 +148,6 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
                         handleFieldChange('pass_criteria', criteria);
                     }}
                 />
-            </div>
-
-            {/* Bottom Info Row */}
-            <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
-                {/* <div className="flex items-center gap-2">
-                    <span>Description:</span>
-                    <input
-                        type="text"
-                        value={description}
-                        onChange={e => {
-                            setDescription(e.target.value);
-                            handleFieldChange('description', e.target.value);
-                        }}
-                        placeholder="Optional description"
-                        className="px-2 py-1 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm w-48"
-                    />
-                </div> */}
             </div>
         </div>
     );

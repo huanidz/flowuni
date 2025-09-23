@@ -1,0 +1,13 @@
+docker/
+architecture/
+.git/
+.vscode
+samples/
+frontend/
+.prettierrc
+.prettierignore
+.repomixignore
+.roomodes
+.ruff.toml
+Makefile
+.env.example
