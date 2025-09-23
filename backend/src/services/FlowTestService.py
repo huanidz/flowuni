@@ -6,6 +6,7 @@ from loguru import logger
 from redis import Redis
 from src.consts.cache_consts import CACHE_PREFIX
 from src.exceptions.shared_exceptions import NOT_FOUND_EXCEPTION
+from src.helpers.CacheHelper import CacheHelper
 from src.models.alchemy.flows.FlowTestCaseModel import FlowTestCaseModel
 from src.models.alchemy.flows.FlowTestSuiteModel import FlowTestSuiteModel
 from src.repositories.FlowTestRepository import FlowTestRepository
@@ -91,13 +92,7 @@ class FlowTestService(FlowTestServiceInterface):
     ):
         self.test_repository = test_repository
         self.redis_client = redis_client
-        self.cache_ttl = 3600  # 1 hour TTL for test case cache
-
-    def _get_test_case_cache_key(self, case_id: int) -> str:
-        """
-        Generate cache key for test case
-        """
-        return f"{CACHE_PREFIX.TEST_CASE}:{case_id}"
+        self.cache_helper = CacheHelper(redis_client, ttl=3600)
 
     def create_test_suite(
         self, flow_id: str, name: str, description: Optional[str] = None
@@ -167,23 +162,16 @@ class FlowTestService(FlowTestServiceInterface):
         """
         Get a test case by its ID
         """
-        cache_key = self._get_test_case_cache_key(case_id)
+        cache_key = f"{CACHE_PREFIX.TEST_CASE}:{case_id}"
 
         try:
-            # Try to get from cache first if Redis is available
-            if self.redis_client:
-                try:
-                    cached_data = self.redis_client.get(cache_key)
-                    if cached_data:
-                        logger.info(f"Retrieved test case with ID {case_id} from cache")
-                        test_case_dict = json.loads(cached_data)
-                        return FlowTestCaseModel(**test_case_dict)
-                except Exception as cache_error:
-                    logger.warning(
-                        f"Cache retrieval error for test case {case_id}: {str(cache_error)}"
-                    )
+            # Try to get from cache first
+            cached_test_case = self.cache_helper.get(cache_key, FlowTestCaseModel)
+            if cached_test_case:
+                logger.info(f"Retrieved test case with ID {case_id} from cache")
+                return cached_test_case
 
-            # Get from database if not in cache or Redis unavailable
+            # Get from database if not in cache
             test_case = self.test_repository.get_test_case_by_id(case_id=case_id)
 
             if test_case:
@@ -191,19 +179,10 @@ class FlowTestService(FlowTestServiceInterface):
                     f"Successfully retrieved test case with ID {case_id} from database"
                 )
 
-                # Store in cache if Redis is available
-                if self.redis_client:
-                    try:
-                        # Convert model to dict for JSON serialization using to_dict method
-                        test_case_dict = test_case.to_dict()
-                        self.redis_client.setex(
-                            cache_key, self.cache_ttl, json.dumps(test_case_dict)
-                        )
-                        logger.info(f"Cached test case with ID {case_id}")
-                    except Exception as cache_error:
-                        logger.warning(
-                            f"Cache storage error for test case {case_id}: {str(cache_error)}"
-                        )
+                # Store in cache
+                test_case_dict = test_case.to_dict()
+                self.cache_helper.set(cache_key, test_case_dict)
+                logger.info(f"Cached test case with ID {case_id}")
             else:
                 logger.info(f"Test case with ID {case_id} not found in database")
 
@@ -246,7 +225,7 @@ class FlowTestService(FlowTestServiceInterface):
         """
         Delete a test case by its ID
         """
-        cache_key = self._get_test_case_cache_key(case_id)
+        cache_key = f"{CACHE_PREFIX.TEST_CASE}:{case_id}"
 
         try:
             # First check if the test case exists
@@ -260,15 +239,9 @@ class FlowTestService(FlowTestServiceInterface):
                 f"Successfully deleted test case with ID {case_id} from database"
             )
 
-            # Invalidate cache if Redis is available
-            if self.redis_client:
-                try:
-                    self.redis_client.delete(cache_key)
-                    logger.info(f"Invalidated cache for test case with ID {case_id}")
-                except Exception as cache_error:
-                    logger.warning(
-                        f"Cache invalidation error for test case {case_id}: {str(cache_error)}"
-                    )
+            # Invalidate cache
+            self.cache_helper.delete(cache_key)
+            logger.info(f"Invalidated cache for test case with ID {case_id}")
         except Exception as e:
             logger.error(f"Error deleting test case with ID {case_id}: {str(e)}")
             raise
