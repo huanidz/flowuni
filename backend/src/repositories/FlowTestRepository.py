@@ -207,31 +207,65 @@ class FlowTestRepository(BaseRepository):
             logger.error(f"Error deleting test case with ID {case_id}: {e}")
             raise e
 
-    def get_test_suites_with_case_previews(
-        self, flow_id: str
-    ) -> list[FlowTestSuiteModel]:
+    def get_test_suites_with_case_previews(self, flow_id: str) -> list[dict]:
         """
         Get all test suites for a specific flow with their test case previews.
 
         Returns:
-            list[FlowTestSuiteModel]: List of test suites with their test cases
+            list[dict]: List of test suites with their test case previews (only needed fields)
         """
         try:
+            # Get all test suites for the flow
             test_suites = (
                 self.db_session.query(FlowTestSuiteModel)
                 .filter_by(flow_id=flow_id)
                 .all()
             )
 
-            # For each test suite, load the test cases relationship
+            result = []
+
+            # For each test suite, get only the needed fields from test cases
             for suite in test_suites:
-                # Access the test_cases relationship to ensure it's loaded
-                _ = suite.test_cases
+                suite_dict = {
+                    "id": suite.id,
+                    "flow_id": suite.flow_id,
+                    "name": suite.name,
+                    "description": suite.description,
+                    "is_active": suite.is_active,
+                    "test_cases": [],
+                }
+
+                # Query only the needed fields from test cases
+                test_cases = (
+                    self.db_session.query(
+                        FlowTestCaseModel.id,
+                        FlowTestCaseModel.suite_id,
+                        FlowTestCaseModel.name,
+                        FlowTestCaseModel.description,
+                        FlowTestCaseModel.is_active,
+                    )
+                    .filter_by(suite_id=suite.id)
+                    .all()
+                )
+
+                # Convert test case tuples to dictionaries
+                for case in test_cases:
+                    suite_dict["test_cases"].append(
+                        {
+                            "id": case.id,
+                            "suite_id": case.suite_id,
+                            "name": case.name,
+                            "description": case.description,
+                            "is_active": case.is_active,
+                        }
+                    )
+
+                result.append(suite_dict)
 
             logger.info(
-                f"Retrieved {len(test_suites)} test suites with case previews for flow {flow_id}"
+                f"Retrieved {len(result)} test suites with case previews for flow {flow_id}"
             )
-            return test_suites
+            return result
         except Exception as e:
             logger.error(
                 f"Error retrieving test suites with case previews for flow {flow_id}: {e}"

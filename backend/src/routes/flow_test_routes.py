@@ -367,29 +367,8 @@ async def list_test_suites_with_case_previews(
             flow_id=flow_id
         )
 
-        # Transform the data to match the response schema
-        response_data = []
-        for suite in test_suites:
-            suite_data = {
-                "id": suite.id,
-                "flow_id": suite.flow_id,
-                "name": suite.name,
-                "description": suite.description,
-                "is_active": suite.is_active,
-                "test_cases": [
-                    {
-                        "id": case.id,
-                        "suite_id": case.suite_id,
-                        "name": case.name,
-                        "description": case.description,
-                        "is_active": case.is_active,
-                    }
-                    for case in suite.test_cases
-                ],
-            }
-            response_data.append(suite_data)
-
-        return TestSuitesWithCasePreviewsResponse(test_suites=response_data)
+        # The data is already in the correct format from the service
+        return TestSuitesWithCasePreviewsResponse(test_suites=test_suites)
 
     except HTTPException as http_exc:
         raise http_exc  # Re-raise known HTTP exceptions

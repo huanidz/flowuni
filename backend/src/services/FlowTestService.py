@@ -71,9 +71,7 @@ class FlowTestServiceInterface(ABC):
         pass
 
     @abstractmethod
-    def get_test_suites_with_case_previews(
-        self, flow_id: str
-    ) -> list[FlowTestSuiteModel]:
+    def get_test_suites_with_case_previews(self, flow_id: str) -> list[dict]:
         """
         Get all test suites for a specific flow with test case previews
         """
@@ -214,9 +212,7 @@ class FlowTestService(FlowTestServiceInterface):
             logger.error(f"Error deleting test case with ID {case_id}: {str(e)}")
             raise
 
-    def get_test_suites_with_case_previews(
-        self, flow_id: str
-    ) -> list[FlowTestSuiteModel]:
+    def get_test_suites_with_case_previews(self, flow_id: str) -> list[dict]:
         """
         Get all test suites for a specific flow with test case previews
         """
