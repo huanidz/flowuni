@@ -55,6 +55,11 @@ const TestCriteriaBuilder: React.FC<{
         useState<CriteriaWithConnectors>(parseCriteria(criteria));
     const [ruleSelectKey, setRuleSelectKey] = useState(0);
 
+    // Update currentCriteria when the criteria prop changes
+    React.useEffect(() => {
+        setCurrentCriteria(parseCriteria(criteria));
+    }, [criteria]);
+
     const updateCriteria = (newCriteria: CriteriaWithConnectors) => {
         setCurrentCriteria(newCriteria);
 

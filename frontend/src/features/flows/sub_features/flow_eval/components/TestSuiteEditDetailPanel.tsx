@@ -21,13 +21,13 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
     isLoading = false,
 }) => {
     const [input, setInput] = useState(selectedTestCase?.input_text || '');
-    const [testCriteria, setTestCriteria] = useState(
-        JSON.stringify(
-            selectedTestCase?.pass_criteria || { rules: [], logics: [] },
-            null,
-            2
-        )
-    );
+    const [testCriteria, setTestCriteria] = useState(() => {
+        // Handle null or undefined pass_criteria
+        if (!selectedTestCase?.pass_criteria) {
+            return JSON.stringify({ rules: [], logics: [] }, null, 2);
+        }
+        return JSON.stringify(selectedTestCase.pass_criteria, null, 2);
+    });
     const [isEditingName, setIsEditingName] = useState(false);
     const [isEditingDescription, setIsEditingDescription] = useState(false);
     const [name, setName] = useState(selectedTestCase?.name || '');
@@ -40,13 +40,16 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
     // Update local state when selectedTestCase changes
     React.useEffect(() => {
         setInput(selectedTestCase?.input_text || '');
-        setTestCriteria(
-            JSON.stringify(
-                selectedTestCase?.pass_criteria || { rules: [], logics: [] },
-                null,
-                2
-            )
-        );
+
+        // Handle null or undefined pass_criteria properly
+        if (!selectedTestCase?.pass_criteria) {
+            setTestCriteria(JSON.stringify({ rules: [], logics: [] }, null, 2));
+        } else {
+            setTestCriteria(
+                JSON.stringify(selectedTestCase.pass_criteria, null, 2)
+            );
+        }
+
         setName(selectedTestCase?.name || '');
         setDescription(selectedTestCase?.description || '');
         setIsEditingName(false);
