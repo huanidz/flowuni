@@ -3,7 +3,61 @@
  * Based on backend FlowTestSuiteModel and FlowTestCaseModel
  */
 
-export type TestCaseStatus =
+// Define TestRule types directly to avoid circular imports
+export interface StringRuleConfig {
+    operation:
+        | 'contains'
+        | 'equals'
+        | 'starts_with'
+        | 'ends_with'
+        | 'not_contains'
+        | 'length_gt'
+        | 'length_lt'
+        | 'length_eq';
+    value: string;
+}
+
+export interface RegexRuleConfig {
+    pattern: string;
+    flags?: string[];
+}
+
+export interface LLMProviderConfig {
+    provider: string;
+    model: string;
+    api_key: string;
+    system_prompt?: string;
+    temperature?: number;
+    max_output_tokens?: number;
+}
+
+export interface LLMRuleConfig {
+    name?: string;
+    description?: string;
+    data?: LLMProviderConfig;
+}
+
+export interface StringRule {
+    type: 'string';
+    config: StringRuleConfig;
+    id: number;
+}
+
+export interface RegexRule {
+    type: 'regex';
+    config: RegexRuleConfig;
+    id: number;
+}
+
+export interface LLMRule {
+    type: 'llm_judge';
+    config: LLMRuleConfig;
+    id: number;
+}
+
+export type TestRule = StringRule | RegexRule | LLMRule;
+
+export type TestCaseRunStatus =
     | 'PENDING'
     | 'QUEUED'
     | 'RUNNING'
@@ -11,13 +65,13 @@ export type TestCaseStatus =
     | 'FAILED'
     | 'CANCEL';
 
-export const TestCaseStatus = {
-    PENDING: 'PENDING' as TestCaseStatus,
-    QUEUED: 'QUEUED' as TestCaseStatus,
-    RUNNING: 'RUNNING' as TestCaseStatus,
-    PASSED: 'PASSED' as TestCaseStatus,
-    FAILED: 'FAILED' as TestCaseStatus,
-    CANCEL: 'CANCEL' as TestCaseStatus,
+export const TestCaseRunStatus = {
+    PENDING: 'PENDING' as TestCaseRunStatus,
+    QUEUED: 'QUEUED' as TestCaseRunStatus,
+    RUNNING: 'RUNNING' as TestCaseRunStatus,
+    PASSED: 'PASSED' as TestCaseRunStatus,
+    FAILED: 'FAILED' as TestCaseRunStatus,
+    CANCEL: 'CANCEL' as TestCaseRunStatus,
 };
 
 export interface TestSuiteMetadata {
@@ -28,12 +82,9 @@ export interface TestCaseMetadata {
     [key: string]: any;
 }
 
-export interface TestCaseInputData {
-    [key: string]: any;
-}
-
 export interface TestCasePassCriteria {
-    [key: string]: any;
+    rules: TestRule[];
+    logics: string[]; // List of logic items ('AND' or 'OR')
 }
 
 export interface TestCaseActualOutput {
@@ -66,10 +117,9 @@ export interface FlowTestCase {
     name: string;
     description?: string;
     is_active: boolean;
-    input_data?: TestCaseInputData;
+    input_text?: string;
     pass_criteria?: TestCasePassCriteria;
     input_metadata?: TestCaseMetadata;
-    flow_definition?: Record<string, any>;
     timeout_ms?: number;
 }
 
@@ -94,7 +144,7 @@ export interface TestExecutionRequest {
  */
 export interface TestExecutionResult {
     test_case_id: string;
-    status: TestCaseStatus;
+    status: TestCaseRunStatus;
     execution_time_ms?: number;
     error_message?: string;
     actual_output?: TestCaseActualOutput;
@@ -138,7 +188,7 @@ export interface SelectedTestCase {
     id: string;
     name: string;
     suite_name: string;
-    status?: TestCaseStatus;
+    status?: TestCaseRunStatus;
 }
 
 /**
@@ -148,7 +198,7 @@ export interface TestCaseCreateRequest {
     suite_id: number;
     name: string;
     description?: string;
-    input_data?: TestCaseInputData;
+    input_text?: string;
     pass_criteria?: TestCasePassCriteria;
     test_metadata?: TestCaseMetadata;
     run_detail?: TestRunDetail;
@@ -165,12 +215,12 @@ export interface TestCaseCreateResponse {
     name: string;
     description?: string;
     is_active: boolean;
-    input_data?: TestCaseInputData;
+    input_text?: string;
     pass_criteria?: TestCasePassCriteria;
     test_metadata?: TestCaseMetadata;
     run_detail?: TestRunDetail;
     timeout_ms?: number;
-    status?: TestCaseStatus;
+    status?: TestCaseRunStatus;
     actual_output?: TestCaseActualOutput;
     error_message?: string;
     execution_time_ms?: number;
@@ -224,8 +274,36 @@ export interface TestCaseGetResponse {
     name: string;
     description?: string;
     is_active: boolean;
-    flow_definition?: Record<string, any>;
-    input_data?: Record<string, any>;
+    input_text?: string;
+    input_metadata?: Record<string, any>;
+    pass_criteria?: Record<string, any>;
+    timeout_ms?: number;
+}
+
+/**
+ * Test case partial update request interface based on backend TestCasePartialUpdateRequest
+ */
+export interface TestCasePartialUpdateRequest {
+    suite_id?: number;
+    name?: string;
+    description?: string;
+    is_active?: boolean;
+    input_text?: string;
+    input_metadata?: Record<string, any>;
+    pass_criteria?: Record<string, any>;
+    timeout_ms?: number;
+}
+
+/**
+ * Test case update response interface based on backend TestCaseUpdateResponse
+ */
+export interface TestCaseUpdateResponse {
+    id: number;
+    suite_id: number;
+    name: string;
+    description?: string;
+    is_active: boolean;
+    input_text?: string;
     input_metadata?: Record<string, any>;
     pass_criteria?: Record<string, any>;
     timeout_ms?: number;

@@ -1,7 +1,5 @@
 import React, { useRef, type KeyboardEvent } from 'react';
 import type { DraftTestCase, TestCasePreview, FlowTestCase } from '../types';
-import { TestCaseStatus } from '../types';
-import getStatusBadge from '../utils';
 import { Card, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -138,9 +136,6 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
                             </h4>
                         </div>
                         <div className="flex items-center gap-2">
-                            <div className="flex-shrink-0">
-                                {getStatusBadge(TestCaseStatus.PENDING)}
-                            </div>
                             <Button
                                 size="sm"
                                 variant="ghost"

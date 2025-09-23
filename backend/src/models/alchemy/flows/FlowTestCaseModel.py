@@ -38,8 +38,7 @@ class FlowTestCaseModel(AppBaseModel):
     is_active = Column(Boolean, default=True)  # Un-used field for now
 
     # test case data
-    flow_definition = Column(JSONB, nullable=False)
-    input_data = Column(JSONB, nullable=True)
+    input_text = Column(Text, nullable=True)
     input_metadata = Column(JSONB, nullable=True)  # Prepare for future image input.
 
     # Criteria (List of json object that will be validate with Pydantic for flexible expansion) # noqa

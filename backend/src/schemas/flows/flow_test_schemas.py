@@ -33,9 +33,6 @@ class TestCaseCreateRequest(BaseModel):
     suite_id: int = Field(..., description="Test suite ID")
     name: str = Field(..., description="Test case name")
     desc: Optional[str] = Field(None, description="Test case description")
-    flow_definition: Optional[Dict[str, Any]] = Field(
-        None, description="Flow definition"
-    )
 
 
 class TestCaseCreateResponse(BaseModel):
@@ -48,9 +45,6 @@ class TestCaseCreateResponse(BaseModel):
     name: str = Field(..., description="Test case name")
     description: Optional[str] = Field(None, description="Test case description")
     is_active: bool = Field(True, description="Test case status")
-    flow_definition: Optional[Dict[str, Any]] = Field(
-        None, description="Flow definition"
-    )
 
 
 class TestCaseGetResponse(BaseModel):
@@ -63,10 +57,7 @@ class TestCaseGetResponse(BaseModel):
     name: str = Field(..., description="Test case name")
     description: Optional[str] = Field(None, description="Test case description")
     is_active: Optional[bool] = Field(True, description="Test case status")
-    flow_definition: Optional[Dict[str, Any]] = Field(
-        None, description="Flow definition"
-    )
-    input_data: Optional[Dict[str, Any]] = Field(None, description="Input data")
+    input_text: Optional[str] = Field(None, description="Input data")
     input_metadata: Optional[Dict[str, Any]] = Field(None, description="Input metadata")
     pass_criteria: Optional[Dict[str, Any]] = Field(None, description="Pass criteria")
     timeout_ms: Optional[float] = Field(None, description="Timeout in milliseconds")
@@ -107,3 +98,49 @@ class TestSuitesWithCasePreviewsResponse(BaseModel):
     test_suites: list[TestSuiteWithCasePreviews] = Field(
         [], description="List of test suites with case previews"
     )
+
+
+class TestCaseUpdateRequest(BaseModel):
+    """
+    Request model for updating a test case (full update with PUT)
+    """
+
+    suite_id: Optional[int] = Field(None, description="Test suite ID")
+    name: Optional[str] = Field(None, description="Test case name")
+    description: Optional[str] = Field(None, description="Test case description")
+    is_active: Optional[bool] = Field(None, description="Test case status")
+    input_text: Optional[str] = Field(None, description="Input data")
+    input_metadata: Optional[Dict[str, Any]] = Field(None, description="Input metadata")
+    pass_criteria: Optional[Dict[str, Any]] = Field(None, description="Pass criteria")
+    timeout_ms: Optional[float] = Field(None, description="Timeout in milliseconds")
+
+
+class TestCasePartialUpdateRequest(BaseModel):
+    """
+    Request model for partially updating a test case (with PATCH)
+    """
+
+    suite_id: Optional[int] = Field(None, description="Test suite ID")
+    name: Optional[str] = Field(None, description="Test case name")
+    description: Optional[str] = Field(None, description="Test case description")
+    is_active: Optional[bool] = Field(None, description="Test case status")
+    input_text: Optional[str] = Field(None, description="Input data")
+    input_metadata: Optional[Dict[str, Any]] = Field(None, description="Input metadata")
+    pass_criteria: Optional[Dict[str, Any]] = Field(None, description="Pass criteria")
+    timeout_ms: Optional[float] = Field(None, description="Timeout in milliseconds")
+
+
+class TestCaseUpdateResponse(BaseModel):
+    """
+    Response model for test case update
+    """
+
+    id: int = Field(..., description="Test case ID")
+    suite_id: int = Field(..., description="Test suite ID")
+    name: str = Field(..., description="Test case name")
+    description: Optional[str] = Field(None, description="Test case description")
+    is_active: bool = Field(True, description="Test case status")
+    input_text: Optional[str] = Field(None, description="Input data")
+    input_metadata: Optional[Dict[str, Any]] = Field(None, description="Input metadata")
+    pass_criteria: Optional[Dict[str, Any]] = Field(None, description="Pass criteria")
+    timeout_ms: Optional[float] = Field(None, description="Timeout in milliseconds")

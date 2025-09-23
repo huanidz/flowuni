@@ -8,22 +8,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { TEST_CRITERIA_RULE_TYPES } from '../../const';
-
-export interface StringRule {
-    type: typeof TEST_CRITERIA_RULE_TYPES.STRING;
-    operation:
-        | 'contains'
-        | 'equals'
-        | 'starts_with'
-        | 'ends_with'
-        | 'not_contains'
-        | 'length_gt'
-        | 'length_lt'
-        | 'length_eq';
-    value: string;
-    id: string;
-}
+import type { StringRuleConfig, StringRule } from '../../types';
 
 interface StringRuleEditorProps {
     rule: StringRule;
@@ -60,11 +45,15 @@ const StringRuleEditor: React.FC<StringRuleEditorProps> = ({
             </div>
             <div className="flex gap-2">
                 <Select
-                    value={rule.operation}
+                    value={rule.config?.operation || 'contains'}
                     onValueChange={value =>
                         onChange({
                             ...rule,
-                            operation: value as StringRule['operation'],
+                            config: {
+                                ...rule.config,
+                                operation:
+                                    value as StringRuleConfig['operation'],
+                            },
                         })
                     }
                 >
@@ -86,8 +75,16 @@ const StringRuleEditor: React.FC<StringRuleEditorProps> = ({
                 </Select>
                 <input
                     type="text"
-                    value={rule.value}
-                    onChange={e => onChange({ ...rule, value: e.target.value })}
+                    value={rule.config?.value || ''}
+                    onChange={e =>
+                        onChange({
+                            ...rule,
+                            config: {
+                                ...rule.config,
+                                value: e.target.value,
+                            },
+                        })
+                    }
                     placeholder="Value"
                     className="flex-1 px-2 py-1 border border-slate-300 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-900"
                 />

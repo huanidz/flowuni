@@ -12,14 +12,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { TEST_CRITERIA_RULE_TYPES } from '../../const';
-
-export interface LLMRule {
-    type: typeof TEST_CRITERIA_RULE_TYPES.LLM_JUDGE;
-    model: string;
-    prompt: string;
-    id: string;
-}
+import type { LLMRule } from '../../types';
 
 interface LLMRuleEditorProps {
     rule: LLMRule;
@@ -80,9 +73,22 @@ const LLMRuleEditor: React.FC<LLMRuleEditorProps> = ({
             <div className="space-y-3">
                 <div className="flex gap-2">
                     <Select
-                        value={rule.model}
+                        value={rule.config?.data?.model || ''}
                         onValueChange={value =>
-                            onChange({ ...rule, model: value })
+                            onChange({
+                                ...rule,
+                                config: {
+                                    ...rule.config,
+                                    data: {
+                                        ...rule.config?.data,
+                                        provider:
+                                            rule.config?.data?.provider || '',
+                                        api_key:
+                                            rule.config?.data?.api_key || '',
+                                        model: value,
+                                    },
+                                },
+                            })
                         }
                         disabled={isLoading}
                     >
@@ -123,9 +129,21 @@ const LLMRuleEditor: React.FC<LLMRuleEditorProps> = ({
                     </Button>
                 </div>
                 <Textarea
-                    value={rule.prompt}
+                    value={rule.config?.data?.system_prompt || ''}
                     onChange={e =>
-                        onChange({ ...rule, prompt: e.target.value })
+                        onChange({
+                            ...rule,
+                            config: {
+                                ...rule.config,
+                                data: {
+                                    ...rule.config?.data,
+                                    provider: rule.config?.data?.provider || '',
+                                    api_key: rule.config?.data?.api_key || '',
+                                    model: rule.config?.data?.model || '',
+                                    system_prompt: e.target.value,
+                                },
+                            },
+                        })
                     }
                     placeholder="Prompt to evaluate test output..."
                     className="min-h-16 text-sm"

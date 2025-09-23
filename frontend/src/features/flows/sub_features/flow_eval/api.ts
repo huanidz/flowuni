@@ -3,6 +3,8 @@ import type {
     TestCaseCreateRequest,
     TestCaseCreateResponse,
     TestCaseGetResponse,
+    TestCasePartialUpdateRequest,
+    TestCaseUpdateResponse,
     TestSuiteCreateRequest,
     TestSuiteCreateResponse,
     TestSuitesWithCasePreviewsResponse,
@@ -61,5 +63,16 @@ export const getTestCase = async (
     caseId: number
 ): Promise<TestCaseGetResponse> => {
     const { data } = await api.get(`/flow-tests/cases/${caseId}`);
+    return data;
+};
+
+/**
+ * Partially update a test case by its ID
+ */
+export const partialUpdateTestCase = async (
+    caseId: number,
+    request: TestCasePartialUpdateRequest
+): Promise<TestCaseUpdateResponse> => {
+    const { data } = await api.patch(`/flow-tests/cases/${caseId}`, request);
     return data;
 };

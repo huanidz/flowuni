@@ -1,13 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { TEST_CRITERIA_RULE_TYPES } from '../../const';
-
-export interface RegexRule {
-    type: typeof TEST_CRITERIA_RULE_TYPES.REGEX;
-    pattern: string;
-    flags?: string;
-    id: string;
-}
+import type { RegexRule } from '../../types';
 
 interface RegexRuleEditorProps {
     rule: RegexRule;
@@ -45,17 +38,33 @@ const RegexRuleEditor: React.FC<RegexRuleEditorProps> = ({
             <div className="flex gap-2">
                 <input
                     type="text"
-                    value={rule.pattern}
+                    value={rule.config?.pattern || ''}
                     onChange={e =>
-                        onChange({ ...rule, pattern: e.target.value })
+                        onChange({
+                            ...rule,
+                            config: {
+                                ...rule.config,
+                                pattern: e.target.value,
+                            },
+                        })
                     }
                     placeholder="Pattern (e.g., ^[0-9]+$)"
                     className="flex-1 px-2 py-1 border border-slate-300 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-900 font-mono"
                 />
                 <input
                     type="text"
-                    value={rule.flags || ''}
-                    onChange={e => onChange({ ...rule, flags: e.target.value })}
+                    value={rule.config?.flags?.join(',') || ''}
+                    onChange={e =>
+                        onChange({
+                            ...rule,
+                            config: {
+                                ...rule.config,
+                                flags: e.target.value
+                                    ? e.target.value.split(',')
+                                    : undefined,
+                            },
+                        })
+                    }
                     placeholder="Flags"
                     className="w-16 px-2 py-1 border border-slate-300 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-900 font-mono"
                 />

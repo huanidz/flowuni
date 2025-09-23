@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import RuleEditor from './RuleEditor';
-import type { TestRule } from './RuleEditor';
+import type { TestRule } from '../../types';
 import TestCriteriaSummary from './TestCriteriaSummary';
 import { TEST_CRITERIA_RULE_TYPES } from '../../const';
 import type { TestCriteriaRuleType } from '../../const';
@@ -24,13 +24,28 @@ const TestCriteriaBuilder: React.FC<{
 }> = ({ criteria, onChange }) => {
     const parseCriteria = (str: string): CriteriaWithConnectors => {
         try {
+            // If the criteria is an object with rules and logics (new format)
+            // If it's an object with rules and connectors (old format), use it directly for backward compatibility
             const parsed = str
                 ? JSON.parse(str)
                 : { rules: [], connectors: [] };
-            return {
-                rules: parsed.rules ?? [],
-                connectors: parsed.connectors ?? [],
-            };
+
+            if (parsed.rules && parsed.logics) {
+                // New format: object with rules and logics
+                return {
+                    rules: parsed.rules ?? [],
+                    connectors: parsed.logics ?? [],
+                };
+            } else if (parsed.rules && parsed.connectors) {
+                // Old format: object with rules and connectors
+                return {
+                    rules: parsed.rules ?? [],
+                    connectors: parsed.connectors ?? [],
+                };
+            } else {
+                // Empty or invalid format
+                return { rules: [], connectors: [] };
+            }
         } catch {
             return { rules: [], connectors: [] };
         }
@@ -40,35 +55,56 @@ const TestCriteriaBuilder: React.FC<{
         useState<CriteriaWithConnectors>(parseCriteria(criteria));
     const [ruleSelectKey, setRuleSelectKey] = useState(0);
 
+    // Update currentCriteria when the criteria prop changes
+    React.useEffect(() => {
+        setCurrentCriteria(parseCriteria(criteria));
+    }, [criteria]);
+
     const updateCriteria = (newCriteria: CriteriaWithConnectors) => {
         setCurrentCriteria(newCriteria);
-        onChange(JSON.stringify(newCriteria, null, 2));
+
+        // Convert to the expected format: object with rules and logics
+        const passCriteria = {
+            rules: newCriteria.rules,
+            logics: newCriteria.connectors,
+        };
+
+        onChange(JSON.stringify(passCriteria, null, 2));
     };
 
     const addRule = (type: TestCriteriaRuleType) => {
-        const id = Date.now().toString();
+        const id = Date.now(); // Use number instead of string
         let newRule: TestRule;
         switch (type) {
             case TEST_CRITERIA_RULE_TYPES.STRING:
                 newRule = {
                     type: TEST_CRITERIA_RULE_TYPES.STRING,
-                    operation: 'contains',
-                    value: '',
+                    config: {
+                        operation: 'contains',
+                        value: '',
+                    },
                     id,
                 };
                 break;
             case TEST_CRITERIA_RULE_TYPES.REGEX:
                 newRule = {
                     type: TEST_CRITERIA_RULE_TYPES.REGEX,
-                    pattern: '',
+                    config: {
+                        pattern: '',
+                    },
                     id,
                 };
                 break;
             case TEST_CRITERIA_RULE_TYPES.LLM_JUDGE:
                 newRule = {
                     type: TEST_CRITERIA_RULE_TYPES.LLM_JUDGE,
-                    model: '', // Will be populated when user selects from dropdown
-                    prompt: '',
+                    config: {
+                        data: {
+                            provider: '',
+                            model: '',
+                            api_key: '',
+                        },
+                    },
                     id,
                 };
                 break;
