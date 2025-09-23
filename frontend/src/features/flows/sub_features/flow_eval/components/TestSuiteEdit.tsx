@@ -49,7 +49,6 @@ const TestSuiteEdit: React.FC<TestSuiteEditProps> = ({
             // Convert TestCaseGetResponse to FlowTestCase for the detail panel
             setSelectedTestCase({
                 id: testCaseData.id,
-                case_id: testCaseData.id,
                 suite_id: testCaseData.suite_id,
                 name: testCaseData.name,
                 description: testCaseData.description,

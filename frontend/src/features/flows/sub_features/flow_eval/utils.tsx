@@ -1,5 +1,4 @@
 import { TestCaseStatus } from './types';
-import type { TestCaseGetResponse, FlowTestCase } from './types';
 import { Badge } from '@/components/ui/badge';
 
 const getStatusBadge = (status: TestCaseStatus) => {
@@ -47,3 +46,5 @@ const getStatusBadge = (status: TestCaseStatus) => {
             );
     }
 };
+
+export default getStatusBadge;

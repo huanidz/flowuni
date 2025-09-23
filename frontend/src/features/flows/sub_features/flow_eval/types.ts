@@ -62,7 +62,6 @@ export interface FlowTestSuite {
  */
 export interface FlowTestCase {
     id: number;
-    case_id: number;
     suite_id: number;
     name: string;
     description?: string;
