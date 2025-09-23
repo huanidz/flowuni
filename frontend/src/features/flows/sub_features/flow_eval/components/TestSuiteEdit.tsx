@@ -47,18 +47,7 @@ const TestSuiteEdit: React.FC<TestSuiteEditProps> = ({
             const testCaseData = await getTestCase(testCase.id);
 
             // Convert TestCaseGetResponse to FlowTestCase for the detail panel
-            setSelectedTestCase({
-                id: testCaseData.id,
-                suite_id: testCaseData.suite_id,
-                name: testCaseData.name,
-                description: testCaseData.description,
-                is_active: testCaseData.is_active,
-                input_data: testCaseData.input_data,
-                pass_criteria: testCaseData.pass_criteria,
-                input_metadata: testCaseData.input_metadata,
-                flow_definition: testCaseData.flow_definition,
-                timeout_ms: testCaseData.timeout_ms,
-            });
+            setSelectedTestCase({ ...testCaseData });
         } catch (error) {
             console.error('Error fetching test case:', error);
             // Handle error appropriately (e.g., show a toast notification)
