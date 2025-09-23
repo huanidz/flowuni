@@ -1,5 +1,5 @@
 import React, { useRef, type KeyboardEvent } from 'react';
-import type { DraftTestCase, TestCasePreview } from '../types';
+import type { DraftTestCase, TestCasePreview, FlowTestCase } from '../types';
 import { TestCaseStatus } from '../types';
 import { getStatusBadge } from '../utils';
 import { Card, CardHeader } from '@/components/ui/card';
@@ -13,8 +13,9 @@ import { useDeleteTestCase } from '../hooks';
 interface TestCaseCardProps {
     item: TestCasePreview | DraftTestCase;
     isSelected?: boolean;
-    selectedTestCase?: TestCasePreview | null;
+    selectedTestCase?: FlowTestCase | null;
     onTestCaseSelect?: (testCase: TestCasePreview) => void;
+    onTestCaseDelete?: (deletedTestCaseId: number) => void;
     draft?: DraftTestCase | null;
     setDraft?: (draft: DraftTestCase | null) => void;
     isCreating?: boolean;
@@ -28,6 +29,7 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
     isSelected = false,
     selectedTestCase = null,
     onTestCaseSelect,
+    onTestCaseDelete,
     draft = null,
     setDraft,
     isCreating = false,
@@ -51,6 +53,7 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
             variant: 'destructive',
             onConfirm: async () => {
                 await deleteTestCaseMutation.mutateAsync(testCase.id);
+                onTestCaseDelete?.(testCase.id);
             },
         });
     };

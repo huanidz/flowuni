@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Optional
 
 from loguru import logger
+from redis import Redis
 from src.exceptions.shared_exceptions import NOT_FOUND_EXCEPTION
 from src.models.alchemy.flows.FlowTestCaseModel import FlowTestCaseModel
 from src.models.alchemy.flows.FlowTestSuiteModel import FlowTestSuiteModel
@@ -83,8 +84,11 @@ class FlowTestService(FlowTestServiceInterface):
     Flow test service implementation
     """
 
-    def __init__(self, test_repository: FlowTestRepository):
+    def __init__(
+        self, test_repository: FlowTestRepository, redis_client: Optional[Redis] = None
+    ):
         self.test_repository = test_repository
+        self.redis_client = redis_client
 
     def create_test_suite(
         self, flow_id: str, name: str, description: Optional[str] = None

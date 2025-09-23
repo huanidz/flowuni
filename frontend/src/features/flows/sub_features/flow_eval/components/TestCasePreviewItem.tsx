@@ -35,12 +35,6 @@ const TestCasePreviewItem: React.FC<TestCasePreviewItemProps> = ({
         handleSelect();
     };
 
-    const formatExecutionTime = (ms?: number) => {
-        if (!ms) return '';
-        if (ms < 1000) return `${ms}ms`;
-        return `${(ms / 1000).toFixed(2)}s`;
-    };
-
     return (
         <div
             className={`

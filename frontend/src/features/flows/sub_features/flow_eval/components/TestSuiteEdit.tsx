@@ -5,7 +5,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import type { TestCasePreview } from '../types';
+import type { TestCasePreview, FlowTestCase } from '../types';
 import TestSuiteEditListPanel from './TestSuiteEditListPanel';
 import TestSuiteEditDetailPanel from './TestSuiteEditDetailPanel';
 
@@ -32,16 +32,35 @@ const TestSuiteEdit: React.FC<TestSuiteEditProps> = ({
     testCases = [],
 }) => {
     const [selectedTestCase, setSelectedTestCase] =
-        React.useState<TestCasePreview | null>(
-            testCases.length > 0 ? testCases[0] : null
-        );
+        React.useState<FlowTestCase | null>(null);
 
     const handleClose = () => {
         onClose();
     };
 
     const handleTestCaseSelect = (testCase: TestCasePreview) => {
-        setSelectedTestCase(testCase);
+        // Convert TestCasePreview to FlowTestCase for the detail panel
+        setSelectedTestCase({
+            ...testCase,
+            case_id: `case_${testCase.id}`, // Generate a case_id since it's required
+            input_data: undefined,
+            pass_criteria: undefined,
+            test_metadata: undefined,
+            run_detail: undefined,
+            timeout_ms: undefined,
+            status: undefined,
+            actual_output: undefined,
+            error_message: undefined,
+            execution_time_ms: undefined,
+            test_criteria: undefined,
+        });
+    };
+
+    const handleTestCaseDelete = (deletedTestCaseId: number) => {
+        // Clear the selected test case if it's the one being deleted
+        if (selectedTestCase && selectedTestCase.id === deletedTestCaseId) {
+            setSelectedTestCase(null);
+        }
     };
 
     return (
@@ -60,6 +79,7 @@ const TestSuiteEdit: React.FC<TestSuiteEditProps> = ({
                         testCases={testCases}
                         selectedTestCase={selectedTestCase}
                         onTestCaseSelect={handleTestCaseSelect}
+                        onTestCaseDelete={handleTestCaseDelete}
                         suiteId={testSuite.id}
                     />
 
