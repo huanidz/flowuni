@@ -1,9 +1,7 @@
 import React from 'react';
 import type { TestCasePreview } from '../types';
-import { TestCaseStatus } from '../types';
-import { getStatusBadge } from '../utils';
 
-interface TestCaseItemProps {
+interface TestCasePreviewItemProps {
     testCase: TestCasePreview;
     isSelected?: boolean;
     onSelect?: (testCaseId: string) => void;
@@ -14,7 +12,7 @@ interface TestCaseItemProps {
 /**
  * Component to display individual test case with status and details
  */
-const TestCaseItem: React.FC<TestCaseItemProps> = ({
+const TestCasePreviewItem: React.FC<TestCasePreviewItemProps> = ({
     testCase,
     isSelected = false,
     onSelect,
@@ -99,13 +97,9 @@ const TestCaseItem: React.FC<TestCaseItemProps> = ({
                         </div>
                     </div>
                 </div>
-
-                <div className="flex items-center gap-2 flex-shrink-0">
-                    {getStatusBadge(TestCaseStatus.PENDING)}
-                </div>
             </div>
         </div>
     );
 };
 
-export default TestCaseItem;
+export default TestCasePreviewItem;

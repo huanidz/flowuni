@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Edit, Trash2 } from 'lucide-react';
 import type { TestSuiteWithCasePreviews } from '../types';
 import { TestCaseStatus } from '../types';
-import TestCaseItem from './TestCaseItem';
+import TestCasePreviewItem from './TestCasePreviewItem';
 import TestStatusIndicator from './TestStatusIndicator';
 import TestSuiteEdit from './TestSuiteEdit';
 import { useDeleteTestSuite } from '../hooks';
@@ -245,7 +245,7 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
 
                                         {/* Tree item with indentation */}
                                         <div className="pl-8 flex-1">
-                                            <TestCaseItem
+                                            <TestCasePreviewItem
                                                 testCase={testCase}
                                                 isSelected={selectedTestCases.has(
                                                     String(testCase.id)
