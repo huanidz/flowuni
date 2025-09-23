@@ -18,19 +18,6 @@ from sqlalchemy.orm import relationship
 from src.models.alchemy.shared.AppBaseModel import AppBaseModel
 
 
-class TestCaseStatus(Enum):
-    """
-    Enumeration for test case execution status.
-    """
-
-    PENDING = "PENDING"
-    QUEUED = "QUEUED"
-    RUNNING = "RUNNING"
-    PASSED = "PASSED"
-    FAILED = "FAILED"
-    CANCEL = "CANCEL"
-
-
 class FlowTestCaseModel(AppBaseModel):
     """
     Flow test case model for individual test scenarios within a test suite.
