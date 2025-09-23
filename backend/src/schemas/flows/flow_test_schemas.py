@@ -70,3 +70,40 @@ class TestCaseGetResponse(BaseModel):
     input_metadata: Optional[Dict[str, Any]] = Field(None, description="Input metadata")
     pass_criteria: Optional[Dict[str, Any]] = Field(None, description="Pass criteria")
     timeout_ms: Optional[float] = Field(None, description="Timeout in milliseconds")
+
+
+class TestCasePreview(BaseModel):
+    """
+    Preview model for test case with limited fields
+    """
+
+    id: int = Field(..., description="Test case ID")
+    suite_id: int = Field(..., description="Test suite ID")
+    name: str = Field(..., description="Test case name")
+    description: Optional[str] = Field(None, description="Test case description")
+    is_active: bool = Field(True, description="Test case status")
+
+
+class TestSuiteWithCasePreviews(BaseModel):
+    """
+    Response model for test suite with case previews
+    """
+
+    id: int = Field(..., description="Test suite ID")
+    flow_id: str = Field(..., description="Flow ID")
+    name: str = Field(..., description="Test suite name")
+    description: Optional[str] = Field(None, description="Test suite description")
+    is_active: bool = Field(True, description="Test suite status")
+    test_cases: list[TestCasePreview] = Field(
+        [], description="List of test case previews"
+    )
+
+
+class TestSuitesWithCasePreviewsResponse(BaseModel):
+    """
+    Response model for getting all test suites with case previews
+    """
+
+    test_suites: list[TestSuiteWithCasePreviews] = Field(
+        [], description="List of test suites with case previews"
+    )

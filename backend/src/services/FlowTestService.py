@@ -70,6 +70,15 @@ class FlowTestServiceInterface(ABC):
         """
         pass
 
+    @abstractmethod
+    def get_test_suites_with_case_previews(
+        self, flow_id: str
+    ) -> list[FlowTestSuiteModel]:
+        """
+        Get all test suites for a specific flow with test case previews
+        """
+        pass
+
 
 class FlowTestService(FlowTestServiceInterface):
     """
@@ -203,4 +212,24 @@ class FlowTestService(FlowTestServiceInterface):
             logger.info(f"Successfully deleted test case with ID {case_id}")
         except Exception as e:
             logger.error(f"Error deleting test case with ID {case_id}: {str(e)}")
+            raise
+
+    def get_test_suites_with_case_previews(
+        self, flow_id: str
+    ) -> list[FlowTestSuiteModel]:
+        """
+        Get all test suites for a specific flow with test case previews
+        """
+        try:
+            test_suites = self.test_repository.get_test_suites_with_case_previews(
+                flow_id=flow_id
+            )
+            logger.info(
+                f"Successfully retrieved {len(test_suites)} test suites with case previews for flow {flow_id}"
+            )
+            return test_suites
+        except Exception as e:
+            logger.error(
+                f"Error retrieving test suites with case previews for flow {flow_id}: {str(e)}"
+            )
             raise

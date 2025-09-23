@@ -14,6 +14,7 @@ from src.schemas.flows.flow_test_schemas import (
     TestCaseGetResponse,
     TestSuiteCreateRequest,
     TestSuiteCreateResponse,
+    TestSuitesWithCasePreviewsResponse,
 )
 from src.services.FlowService import FlowService
 from src.services.FlowTestService import FlowTestService
@@ -330,4 +331,75 @@ async def get_test_case(
         raise HTTPException(
             status_code=500,
             detail="An error occurred while getting the test case.",
+        )
+
+
+@flow_test_router.get(
+    "/suites-with-previews/{flow_id}",
+    response_model=TestSuitesWithCasePreviewsResponse,
+)
+async def list_test_suites_with_case_previews(
+    flow_id: str = Path(..., description="Flow ID"),
+    flow_test_service: FlowTestService = Depends(get_flow_test_service),
+    flow_service: FlowService = Depends(get_flow_service),
+    auth_user_id: int = Depends(get_current_user),
+):
+    """
+    Get all test suites for a flow with test case previews
+    """
+    try:
+        # Verify the flow exists and the user has access to it
+        flow = flow_service.get_flow_detail_by_id(flow_id=flow_id)
+        if not flow:
+            logger.warning(f"Flow with ID {flow_id} not found")
+            raise NOT_FOUND_EXCEPTION
+
+        # Check if the user is the owner of the flow
+        if flow.user_id != auth_user_id:
+            logger.warning(
+                f"User ID mismatch: flow owner is {flow.user_id}, "
+                f"but requester is {auth_user_id}"
+            )
+            raise UNAUTHORIZED_EXCEPTION
+
+        # Get test suites with case previews
+        test_suites = flow_test_service.get_test_suites_with_case_previews(
+            flow_id=flow_id
+        )
+
+        # Transform the data to match the response schema
+        response_data = []
+        for suite in test_suites:
+            suite_data = {
+                "id": suite.id,
+                "flow_id": suite.flow_id,
+                "name": suite.name,
+                "description": suite.description,
+                "is_active": suite.is_active,
+                "test_cases": [
+                    {
+                        "id": case.id,
+                        "suite_id": case.suite_id,
+                        "name": case.name,
+                        "description": case.description,
+                        "is_active": case.is_active,
+                    }
+                    for case in suite.test_cases
+                ],
+            }
+            response_data.append(suite_data)
+
+        return TestSuitesWithCasePreviewsResponse(test_suites=response_data)
+
+    except HTTPException as http_exc:
+        raise http_exc  # Re-raise known HTTP exceptions
+
+    except Exception as e:
+        logger.error(
+            f"Error getting test suites with case previews for flow {flow_id}: {e}. "
+            f"traceback: {traceback.format_exc()}"
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="An error occurred while getting the test suites with case previews.",
         )

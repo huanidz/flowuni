@@ -206,3 +206,35 @@ class FlowTestRepository(BaseRepository):
             self.db_session.rollback()
             logger.error(f"Error deleting test case with ID {case_id}: {e}")
             raise e
+
+    def get_test_suites_with_case_previews(
+        self, flow_id: str
+    ) -> list[FlowTestSuiteModel]:
+        """
+        Get all test suites for a specific flow with their test case previews.
+
+        Returns:
+            list[FlowTestSuiteModel]: List of test suites with their test cases
+        """
+        try:
+            test_suites = (
+                self.db_session.query(FlowTestSuiteModel)
+                .filter_by(flow_id=flow_id)
+                .all()
+            )
+
+            # For each test suite, load the test cases relationship
+            for suite in test_suites:
+                # Access the test_cases relationship to ensure it's loaded
+                _ = suite.test_cases
+
+            logger.info(
+                f"Retrieved {len(test_suites)} test suites with case previews for flow {flow_id}"
+            )
+            return test_suites
+        except Exception as e:
+            logger.error(
+                f"Error retrieving test suites with case previews for flow {flow_id}: {e}"
+            )
+            self.db_session.rollback()
+            raise e
