@@ -5,7 +5,12 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import type { TestCasePreview, FlowTestCase } from '../types';
+import type {
+    TestCasePreview,
+    FlowTestCase,
+    TestCaseGetResponse,
+} from '../types';
+import { getTestCase } from '../api';
 import TestSuiteEditListPanel from './TestSuiteEditListPanel';
 import TestSuiteEditDetailPanel from './TestSuiteEditDetailPanel';
 
@@ -33,27 +38,43 @@ const TestSuiteEdit: React.FC<TestSuiteEditProps> = ({
 }) => {
     const [selectedTestCase, setSelectedTestCase] =
         React.useState<FlowTestCase | null>(null);
+    const [isLoadingTestCase, setIsLoadingTestCase] = React.useState(false);
 
     const handleClose = () => {
         onClose();
     };
 
-    const handleTestCaseSelect = (testCase: TestCasePreview) => {
-        // Convert TestCasePreview to FlowTestCase for the detail panel
-        setSelectedTestCase({
-            ...testCase,
-            case_id: `case_${testCase.id}`, // Generate a case_id since it's required
-            input_data: undefined,
-            pass_criteria: undefined,
-            test_metadata: undefined,
-            run_detail: undefined,
-            timeout_ms: undefined,
-            status: undefined,
-            actual_output: undefined,
-            error_message: undefined,
-            execution_time_ms: undefined,
-            test_criteria: undefined,
-        });
+    const handleTestCaseSelect = async (testCase: TestCasePreview) => {
+        try {
+            setIsLoadingTestCase(true);
+            // Fetch the full test case data from the API
+            const testCaseData = await getTestCase(testCase.id);
+
+            // Convert TestCaseGetResponse to FlowTestCase for the detail panel
+            setSelectedTestCase({
+                id: testCaseData.id,
+                case_id: `case_${testCaseData.id}`, // Generate a case_id since it's required
+                suite_id: testCaseData.suite_id,
+                name: testCaseData.name,
+                description: testCaseData.description,
+                is_active: testCaseData.is_active,
+                input_data: testCaseData.input_data,
+                pass_criteria: testCaseData.pass_criteria,
+                test_metadata: testCaseData.input_metadata, // Map input_metadata to test_metadata
+                run_detail: undefined,
+                timeout_ms: testCaseData.timeout_ms,
+                status: undefined,
+                actual_output: undefined,
+                error_message: undefined,
+                execution_time_ms: undefined,
+                test_criteria: undefined,
+            });
+        } catch (error) {
+            console.error('Error fetching test case:', error);
+            // Handle error appropriately (e.g., show a toast notification)
+        } finally {
+            setIsLoadingTestCase(false);
+        }
     };
 
     const handleTestCaseDelete = (deletedTestCaseId: number) => {
@@ -86,6 +107,7 @@ const TestSuiteEdit: React.FC<TestSuiteEditProps> = ({
                     {/* Right Panel - Test Case Details */}
                     <TestSuiteEditDetailPanel
                         selectedTestCase={selectedTestCase}
+                        isLoading={isLoadingTestCase}
                     />
                 </div>
             </DialogContent>

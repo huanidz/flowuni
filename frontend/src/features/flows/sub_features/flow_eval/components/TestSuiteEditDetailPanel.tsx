@@ -7,6 +7,7 @@ import TestCriteriaBuilder from './RuleCriteria/TestCriteriaBuilder';
 interface TestSuiteEditDetailPanelProps {
     selectedTestCase: FlowTestCase | null;
     onUpdateTestCase?: (testCase: FlowTestCase) => void;
+    isLoading?: boolean;
 }
 
 /**
@@ -15,28 +16,61 @@ interface TestSuiteEditDetailPanelProps {
 const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
     selectedTestCase,
     onUpdateTestCase,
+    isLoading = false,
 }) => {
     const [description, setDescription] = useState(
         selectedTestCase?.description || ''
     );
-    // Note: With the new preview schema, we don't have input_data or test_criteria
-    // These would need to be fetched separately when editing a test case
-    const [input, setInput] = useState('');
-    const [testCriteria, setTestCriteria] = useState('');
+    const [input, setInput] = useState(
+        JSON.stringify(selectedTestCase?.input_data || {}, null, 2)
+    );
+    const [testCriteria, setTestCriteria] = useState(
+        JSON.stringify(selectedTestCase?.pass_criteria || {}, null, 2)
+    );
 
     // Update local state when selectedTestCase changes
     React.useEffect(() => {
         setDescription(selectedTestCase?.description || '');
-        // Reset input and criteria since they're not available in the preview
-        setInput('');
-        setTestCriteria('');
+        setInput(JSON.stringify(selectedTestCase?.input_data || {}, null, 2));
+        setTestCriteria(
+            JSON.stringify(selectedTestCase?.pass_criteria || {}, null, 2)
+        );
     }, [selectedTestCase]);
 
     const handleFieldChange = (field: string, value: string) => {
         if (selectedTestCase && onUpdateTestCase) {
-            onUpdateTestCase({ ...selectedTestCase, [field]: value });
+            try {
+                if (field === 'input_data' || field === 'pass_criteria') {
+                    const parsedValue = JSON.parse(value);
+                    onUpdateTestCase({
+                        ...selectedTestCase,
+                        [field]: parsedValue,
+                    });
+                } else {
+                    onUpdateTestCase({ ...selectedTestCase, [field]: value });
+                }
+            } catch (error) {
+                console.error(`Error parsing ${field}:`, error);
+                // Don't update if JSON is invalid
+            }
         }
     };
+
+    if (isLoading) {
+        return (
+            <div className="w-full md:w-2/3 bg-white dark:bg-slate-800 p-8 text-center flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
+                        Loading Test Case
+                    </h3>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm">
+                        Fetching test case details...
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
     if (!selectedTestCase) {
         return (
@@ -75,7 +109,7 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
                     value={input as string}
                     onChange={e => {
                         setInput(e.target.value);
-                        handleFieldChange('input', e.target.value);
+                        handleFieldChange('input_data', e.target.value);
                     }}
                     placeholder="Enter test input..."
                     className="w-full h-40 p-3 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-mono text-sm resize-none"
@@ -91,7 +125,7 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
                     criteria={testCriteria as string}
                     onChange={criteria => {
                         setTestCriteria(criteria);
-                        handleFieldChange('test_criteria', criteria);
+                        handleFieldChange('pass_criteria', criteria);
                     }}
                 />
             </div>

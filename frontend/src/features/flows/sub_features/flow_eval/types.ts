@@ -220,3 +220,19 @@ export interface TestSuiteWithCasePreviews {
 export interface TestSuitesWithCasePreviewsResponse {
     test_suites: TestSuiteWithCasePreviews[];
 }
+
+/**
+ * Test Case Get Response interface based on backend TestCaseGetResponse
+ */
+export interface TestCaseGetResponse {
+    id: number;
+    suite_id: number;
+    name: string;
+    description?: string;
+    is_active: boolean;
+    flow_definition?: Record<string, any>;
+    input_data?: Record<string, any>;
+    input_metadata?: Record<string, any>;
+    pass_criteria?: Record<string, any>;
+    timeout_ms?: number;
+}

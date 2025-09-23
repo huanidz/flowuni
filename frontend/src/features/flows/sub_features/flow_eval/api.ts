@@ -2,6 +2,7 @@ import api from '@/api/secureClient';
 import type {
     TestCaseCreateRequest,
     TestCaseCreateResponse,
+    TestCaseGetResponse,
     TestSuiteCreateRequest,
     TestSuiteCreateResponse,
     TestSuitesWithCasePreviewsResponse,
@@ -50,5 +51,15 @@ export const getTestSuitesWithCases = async (
     const { data } = await api.get(
         `/flow-tests/suites-with-previews/${flowId}`
     );
+    return data;
+};
+
+/**
+ * Get a test case by its ID
+ */
+export const getTestCase = async (
+    caseId: number
+): Promise<TestCaseGetResponse> => {
+    const { data } = await api.get(`/flow-tests/cases/${caseId}`);
     return data;
 };
