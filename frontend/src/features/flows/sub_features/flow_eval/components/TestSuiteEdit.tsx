@@ -5,11 +5,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import type {
-    TestCasePreview,
-    FlowTestCase,
-    TestCaseGetResponse,
-} from '../types';
+import type { TestCasePreview, FlowTestCase } from '../types';
 import { getTestCase } from '../api';
 import TestSuiteEditListPanel from './TestSuiteEditListPanel';
 import TestSuiteEditDetailPanel from './TestSuiteEditDetailPanel';
@@ -53,21 +49,16 @@ const TestSuiteEdit: React.FC<TestSuiteEditProps> = ({
             // Convert TestCaseGetResponse to FlowTestCase for the detail panel
             setSelectedTestCase({
                 id: testCaseData.id,
-                case_id: `case_${testCaseData.id}`, // Generate a case_id since it's required
+                case_id: testCaseData.id,
                 suite_id: testCaseData.suite_id,
                 name: testCaseData.name,
                 description: testCaseData.description,
                 is_active: testCaseData.is_active,
                 input_data: testCaseData.input_data,
                 pass_criteria: testCaseData.pass_criteria,
-                test_metadata: testCaseData.input_metadata, // Map input_metadata to test_metadata
-                run_detail: undefined,
+                input_metadata: testCaseData.input_metadata,
+                flow_definition: testCaseData.flow_definition,
                 timeout_ms: testCaseData.timeout_ms,
-                status: undefined,
-                actual_output: undefined,
-                error_message: undefined,
-                execution_time_ms: undefined,
-                test_criteria: undefined,
             });
         } catch (error) {
             console.error('Error fetching test case:', error);

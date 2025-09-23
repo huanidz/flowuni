@@ -62,21 +62,16 @@ export interface FlowTestSuite {
  */
 export interface FlowTestCase {
     id: number;
-    case_id: string;
+    case_id: number;
     suite_id: number;
     name: string;
     description?: string;
     is_active: boolean;
     input_data?: TestCaseInputData;
     pass_criteria?: TestCasePassCriteria;
-    test_metadata?: TestCaseMetadata;
-    run_detail?: TestRunDetail;
+    input_metadata?: TestCaseMetadata;
+    flow_definition?: Record<string, any>;
     timeout_ms?: number;
-    status?: TestCaseStatus;
-    actual_output?: TestCaseActualOutput;
-    error_message?: string;
-    execution_time_ms?: number;
-    test_criteria?: Record<string, any>;
 }
 
 /**
