@@ -228,3 +228,32 @@ export interface TestCaseGetResponse {
     pass_criteria?: Record<string, any>;
     timeout_ms?: number;
 }
+
+/**
+ * Test case partial update request interface based on backend TestCasePartialUpdateRequest
+ */
+export interface TestCasePartialUpdateRequest {
+    suite_id?: number;
+    name?: string;
+    description?: string;
+    is_active?: boolean;
+    input_data?: Record<string, any>;
+    input_metadata?: Record<string, any>;
+    pass_criteria?: Record<string, any>;
+    timeout_ms?: number;
+}
+
+/**
+ * Test case update response interface based on backend TestCaseUpdateResponse
+ */
+export interface TestCaseUpdateResponse {
+    id: number;
+    suite_id: number;
+    name: string;
+    description?: string;
+    is_active: boolean;
+    input_data?: Record<string, any>;
+    input_metadata?: Record<string, any>;
+    pass_criteria?: Record<string, any>;
+    timeout_ms?: number;
+}

@@ -7,8 +7,13 @@ import {
     deleteTestSuite,
     deleteTestCase,
     getTestSuitesWithCases,
+    partialUpdateTestCase,
 } from './api';
-import type { TestCaseCreateRequest, TestSuiteCreateRequest } from './types';
+import type {
+    TestCaseCreateRequest,
+    TestCasePartialUpdateRequest,
+    TestSuiteCreateRequest,
+} from './types';
 
 /**
  * Hook for fetching test suites with cases for a specific flow
@@ -85,6 +90,34 @@ export const useDeleteTestCase = () => {
         onError: error => {
             console.error('Error deleting test case:', error);
             toast.error('Failed to delete test case');
+        },
+    });
+};
+
+/**
+ * Hook for partially updating a test case
+ */
+export const usePartialUpdateTestCase = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({
+            caseId,
+            request,
+        }: {
+            caseId: number;
+            request: TestCasePartialUpdateRequest;
+        }) => partialUpdateTestCase(caseId, request),
+        onSuccess: () => {
+            // Invalidate and refetch test suites
+            queryClient.invalidateQueries({
+                queryKey: ['testSuitesWithCases'],
+            });
+            toast.success('Test case updated successfully');
+        },
+        onError: error => {
+            console.error('Error updating test case:', error);
+            toast.error('Failed to update test case');
         },
     });
 };
