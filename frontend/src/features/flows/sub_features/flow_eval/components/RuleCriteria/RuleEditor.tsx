@@ -12,7 +12,6 @@ import type {
     StringRule,
     RegexRule,
     LLMRule,
-    TestCriteria,
 } from '../../types';
 
 const RuleEditor: React.FC<{

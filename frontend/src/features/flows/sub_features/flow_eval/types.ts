@@ -82,12 +82,10 @@ export interface TestCaseMetadata {
     [key: string]: any;
 }
 
-export interface TestCriteria {
+export interface TestCasePassCriteria {
     rules: TestRule[];
-    logic: 'AND' | 'OR';
+    logics: string[]; // List of logic items ('AND' or 'OR')
 }
-
-export interface TestCasePassCriteria extends Array<TestCriteria> {}
 
 export interface TestCaseActualOutput {
     [key: string]: any;

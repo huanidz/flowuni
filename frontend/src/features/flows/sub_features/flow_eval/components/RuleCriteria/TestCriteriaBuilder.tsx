@@ -24,21 +24,17 @@ const TestCriteriaBuilder: React.FC<{
 }> = ({ criteria, onChange }) => {
     const parseCriteria = (str: string): CriteriaWithConnectors => {
         try {
-            // If the criteria is an array (new format), take the first item
-            // If it's an object (old format), use it directly for backward compatibility
+            // If the criteria is an object with rules and logics (new format)
+            // If it's an object with rules and connectors (old format), use it directly for backward compatibility
             const parsed = str
                 ? JSON.parse(str)
                 : { rules: [], connectors: [] };
 
-            if (Array.isArray(parsed) && parsed.length > 0) {
-                // New format: array of TestCriteria objects
-                const firstCriteria = parsed[0];
+            if (parsed.rules && parsed.logics) {
+                // New format: object with rules and logics
                 return {
-                    rules: firstCriteria.rules ?? [],
-                    connectors:
-                        firstCriteria.logic === 'OR'
-                            ? Array(firstCriteria.rules.length - 1).fill('OR')
-                            : Array(firstCriteria.rules.length - 1).fill('AND'),
+                    rules: parsed.rules ?? [],
+                    connectors: parsed.logics ?? [],
                 };
             } else if (parsed.rules && parsed.connectors) {
                 // Old format: object with rules and connectors
@@ -62,18 +58,13 @@ const TestCriteriaBuilder: React.FC<{
     const updateCriteria = (newCriteria: CriteriaWithConnectors) => {
         setCurrentCriteria(newCriteria);
 
-        // Convert to new format: array of TestCriteria objects
-        const logic = newCriteria.connectors.some(c => c === 'OR')
-            ? 'OR'
-            : 'AND';
-        const testCriteriaArray = [
-            {
-                rules: newCriteria.rules,
-                logic: logic,
-            },
-        ];
+        // Convert to the expected format: object with rules and logics
+        const passCriteria = {
+            rules: newCriteria.rules,
+            logics: newCriteria.connectors,
+        };
 
-        onChange(JSON.stringify(testCriteriaArray, null, 2));
+        onChange(JSON.stringify(passCriteria, null, 2));
     };
 
     const addRule = (type: TestCriteriaRuleType) => {
