@@ -19,16 +19,17 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
     const [description, setDescription] = useState(
         selectedTestCase?.description || ''
     );
-    const [input, setInput] = useState(selectedTestCase?.input_data || '');
-    const [testCriteria, setTestCriteria] = useState(
-        selectedTestCase?.test_criteria || ''
-    );
+    // Note: With the new preview schema, we don't have input_data or test_criteria
+    // These would need to be fetched separately when editing a test case
+    const [input, setInput] = useState('');
+    const [testCriteria, setTestCriteria] = useState('');
 
     // Update local state when selectedTestCase changes
     React.useEffect(() => {
         setDescription(selectedTestCase?.description || '');
-        setInput(selectedTestCase?.input_data || '');
-        setTestCriteria(selectedTestCase?.test_criteria || '');
+        // Reset input and criteria since they're not available in the preview
+        setInput('');
+        setTestCriteria('');
     }, [selectedTestCase]);
 
     const handleFieldChange = (field: string, value: string) => {
@@ -56,15 +57,13 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
             <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-200 dark:border-slate-700">
                 <div className="flex items-center gap-3">
                     <span className="text-sm font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">
-                        ID: {selectedTestCase.case_id}
+                        ID: {selectedTestCase.id}
                     </span>
                     <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">
                         {selectedTestCase.name}
                     </h3>
                 </div>
-                {getStatusBadge(
-                    selectedTestCase.status || TestCaseStatus.PENDING
-                )}
+                {getStatusBadge(TestCaseStatus.PENDING)}
             </div>
 
             {/* Input */}
@@ -112,26 +111,6 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
                         className="px-2 py-1 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm w-48"
                     />
                 </div> */}
-
-                {selectedTestCase.execution_time_ms && (
-                    <div>
-                        <span>Execution Time: </span>
-                        <span className="font-mono">
-                            {selectedTestCase.execution_time_ms}ms
-                        </span>
-                    </div>
-                )}
-
-                {selectedTestCase.error_message && (
-                    <div className="flex-1">
-                        <span className="text-red-600 dark:text-red-400">
-                            Error:{' '}
-                        </span>
-                        <span className="font-mono text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded">
-                            {selectedTestCase.error_message}
-                        </span>
-                    </div>
-                )}
             </div>
         </div>
     );

@@ -1,5 +1,5 @@
 import React, { useRef, type KeyboardEvent } from 'react';
-import type { DraftTestCase, FlowTestCase } from '../types';
+import type { DraftTestCase, TestCasePreview } from '../types';
 import { TestCaseStatus } from '../types';
 import { getStatusBadge } from '../utils';
 import { Card, CardHeader } from '@/components/ui/card';
@@ -11,10 +11,10 @@ import { useConfirmation } from '@/hooks/useConfirmationModal';
 import { useDeleteTestCase } from '../hooks';
 
 interface TestCaseCardProps {
-    item: FlowTestCase | DraftTestCase;
+    item: TestCasePreview | DraftTestCase;
     isSelected?: boolean;
-    selectedTestCase?: FlowTestCase | null;
-    onTestCaseSelect?: (testCase: FlowTestCase) => void;
+    selectedTestCase?: TestCasePreview | null;
+    onTestCaseSelect?: (testCase: TestCasePreview) => void;
     draft?: DraftTestCase | null;
     setDraft?: (draft: DraftTestCase | null) => void;
     isCreating?: boolean;
@@ -41,7 +41,7 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
 
     const isDraft = typeof item.id === 'string' && item.id.startsWith('draft-');
 
-    const handleDelete = (e: React.MouseEvent, testCase: FlowTestCase) => {
+    const handleDelete = (e: React.MouseEvent, testCase: TestCasePreview) => {
         e.stopPropagation(); // Prevent card selection when clicking delete
 
         confirm({
@@ -112,14 +112,13 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
         );
     }
 
-    const testCase = item as FlowTestCase;
-    const isItemSelected =
-        String(selectedTestCase?.case_id) === String(testCase.case_id);
+    const testCase = item as TestCasePreview;
+    const isItemSelected = String(selectedTestCase?.id) === String(testCase.id);
 
     return (
         <>
             <Card
-                key={String(testCase.case_id)}
+                key={String(testCase.id)}
                 className={`cursor-pointer transition-colors ${
                     isItemSelected
                         ? 'border-primary bg-accent'
@@ -137,9 +136,7 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
                         </div>
                         <div className="flex items-center gap-2">
                             <div className="flex-shrink-0">
-                                {getStatusBadge(
-                                    testCase.status || TestCaseStatus.PENDING
-                                )}
+                                {getStatusBadge(TestCaseStatus.PENDING)}
                             </div>
                             <Button
                                 size="sm"

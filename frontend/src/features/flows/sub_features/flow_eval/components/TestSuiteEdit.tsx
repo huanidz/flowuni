@@ -5,7 +5,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import type { FlowTestCase } from '../types';
+import type { TestCasePreview } from '../types';
 import TestSuiteEditListPanel from './TestSuiteEditListPanel';
 import TestSuiteEditDetailPanel from './TestSuiteEditDetailPanel';
 
@@ -19,7 +19,7 @@ interface TestSuiteEditProps {
         description?: string;
         flow_id: string;
     };
-    testCases?: FlowTestCase[];
+    testCases?: TestCasePreview[];
 }
 
 /**
@@ -32,7 +32,7 @@ const TestSuiteEdit: React.FC<TestSuiteEditProps> = ({
     testCases = [],
 }) => {
     const [selectedTestCase, setSelectedTestCase] =
-        React.useState<FlowTestCase | null>(
+        React.useState<TestCasePreview | null>(
             testCases.length > 0 ? testCases[0] : null
         );
 
@@ -40,7 +40,7 @@ const TestSuiteEdit: React.FC<TestSuiteEditProps> = ({
         onClose();
     };
 
-    const handleTestCaseSelect = (testCase: FlowTestCase) => {
+    const handleTestCaseSelect = (testCase: TestCasePreview) => {
         setSelectedTestCase(testCase);
     };
 

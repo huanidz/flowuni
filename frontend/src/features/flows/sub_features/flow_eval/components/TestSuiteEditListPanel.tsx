@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { DraftTestCase, FlowTestCase } from '../types';
+import type { DraftTestCase, TestCasePreview } from '../types';
 import TestCaseCard from './TestCaseCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,9 +7,9 @@ import { Plus } from 'lucide-react';
 import { useCreateTestCase } from '../hooks';
 
 interface TestSuiteEditListPanelProps {
-    testCases: FlowTestCase[];
-    selectedTestCase: FlowTestCase | null;
-    onTestCaseSelect: (testCase: FlowTestCase) => void;
+    testCases: TestCasePreview[];
+    selectedTestCase: TestCasePreview | null;
+    onTestCaseSelect: (testCase: TestCasePreview) => void;
     suiteId: number;
 }
 

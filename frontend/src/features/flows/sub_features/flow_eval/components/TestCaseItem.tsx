@@ -1,11 +1,10 @@
 import React from 'react';
-import type { FlowTestCase } from '../types';
+import type { TestCasePreview } from '../types';
 import { TestCaseStatus } from '../types';
 import { getStatusBadge } from '../utils';
 
-
 interface TestCaseItemProps {
-    testCase: FlowTestCase;
+    testCase: TestCasePreview;
     isSelected?: boolean;
     onSelect?: (testCaseId: string) => void;
     showSuiteName?: boolean;
@@ -24,7 +23,7 @@ const TestCaseItem: React.FC<TestCaseItemProps> = ({
 }) => {
     const handleSelect = () => {
         if (onSelect) {
-            onSelect(String(testCase.case_id));
+            onSelect(String(testCase.id));
         }
     };
 
@@ -93,66 +92,18 @@ const TestCaseItem: React.FC<TestCaseItemProps> = ({
                             <div className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded text-xs font-mono">
                                 <span className="text-gray-400">ID:</span>
                                 <span className="text-gray-600">
-                                    {String(testCase.case_id)?.substring(
-                                        0,
-                                        8
-                                    ) || 'N/A'}
+                                    {String(testCase.id)?.substring(0, 8) ||
+                                        'N/A'}
                                 </span>
                             </div>
-                            {testCase.execution_time_ms && (
-                                <div className="flex items-center gap-1 bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs font-medium">
-                                    <svg
-                                        className="w-3 h-3"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                                        />
-                                    </svg>
-                                    {formatExecutionTime(
-                                        testCase.execution_time_ms
-                                    )}
-                                </div>
-                            )}
                         </div>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-2 flex-shrink-0">
-                    {getStatusBadge(testCase.status || TestCaseStatus.PENDING)}
+                    {getStatusBadge(TestCaseStatus.PENDING)}
                 </div>
             </div>
-
-            {testCase.error_message && (
-                <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                        <div className="flex items-center gap-1 bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-semibold">
-                            <svg
-                                className="w-3 h-3"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                                />
-                            </svg>
-                            ERROR
-                        </div>
-                    </div>
-                    <div className="text-xs text-red-700 whitespace-pre-wrap break-words font-mono leading-relaxed">
-                        {testCase.error_message}
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

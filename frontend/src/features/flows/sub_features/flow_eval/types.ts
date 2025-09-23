@@ -190,3 +190,33 @@ export interface DraftTestCase {
     name: string;
     isEditing: boolean;
 }
+
+/**
+ * Test Case Preview interface based on backend TestCasePreview
+ */
+export interface TestCasePreview {
+    id: number;
+    suite_id: number;
+    name: string;
+    description?: string;
+    is_active: boolean;
+}
+
+/**
+ * Test Suite with Case Previews interface based on backend TestSuiteWithCasePreviews
+ */
+export interface TestSuiteWithCasePreviews {
+    id: number;
+    flow_id: string;
+    name: string;
+    description?: string;
+    is_active: boolean;
+    test_cases: TestCasePreview[];
+}
+
+/**
+ * Test Suites with Case Previews Response interface based on backend TestSuitesWithCasePreviewsResponse
+ */
+export interface TestSuitesWithCasePreviewsResponse {
+    test_suites: TestSuiteWithCasePreviews[];
+}
