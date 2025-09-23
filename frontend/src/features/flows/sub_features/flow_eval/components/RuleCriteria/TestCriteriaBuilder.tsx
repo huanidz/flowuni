@@ -108,6 +108,9 @@ const TestCriteriaBuilder: React.FC<{
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Left column - Logic Chain Summary (static) */}
             <div className="md:col-span-1">
+                <div className="text-xs text-gray-500 mb-2">
+                    All criteria must pass for test to pass
+                </div>
                 <TestCriteriaSummary
                     criteria={currentCriteria}
                     onToggleConnector={toggleConnector}
