@@ -2,9 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Edit, Trash2 } from 'lucide-react';
 import type { TestSuiteWithCasePreviews } from '../types';
-import { TestCaseStatus } from '../types';
 import TestCasePreviewItem from './TestCasePreviewItem';
-import TestStatusIndicator from './TestStatusIndicator';
 import TestSuiteEdit from './TestSuiteEdit';
 import { useDeleteTestSuite } from '../hooks';
 import { useConfirmation } from '@/hooks/useConfirmationModal';
@@ -50,19 +48,9 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
     const totalTests = testSuite.test_cases.length;
     // Note: With the new preview schema, we don't have status information
     // All test cases are considered pending until we fetch full details
-    const passedTests = 0;
-    const failedTests = 0;
-    const runningTests = 0;
-    const pendingTests = totalTests;
 
     const toggleExpand = () => {
         onToggleExpand(testSuite.id.toString());
-    };
-
-    const getSuiteStatus = (): TestCaseStatus => {
-        // Note: With the new preview schema, we don't have status information
-        // All test cases are considered pending until we fetch full details
-        return TestCaseStatus.PENDING;
     };
 
     return (
@@ -109,38 +97,9 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
                                     </span>
                                 </h3>
                             </div>
-                            <TestStatusIndicator status={getSuiteStatus()} />
                         </div>
 
                         <div className="flex items-center gap-3">
-                            {/* Enhanced Statistics Display */}
-                            <div className="flex items-center gap-1">
-                                {passedTests > 0 && (
-                                    <div className="flex items-center gap-1 bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-medium">
-                                        <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
-                                        {passedTests}
-                                    </div>
-                                )}
-                                {failedTests > 0 && (
-                                    <div className="flex items-center gap-1 bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-medium">
-                                        <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                                        {failedTests}
-                                    </div>
-                                )}
-                                {runningTests > 0 && (
-                                    <div className="flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-medium">
-                                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                                        {runningTests}
-                                    </div>
-                                )}
-                                {pendingTests > 0 && (
-                                    <div className="flex items-center gap-1 bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-medium">
-                                        <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                                        {pendingTests}
-                                    </div>
-                                )}
-                            </div>
-
                             {/* Action Buttons with Text */}
                             <div className="flex items-center gap-1">
                                 <Button

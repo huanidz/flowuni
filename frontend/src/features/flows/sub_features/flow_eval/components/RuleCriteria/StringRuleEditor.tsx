@@ -8,7 +8,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { TEST_CRITERIA_RULE_TYPES } from '../../const';
 import type { StringRuleConfig, StringRule } from '../../types';
 
 interface StringRuleEditorProps {

@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { Edit2, Save, X } from 'lucide-react';
 import type { FlowTestCase } from '../types';
-import { TestCaseStatus } from '../types';
-import getStatusBadge from '../utils';
 import TestCriteriaBuilder from './RuleCriteria/TestCriteriaBuilder';
 import { usePartialUpdateTestCase } from '../hooks';
 
@@ -212,7 +210,6 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
-                    {getStatusBadge(TestCaseStatus.PENDING)}
                     <button
                         className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
                         onClick={handleSave}

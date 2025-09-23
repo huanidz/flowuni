@@ -3,16 +3,7 @@ import StringRuleEditor from './StringRuleEditor';
 import RegexRuleEditor from './RegexRuleEditor';
 import LLMRuleEditor from './LLMRuleEditor';
 import { TEST_CRITERIA_RULE_TYPES } from '../../const';
-import type {
-    TestRule,
-    StringRuleConfig,
-    RegexRuleConfig,
-    LLMProviderConfig,
-    LLMRuleConfig,
-    StringRule,
-    RegexRule,
-    LLMRule,
-} from '../../types';
+import type { TestRule } from '../../types';
 
 const RuleEditor: React.FC<{
     rule: TestRule;

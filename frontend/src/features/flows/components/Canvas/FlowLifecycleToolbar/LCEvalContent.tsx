@@ -6,11 +6,7 @@ import {
     TestStatistics,
     TestSuiteGroup,
 } from '../../../sub_features/flow_eval/components';
-import { TestCaseStatus } from '../../../sub_features/flow_eval/types';
-import type {
-    TestStatistics as TestStatisticsType,
-    TestSuitesWithCasePreviewsResponse,
-} from '../../../sub_features/flow_eval/types';
+import type { TestStatistics as TestStatisticsType } from '../../../sub_features/flow_eval/types';
 import { useTestSuitesWithCases } from '../../../sub_features/flow_eval/hooks';
 import useFlowStore from '@/features/flows/stores/flow_stores';
 

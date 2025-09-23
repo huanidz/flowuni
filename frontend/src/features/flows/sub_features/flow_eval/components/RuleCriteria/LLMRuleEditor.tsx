@@ -12,8 +12,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { TEST_CRITERIA_RULE_TYPES } from '../../const';
-import type { LLMProviderConfig, LLMRuleConfig, LLMRule } from '../../types';
+import type { LLMRule } from '../../types';
 
 interface LLMRuleEditorProps {
     rule: LLMRule;

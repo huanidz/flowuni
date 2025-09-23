@@ -1,7 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { TEST_CRITERIA_RULE_TYPES } from '../../const';
-import type { RegexRuleConfig, RegexRule } from '../../types';
+import type { RegexRule } from '../../types';
 
 interface RegexRuleEditorProps {
     rule: RegexRule;

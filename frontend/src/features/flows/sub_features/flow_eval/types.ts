@@ -57,7 +57,7 @@ export interface LLMRule {
 
 export type TestRule = StringRule | RegexRule | LLMRule;
 
-export type TestCaseStatus =
+export type TestCaseRunStatus =
     | 'PENDING'
     | 'QUEUED'
     | 'RUNNING'
@@ -65,13 +65,13 @@ export type TestCaseStatus =
     | 'FAILED'
     | 'CANCEL';
 
-export const TestCaseStatus = {
-    PENDING: 'PENDING' as TestCaseStatus,
-    QUEUED: 'QUEUED' as TestCaseStatus,
-    RUNNING: 'RUNNING' as TestCaseStatus,
-    PASSED: 'PASSED' as TestCaseStatus,
-    FAILED: 'FAILED' as TestCaseStatus,
-    CANCEL: 'CANCEL' as TestCaseStatus,
+export const TestCaseRunStatus = {
+    PENDING: 'PENDING' as TestCaseRunStatus,
+    QUEUED: 'QUEUED' as TestCaseRunStatus,
+    RUNNING: 'RUNNING' as TestCaseRunStatus,
+    PASSED: 'PASSED' as TestCaseRunStatus,
+    FAILED: 'FAILED' as TestCaseRunStatus,
+    CANCEL: 'CANCEL' as TestCaseRunStatus,
 };
 
 export interface TestSuiteMetadata {
@@ -144,7 +144,7 @@ export interface TestExecutionRequest {
  */
 export interface TestExecutionResult {
     test_case_id: string;
-    status: TestCaseStatus;
+    status: TestCaseRunStatus;
     execution_time_ms?: number;
     error_message?: string;
     actual_output?: TestCaseActualOutput;
@@ -188,7 +188,7 @@ export interface SelectedTestCase {
     id: string;
     name: string;
     suite_name: string;
-    status?: TestCaseStatus;
+    status?: TestCaseRunStatus;
 }
 
 /**
@@ -220,7 +220,7 @@ export interface TestCaseCreateResponse {
     test_metadata?: TestCaseMetadata;
     run_detail?: TestRunDetail;
     timeout_ms?: number;
-    status?: TestCaseStatus;
+    status?: TestCaseRunStatus;
     actual_output?: TestCaseActualOutput;
     error_message?: string;
     execution_time_ms?: number;

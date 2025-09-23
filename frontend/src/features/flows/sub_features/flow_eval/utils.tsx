@@ -1,9 +1,9 @@
-import { TestCaseStatus } from './types';
+import { TestCaseRunStatus } from './types';
 import { Badge } from '@/components/ui/badge';
 
-const getStatusBadge = (status: TestCaseStatus) => {
+const getStatusBadge = (status: TestCaseRunStatus) => {
     switch (status) {
-        case TestCaseStatus.PASSED:
+        case TestCaseRunStatus.PASSED:
             return (
                 <Badge
                     variant="outline"
@@ -13,7 +13,7 @@ const getStatusBadge = (status: TestCaseStatus) => {
                     PASSED
                 </Badge>
             );
-        case TestCaseStatus.FAILED:
+        case TestCaseRunStatus.FAILED:
             return (
                 <Badge
                     variant="outline"
@@ -23,7 +23,7 @@ const getStatusBadge = (status: TestCaseStatus) => {
                     FAILED
                 </Badge>
             );
-        case TestCaseStatus.RUNNING:
+        case TestCaseRunStatus.RUNNING:
             return (
                 <Badge
                     variant="outline"
@@ -33,7 +33,7 @@ const getStatusBadge = (status: TestCaseStatus) => {
                     RUNNING
                 </Badge>
             );
-        case TestCaseStatus.PENDING:
+        case TestCaseRunStatus.PENDING:
         default:
             return (
                 <Badge
