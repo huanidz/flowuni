@@ -2,7 +2,7 @@
 # This id is treated as database-level unique. All kind of id currently defined
 # is for app logic which may looks confusing at first but it does serve a purpose.
 
-from enum import Enum
+from typing import Any, Dict
 
 from sqlalchemy import (
     BigInteger,

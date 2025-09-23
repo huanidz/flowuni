@@ -62,7 +62,7 @@ class TestCaseGetResponse(BaseModel):
     suite_id: int = Field(..., description="Test suite ID")
     name: str = Field(..., description="Test case name")
     description: Optional[str] = Field(None, description="Test case description")
-    is_active: bool = Field(True, description="Test case status")
+    is_active: Optional[bool] = Field(True, description="Test case status")
     flow_definition: Optional[Dict[str, Any]] = Field(
         None, description="Flow definition"
     )

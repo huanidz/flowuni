@@ -2,9 +2,11 @@ import traceback
 
 from fastapi import APIRouter, Depends, HTTPException, Path
 from loguru import logger
+from redis import Redis
 from src.dependencies.auth_dependency import get_current_user
 from src.dependencies.db_dependency import get_db
 from src.dependencies.flow_dep import get_flow_service
+from src.dependencies.redis_dependency import get_redis_client
 from src.exceptions.auth_exceptions import UNAUTHORIZED_EXCEPTION
 from src.exceptions.shared_exceptions import NOT_FOUND_EXCEPTION
 from src.repositories.FlowTestRepository import FlowTestRepository
@@ -32,11 +34,12 @@ def get_flow_test_repository(db_session=Depends(get_db)) -> FlowTestRepository:
 
 def get_flow_test_service(
     test_repository: FlowTestRepository = Depends(get_flow_test_repository),
+    redis_client: Redis = Depends(get_redis_client),
 ) -> FlowTestService:
     """
     Dependency that returns FlowTestService instance.
     """
-    return FlowTestService(test_repository=test_repository)
+    return FlowTestService(test_repository=test_repository, redis_client=redis_client)
 
 
 @flow_test_router.post("/suites", response_model=TestSuiteCreateResponse)
