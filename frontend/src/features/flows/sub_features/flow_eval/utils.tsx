@@ -1,4 +1,7 @@
 import { TestCaseRunStatus } from './types';
+import type { TestRule } from './types';
+import { TEST_CRITERIA_RULE_TYPES } from './const';
+import type { TestCriteriaRuleType } from './const';
 import { Badge } from '@/components/ui/badge';
 
 const getStatusBadge = (status: TestCaseRunStatus) => {
@@ -47,4 +50,47 @@ const getStatusBadge = (status: TestCaseRunStatus) => {
     }
 };
 
+const create_default_rule = (type: TestCriteriaRuleType): TestRule => {
+    const id = Date.now(); // Use number instead of string
+
+    switch (type) {
+        case TEST_CRITERIA_RULE_TYPES.STRING:
+            return {
+                type: 'string',
+                config: {
+                    operation: 'contains',
+                    value: '',
+                },
+                id,
+            };
+        case TEST_CRITERIA_RULE_TYPES.REGEX:
+            return {
+                type: 'regex',
+                config: {
+                    pattern: '',
+                },
+                id,
+            };
+        case TEST_CRITERIA_RULE_TYPES.LLM_JUDGE:
+            return {
+                type: 'llm_judge',
+                config: {
+                    llm_provider: {
+                        provider: '',
+                        model: '',
+                        api_key: '',
+                        max_output_tokens: 1024,
+                        system_prompt: 'Sample system prompt',
+                        temperature: 0.0,
+                    },
+                    instruction: '',
+                },
+                id,
+            };
+        default:
+            throw new Error(`Unknown rule type: ${type}`);
+    }
+};
+
+export { create_default_rule };
 export default getStatusBadge;

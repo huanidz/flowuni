@@ -4,6 +4,7 @@ import type { TestRule } from '../../types';
 import TestCriteriaSummary from './TestCriteriaSummary';
 import { TEST_CRITERIA_RULE_TYPES } from '../../const';
 import type { TestCriteriaRuleType } from '../../const';
+import { create_default_rule } from '../../utils';
 
 import {
     Select,
@@ -73,46 +74,7 @@ const TestCriteriaBuilder: React.FC<{
     };
 
     const addRule = (type: TestCriteriaRuleType) => {
-        const id = Date.now(); // Use number instead of string
-        let newRule: TestRule;
-        switch (type) {
-            case TEST_CRITERIA_RULE_TYPES.STRING:
-                newRule = {
-                    type: TEST_CRITERIA_RULE_TYPES.STRING,
-                    config: {
-                        operation: 'contains',
-                        value: '',
-                    },
-                    id,
-                };
-                break;
-            case TEST_CRITERIA_RULE_TYPES.REGEX:
-                newRule = {
-                    type: TEST_CRITERIA_RULE_TYPES.REGEX,
-                    config: {
-                        pattern: '',
-                    },
-                    id,
-                };
-                break;
-            case TEST_CRITERIA_RULE_TYPES.LLM_JUDGE:
-                newRule = {
-                    type: TEST_CRITERIA_RULE_TYPES.LLM_JUDGE,
-                    config: {
-                        llm_provider: {
-                            provider: '',
-                            model: '',
-                            api_key: '',
-                            max_output_tokens: 1024,
-                            system_prompt: 'Sample system prompt',
-                            temperature: 0.0,
-                        },
-                        instruction: '',
-                    },
-                    id,
-                };
-                break;
-        }
+        const newRule = create_default_rule(type);
 
         updateCriteria({
             rules: [...currentCriteria.rules, newRule],
