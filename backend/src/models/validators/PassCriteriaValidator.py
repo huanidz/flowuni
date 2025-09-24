@@ -8,7 +8,7 @@ from src.models.parsers.StringRuleParser import StringRuleParser
 
 
 class PassCriteriaRuleItem(BaseModel):
-    type: Literal["string", "regex", "llm_judege"] = Field(
+    type: Literal["string", "regex", "llm_judge"] = Field(
         ..., description="Type of the Rule. Must be one of above"
     )
     config: Union[LLMJudgeRuleParser, RegexRuleParser, StringRuleParser] = Field(
