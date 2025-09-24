@@ -8,6 +8,7 @@ import {
     deleteTestCase,
     getTestSuitesWithCases,
     partialUpdateTestCase,
+    partialUpdateTestSuite,
     runSingleTest,
 } from './api';
 import type {
@@ -15,6 +16,7 @@ import type {
     TestCaseCreateRequest,
     TestCasePartialUpdateRequest,
     TestSuiteCreateRequest,
+    TestSuitePartialUpdateRequest,
 } from './types';
 
 /**
@@ -120,6 +122,36 @@ export const usePartialUpdateTestCase = () => {
         onError: error => {
             console.error('Error updating test case:', error);
             toast.error('Failed to update test case');
+        },
+    });
+};
+
+/**
+ * Hook for partially updating a test suite
+ */
+export const usePartialUpdateTestSuite = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({
+            suiteId,
+            request,
+            flowId,
+        }: {
+            suiteId: number;
+            request: TestSuitePartialUpdateRequest;
+            flowId: string;
+        }) => partialUpdateTestSuite(suiteId, request),
+        onSuccess: (_, variables) => {
+            // Invalidate and refetch test suites for this flow
+            queryClient.invalidateQueries({
+                queryKey: ['testSuitesWithCases', variables.flowId],
+            });
+            toast.success('Test suite updated successfully');
+        },
+        onError: error => {
+            console.error('Error updating test suite:', error);
+            toast.error('Failed to update test suite');
         },
     });
 };
