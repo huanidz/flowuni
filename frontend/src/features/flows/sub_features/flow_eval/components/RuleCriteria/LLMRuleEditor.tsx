@@ -35,6 +35,29 @@ const LLMRuleEditor: React.FC<LLMRuleEditorProps> = ({
         try {
             const response = await getLLMJudges();
             console.log('response.templates:', response.templates);
+            /**
+             * SAMPLE json:
+             * response.templates = [
+                    {
+                        "id": 1,
+                        "user_id": 1,
+                        "type": "llm_judge",
+                        "name": "Judge name",
+                        "description": "qwe",
+                        "data": {
+                            "provider": "e",
+                            "model": "e",
+                            "api_key": "e",
+                            "system_prompt": "e",
+                            "temperature": 0,
+                            "max_output_tokens": 1024
+                        },
+                        "created_at": "2025-09-24T03:40:55.920212",
+                        "modified_at": "2025-09-24T03:40:55.920216"
+                    }
+                ]
+             * 
+             */
             setLlmJudges(response.templates);
         } catch (error) {
             console.error('Failed to fetch LLM judges:', error);
@@ -76,23 +99,38 @@ const LLMRuleEditor: React.FC<LLMRuleEditorProps> = ({
             <div className="space-y-3">
                 <div className="flex gap-2">
                     <Select
-                        value={rule.config?.data?.model || ''}
-                        onValueChange={value =>
-                            onChange({
-                                ...rule,
-                                config: {
-                                    ...rule.config,
-                                    data: {
-                                        ...rule.config?.data,
-                                        provider:
-                                            rule.config?.data?.provider || '',
-                                        api_key:
-                                            rule.config?.data?.api_key || '',
-                                        model: value,
+                        value={rule.config?.judgeId?.toString() || ''}
+                        onValueChange={value => {
+                            const selectedJudge = llmJudges.find(
+                                judge => judge.id.toString() === value
+                            );
+                            if (selectedJudge) {
+                                onChange({
+                                    ...rule,
+                                    config: {
+                                        name: selectedJudge.name,
+                                        description: selectedJudge.description,
+                                        judgeId: selectedJudge.id,
+                                        provider: {
+                                            provider:
+                                                selectedJudge.data.provider,
+                                            model: selectedJudge.data.model,
+                                            api_key: selectedJudge.data.api_key,
+                                            system_prompt:
+                                                selectedJudge.data
+                                                    .system_prompt,
+                                            temperature:
+                                                selectedJudge.data.temperature,
+                                            max_output_tokens:
+                                                selectedJudge.data
+                                                    .max_output_tokens,
+                                        },
+                                        instruction:
+                                            rule.config?.instruction || '',
                                     },
-                                },
-                            })
-                        }
+                                });
+                            }
+                        }}
                         disabled={isLoading}
                     >
                         <SelectTrigger className="flex-1 h-8">
@@ -132,19 +170,13 @@ const LLMRuleEditor: React.FC<LLMRuleEditorProps> = ({
                     </Button>
                 </div>
                 <Textarea
-                    value={rule.config?.data?.system_prompt || ''}
+                    value={rule.config?.instruction || ''}
                     onChange={e =>
                         onChange({
                             ...rule,
                             config: {
                                 ...rule.config,
-                                data: {
-                                    ...rule.config?.data,
-                                    provider: rule.config?.data?.provider || '',
-                                    api_key: rule.config?.data?.api_key || '',
-                                    model: rule.config?.data?.model || '',
-                                    system_prompt: e.target.value,
-                                },
+                                instruction: e.target.value,
                             },
                         })
                     }
