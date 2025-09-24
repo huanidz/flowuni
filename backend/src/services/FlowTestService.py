@@ -9,6 +9,7 @@ from src.exceptions.shared_exceptions import NOT_FOUND_EXCEPTION
 from src.helpers.CacheHelper import CacheHelper
 from src.models.alchemy.flows.FlowTestCaseModel import FlowTestCaseModel
 from src.models.alchemy.flows.FlowTestSuiteModel import FlowTestSuiteModel
+from src.models.validators.PassCriteriaValidator import PassCriteriaValidator
 from src.repositories.FlowTestRepository import FlowTestRepository
 
 
@@ -83,7 +84,7 @@ class FlowTestServiceInterface(ABC):
         is_active: Optional[bool] = None,
         input_text: Optional[str] = None,
         input_metadata: Optional[Dict[str, Any]] = None,
-        pass_criteria: Optional[Dict[str, Any]] = None,
+        pass_criteria: Optional[PassCriteriaValidator] = None,
         timeout_ms: Optional[float] = None,
     ) -> FlowTestCaseModel:
         """
@@ -285,7 +286,7 @@ class FlowTestService(FlowTestServiceInterface):
         is_active: Optional[bool] = None,
         input_text: Optional[str] = None,
         input_metadata: Optional[Dict[str, Any]] = None,
-        pass_criteria: Optional[Dict[str, Any]] = None,
+        pass_criteria: Optional[PassCriteriaValidator] = None,
         timeout_ms: Optional[float] = None,
     ) -> FlowTestCaseModel:
         """
@@ -323,7 +324,7 @@ class FlowTestService(FlowTestServiceInterface):
                 is_active=is_active,
                 input_text=input_text,
                 input_metadata=input_metadata,
-                pass_criteria=pass_criteria,
+                pass_criteria=pass_criteria.model_dump() if pass_criteria else None,
                 timeout_ms=timeout_ms,
             )
             logger.info(f"Successfully updated test case with ID {case_id}")
