@@ -189,6 +189,27 @@ export interface TestSuiteCreateResponse {
 }
 
 /**
+ * Test suite partial update request interface based on backend TestSuitePartialUpdateRequest
+ */
+export interface TestSuitePartialUpdateRequest {
+    flow_id?: string;
+    name?: string;
+    description?: string;
+    is_active?: boolean;
+}
+
+/**
+ * Test suite update response interface based on backend TestSuiteUpdateResponse
+ */
+export interface TestSuiteUpdateResponse {
+    id: number;
+    flow_id: string;
+    name: string;
+    description?: string;
+    is_active: boolean;
+}
+
+/**
  * Selected test cases for execution
  */
 export interface SelectedTestCase {
