@@ -27,10 +27,9 @@ class FlowSyncWorker:
     def run_sync(
         self,
         flow_id: str,
-        session_id: str,
+        session_id: Optional[str],
         flow_graph_request_dict: Dict,
         enable_debug: bool = True,
-        is_test: bool = False,
     ) -> FlowRunResult:
         """
         Execute a flow synchronously.
@@ -64,17 +63,12 @@ class FlowSyncWorker:
                 run_id=self.run_id, flow_id=flow_id, session_id=session_id
             )
 
-            # Configure event publisher for test runs
-            event_publisher = ExecutionEventPublisher() if is_test else None
-            if is_test:
-                logger.info("Configuring EventPublisher for test run")
-
             # Create and run executor
             logger.info(f"Creating executor with {len(execution_plan)} layers")
             executor = GraphExecutor(
                 graph=graph,
                 execution_plan=execution_plan,
-                execution_event_publisher=event_publisher,
+                execution_event_publisher=None,
                 execution_context=execution_context,
                 enable_debug=False,
             )
@@ -88,6 +82,89 @@ class FlowSyncWorker:
 
         except Exception as e:
             logger.error(f"Flow execution failed for flow_id {flow_id}: {str(e)}")
+            raise
+
+    def run_test_sync(
+        self,
+        flow_id: str,
+        flow_graph_request_dict: Dict,
+        session_id: Optional[str] = None,
+    ) -> FlowRunResult:
+        try:
+            logger.info(f"(TEST RUN) Starting flow execution for flow_id: {flow_id}")
+
+            # Parse and load the flow graph
+            flow_graph_request = CanvasFlowRunRequest(**flow_graph_request_dict)
+            graph = GraphLoader.from_request(flow_graph_request)
+
+            # Compile execution plan
+            compiler = GraphCompiler(graph=graph, remove_standalone=False)
+            execution_plan = compiler.compile()
+
+            # Set up execution context
+            execution_context = ExecutionContext(
+                run_id=self.run_id, flow_id=flow_id, session_id=session_id
+            )
+
+            # Configure event publisher for test runs
+            event_publisher = ExecutionEventPublisher()
+
+            # Create and run executor
+            logger.info(
+                f"(TEST RUN) Creating executor with {len(execution_plan)} layers"
+            )
+            executor = GraphExecutor(
+                graph=graph,
+                execution_plan=execution_plan,
+                execution_event_publisher=event_publisher,
+                execution_context=execution_context,
+                enable_debug=False,
+            )
+
+            logger.info("(TEST RUN) Starting graph execution")
+            execution_result = executor.execute()
+
+            logger.success(
+                f"(TEST RUN) Flow execution completed for flow_id: {flow_id}"
+            )
+
+            return FlowRunResult(**execution_result)
+
+        except Exception as e:
+            logger.error(
+                f"(TEST RUN) Flow execution failed for flow_id {flow_id}: {str(e)}"
+            )
+            raise
+
+    def run_flow_test(
+        self,
+        flow_id: str,
+        test_case_id: int,
+        flow_service: FlowService,
+        session_id: Optional[str] = None,
+    ) -> None:
+        try:
+            # Retrieve and validate flow
+            flow_definition = self._get_validated_flow(flow_id, flow_service)
+
+            # Execute the flow
+            logger.info(f"Starting validated flow execution for flow_id: {flow_id}")
+            self.run_sync(
+                flow_id=flow_id,
+                session_id=session_id,
+                flow_graph_request_dict=flow_definition,
+                is_test=True,
+            )
+
+            logger.success(f"Validated flow execution completed for flow_id: {flow_id}")
+            return
+
+        except HTTPException:
+            raise  # Preserve HTTP exceptions for proper API responses
+        except Exception as e:
+            logger.error(
+                f"Flow execution with validation failed for flow_id {flow_id}: {str(e)}"
+            )
             raise
 
     def run_flow_with_validation(

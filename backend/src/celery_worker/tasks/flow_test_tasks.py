@@ -6,6 +6,7 @@ from src.celery_worker.celery_worker import celery_app
 from src.dependencies.db_dependency import get_db
 from src.repositories.RepositoriesContainer import RepositoriesContainer
 from src.services.FlowTestService import FlowTestService
+from src.workers.FlowSyncWorker import FlowSyncWorker
 
 
 @celery_app.task(bind=True, base=BaseTask)
@@ -45,6 +46,8 @@ def run_flow_test(
         test_case = flow_test_service.get_test_case_by_id(case_id=case_id)
         if not test_case:
             raise ValueError(f"Test case with ID {case_id} not found")
+
+        flow_sync_worker = FlowSyncWorker()
 
         # For now, we'll just simulate a test run
         # In a real implementation, this would execute the flow with the test case inputs

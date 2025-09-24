@@ -16,6 +16,7 @@ class ExecutionEventPublisher:
         self.task_id = task_id
         self.redis: redis.Redis = redis_client
 
+    # === NON-TEST EVENT PUBLISH ===
     def end(self, data: dict = {}):
         # Publish DONE event to Redis
         redis_message = {
@@ -36,3 +37,36 @@ class ExecutionEventPublisher:
 
         # Push to a Redis list keyed by task_id
         self.redis.rpush(self.task_id, json.dumps(redis_message))
+
+    # === TEST EVENT PUBLISH ===
+    def publish_test_run_event(
+        self,
+        test_case_id: int,
+        status: str,
+        data: dict = {},
+        stream_name: Optional[str] = None,
+    ):
+        """
+        Publish test run event to Redis Stream
+
+        Args:
+            test_case_id: ID of the test case being run
+            status: Status of the test run (e.g., PENDING, RUNNING, PASSED, FAILED)
+            data: Additional data to include in the event
+            stream_name: Optional custom stream name, defaults to test_run_events:{task_id}
+        """
+        # Use provided stream name or create default one
+        if stream_name is None:
+            stream_name = f"test_run_events:{self.task_id}"
+
+        # Create test run event message
+        redis_message = {
+            "event": "TEST_RUN",
+            "test_case_id": str(test_case_id),
+            "status": status,
+            "data": data,
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+
+        # Publish to Redis Stream
+        self.redis.xadd(stream_name, redis_message)
