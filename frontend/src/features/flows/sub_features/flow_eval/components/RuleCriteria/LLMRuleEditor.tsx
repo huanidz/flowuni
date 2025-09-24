@@ -99,7 +99,16 @@ const LLMRuleEditor: React.FC<LLMRuleEditorProps> = ({
             <div className="space-y-3">
                 <div className="flex gap-2">
                     <Select
-                        value={rule.config?.provider?.provider || ''}
+                        value={
+                            llmJudges
+                                .find(
+                                    judge =>
+                                        rule.config?.llm_provider?.provider &&
+                                        judge.data?.provider ===
+                                            rule.config.llm_provider.provider
+                                )
+                                ?.id.toString() || ''
+                        }
                         onValueChange={value => {
                             const selectedJudge = llmJudges.find(
                                 judge => judge.id.toString() === value
@@ -110,7 +119,7 @@ const LLMRuleEditor: React.FC<LLMRuleEditorProps> = ({
                                     config: {
                                         name: selectedJudge.name,
                                         description: selectedJudge.description,
-                                        provider: {
+                                        llm_provider: {
                                             provider:
                                                 selectedJudge.data.provider,
                                             model: selectedJudge.data.model,

@@ -99,7 +99,7 @@ const TestCriteriaBuilder: React.FC<{
                 newRule = {
                     type: TEST_CRITERIA_RULE_TYPES.LLM_JUDGE,
                     config: {
-                        provider: {
+                        llm_provider: {
                             provider: '',
                             model: '',
                             api_key: '',
