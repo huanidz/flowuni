@@ -199,9 +199,6 @@ export const useWatchFlowTestEvents = (taskId: string | null) => {
                 // For now, just log the raw message as requested
                 console.log('Received SSE message:', message);
             },
-            () => {
-                console.log('SSE connection completed');
-            },
             error => {
                 console.error('SSE connection error:', error);
             }

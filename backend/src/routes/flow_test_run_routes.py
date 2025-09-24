@@ -1,5 +1,5 @@
-import asyncio
 import json
+import time
 import traceback
 from typing import Any, AsyncGenerator, Dict
 
@@ -76,37 +76,55 @@ async def run_single_test(
 async def stream_events(
     request: Request,
     task_id: str,
-    since_id: int = 0,
+    since_id: str = "0",  # or "$" if you only want new events
     _auth_user_id: int = Depends(auth_through_url_param),
     redis_client: Redis = Depends(get_redis_client),
     token: str = Query(None),
 ):
-    """
-    Stream events for a specific test run task_id using Redis Streams.
-    SSE format is used for real-time updates.
-    """
-
     if not token:
         raise HTTPException(status_code=403, detail="Missing access token")
 
     stream_name = f"test_run_events:{task_id}"
 
-    async def event_generator() -> AsyncGenerator[str, None]:
+    async def event_generator():
+        nonlocal since_id
+        yield "retry: 3000\n\n"  # tell browser: wait 3s before reconnect
+
         while not await request.is_disconnected():
             events = redis_client.xread(
                 streams={stream_name: since_id},
-                count=1,
-                block=1000,
+                count=1,  # batch a few
+                block=2000,  # 1s long-poll
             )
 
             if events:
-                for stream, messages in events:
+                for _, messages in events:
                     for message_id, data in messages:
-                        event_data = {"id": message_id, "stream": stream, "data": data}
-                        logger.info(f"👉 event_data: {event_data}")
-
-                        yield f"data: {json.dumps(event_data)}\n\n"
+                        since_id = message_id  # ✅ advance cursor
+                        payload = {
+                            "event": "UPDATE",  # TODO: Consistent the name to avoid magic string # noqa
+                            "id": message_id,
+                            "task_id": task_id,
+                            "data": data,
+                            "timestamp": time.time(),
+                        }
+                        yield f"id: {message_id}\n"
+                        yield f"data: {json.dumps(payload)}\n\n"
             else:
-                yield f"data: {json.dumps({'type': 'keepalive'})}\n\n"
+                # Expire the cursor
+                redis_client.expire(stream_name, 5)
+
+                # heartbeat so FE knows connection is alive
+                yield f"""data: {
+                    json.dumps(
+                        {
+                            "event": "DONE",
+                            "task_id": task_id,
+                            "timestamp": time.time(),
+                            "data": {},
+                            "id": since_id,
+                        }
+                    )
+                }\n\n"""  # TODO: Consistent the name to avoid magic string # noqa
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")

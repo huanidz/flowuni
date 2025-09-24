@@ -45,10 +45,8 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
     const { confirm, ConfirmationDialog } = useConfirmation();
     const deleteTestCaseMutation = useDeleteTestCase();
     const runSingleTestMutation = useRunSingleTest();
-    const [currentTaskId, setCurrentTaskId] = useState<string | null>(null);
 
     // Use the SSE hook to watch for events when we have a task ID
-    useWatchFlowTestEvents(currentTaskId);
 
     const isDraft = typeof item.id === 'string' && item.id.startsWith('draft-');
 
@@ -73,6 +71,26 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
         } else if (e.key === 'Escape' && onCancel) {
             onCancel();
         }
+    };
+
+    const handleRunTest = (e: React.MouseEvent) => {
+        runSingleTestMutation.mutate(
+            {
+                case_id: testCase.id,
+                flow_id: flowId,
+            },
+            {
+                onSuccess: data => {
+                    // Set the task ID to start watching for SSE events
+                    useWatchFlowTestEvents(data.task_id);
+
+                    console.log(
+                        'Test run started, watching for events with task ID:',
+                        data.task_id
+                    );
+                },
+            }
+        );
     };
 
     if (isDraft) {
@@ -151,25 +169,7 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
                                 size="sm"
                                 variant="ghost"
                                 className="h-7 w-7 p-0 text-muted-foreground hover:text-green-600"
-                                onClick={e => {
-                                    e.stopPropagation(); // Prevent card selection when clicking run
-                                    runSingleTestMutation.mutate(
-                                        {
-                                            case_id: testCase.id,
-                                            flow_id: flowId,
-                                        },
-                                        {
-                                            onSuccess: data => {
-                                                // Set the task ID to start watching for SSE events
-                                                setCurrentTaskId(data.task_id);
-                                                console.log(
-                                                    'Test run started, watching for events with task ID:',
-                                                    data.task_id
-                                                );
-                                            },
-                                        }
-                                    );
-                                }}
+                                onClick={handleRunTest}
                                 disabled={runSingleTestMutation.isPending}
                             >
                                 <Play className="h-3 w-3" />
