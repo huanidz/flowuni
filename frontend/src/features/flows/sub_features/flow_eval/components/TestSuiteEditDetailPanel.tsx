@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Edit2 } from 'lucide-react';
 import type { FlowTestCase } from '../types';
 import TestCriteriaBuilder from './RuleCriteria/TestCriteriaBuilder';
 import { usePartialUpdateTestCase } from '../hooks';
@@ -19,6 +20,8 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
     const [testCriteria, setTestCriteria] = useState('');
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
+    const [isEditingName, setIsEditingName] = useState(false);
+    const [nameDraft, setNameDraft] = useState('');
     const partialUpdateTestCase = usePartialUpdateTestCase();
 
     useEffect(() => {
@@ -31,6 +34,7 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
             )
         );
         setName(selectedTestCase?.name || '');
+        setNameDraft(selectedTestCase?.name || '');
         setDescription(selectedTestCase?.description || '');
     }, [selectedTestCase]);
 
@@ -54,6 +58,24 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
             request: { [field]: value },
         });
         onUpdateTestCase?.({ ...selectedTestCase, [field]: value });
+    };
+
+    const handleNameEdit = () => {
+        setNameDraft(name);
+        setIsEditingName(true);
+    };
+
+    const handleNameSave = () => {
+        if (nameDraft !== name) {
+            saveField('name', nameDraft);
+            setName(nameDraft);
+        }
+        setIsEditingName(false);
+    };
+
+    const handleNameCancel = () => {
+        setIsEditingName(false);
+        setNameDraft(name);
     };
 
     const handleSave = () => {
@@ -109,10 +131,45 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
                     <span className="text-sm font-mono bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">
                         ID: {selectedTestCase.id}
                     </span>
-                    <EditableField
-                        value={name}
-                        onSave={val => saveField('name', val)}
-                    />
+                    <div className="flex items-center gap-2">
+                        {isEditingName ? (
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="text"
+                                    value={nameDraft}
+                                    onChange={e => setNameDraft(e.target.value)}
+                                    className="text-xl font-bold px-2 py-1 rounded border bg-white dark:bg-slate-900"
+                                    autoFocus
+                                />
+                                <div className="flex gap-1">
+                                    <button
+                                        onClick={handleNameCancel}
+                                        className="p-1 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={handleNameSave}
+                                        className="p-1 text-blue-600 hover:text-blue-700"
+                                    >
+                                        Save
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-2">
+                                <h2 className="text-xl font-bold">
+                                    {name || 'Unnamed Test Case'}
+                                </h2>
+                                <button
+                                    onClick={handleNameEdit}
+                                    className="p-1 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                                >
+                                    <Edit2 className="h-4 w-4" />
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
                 <button
                     className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
