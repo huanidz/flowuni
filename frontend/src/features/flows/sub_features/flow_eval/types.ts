@@ -32,6 +32,7 @@ export interface LLMProviderConfig {
 }
 
 export interface LLMRuleConfig {
+    judge_id?: number;
     name?: string;
     description?: string;
     llm_provider?: LLMProviderConfig;
