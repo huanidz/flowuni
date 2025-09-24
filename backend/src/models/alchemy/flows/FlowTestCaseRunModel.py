@@ -11,8 +11,7 @@ from sqlalchemy.orm import relationship
 from src.models.alchemy.shared.AppBaseModel import AppBaseModel
 
 
-# Bạn có thể giữ Enum này hoặc chuyển nó đến một nơi dùng chung
-class TestCaseRunStatus(Enum):
+class TestCaseRunStatus(str, Enum):
     PENDING = "PENDING"
     QUEUED = "QUEUED"
     RUNNING = "RUNNING"

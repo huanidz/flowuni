@@ -151,6 +151,9 @@ async def delete_test_suite(
         )
 
 
+# === Test Case Endpoints ===
+
+
 @flow_test_router.delete("/cases/{case_id}", status_code=204)
 async def delete_test_case(
     case_id: int = Path(..., description="Test case ID"),
@@ -206,9 +209,6 @@ async def delete_test_case(
             status_code=500,
             detail="An error occurred while deleting the test case.",
         )
-
-
-# === Test Case Endpoints ===
 
 
 @flow_test_router.post("/cases", response_model=TestCaseCreateResponse)

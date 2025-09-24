@@ -32,9 +32,11 @@ export interface LLMProviderConfig {
 }
 
 export interface LLMRuleConfig {
+    judge_id?: number;
     name?: string;
     description?: string;
-    data?: LLMProviderConfig;
+    llm_provider?: LLMProviderConfig;
+    instruction?: string;
 }
 
 export interface StringRule {
@@ -56,6 +58,11 @@ export interface LLMRule {
 }
 
 export type TestRule = StringRule | RegexRule | LLMRule;
+
+export type CriteriaWithLogicConnectors = {
+    rules: TestRule[];
+    logics: ('AND' | 'OR')[];
+};
 
 export type TestCaseRunStatus =
     | 'PENDING'
@@ -307,4 +314,25 @@ export interface TestCaseUpdateResponse {
     input_metadata?: Record<string, any>;
     pass_criteria?: Record<string, any>;
     timeout_ms?: number;
+}
+
+/**
+ * Flow test run request interface based on backend FlowTestRunRequest
+ */
+export interface FlowTestRunRequest {
+    case_id: number;
+    flow_id: string;
+    input_text?: string;
+    input_metadata?: Record<string, any>;
+}
+
+/**
+ * Flow test run response interface based on backend FlowTestRunResponse
+ */
+export interface FlowTestRunResponse {
+    status: TestCaseRunStatus;
+    task_id: string;
+    message: string;
+    case_id: number;
+    flow_id: string;
 }

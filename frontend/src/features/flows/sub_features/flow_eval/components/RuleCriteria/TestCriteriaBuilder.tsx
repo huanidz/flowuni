@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import RuleEditor from './RuleEditor';
-import type { TestRule } from '../../types';
+import type { TestRule, CriteriaWithLogicConnectors } from '../../types';
 import TestCriteriaSummary from './TestCriteriaSummary';
 import { TEST_CRITERIA_RULE_TYPES } from '../../const';
 import type { TestCriteriaRuleType } from '../../const';
-
+import { create_default_rule } from '../../utils';
 import {
     Select,
     SelectContent,
@@ -13,46 +13,31 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 
-type CriteriaWithConnectors = {
-    rules: TestRule[];
-    connectors: ('AND' | 'OR')[]; // connectors between rules
-};
-
 const TestCriteriaBuilder: React.FC<{
     criteria: string;
     onChange: (criteria: string) => void;
 }> = ({ criteria, onChange }) => {
-    const parseCriteria = (str: string): CriteriaWithConnectors => {
+    const parseCriteria = (str: string): CriteriaWithLogicConnectors => {
         try {
-            // If the criteria is an object with rules and logics (new format)
-            // If it's an object with rules and connectors (old format), use it directly for backward compatibility
-            const parsed = str
-                ? JSON.parse(str)
-                : { rules: [], connectors: [] };
+            const parsed = str ? JSON.parse(str) : { rules: [], logics: [] };
 
             if (parsed.rules && parsed.logics) {
-                // New format: object with rules and logics
+                // Format: object with rules and logics
                 return {
                     rules: parsed.rules ?? [],
-                    connectors: parsed.logics ?? [],
-                };
-            } else if (parsed.rules && parsed.connectors) {
-                // Old format: object with rules and connectors
-                return {
-                    rules: parsed.rules ?? [],
-                    connectors: parsed.connectors ?? [],
+                    logics: parsed.logics ?? [],
                 };
             } else {
                 // Empty or invalid format
-                return { rules: [], connectors: [] };
+                return { rules: [], logics: [] };
             }
         } catch {
-            return { rules: [], connectors: [] };
+            return { rules: [], logics: [] };
         }
     };
 
     const [currentCriteria, setCurrentCriteria] =
-        useState<CriteriaWithConnectors>(parseCriteria(criteria));
+        useState<CriteriaWithLogicConnectors>(parseCriteria(criteria));
     const [ruleSelectKey, setRuleSelectKey] = useState(0);
 
     // Update currentCriteria when the criteria prop changes
@@ -60,60 +45,18 @@ const TestCriteriaBuilder: React.FC<{
         setCurrentCriteria(parseCriteria(criteria));
     }, [criteria]);
 
-    const updateCriteria = (newCriteria: CriteriaWithConnectors) => {
+    const updateCriteria = (newCriteria: CriteriaWithLogicConnectors) => {
         setCurrentCriteria(newCriteria);
-
-        // Convert to the expected format: object with rules and logics
-        const passCriteria = {
-            rules: newCriteria.rules,
-            logics: newCriteria.connectors,
-        };
-
-        onChange(JSON.stringify(passCriteria, null, 2));
+        onChange(JSON.stringify(newCriteria, null, 2));
     };
 
     const addRule = (type: TestCriteriaRuleType) => {
-        const id = Date.now(); // Use number instead of string
-        let newRule: TestRule;
-        switch (type) {
-            case TEST_CRITERIA_RULE_TYPES.STRING:
-                newRule = {
-                    type: TEST_CRITERIA_RULE_TYPES.STRING,
-                    config: {
-                        operation: 'contains',
-                        value: '',
-                    },
-                    id,
-                };
-                break;
-            case TEST_CRITERIA_RULE_TYPES.REGEX:
-                newRule = {
-                    type: TEST_CRITERIA_RULE_TYPES.REGEX,
-                    config: {
-                        pattern: '',
-                    },
-                    id,
-                };
-                break;
-            case TEST_CRITERIA_RULE_TYPES.LLM_JUDGE:
-                newRule = {
-                    type: TEST_CRITERIA_RULE_TYPES.LLM_JUDGE,
-                    config: {
-                        data: {
-                            provider: '',
-                            model: '',
-                            api_key: '',
-                        },
-                    },
-                    id,
-                };
-                break;
-        }
+        const newRule = create_default_rule(type);
 
         updateCriteria({
             rules: [...currentCriteria.rules, newRule],
-            connectors: [
-                ...currentCriteria.connectors,
+            logics: [
+                ...currentCriteria.logics,
                 currentCriteria.rules.length > 0 ? 'AND' : undefined,
             ].filter(Boolean) as ('AND' | 'OR')[],
         });
@@ -128,16 +71,16 @@ const TestCriteriaBuilder: React.FC<{
 
     const deleteRule = (index: number) => {
         const rules = currentCriteria.rules.filter((_, i) => i !== index);
-        const connectors = currentCriteria.connectors.filter(
+        const logics = currentCriteria.logics.filter(
             (_, i) => i !== index && i !== index - 1
         );
-        updateCriteria({ rules, connectors });
+        updateCriteria({ rules, logics });
     };
 
     const toggleConnector = (index: number) => {
-        const connectors = [...currentCriteria.connectors];
-        connectors[index] = connectors[index] === 'AND' ? 'OR' : 'AND';
-        updateCriteria({ ...currentCriteria, connectors });
+        const logics = [...currentCriteria.logics];
+        logics[index] = logics[index] === 'AND' ? 'OR' : 'AND';
+        updateCriteria({ ...currentCriteria, logics });
     };
 
     return (
@@ -176,7 +119,7 @@ const TestCriteriaBuilder: React.FC<{
                                     onClick={() => toggleConnector(index)}
                                     className="rounded-md border px-3 py-1 text-sm font-semibold text-primary hover:bg-accent hover:text-accent-foreground transition-colors"
                                 >
-                                    {currentCriteria.connectors[index]}
+                                    {currentCriteria.logics[index]}
                                 </button>
                             </div>
                         )}

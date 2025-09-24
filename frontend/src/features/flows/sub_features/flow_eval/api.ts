@@ -1,5 +1,7 @@
 import api from '@/api/secureClient';
 import type {
+    FlowTestRunRequest,
+    FlowTestRunResponse,
     TestCaseCreateRequest,
     TestCaseCreateResponse,
     TestCaseGetResponse,
@@ -74,5 +76,17 @@ export const partialUpdateTestCase = async (
     request: TestCasePartialUpdateRequest
 ): Promise<TestCaseUpdateResponse> => {
     const { data } = await api.patch(`/flow-tests/cases/${caseId}`, request);
+    return data;
+};
+
+// ======== TEST RUN ========
+
+/**
+ * Run a single flow test
+ */
+export const runSingleTest = async (
+    request: FlowTestRunRequest
+): Promise<FlowTestRunResponse> => {
+    const { data } = await api.post('/flow-test-runs/', request);
     return data;
 };

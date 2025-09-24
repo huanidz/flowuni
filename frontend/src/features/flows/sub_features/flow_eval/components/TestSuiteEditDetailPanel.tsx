@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { Edit2, Save, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Edit2 } from 'lucide-react';
 import type { FlowTestCase } from '../types';
 import TestCriteriaBuilder from './RuleCriteria/TestCriteriaBuilder';
 import { usePartialUpdateTestCase } from '../hooks';
+import EditableField from './TestSuiteEdit/EditableField';
 
 interface TestSuiteEditDetailPanelProps {
     selectedTestCase: FlowTestCase | null;
@@ -10,165 +11,124 @@ interface TestSuiteEditDetailPanelProps {
     isLoading?: boolean;
 }
 
-/**
- * Right panel component for displaying test case details in TestSuiteEdit modal
- */
 const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
     selectedTestCase,
     onUpdateTestCase,
     isLoading = false,
 }) => {
-    const [input, setInput] = useState(selectedTestCase?.input_text || '');
-    const [testCriteria, setTestCriteria] = useState(() => {
-        // Handle null or undefined pass_criteria
-        if (!selectedTestCase?.pass_criteria) {
-            return JSON.stringify({ rules: [], logics: [] }, null, 2);
-        }
-        return JSON.stringify(selectedTestCase.pass_criteria, null, 2);
-    });
+    const [input, setInput] = useState('');
+    const [testCriteria, setTestCriteria] = useState('');
+    const [name, setName] = useState('');
+    const [description, setDescription] = useState('');
     const [isEditingName, setIsEditingName] = useState(false);
-    const [isEditingDescription, setIsEditingDescription] = useState(false);
-    const [name, setName] = useState(selectedTestCase?.name || '');
-    const [description, setDescription] = useState(
-        selectedTestCase?.description || ''
-    );
-
+    const [nameDraft, setNameDraft] = useState('');
     const partialUpdateTestCase = usePartialUpdateTestCase();
 
-    // Update local state when selectedTestCase changes
-    React.useEffect(() => {
+    useEffect(() => {
         setInput(selectedTestCase?.input_text || '');
-
-        // Handle null or undefined pass_criteria properly
-        if (!selectedTestCase?.pass_criteria) {
-            setTestCriteria(JSON.stringify({ rules: [], logics: [] }, null, 2));
-        } else {
-            setTestCriteria(
-                JSON.stringify(selectedTestCase.pass_criteria, null, 2)
-            );
-        }
-
+        setTestCriteria(
+            JSON.stringify(
+                selectedTestCase?.pass_criteria || { rules: [], logics: [] },
+                null,
+                2
+            )
+        );
         setName(selectedTestCase?.name || '');
+        setNameDraft(selectedTestCase?.name || '');
         setDescription(selectedTestCase?.description || '');
-        setIsEditingName(false);
-        setIsEditingDescription(false);
     }, [selectedTestCase]);
 
-    const handleFieldChange = (field: string, value: string) => {
-        if (selectedTestCase && onUpdateTestCase) {
-            try {
-                if (field === 'input_text') {
-                    // input_text is now a string, no need to parse
-                    onUpdateTestCase({
-                        ...selectedTestCase,
-                        [field]: value,
-                    });
-                } else if (field === 'pass_criteria') {
-                    const parsedValue = JSON.parse(value);
-                    onUpdateTestCase({
-                        ...selectedTestCase,
-                        [field]: parsedValue,
-                    });
-                } else {
-                    onUpdateTestCase({ ...selectedTestCase, [field]: value });
-                }
-            } catch (error) {
-                console.error(`Error parsing ${field}:`, error);
-                // Don't update if JSON is invalid
-            }
+    const updateCase = (field: string, value: any) => {
+        if (!selectedTestCase || !onUpdateTestCase) return;
+        try {
+            const updated = {
+                ...selectedTestCase,
+                [field]: field === 'pass_criteria' ? JSON.parse(value) : value,
+            };
+            onUpdateTestCase(updated);
+        } catch {
+            console.error(`Error updating ${field}`);
         }
+    };
+
+    const saveField = (field: 'name' | 'description', value: string) => {
+        if (!selectedTestCase || selectedTestCase[field] === value) return;
+        partialUpdateTestCase.mutate({
+            caseId: selectedTestCase.id,
+            request: { [field]: value },
+        });
+        onUpdateTestCase?.({ ...selectedTestCase, [field]: value });
+    };
+
+    const handleNameEdit = () => {
+        setNameDraft(name);
+        setIsEditingName(true);
     };
 
     const handleNameSave = () => {
-        if (selectedTestCase && name !== selectedTestCase.name) {
-            partialUpdateTestCase.mutate({
-                caseId: selectedTestCase.id,
-                request: { name },
-            });
-            if (onUpdateTestCase) {
-                onUpdateTestCase({ ...selectedTestCase, name });
-            }
+        if (nameDraft !== name) {
+            saveField('name', nameDraft);
+            setName(nameDraft);
         }
         setIsEditingName(false);
     };
 
-    const handleDescriptionSave = () => {
-        if (selectedTestCase && description !== selectedTestCase.description) {
-            partialUpdateTestCase.mutate({
-                caseId: selectedTestCase.id,
-                request: { description },
-            });
-            if (onUpdateTestCase) {
-                onUpdateTestCase({ ...selectedTestCase, description });
-            }
-        }
-        setIsEditingDescription(false);
+    const handleNameCancel = () => {
+        setIsEditingName(false);
+        setNameDraft(name);
     };
 
     const handleSave = () => {
-        if (selectedTestCase) {
-            try {
-                // input is now a string, no need to parse
-                const parsedCriteria = JSON.parse(testCriteria);
-
-                // Update via API
-                partialUpdateTestCase.mutate({
-                    caseId: selectedTestCase.id,
-                    request: {
-                        input_text: input,
-                        pass_criteria: parsedCriteria,
-                    },
-                });
-
-                // Update local state
-                if (onUpdateTestCase) {
-                    onUpdateTestCase({
-                        ...selectedTestCase,
-                        input_text: input,
-                        pass_criteria: parsedCriteria,
-                    });
-                }
-            } catch (error) {
-                console.error('Error saving test case:', error);
-            }
+        if (!selectedTestCase) return;
+        try {
+            const parsedCriteria = JSON.parse(testCriteria);
+            partialUpdateTestCase.mutate({
+                caseId: selectedTestCase.id,
+                request: { input_text: input, pass_criteria: parsedCriteria },
+            });
+            onUpdateTestCase?.({
+                ...selectedTestCase,
+                input_text: input,
+                pass_criteria: parsedCriteria,
+            });
+        } catch {
+            console.error('Invalid testCriteria JSON');
         }
     };
 
-    if (isLoading) {
+    if (isLoading)
         return (
-            <div className="w-full md:w-2/3 bg-white dark:bg-slate-800 p-8 text-center flex items-center justify-center">
+            <div className="w-full md:w-2/3 bg-white dark:bg-slate-800 p-8 flex items-center justify-center">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">
                         Loading Test Case
                     </h3>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm">
+                    <p className="text-sm text-slate-500">
                         Fetching test case details...
                     </p>
                 </div>
             </div>
         );
-    }
 
-    if (!selectedTestCase) {
+    if (!selectedTestCase)
         return (
             <div className="w-full md:w-2/3 bg-white dark:bg-slate-800 p-8 text-center">
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
+                <h3 className="text-lg font-semibold mb-2">
                     No Test Case Selected
                 </h3>
-                <p className="text-slate-500 dark:text-slate-400 text-sm">
-                    Select a test case from the list to view its details.
+                <p className="text-sm text-slate-500">
+                    Select a test case to view details.
                 </p>
             </div>
         );
-    }
 
     return (
         <div className="w-full md:w-2/3 overflow-y-auto bg-white dark:bg-slate-800 p-6">
             {/* Header */}
-            <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-200 dark:border-slate-700">
+            <div className="flex items-center justify-between mb-6 pb-4 border-b">
                 <div className="flex items-center gap-3">
-                    <span className="text-sm font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">
+                    <span className="text-sm font-mono bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">
                         ID: {selectedTestCase.id}
                     </span>
                     <div className="flex items-center gap-2">
@@ -176,31 +136,33 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
                             <div className="flex items-center gap-2">
                                 <input
                                     type="text"
-                                    value={name}
-                                    onChange={e => setName(e.target.value)}
-                                    className="text-xl font-bold text-slate-900 dark:text-slate-100 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded border border-slate-300 dark:border-slate-600"
+                                    value={nameDraft}
+                                    onChange={e => setNameDraft(e.target.value)}
+                                    className="text-xl font-bold px-2 py-1 rounded border bg-white dark:bg-slate-900"
                                     autoFocus
                                 />
-                                <button
-                                    onClick={handleNameSave}
-                                    className="p-1 text-green-600 hover:text-green-700"
-                                >
-                                    <Save className="h-4 w-4" />
-                                </button>
-                                <button
-                                    onClick={() => setIsEditingName(false)}
-                                    className="p-1 text-red-600 hover:text-red-700"
-                                >
-                                    <X className="h-4 w-4" />
-                                </button>
+                                <div className="flex gap-1">
+                                    <button
+                                        onClick={handleNameCancel}
+                                        className="p-1 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={handleNameSave}
+                                        className="p-1 text-blue-600 hover:text-blue-700"
+                                    >
+                                        Save
+                                    </button>
+                                </div>
                             </div>
                         ) : (
                             <div className="flex items-center gap-2">
-                                <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">
-                                    {name}
-                                </h3>
+                                <h2 className="text-xl font-bold">
+                                    {name || 'Unnamed Test Case'}
+                                </h2>
                                 <button
-                                    onClick={() => setIsEditingName(true)}
+                                    onClick={handleNameEdit}
                                     className="p-1 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
                                 >
                                     <Edit2 className="h-4 w-4" />
@@ -209,92 +171,46 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
                         )}
                     </div>
                 </div>
-                <div className="flex items-center gap-3">
-                    <button
-                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-                        onClick={handleSave}
-                    >
-                        Save
-                    </button>
-                </div>
+                <button
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                    onClick={handleSave}
+                >
+                    Save
+                </button>
             </div>
 
-            {/* Description */}
-            <div className="mb-6">
-                <div className="flex items-center justify-between mb-2">
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                        DESCRIPTION
-                    </label>
-                    {!isEditingDescription && (
-                        <button
-                            onClick={() => setIsEditingDescription(true)}
-                            className="p-1 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-                        >
-                            <Edit2 className="h-4 w-4" />
-                        </button>
-                    )}
-                </div>
-                {isEditingDescription ? (
-                    <div className="space-y-2">
-                        <textarea
-                            value={description}
-                            onChange={e => setDescription(e.target.value)}
-                            placeholder="Enter test case description..."
-                            className="w-full h-24 p-3 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm resize-none"
-                            autoFocus
-                        />
-                        <div className="flex justify-end gap-2">
-                            <button
-                                onClick={() => setIsEditingDescription(false)}
-                                className="px-3 py-1 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleDescriptionSave}
-                                className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                            >
-                                Save
-                            </button>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="p-3 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm min-h-[60px]">
-                        {description || (
-                            <span className="text-slate-500 dark:text-slate-400 italic">
-                                No description provided
-                            </span>
-                        )}
-                    </div>
-                )}
-            </div>
+            <EditableField
+                value={description}
+                label="Description"
+                placeholder="Enter test case description..."
+                isMultiline
+                onSave={val => saveField('description', val)}
+            />
 
             {/* Input */}
             <div className="mb-6">
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    INPUT
-                </label>
+                <label className="block text-sm font-medium mb-2">INPUT</label>
                 <textarea
-                    value={input as string}
+                    value={input}
                     onChange={e => {
                         setInput(e.target.value);
-                        handleFieldChange('input_text', e.target.value);
+                        updateCase('input_text', e.target.value);
                     }}
                     placeholder="Enter test input..."
-                    className="w-full h-40 p-3 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-mono text-sm resize-none"
+                    className="w-full h-40 p-3 border rounded-md font-mono text-sm resize-none"
                 />
             </div>
 
-            {/* Test Pass Criteria - Rule Builder */}
+            {/* Criteria */}
             <div className="mb-6">
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+                <label className="block text-sm font-medium mb-3">
                     TEST PASS CRITERIA
                 </label>
                 <TestCriteriaBuilder
-                    criteria={testCriteria as string}
+                    criteria={testCriteria}
                     onChange={criteria => {
                         setTestCriteria(criteria);
-                        handleFieldChange('pass_criteria', criteria);
+                        updateCase('pass_criteria', criteria);
                     }}
                 />
             </div>

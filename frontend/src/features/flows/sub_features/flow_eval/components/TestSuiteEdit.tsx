@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -23,9 +23,6 @@ interface TestSuiteEditProps {
     testCases?: TestCasePreview[];
 }
 
-/**
- * Modal component for editing test suites with split layout
- */
 const TestSuiteEdit: React.FC<TestSuiteEditProps> = ({
     isOpen,
     onClose,
@@ -33,52 +30,65 @@ const TestSuiteEdit: React.FC<TestSuiteEditProps> = ({
     testCases = [],
 }) => {
     const [selectedTestCase, setSelectedTestCase] =
-        React.useState<FlowTestCase | null>(null);
-    const [isLoadingTestCase, setIsLoadingTestCase] = React.useState(false);
+        useState<FlowTestCase | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [updatedCases, setUpdatedCases] = useState<FlowTestCase[]>([]);
 
     const handleClose = () => {
+        setUpdatedCases([]);
         onClose();
     };
 
+    const handleUpdateTestCase = (updated: FlowTestCase) => {
+        setSelectedTestCase(updated);
+        setUpdatedCases(prev =>
+            prev.some(tc => tc.id === updated.id)
+                ? prev.map(tc => (tc.id === updated.id ? updated : tc))
+                : [...prev, updated]
+        );
+    };
+
     const handleTestCaseSelect = async (testCase: TestCasePreview) => {
-        if (selectedTestCase && selectedTestCase.id === testCase.id) {
-            return;
-        }
+        if (selectedTestCase?.id === testCase.id) return;
 
+        setIsLoading(true);
         try {
-            setIsLoadingTestCase(true);
-            // Fetch the full test case data from the API
-            const testCaseData = await getTestCase(testCase.id);
-
-            // Convert TestCaseGetResponse to FlowTestCase for the detail panel
-            setSelectedTestCase({ ...testCaseData });
-        } catch (error) {
-            console.error('Error fetching test case:', error);
-            // Handle error appropriately (e.g., show a toast notification)
+            const localUpdate = updatedCases.find(tc => tc.id === testCase.id);
+            if (localUpdate) {
+                setSelectedTestCase(localUpdate);
+            } else {
+                const data = await getTestCase(testCase.id);
+                setSelectedTestCase({
+                    ...data,
+                    pass_criteria: data.pass_criteria
+                        ? {
+                              rules: data.pass_criteria.rules || [],
+                              logics: data.pass_criteria.logics || [],
+                          }
+                        : undefined,
+                });
+            }
+        } catch (err) {
+            console.error('Error fetching test case:', err);
         } finally {
-            setIsLoadingTestCase(false);
+            setIsLoading(false);
         }
     };
 
-    const handleTestCaseDelete = (deletedTestCaseId: number) => {
-        // Clear the selected test case if it's the one being deleted
-        if (selectedTestCase && selectedTestCase.id === deletedTestCaseId) {
-            setSelectedTestCase(null);
-        }
+    const handleTestCaseDelete = (deletedId: number) => {
+        if (selectedTestCase?.id === deletedId) setSelectedTestCase(null);
     };
 
     return (
         <Dialog open={isOpen} onOpenChange={handleClose}>
             <DialogContent className="sm:max-w-6xl max-h-[80vh]">
                 <DialogHeader>
-                    <DialogTitle className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                    <DialogTitle className="text-xl font-bold">
                         Edit Test Suite: {testSuite.name}
                     </DialogTitle>
                 </DialogHeader>
 
-                {/* Split Layout */}
-                <div className="flex flex-col md:flex-row h-[60vh] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
-                    {/* Left Panel - List of Test Cases */}
+                <div className="flex flex-col md:flex-row h-[60vh] bg-slate-50 dark:bg-slate-900 border rounded-lg overflow-hidden">
                     <TestSuiteEditListPanel
                         testCases={testCases}
                         selectedTestCase={selectedTestCase}
@@ -86,11 +96,10 @@ const TestSuiteEdit: React.FC<TestSuiteEditProps> = ({
                         onTestCaseDelete={handleTestCaseDelete}
                         suiteId={testSuite.id}
                     />
-
-                    {/* Right Panel - Test Case Details */}
                     <TestSuiteEditDetailPanel
                         selectedTestCase={selectedTestCase}
-                        isLoading={isLoadingTestCase}
+                        isLoading={isLoading}
+                        onUpdateTestCase={handleUpdateTestCase}
                     />
                 </div>
             </DialogContent>
