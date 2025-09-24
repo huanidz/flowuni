@@ -95,6 +95,19 @@ const LLMRuleEditor: React.FC<LLMRuleEditorProps> = ({
                 </Button>
             </div>
 
+            {/* Mini text below header */}
+            <div className="text-xs text-purple-600 dark:text-purple-400 mb-3">
+                Create your LLM judges at{' '}
+                <a
+                    href="/dashboard/templates"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:text-purple-800 dark:hover:text-purple-300"
+                >
+                    here
+                </a>
+            </div>
+
             {/* Content */}
             <div className="space-y-3">
                 {/* Judge Selection */}
