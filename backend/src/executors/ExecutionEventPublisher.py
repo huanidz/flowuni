@@ -4,6 +4,7 @@ from typing import Literal, Optional
 
 import redis
 from pydantic import BaseModel, Field
+from src.models.events.RedisEvents import RedisFlowRunEndEvent, RedisFlowRunNodeEvent
 
 
 class ExecutionControl(BaseModel):
@@ -12,9 +13,10 @@ class ExecutionControl(BaseModel):
 
 
 class ExecutionEventPublisher:
-    def __init__(self, task_id: str, redis_client: redis.Redis):
+    def __init__(self, task_id: str, redis_client: redis.Redis, is_test: bool = False):
         self.task_id = task_id
         self.redis: redis.Redis = redis_client
+        self.is_test = is_test
 
     # === NON-TEST EVENT PUBLISH ===
     def end(self, data: dict = {}):
@@ -24,6 +26,7 @@ class ExecutionEventPublisher:
             "data": data,
             "timestamp": datetime.utcnow().isoformat(),
         }
+        redis_message = RedisFlowRunEndEvent(**redis_message).model_dump()
         self.redis.rpush(self.task_id, json.dumps(redis_message))
 
     def publish_node_event(self, node_id: str, event: str, data: dict):
@@ -34,6 +37,7 @@ class ExecutionEventPublisher:
             "data": data,
             "timestamp": datetime.utcnow().isoformat(),
         }
+        redis_message = RedisFlowRunNodeEvent(**redis_message).model_dump()
 
         # Push to a Redis list keyed by task_id
         self.redis.rpush(self.task_id, json.dumps(redis_message))
