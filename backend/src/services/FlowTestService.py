@@ -35,6 +35,30 @@ class FlowTestServiceInterface(ABC):
         pass
 
     @abstractmethod
+    def update_test_suite(
+        self,
+        suite_id: int,
+        flow_id: Optional[str] = None,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        is_active: Optional[bool] = None,
+    ) -> FlowTestSuiteModel:
+        """
+        Update a test suite by its ID.
+
+        Args:
+            suite_id: Test suite ID to update
+            flow_id: New flow ID (optional)
+            name: New test suite name (optional)
+            description: New test suite description (optional)
+            is_active: New active status (optional)
+
+        Returns:
+            Updated test suite model
+        """
+        pass
+
+    @abstractmethod
     def get_test_suite_by_id(self, suite_id: int) -> Optional[FlowTestSuiteModel]:
         """
         Get a test suite by its ID
@@ -157,6 +181,49 @@ class FlowTestService(FlowTestServiceInterface):
             logger.info(f"Successfully deleted test suite with ID {suite_id}")
         except Exception as e:
             logger.error(f"Error deleting test suite with ID {suite_id}: {str(e)}")
+            raise
+
+    def update_test_suite(
+        self,
+        suite_id: int,
+        flow_id: Optional[str] = None,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        is_active: Optional[bool] = None,
+    ) -> FlowTestSuiteModel:
+        """
+        Update a test suite by its ID.
+
+        Args:
+            suite_id: Test suite ID to update
+            flow_id: New flow ID (optional)
+            name: New test suite name (optional)
+            description: New test suite description (optional)
+            is_active: New active status (optional)
+
+        Returns:
+            Updated test suite model
+        """
+        try:
+            # First check if the test suite exists
+            test_suite = self.test_repository.get_test_suite_by_id(suite_id=suite_id)
+            if not test_suite:
+                logger.warning(f"Test suite with ID {suite_id} not found")
+                raise NOT_FOUND_EXCEPTION
+
+            # Update the test suite
+            updated_test_suite = self.test_repository.update_test_suite(
+                suite_id=suite_id,
+                flow_id=flow_id,
+                name=name,
+                description=description,
+                is_active=is_active,
+            )
+            logger.info(f"Successfully updated test suite with ID {suite_id}")
+
+            return updated_test_suite
+        except Exception as e:
+            logger.error(f"Error updating test suite with ID {suite_id}: {str(e)}")
             raise
 
     def get_test_suite_by_id(self, suite_id: int) -> Optional[FlowTestSuiteModel]:
