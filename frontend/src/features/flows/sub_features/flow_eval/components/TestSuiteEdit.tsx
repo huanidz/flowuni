@@ -35,9 +35,32 @@ const TestSuiteEdit: React.FC<TestSuiteEditProps> = ({
     const [selectedTestCase, setSelectedTestCase] =
         React.useState<FlowTestCase | null>(null);
     const [isLoadingTestCase, setIsLoadingTestCase] = React.useState(false);
+    const [updatedTestCases, setUpdatedTestCases] = React.useState<
+        FlowTestCase[]
+    >([]);
 
     const handleClose = () => {
+        // Clear the updated test cases when closing the modal
+        setUpdatedTestCases([]);
         onClose();
+    };
+
+    const handleUpdateTestCase = (updatedTestCase: FlowTestCase) => {
+        // Update the selected test case in the local state
+        setSelectedTestCase(updatedTestCase);
+
+        // Also update in the updatedTestCases array
+        setUpdatedTestCases(prev => {
+            const existingIndex = prev.findIndex(
+                tc => tc.id === updatedTestCase.id
+            );
+            if (existingIndex >= 0) {
+                const newUpdatedTestCases = [...prev];
+                newUpdatedTestCases[existingIndex] = updatedTestCase;
+                return newUpdatedTestCases;
+            }
+            return [...prev, updatedTestCase];
+        });
     };
 
     const handleTestCaseSelect = async (testCase: TestCasePreview) => {
@@ -47,11 +70,30 @@ const TestSuiteEdit: React.FC<TestSuiteEditProps> = ({
 
         try {
             setIsLoadingTestCase(true);
-            // Fetch the full test case data from the API
-            const testCaseData = await getTestCase(testCase.id);
 
-            // Convert TestCaseGetResponse to FlowTestCase for the detail panel
-            setSelectedTestCase({ ...testCaseData });
+            // Check if we have updated data for this test case
+            const updatedTestCase = updatedTestCases.find(
+                tc => tc.id === testCase.id
+            );
+
+            if (updatedTestCase) {
+                // Use the updated data instead of fetching from API
+                setSelectedTestCase(updatedTestCase);
+            } else {
+                // Fetch the full test case data from the API
+                const testCaseData = await getTestCase(testCase.id);
+
+                // Convert TestCaseGetResponse to FlowTestCase for the detail panel
+                setSelectedTestCase({
+                    ...testCaseData,
+                    pass_criteria: testCaseData.pass_criteria
+                        ? {
+                              rules: testCaseData.pass_criteria.rules || [],
+                              logics: testCaseData.pass_criteria.logics || [],
+                          }
+                        : undefined,
+                });
+            }
         } catch (error) {
             console.error('Error fetching test case:', error);
             // Handle error appropriately (e.g., show a toast notification)
@@ -91,6 +133,7 @@ const TestSuiteEdit: React.FC<TestSuiteEditProps> = ({
                     <TestSuiteEditDetailPanel
                         selectedTestCase={selectedTestCase}
                         isLoading={isLoadingTestCase}
+                        onUpdateTestCase={handleUpdateTestCase}
                     />
                 </div>
             </DialogContent>

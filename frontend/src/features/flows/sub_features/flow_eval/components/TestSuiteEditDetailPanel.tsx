@@ -57,21 +57,18 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
     const handleFieldChange = (field: string, value: string) => {
         if (selectedTestCase && onUpdateTestCase) {
             try {
-                if (field === 'input_text') {
-                    // input_text is now a string, no need to parse
-                    onUpdateTestCase({
-                        ...selectedTestCase,
-                        [field]: value,
-                    });
-                } else if (field === 'pass_criteria') {
-                    const parsedValue = JSON.parse(value);
-                    onUpdateTestCase({
-                        ...selectedTestCase,
-                        [field]: parsedValue,
-                    });
-                } else {
-                    onUpdateTestCase({ ...selectedTestCase, [field]: value });
+                let updatedValue = value;
+
+                if (field === 'pass_criteria') {
+                    updatedValue = JSON.parse(value);
                 }
+
+                const updatedTestCase = {
+                    ...selectedTestCase,
+                    [field]: updatedValue,
+                };
+
+                onUpdateTestCase(updatedTestCase);
             } catch (error) {
                 console.error(`Error parsing ${field}:`, error);
                 // Don't update if JSON is invalid
@@ -85,8 +82,10 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
                 caseId: selectedTestCase.id,
                 request: { name },
             });
+
+            const updatedTestCase = { ...selectedTestCase, name };
             if (onUpdateTestCase) {
-                onUpdateTestCase({ ...selectedTestCase, name });
+                onUpdateTestCase(updatedTestCase);
             }
         }
         setIsEditingName(false);
@@ -98,8 +97,10 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
                 caseId: selectedTestCase.id,
                 request: { description },
             });
+
+            const updatedTestCase = { ...selectedTestCase, description };
             if (onUpdateTestCase) {
-                onUpdateTestCase({ ...selectedTestCase, description });
+                onUpdateTestCase(updatedTestCase);
             }
         }
         setIsEditingDescription(false);
@@ -120,13 +121,15 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
                     },
                 });
 
-                // Update local state
+                // Update local state and parent component
+                const updatedTestCase = {
+                    ...selectedTestCase,
+                    input_text: input,
+                    pass_criteria: parsedCriteria,
+                };
+
                 if (onUpdateTestCase) {
-                    onUpdateTestCase({
-                        ...selectedTestCase,
-                        input_text: input,
-                        pass_criteria: parsedCriteria,
-                    });
+                    onUpdateTestCase(updatedTestCase);
                 }
             } catch (error) {
                 console.error('Error saving test case:', error);
