@@ -8,8 +8,10 @@ import {
     deleteTestCase,
     getTestSuitesWithCases,
     partialUpdateTestCase,
+    runSingleTest,
 } from './api';
 import type {
+    FlowTestRunRequest,
     TestCaseCreateRequest,
     TestCasePartialUpdateRequest,
     TestSuiteCreateRequest,
@@ -118,6 +120,28 @@ export const usePartialUpdateTestCase = () => {
         onError: error => {
             console.error('Error updating test case:', error);
             toast.error('Failed to update test case');
+        },
+    });
+};
+
+/**
+ * Hook for running a single test case
+ */
+export const useRunSingleTest = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (request: FlowTestRunRequest) => runSingleTest(request),
+        onSuccess: (data, variables) => {
+            // Invalidate and refetch test suites for this flow
+            queryClient.invalidateQueries({
+                queryKey: ['testSuitesWithCases', variables.flow_id],
+            });
+            toast.success('Test case run initiated successfully');
+        },
+        onError: error => {
+            console.error('Error running test case:', error);
+            toast.error('Failed to run test case');
         },
     });
 };

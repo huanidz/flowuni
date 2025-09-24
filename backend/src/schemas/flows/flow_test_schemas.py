@@ -153,3 +153,28 @@ class TestCaseUpdateResponse(BaseModel):
         None, description="Pass criteria"
     )
     timeout_ms: Optional[float] = Field(None, description="Timeout in milliseconds")
+
+
+class FlowTestRunRequest(BaseModel):
+    """
+    Request model for running a flow test
+    """
+
+    case_id: int = Field(..., description="Test case ID")
+    flow_id: str = Field(..., description="Flow ID")
+    input_text: Optional[str] = Field(None, description="Input text for the test")
+    input_metadata: Optional[Dict[str, Any]] = Field(
+        None, description="Input metadata for the test"
+    )
+
+
+class FlowTestRunResponse(BaseModel):
+    """
+    Response model for flow test run
+    """
+
+    status: str = Field(..., description="Status of the test run")
+    task_id: str = Field(..., description="Celery task ID")
+    message: str = Field(..., description="Message about the test run")
+    case_id: int = Field(..., description="Test case ID")
+    flow_id: str = Field(..., description="Flow ID")

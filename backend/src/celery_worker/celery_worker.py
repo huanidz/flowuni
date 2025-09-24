@@ -26,4 +26,7 @@ celery_app.conf.update(
     result_expires=3600,
 )
 
-celery_app.autodiscover_tasks(["src.celery_worker.tasks.flow_execution_tasks"])
+celery_app.autodiscover_tasks([
+    "src.celery_worker.tasks.flow_execution_tasks",
+    "src.celery_worker.tasks.flow_test_tasks",
+])
