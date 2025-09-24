@@ -1,16 +1,11 @@
 import React, { useMemo } from 'react';
-import type { TestRule } from '../../types';
+import type { TestRule, CriteriaWithLogicConnectors } from '../../types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TEST_CRITERIA_RULE_TYPES } from '../../const';
 
-type CriteriaWithConnectors = {
-    rules: TestRule[];
-    connectors: ('AND' | 'OR')[]; // connectors between rules
-};
-
 interface TestCriteriaSummaryProps {
-    criteria: CriteriaWithConnectors;
+    criteria: CriteriaWithLogicConnectors;
     onToggleConnector?: (index: number) => void;
 }
 
@@ -32,8 +27,7 @@ const TestCriteriaSummary: React.FC<TestCriteriaSummaryProps> = ({
         const chain: string[] = [];
         criteria.rules.forEach((r, i) => {
             chain.push(ruleLabel(r));
-            if (i < criteria.connectors.length)
-                chain.push(criteria.connectors[i]);
+            if (i < criteria.logics.length) chain.push(criteria.logics[i]);
         });
         return chain;
     }, [criteria]);

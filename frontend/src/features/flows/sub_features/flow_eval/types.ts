@@ -59,6 +59,11 @@ export interface LLMRule {
 
 export type TestRule = StringRule | RegexRule | LLMRule;
 
+export type CriteriaWithLogicConnectors = {
+    rules: TestRule[];
+    logics: ('AND' | 'OR')[];
+};
+
 export type TestCaseRunStatus =
     | 'PENDING'
     | 'QUEUED'
