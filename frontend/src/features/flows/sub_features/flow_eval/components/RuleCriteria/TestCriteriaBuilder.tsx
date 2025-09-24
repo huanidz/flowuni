@@ -99,11 +99,15 @@ const TestCriteriaBuilder: React.FC<{
                 newRule = {
                     type: TEST_CRITERIA_RULE_TYPES.LLM_JUDGE,
                     config: {
-                        data: {
+                        provider: {
                             provider: '',
                             model: '',
                             api_key: '',
+                            max_output_tokens: 1024,
+                            system_prompt: 'Sample system prompt',
+                            temperature: 0.0,
                         },
+                        instruction: '',
                     },
                     id,
                 };

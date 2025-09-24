@@ -95,7 +95,7 @@ async def get_llm_judges(
                 type=template.type.value,
                 name=template.name,
                 description=template.description,
-                data=None,  # Will be populated from template.data if needed
+                data=template.data,
                 created_at=template.created_at,
                 modified_at=template.modified_at,
             )

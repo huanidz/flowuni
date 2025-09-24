@@ -11,6 +11,7 @@ class LLMJudgeRuleParser(BaseModel):
     description: Optional[str] = Field(
         None, description="Description of the LLM judge template"
     )
-    data: Optional[LLMProviderParser] = Field(
+    provider: Optional[LLMProviderParser] = Field(
         None, description="LLM provider configuration"
     )
+    instruction: Optional[str] = Field(None, description="LLM provider configuration")

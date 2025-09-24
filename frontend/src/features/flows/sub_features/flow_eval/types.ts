@@ -34,7 +34,8 @@ export interface LLMProviderConfig {
 export interface LLMRuleConfig {
     name?: string;
     description?: string;
-    data?: LLMProviderConfig;
+    provider?: LLMProviderConfig;
+    instruction?: string;
 }
 
 export interface StringRule {

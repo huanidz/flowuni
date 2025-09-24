@@ -28,10 +28,13 @@ const LLMRuleEditor: React.FC<LLMRuleEditorProps> = ({
     const [llmJudges, setLlmJudges] = useState<LLMJudge[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
+    console.log('Rule: ', rule);
+
     const fetchLlmJudges = async () => {
         setIsLoading(true);
         try {
             const response = await getLLMJudges();
+            console.log('response.templates:', response.templates);
             setLlmJudges(response.templates);
         } catch (error) {
             console.error('Failed to fetch LLM judges:', error);
