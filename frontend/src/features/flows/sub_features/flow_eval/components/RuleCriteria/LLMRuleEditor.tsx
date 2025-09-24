@@ -3,7 +3,6 @@ import { getLLMJudges } from '@/features/templates/api';
 import type { LLMJudge } from '@/features/templates/types';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
-
 import {
     Select,
     SelectContent,
@@ -25,66 +24,65 @@ const LLMRuleEditor: React.FC<LLMRuleEditorProps> = ({
     onChange,
     onDelete,
 }) => {
-    const [llmJudges, setLlmJudges] = useState<LLMJudge[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
+    const [judges, setJudges] = useState<LLMJudge[]>([]);
+    const [loading, setLoading] = useState(false);
 
-    console.log('Rule: ', rule);
-
-    const fetchLlmJudges = async () => {
-        setIsLoading(true);
+    const fetchJudges = async () => {
+        setLoading(true);
         try {
             const response = await getLLMJudges();
-            console.log('response.templates:', response.templates);
-            /**
-             * SAMPLE json:
-             * response.templates = [
-                    {
-                        "id": 1,
-                        "user_id": 1,
-                        "type": "llm_judge",
-                        "name": "Judge name",
-                        "description": "qwe",
-                        "data": {
-                            "provider": "e",
-                            "model": "e",
-                            "api_key": "e",
-                            "system_prompt": "e",
-                            "temperature": 0,
-                            "max_output_tokens": 1024
-                        },
-                        "created_at": "2025-09-24T03:40:55.920212",
-                        "modified_at": "2025-09-24T03:40:55.920216"
-                    }
-                ]
-             * 
-             */
-            setLlmJudges(response.templates);
+            setJudges(response.templates || []);
         } catch (error) {
             console.error('Failed to fetch LLM judges:', error);
+            setJudges([]);
         } finally {
-            setIsLoading(false);
+            setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchLlmJudges();
+        fetchJudges();
     }, []);
 
-    const handleReload = () => {
-        fetchLlmJudges();
+    const handleJudgeSelect = (value: string) => {
+        const judge = judges.find(j => j.id.toString() === value);
+        if (!judge?.data) return;
+
+        onChange({
+            ...rule,
+            config: {
+                ...rule.config,
+                judge_id: judge.id,
+                name: judge.name,
+                description: judge.description,
+                llm_provider: {
+                    provider: judge.data.provider,
+                    model: judge.data.model,
+                    api_key: judge.data.api_key,
+                    system_prompt: judge.data.system_prompt,
+                    temperature: judge.data.temperature,
+                    max_output_tokens: judge.data.max_output_tokens,
+                },
+                instruction: rule.config?.instruction || '',
+            },
+        });
     };
 
-    // Define color theme for LLM rule
-    const theme = {
-        container:
-            'border-purple-200 dark:border-purple-700 bg-purple-50 dark:bg-purple-900/20',
-        label: 'text-purple-700 dark:text-purple-300',
+    const handleInstructionChange = (instruction: string) => {
+        onChange({
+            ...rule,
+            config: {
+                ...rule.config,
+                instruction,
+            },
+        });
     };
 
     return (
-        <div className={`border rounded-lg p-3 ${theme.container}`}>
+        <div className="border border-purple-200 dark:border-purple-700 bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3">
+            {/* Header */}
             <div className="flex items-center justify-between mb-2">
-                <span className={`text-sm font-medium ${theme.label}`}>
+                <span className="text-sm font-medium text-purple-700 dark:text-purple-300">
                     LLM Judge
                 </span>
                 <Button
@@ -96,53 +94,26 @@ const LLMRuleEditor: React.FC<LLMRuleEditorProps> = ({
                     ×
                 </Button>
             </div>
+
+            {/* Content */}
             <div className="space-y-3">
+                {/* Judge Selection */}
                 <div className="flex gap-2">
                     <Select
                         value={rule.config?.judge_id?.toString() || ''}
-                        onValueChange={value => {
-                            const selectedJudge = llmJudges.find(
-                                judge => judge.id.toString() === value
-                            );
-                            if (selectedJudge && selectedJudge.data) {
-                                onChange({
-                                    ...rule,
-                                    config: {
-                                        judge_id: selectedJudge.id,
-                                        name: selectedJudge.name,
-                                        description: selectedJudge.description,
-                                        llm_provider: {
-                                            provider:
-                                                selectedJudge.data.provider,
-                                            model: selectedJudge.data.model,
-                                            api_key: selectedJudge.data.api_key,
-                                            system_prompt:
-                                                selectedJudge.data
-                                                    .system_prompt,
-                                            temperature:
-                                                selectedJudge.data.temperature,
-                                            max_output_tokens:
-                                                selectedJudge.data
-                                                    .max_output_tokens,
-                                        },
-                                        instruction:
-                                            rule.config?.instruction || '',
-                                    },
-                                });
-                            }
-                        }}
-                        disabled={isLoading}
+                        onValueChange={handleJudgeSelect}
+                        disabled={loading}
                     >
                         <SelectTrigger className="flex-1 h-8">
                             <SelectValue placeholder="Select LLM judge" />
                         </SelectTrigger>
                         <SelectContent>
-                            {isLoading ? (
+                            {loading ? (
                                 <div className="py-1 px-3 text-sm text-slate-500">
                                     Loading...
                                 </div>
-                            ) : llmJudges.length > 0 ? (
-                                llmJudges.map(judge => (
+                            ) : judges.length > 0 ? (
+                                judges.map(judge => (
                                     <SelectItem
                                         key={judge.id}
                                         value={judge.id.toString()}
@@ -157,29 +128,24 @@ const LLMRuleEditor: React.FC<LLMRuleEditorProps> = ({
                             )}
                         </SelectContent>
                     </Select>
+
                     <Button
                         variant="ghost"
                         size="sm"
-                        onClick={handleReload}
-                        disabled={isLoading}
+                        onClick={fetchJudges}
+                        disabled={loading}
                         className="p-1 h-8 w-8"
                     >
                         <RefreshCw
-                            className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`}
+                            className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`}
                         />
                     </Button>
                 </div>
+
+                {/* Instruction Input */}
                 <Textarea
                     value={rule.config?.instruction || ''}
-                    onChange={e =>
-                        onChange({
-                            ...rule,
-                            config: {
-                                ...rule.config,
-                                instruction: e.target.value,
-                            },
-                        })
-                    }
+                    onChange={e => handleInstructionChange(e.target.value)}
                     placeholder="Enter instruction for LLM judge evaluation..."
                     className="min-h-16 text-sm"
                 />
