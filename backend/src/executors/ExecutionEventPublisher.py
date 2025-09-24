@@ -3,8 +3,13 @@ from datetime import datetime
 from typing import Literal, Optional
 
 import redis
+from loguru import logger
 from pydantic import BaseModel, Field
-from src.models.events.RedisEvents import RedisFlowRunEndEvent, RedisFlowRunNodeEvent
+from src.models.events.RedisEvents import (
+    RedisFlowRunEndEvent,
+    RedisFlowRunNodeEvent,
+    RedisFlowTestRunEvent,
+)
 
 
 class ExecutionControl(BaseModel):
@@ -45,9 +50,7 @@ class ExecutionEventPublisher:
     # === TEST EVENT PUBLISH ===
     def publish_test_run_event(
         self,
-        test_case_id: int,
-        status: str,
-        data: dict = {},
+        test_run_event: RedisFlowTestRunEvent,
         stream_name: Optional[str] = None,
     ):
         """
@@ -59,18 +62,19 @@ class ExecutionEventPublisher:
             data: Additional data to include in the event
             stream_name: Optional custom stream name, defaults to test_run_events:{task_id}
         """
+
+        # CONSTS
+        MAX_LEN = 100  # Temporary
+
         # Use provided stream name or create default one
         if stream_name is None:
             stream_name = f"test_run_events:{self.task_id}"
 
-        # Create test run event message
-        redis_message = {
-            "event": "TEST_RUN",
-            "test_case_id": str(test_case_id),
-            "status": status,
-            "data": data,
-            "timestamp": datetime.utcnow().isoformat(),
-        }
+        redis_message_json = test_run_event.model_dump_json()
+        logger.info(f"👉 redis_message: {redis_message_json}")
+
+        # retval: Invalid input of type: 'dict'. Convert to a bytes, string, int or float first.
+        send_data = {"data": redis_message_json}
 
         # Publish to Redis Stream
-        self.redis.xadd(stream_name, redis_message)
+        self.redis.xadd(stream_name, send_data, maxlen=MAX_LEN)

@@ -1,12 +1,16 @@
-import React, { useRef, type KeyboardEvent } from 'react';
+import React, { useRef, useState, type KeyboardEvent } from 'react';
 import type { DraftTestCase, TestCasePreview, FlowTestCase } from '../types';
 import { Card, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { CornerDownLeft, Trash2 } from 'lucide-react';
+import { CornerDownLeft, Trash2, Play } from 'lucide-react';
 import { useConfirmation } from '@/hooks/useConfirmationModal';
-import { useDeleteTestCase } from '../hooks';
+import {
+    useDeleteTestCase,
+    useRunSingleTest,
+    useWatchFlowTestEvents,
+} from '../hooks';
 
 interface TestCaseCardProps {
     item: TestCasePreview | DraftTestCase;
@@ -20,6 +24,7 @@ interface TestCaseCardProps {
     onCreate?: () => void;
     onCancel?: () => void;
     onDraftNameChange?: (name: string) => void;
+    flowId: string;
 }
 
 const TestCaseCard: React.FC<TestCaseCardProps> = ({
@@ -34,10 +39,16 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
     onCreate,
     onCancel,
     onDraftNameChange,
+    flowId,
 }) => {
     const inputRef = useRef<HTMLInputElement>(null);
     const { confirm, ConfirmationDialog } = useConfirmation();
     const deleteTestCaseMutation = useDeleteTestCase();
+    const runSingleTestMutation = useRunSingleTest();
+    const [currentTaskId, setCurrentTaskId] = useState<string | null>(null);
+
+    // Use the SSE hook to watch for events when we have a task ID
+    useWatchFlowTestEvents(currentTaskId);
 
     const isDraft = typeof item.id === 'string' && item.id.startsWith('draft-');
 
@@ -136,6 +147,33 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
                             </h4>
                         </div>
                         <div className="flex items-center gap-2">
+                            <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 w-7 p-0 text-muted-foreground hover:text-green-600"
+                                onClick={e => {
+                                    e.stopPropagation(); // Prevent card selection when clicking run
+                                    runSingleTestMutation.mutate(
+                                        {
+                                            case_id: testCase.id,
+                                            flow_id: flowId,
+                                        },
+                                        {
+                                            onSuccess: data => {
+                                                // Set the task ID to start watching for SSE events
+                                                setCurrentTaskId(data.task_id);
+                                                console.log(
+                                                    'Test run started, watching for events with task ID:',
+                                                    data.task_id
+                                                );
+                                            },
+                                        }
+                                    );
+                                }}
+                                disabled={runSingleTestMutation.isPending}
+                            >
+                                <Play className="h-3 w-3" />
+                            </Button>
                             <Button
                                 size="sm"
                                 variant="ghost"

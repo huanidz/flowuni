@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useEffect, useRef } from 'react';
 
 import {
     createTestSuite,
@@ -11,6 +12,7 @@ import {
     partialUpdateTestSuite,
     runSingleTest,
 } from './api';
+import { watchFlowTestEvents } from './sse';
 import type {
     FlowTestRunRequest,
     TestCaseCreateRequest,
@@ -176,6 +178,46 @@ export const useRunSingleTest = () => {
             toast.error('Failed to run test case');
         },
     });
+};
+
+/**
+ * Hook for watching flow test events via SSE
+ */
+export const useWatchFlowTestEvents = (taskId: string | null) => {
+    const eventSourceRef = useRef<EventSource | null>(null);
+
+    useEffect(() => {
+        if (!taskId) {
+            return;
+        }
+
+        console.log(`Setting up SSE connection for task: ${taskId}`);
+
+        eventSourceRef.current = watchFlowTestEvents(
+            taskId,
+            message => {
+                // For now, just log the raw message as requested
+                console.log('Received SSE message:', message);
+            },
+            () => {
+                console.log('SSE connection completed');
+            },
+            error => {
+                console.error('SSE connection error:', error);
+            }
+        );
+
+        // Cleanup function to close the connection when component unmounts or taskId changes
+        return () => {
+            if (eventSourceRef.current) {
+                console.log('Closing SSE connection');
+                eventSourceRef.current.close();
+                eventSourceRef.current = null;
+            }
+        };
+    }, [taskId]);
+
+    return { eventSource: eventSourceRef.current };
 };
 
 /**

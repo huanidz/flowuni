@@ -39,7 +39,7 @@ def run_flow_test(
         # Initialize services
         flow_test_service = FlowTestService(
             test_repository=repositories.flow_test_repository,
-            redis_client=None,  # We don't need Redis for this simple task
+            redis_client=None,
         )
 
         # Get the test case
@@ -47,7 +47,8 @@ def run_flow_test(
         if not test_case:
             raise ValueError(f"Test case with ID {case_id} not found")
 
-        flow_sync_worker = FlowSyncWorker()
+        flow_sync_worker = FlowSyncWorker(task_id=self.request.id)
+        flow_sync_worker.event_shoot(case_id=case_id)
 
         # For now, we'll just simulate a test run
         # In a real implementation, this would execute the flow with the test case inputs

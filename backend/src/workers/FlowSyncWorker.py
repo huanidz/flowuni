@@ -3,10 +3,15 @@ from uuid import uuid4
 
 from fastapi import HTTPException
 from loguru import logger
+from src.dependencies.redis_dependency import get_redis_client
 from src.exceptions.auth_exceptions import UNAUTHORIZED_EXCEPTION
 from src.executors.ExecutionContext import ExecutionContext
 from src.executors.ExecutionEventPublisher import ExecutionEventPublisher
 from src.executors.GraphExecutor import GraphExecutor
+from src.models.events.RedisEvents import (
+    RedisFlowTestRunEvent,
+    RedisFlowTestRunEventPayload,
+)
 from src.nodes.GraphCompiler import GraphCompiler
 from src.nodes.GraphLoader import GraphLoader
 from src.schemas.flowbuilder.flow_graph_schemas import (
@@ -21,8 +26,26 @@ from src.services.FlowService import FlowService
 class FlowSyncWorker:
     """Synchronous flow execution worker for handling flow runs."""
 
-    def __init__(self):
-        self.run_id = str(uuid4())
+    def __init__(self, task_id: str = ""):
+        self.task_id = task_id
+
+    def event_shoot(self, case_id: int):
+        redis_client = get_redis_client()
+        event_publisher = ExecutionEventPublisher(
+            task_id=self.task_id, redis_client=redis_client, is_test=True
+        )
+
+        test_run_dummy_event = RedisFlowTestRunEvent(
+            seq=1,
+            task_id=self.task_id,
+            payload=RedisFlowTestRunEventPayload(case_id=case_id, status="PASSED"),
+        )
+
+        event_publisher.publish_test_run_event(
+            stream_name=None, test_run_event=test_run_dummy_event
+        )
+
+        return
 
     def run_sync(
         self,
@@ -60,7 +83,7 @@ class FlowSyncWorker:
 
             # Set up execution context
             execution_context = ExecutionContext(
-                run_id=self.run_id, flow_id=flow_id, session_id=session_id
+                run_id=self.task_id, flow_id=flow_id, session_id=session_id
             )
 
             # Create and run executor
@@ -103,7 +126,7 @@ class FlowSyncWorker:
 
             # Set up execution context
             execution_context = ExecutionContext(
-                run_id=self.run_id, flow_id=flow_id, session_id=session_id
+                run_id=self.task_id, flow_id=flow_id, session_id=session_id
             )
 
             # Configure event publisher for test runs

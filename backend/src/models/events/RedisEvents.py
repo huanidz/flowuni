@@ -40,5 +40,5 @@ class RedisFlowTestRunEventPayload(BaseModel):
 
 class RedisFlowTestRunEvent(BaseModel):
     seq: int
-    run_id: int
+    task_id: str
     payload: RedisFlowTestRunEventPayload

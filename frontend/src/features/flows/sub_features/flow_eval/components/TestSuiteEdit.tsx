@@ -95,6 +95,7 @@ const TestSuiteEdit: React.FC<TestSuiteEditProps> = ({
                         onTestCaseSelect={handleTestCaseSelect}
                         onTestCaseDelete={handleTestCaseDelete}
                         suiteId={testSuite.id}
+                        flowId={testSuite.flow_id}
                     />
                     <TestSuiteEditDetailPanel
                         selectedTestCase={selectedTestCase}

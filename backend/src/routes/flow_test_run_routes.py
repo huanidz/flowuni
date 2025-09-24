@@ -1,10 +1,16 @@
+import asyncio
+import json
 import traceback
+from typing import Any, AsyncGenerator, Dict
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import StreamingResponse
 from loguru import logger
+from redis import Redis
 from src.celery_worker.tasks.flow_test_tasks import run_flow_test
-from src.dependencies.auth_dependency import get_current_user
+from src.dependencies.auth_dependency import auth_through_url_param, get_current_user
 from src.dependencies.flow_test_dep import get_flow_test_service
+from src.dependencies.redis_dependency import get_redis_client
 from src.models.alchemy.flows.FlowTestCaseRunModel import TestCaseRunStatus
 from src.schemas.flows.flow_test_schemas import FlowTestRunRequest, FlowTestRunResponse
 from src.services.FlowTestService import FlowTestService
@@ -37,7 +43,6 @@ async def run_single_test(
         # Submit run task to Celery
         task = run_flow_test.delay(
             case_id=request.case_id,
-            flow_id=request.flow_id,
             input_text=request.input_text,
             input_metadata=request.input_metadata,
         )
@@ -65,3 +70,43 @@ async def run_single_test(
             status_code=500,
             detail="An error occurred while queuing the flow test task.",
         )
+
+
+@flow_test_run_router.get("/stream/{task_id}/events")
+async def stream_events(
+    request: Request,
+    task_id: str,
+    since_id: int = 0,
+    _auth_user_id: int = Depends(auth_through_url_param),
+    redis_client: Redis = Depends(get_redis_client),
+    token: str = Query(None),
+):
+    """
+    Stream events for a specific test run task_id using Redis Streams.
+    SSE format is used for real-time updates.
+    """
+
+    if not token:
+        raise HTTPException(status_code=403, detail="Missing access token")
+
+    stream_name = f"test_run_events:{task_id}"
+
+    async def event_generator() -> AsyncGenerator[str, None]:
+        while not await request.is_disconnected():
+            events = redis_client.xread(
+                streams={stream_name: since_id},
+                count=1,
+                block=1000,
+            )
+
+            if events:
+                for stream, messages in events:
+                    for message_id, data in messages:
+                        event_data = {"id": message_id, "stream": stream, "data": data}
+                        logger.info(f"👉 event_data: {event_data}")
+
+                        yield f"data: {json.dumps(event_data)}\n\n"
+            else:
+                yield f"data: {json.dumps({'type': 'keepalive'})}\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
