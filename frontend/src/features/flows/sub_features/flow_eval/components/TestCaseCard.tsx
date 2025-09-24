@@ -1,4 +1,4 @@
-import React, { useRef, useState, type KeyboardEvent } from 'react';
+import React, { useRef, useState, useEffect, type KeyboardEvent } from 'react';
 import type { DraftTestCase, TestCasePreview, FlowTestCase } from '../types';
 import { Card, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -45,8 +45,10 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
     const { confirm, ConfirmationDialog } = useConfirmation();
     const deleteTestCaseMutation = useDeleteTestCase();
     const runSingleTestMutation = useRunSingleTest();
+    const [currentTaskId, setCurrentTaskId] = useState<string | null>(null);
 
     // Use the SSE hook to watch for events when we have a task ID
+    useWatchFlowTestEvents(currentTaskId);
 
     const isDraft = typeof item.id === 'string' && item.id.startsWith('draft-');
 
@@ -74,6 +76,8 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
     };
 
     const handleRunTest = (e: React.MouseEvent) => {
+        e.stopPropagation(); // Prevent card selection when clicking run
+
         runSingleTestMutation.mutate(
             {
                 case_id: testCase.id,
@@ -82,7 +86,7 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
             {
                 onSuccess: data => {
                     // Set the task ID to start watching for SSE events
-                    useWatchFlowTestEvents(data.task_id);
+                    setCurrentTaskId(data.task_id);
 
                     console.log(
                         'Test run started, watching for events with task ID:',

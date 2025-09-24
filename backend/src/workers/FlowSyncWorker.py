@@ -1,13 +1,17 @@
 from typing import Dict, Optional
-from uuid import uuid4
 
 from fastapi import HTTPException
 from loguru import logger
 from src.dependencies.redis_dependency import get_redis_client
 from src.exceptions.auth_exceptions import UNAUTHORIZED_EXCEPTION
+from src.exceptions.graph_exceptions import GraphCompilerError
 from src.executors.ExecutionContext import ExecutionContext
-from src.executors.ExecutionEventPublisher import ExecutionEventPublisher
+from src.executors.ExecutionEventPublisher import (
+    ExecutionControl,
+    ExecutionEventPublisher,
+)
 from src.executors.GraphExecutor import GraphExecutor
+from src.models.alchemy.flows.FlowTestCaseRunModel import TestCaseRunStatus
 from src.models.events.RedisEvents import (
     RedisFlowTestRunEvent,
     RedisFlowTestRunEventPayload,
@@ -36,7 +40,7 @@ class FlowSyncWorker:
         )
 
         test_run_dummy_event = RedisFlowTestRunEvent(
-            seq=1,
+            seq=event_publisher.seq,
             task_id=self.task_id,
             payload=RedisFlowTestRunEventPayload(case_id=case_id, status="PASSED"),
         )
@@ -109,11 +113,32 @@ class FlowSyncWorker:
 
     def run_test_sync(
         self,
+        case_id: int,
         flow_id: str,
         flow_graph_request_dict: Dict,
         session_id: Optional[str] = None,
     ) -> FlowRunResult:
         try:
+            """
+            class TestCaseRunStatus(str, Enum):
+                PENDING = "PENDING"
+                QUEUED = "QUEUED"
+                RUNNING = "RUNNING"
+                PASSED = "PASSED"
+                FAILED = "FAILED"
+                CANCELLED = "CANCELLED"
+                SYSTEM_ERROR = "SYSTEM_ERROR
+            """
+            redis_client = get_redis_client()
+            event_publisher = ExecutionEventPublisher(
+                task_id=self.task_id, redis_client=redis_client, is_test=True
+            )
+            event_publisher.publish_test_run_event(
+                case_id=case_id, status=TestCaseRunStatus.QUEUED
+            )
+
+            # ===== TEST RUN START HERE =====
+
             logger.info(f"(TEST RUN) Starting flow execution for flow_id: {flow_id}")
 
             # Parse and load the flow graph
@@ -128,9 +153,7 @@ class FlowSyncWorker:
             execution_context = ExecutionContext(
                 run_id=self.task_id, flow_id=flow_id, session_id=session_id
             )
-
-            # Configure event publisher for test runs
-            event_publisher = ExecutionEventPublisher()
+            execution_control = ExecutionControl(start_node=None, scope="downstream")
 
             # Create and run executor
             logger.info(
@@ -141,11 +164,15 @@ class FlowSyncWorker:
                 execution_plan=execution_plan,
                 execution_event_publisher=event_publisher,
                 execution_context=execution_context,
+                execution_control=execution_control,
                 enable_debug=False,
             )
 
             logger.info("(TEST RUN) Starting graph execution")
             execution_result = executor.execute()
+            event_publisher.publish_test_run_event(
+                case_id=case_id, status=TestCaseRunStatus.PASSED
+            )
 
             logger.success(
                 f"(TEST RUN) Flow execution completed for flow_id: {flow_id}"
@@ -153,7 +180,19 @@ class FlowSyncWorker:
 
             return FlowRunResult(**execution_result)
 
+        except GraphCompilerError as e:
+            event_publisher.publish_test_run_event(
+                case_id=case_id, status=TestCaseRunStatus.FAILED
+            )
+            logger.error(
+                f"(TEST RUN) Flow compilation failed for flow_id {flow_id}: {str(e)}"
+            )
+            raise
+
         except Exception as e:
+            event_publisher.publish_test_run_event(
+                case_id=case_id, status=TestCaseRunStatus.FAILED
+            )
             logger.error(
                 f"(TEST RUN) Flow execution failed for flow_id {flow_id}: {str(e)}"
             )
@@ -162,7 +201,7 @@ class FlowSyncWorker:
     def run_flow_test(
         self,
         flow_id: str,
-        test_case_id: int,
+        case_id: int,
         flow_service: FlowService,
         session_id: Optional[str] = None,
     ) -> None:
@@ -172,11 +211,11 @@ class FlowSyncWorker:
 
             # Execute the flow
             logger.info(f"Starting validated flow execution for flow_id: {flow_id}")
-            self.run_sync(
+            self.run_test_sync(
+                case_id=case_id,
                 flow_id=flow_id,
-                session_id=session_id,
                 flow_graph_request_dict=flow_definition,
-                is_test=True,
+                session_id=session_id,
             )
 
             logger.success(f"Validated flow execution completed for flow_id: {flow_id}")
@@ -303,7 +342,7 @@ class FlowSyncWorker:
             logger.warning(f"Flow not found: {flow_id}")
             raise HTTPException(status_code=404, detail="Flow not found")
 
-        if not flow.is_activate:
+        if not flow.is_active:
             logger.warning(f"Flow is not activated: {flow_id}")
             raise HTTPException(status_code=409, detail="Flow is not activated")
 

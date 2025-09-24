@@ -25,11 +25,9 @@ export const watchFlowTestEvents = (
             const parsed = JSON.parse(event.data);
 
             if (parsed.event === 'DONE') {
-                // onMessage(event.data); // Not sure if this is needed
                 console.log('SSE event:', parsed, 'DONE -> CLOSED');
                 eventSource.close();
             } else {
-                onMessage(event.data);
                 console.log('SSE event:', parsed);
                 onMessage(parsed);
             }

@@ -42,6 +42,7 @@ async def run_single_test(
 
         # Submit run task to Celery
         task = run_flow_test.delay(
+            flow_id=request.flow_id,
             case_id=request.case_id,
             input_text=request.input_text,
             input_metadata=request.input_metadata,

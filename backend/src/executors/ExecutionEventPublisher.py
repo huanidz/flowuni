@@ -9,6 +9,7 @@ from src.models.events.RedisEvents import (
     RedisFlowRunEndEvent,
     RedisFlowRunNodeEvent,
     RedisFlowTestRunEvent,
+    RedisFlowTestRunEventPayload,
 )
 
 
@@ -22,6 +23,8 @@ class ExecutionEventPublisher:
         self.task_id = task_id
         self.redis: redis.Redis = redis_client
         self.is_test = is_test
+
+        self.seq = 0
 
     # === NON-TEST EVENT PUBLISH ===
     def end(self, data: dict = {}):
@@ -50,8 +53,8 @@ class ExecutionEventPublisher:
     # === TEST EVENT PUBLISH ===
     def publish_test_run_event(
         self,
-        test_run_event: RedisFlowTestRunEvent,
-        stream_name: Optional[str] = None,
+        case_id: int,
+        status: str,
     ):
         """
         Publish test run event to Redis Stream
@@ -67,8 +70,13 @@ class ExecutionEventPublisher:
         MAX_LEN = 100  # Temporary
 
         # Use provided stream name or create default one
-        if stream_name is None:
-            stream_name = f"test_run_events:{self.task_id}"
+        stream_name = f"test_run_events:{self.task_id}"
+
+        test_run_event = RedisFlowTestRunEvent(
+            seq=self.seq,
+            task_id=self.task_id,
+            payload=RedisFlowTestRunEventPayload(case_id=case_id, status=status),
+        )
 
         redis_message_json = test_run_event.model_dump_json()
         logger.info(f"👉 redis_message: {redis_message_json}")
@@ -78,3 +86,6 @@ class ExecutionEventPublisher:
 
         # Publish to Redis Stream
         self.redis.xadd(stream_name, send_data, maxlen=MAX_LEN)
+
+        # Advance sequence
+        self.seq += 1
