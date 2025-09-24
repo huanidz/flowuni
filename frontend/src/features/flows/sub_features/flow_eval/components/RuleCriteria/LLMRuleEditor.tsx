@@ -99,18 +99,17 @@ const LLMRuleEditor: React.FC<LLMRuleEditorProps> = ({
             <div className="space-y-3">
                 <div className="flex gap-2">
                     <Select
-                        value={rule.config?.judgeId?.toString() || ''}
+                        value={rule.config?.provider?.provider || ''}
                         onValueChange={value => {
                             const selectedJudge = llmJudges.find(
                                 judge => judge.id.toString() === value
                             );
-                            if (selectedJudge) {
+                            if (selectedJudge && selectedJudge.data) {
                                 onChange({
                                     ...rule,
                                     config: {
                                         name: selectedJudge.name,
                                         description: selectedJudge.description,
-                                        judgeId: selectedJudge.id,
                                         provider: {
                                             provider:
                                                 selectedJudge.data.provider,
@@ -134,7 +133,7 @@ const LLMRuleEditor: React.FC<LLMRuleEditorProps> = ({
                         disabled={isLoading}
                     >
                         <SelectTrigger className="flex-1 h-8">
-                            <SelectValue placeholder="Select judge" />
+                            <SelectValue placeholder="Select LLM judge" />
                         </SelectTrigger>
                         <SelectContent>
                             {isLoading ? (
@@ -152,7 +151,7 @@ const LLMRuleEditor: React.FC<LLMRuleEditorProps> = ({
                                 ))
                             ) : (
                                 <div className="py-1 px-3 text-sm text-slate-500">
-                                    No judges
+                                    No LLM judges available
                                 </div>
                             )}
                         </SelectContent>
@@ -180,7 +179,7 @@ const LLMRuleEditor: React.FC<LLMRuleEditorProps> = ({
                             },
                         })
                     }
-                    placeholder="Prompt to evaluate test output..."
+                    placeholder="Enter instruction for LLM judge evaluation..."
                     className="min-h-16 text-sm"
                 />
             </div>
