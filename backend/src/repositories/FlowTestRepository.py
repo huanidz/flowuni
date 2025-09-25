@@ -4,6 +4,7 @@ from loguru import logger
 from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlalchemy.orm import Session
 from src.models.alchemy.flows.FlowTestCaseModel import FlowTestCaseModel
+from src.models.alchemy.flows.FlowTestCaseRunModel import FlowTestCaseRunModel
 from src.models.alchemy.flows.FlowTestSuiteModel import FlowTestSuiteModel
 from src.repositories.BaseRepository import BaseRepository
 
@@ -402,6 +403,48 @@ class FlowTestRepository(BaseRepository):
         except Exception as e:
             logger.error(
                 f"Error retrieving test suites with case previews for flow {flow_id}: {e}"  # noqa
+            )
+            self.db_session.rollback()
+            raise e
+
+    def get_test_case_run_status(self, case_id: int) -> str:
+        """
+        Get the status of a test case run by its ID.
+
+        Args:
+            case_id: The ID of the test case run
+
+        Returns:
+            str: The status of the test case run
+
+        Raises:
+            NoResultFound: If test case run with given ID is not found
+        """
+        try:
+            test_case_run = (
+                self.db_session.query(FlowTestCaseRunModel)
+                .filter_by(id=case_id)
+                .one_or_none()
+            )
+
+            if not test_case_run:
+                logger.warning(f"Test case run with ID: {case_id} not found.")
+                raise NoResultFound(f"Test case run with ID {case_id} not found.")
+
+            status = str(test_case_run.status)
+            logger.info(
+                f"Retrieved status '{status}' for test case run with ID: {case_id}"
+            )
+            return status
+
+        except NoResultFound as e:
+            logger.error(
+                f"NoResultFound error when getting status for test case run with ID {case_id}: {e}"
+            )
+            raise e
+        except Exception as e:
+            logger.error(
+                f"Error getting status for test case run with ID {case_id}: {e}"
             )
             self.db_session.rollback()
             raise e

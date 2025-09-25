@@ -1,4 +1,4 @@
-import asyncio
+import random
 from typing import Any, Dict, Optional
 
 from loguru import logger
@@ -7,6 +7,8 @@ from src.celery_worker.celery_worker import celery_app
 from src.core.semaphore import acquire_user_slot_sync, release_user_slot_sync
 from src.dependencies.db_dependency import get_db
 from src.exceptions.graph_exceptions import GraphCompilerError
+from src.models.alchemy.flows.FlowTestCaseRunModel import TestCaseRunStatus
+from src.repositories.FlowTestRepository import FlowTestRepository
 from src.repositories.RepositoriesContainer import RepositoriesContainer
 from src.services.FlowService import FlowService
 from src.services.FlowTestService import FlowTestService
@@ -20,7 +22,19 @@ def dispatch_run_test(self, user_id: int, flow_id: str, case_id: int):
     Tự động retry nếu không có slot.
     """
 
+    app_db_session = None
+
     try:
+        app_db_session = next(get_db())
+        repositories = RepositoriesContainer.auto_init_all(db_session=app_db_session)
+
+        flow_test_repository: FlowTestRepository = repositories.flow_test_repository
+        case_run_status = flow_test_repository.get_test_case_run_status(case_id=case_id)
+
+        if case_run_status == TestCaseRunStatus.CANCELLED:
+            logger.info(f"Case {case_id} has already been cancelled.")
+            return
+
         # Sử dụng helper function để gọi async code safely
         has_slot = acquire_user_slot_sync(user_id)
 
@@ -35,13 +49,19 @@ def dispatch_run_test(self, user_id: int, flow_id: str, case_id: int):
                 flow_id=flow_id,
             )
         else:
+            countdown = 10 + random.randint(-5, 5)
             # Hết slot, retry sau 10 giây
             # Celery sẽ tự động đưa task này về queue
-            raise self.retry(countdown=10)
+            raise self.retry(countdown=countdown)
 
     except Exception as e:
         # Nếu có lỗi bất ngờ, retry
-        raise self.retry(exc=e, countdown=60)
+        logger.error(f"Error dispatching run test task {self.request.id}: " + str(e))
+        countdown = 60 + random.randint(-3, 3)
+        raise self.retry(exc=e, countdown=countdown)
+    finally:
+        if app_db_session:
+            app_db_session.close()
 
 
 @celery_app.task(bind=True, base=BaseTask)
@@ -70,7 +90,6 @@ def run_flow_test(
     try:
         import time
 
-        task_start_time = time.time()
         logger.info(f"Starting flow test task for case_id: {case_id}")
 
         # Get DB session
@@ -99,28 +118,7 @@ def run_flow_test(
             flow_id=flow_id, case_id=case_id, flow_service=flow_service, session_id=None
         )
 
-        # For now, we'll just simulate a test run
-        # In a real implementation, this would execute the flow with the test case inputs
-        # and validate the outputs against the pass criteria
-
-        logger.info(f"Running flow test for case_id: {case_id}")
-
-        # Simulate test execution
-        test_result = {
-            "status": "completed",
-            "case_id": case_id,
-            "passed": True,  # Default to passing for now
-            "message": "Flow test completed successfully",
-            "execution_time_ms": 100,  # Simulated execution time
-        }
-
-        total_end_time = time.time()
-        total_duration = total_end_time - task_start_time
-        logger.success(
-            f"Flow test completed successfully for case_id: {case_id} in {total_duration:.3f}s"
-        )
-
-        return test_result
+        return
 
     except GraphCompilerError as e:
         raise self.retry(
