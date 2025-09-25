@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from loguru import logger
 from redis import Redis
-from src.celery_worker.tasks.flow_test_tasks import run_flow_test
+from src.celery_worker.tasks.flow_test_tasks import dispatch_run_test, run_flow_test
 from src.dependencies.auth_dependency import auth_through_url_param, get_current_user
 from src.dependencies.flow_test_dep import get_flow_test_service
 from src.dependencies.redis_dependency import get_redis_client
@@ -31,7 +31,6 @@ async def run_single_test(
     Run a flow test by creating a Celery task
     """
     try:
-        start_time = time.time()
         # Verify the test case exists and the user has access to it
         test_case = flow_test_service.get_test_case_by_id(case_id=request.case_id)
         if not test_case:
@@ -42,17 +41,14 @@ async def run_single_test(
             )
 
         # Submit run task to Celery
-        task = run_flow_test.delay(
+        task = dispatch_run_test.delay(
+            user_id=auth_user_id,
             flow_id=request.flow_id,
             case_id=request.case_id,
-            input_text=request.input_text,
-            input_metadata=request.input_metadata,
         )
 
-        total_time = time.time() - start_time
-
         logger.info(
-            f"Flow test task submitted to Celery. (submitted_by u_id: {auth_user_id}). Task ID: {task.id}.Took: {total_time:.3f}s"  # noqa
+            f"Flow test task submitted to Celery. (submitted_by u_id: {auth_user_id}). Task ID: {task.id}."  # noqa
         )
 
         return FlowTestRunResponse(

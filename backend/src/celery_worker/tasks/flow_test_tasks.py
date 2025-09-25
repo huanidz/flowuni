@@ -1,8 +1,10 @@
+import asyncio
 from typing import Any, Dict, Optional
 
 from loguru import logger
 from src.celery_worker.BaseTask import BaseTask
 from src.celery_worker.celery_worker import celery_app
+from src.core.semaphore import acquire_user_slot, release_user_slot
 from src.dependencies.db_dependency import get_db
 from src.exceptions.graph_exceptions import GraphCompilerError
 from src.repositories.RepositoriesContainer import RepositoriesContainer
@@ -11,9 +13,42 @@ from src.services.FlowTestService import FlowTestService
 from src.workers.FlowSyncWorker import FlowSyncWorker
 
 
+@celery_app.task(bind=True, base=BaseTask, max_retries=None)
+def dispatch_run_test(self, user_id: int, flow_id: str, case_id: int):
+    """
+    Task dispatcher: Kiểm tra slot và gọi task worker nếu có slot.
+    Tự động retry nếu không có slot.
+    """
+
+    try:
+        # Sử dụng asyncio.run vì hàm semaphore là async
+        has_slot = asyncio.run(acquire_user_slot(user_id))
+
+        if has_slot:
+            # Có slot, gọi task xử lý thật
+            # Dùng .delay() hoặc .apply_async() để không block dispatcher
+            # Sử dụng task_id của dispatcher task cho task 'run_flow_test'
+            run_flow_test.delay(
+                task_id=self.request.id,
+                user_id=user_id,
+                case_id=case_id,
+                flow_id=flow_id,
+            )
+        else:
+            # Hết slot, retry sau 10 giây
+            # Celery sẽ tự động đưa task này về queue
+            raise self.retry(countdown=10)
+
+    except Exception as e:
+        # Nếu có lỗi bất ngờ, retry
+        raise self.retry(exc=e, countdown=60)
+
+
 @celery_app.task(bind=True, base=BaseTask)
 def run_flow_test(
     self,
+    task_id: str,
+    user_id: int,
     flow_id: str,
     case_id: int,
     input_text: Optional[str] = None,
@@ -59,7 +94,7 @@ def run_flow_test(
         flow_service = FlowService(
             flow_repository=repositories.flow_repository,
         )
-        flow_sync_worker = FlowSyncWorker(task_id=self.request.id)
+        flow_sync_worker = FlowSyncWorker(task_id=task_id)
         flow_sync_worker.run_flow_test(
             flow_id=flow_id, case_id=case_id, flow_service=flow_service, session_id=None
         )
@@ -101,3 +136,7 @@ def run_flow_test(
     finally:
         if app_db_session:
             app_db_session.close()
+
+        # Release user slot
+        logger.info(f"Releasing user slot for user_id: {user_id}")
+        asyncio.run(release_user_slot(user_id))

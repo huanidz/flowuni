@@ -46,6 +46,9 @@ class Settings(BaseSettings):
     CELERY_RETRY_BACKOFF: bool = True
     CELERY_RETRY_JITTER: bool = True
 
+    LIMIT_TEST_CASE_PER_USER: int = 3
+    LIMIT_TTL_TEST_CASE_SEMAPHORE_PER_USER_SECONDS: int = 60
+
     # Websocket
     WEBSOCKET_HEARTBEAT_SECONDS: int = 30
     WEBSOCKET_TIMEOUT_SECONDS: int = 30
