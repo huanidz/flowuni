@@ -15,8 +15,10 @@ from src.services.FlowTestService import FlowTestService
 from src.workers.FlowSyncWorker import FlowSyncWorker
 
 
-@celery_app.task(bind=True, base=BaseTask, max_retries=None)
-def dispatch_run_test(self, user_id: int, flow_id: str, case_id: int):
+@celery_app.task(bind=True, max_retries=None)
+def dispatch_run_test(
+    self, generated_task_id: str, user_id: int, flow_id: str, case_id: int
+):
     """
     Task dispatcher: Kiểm tra slot và gọi task worker nếu có slot.
     Tự động retry nếu không có slot.
@@ -30,7 +32,7 @@ def dispatch_run_test(self, user_id: int, flow_id: str, case_id: int):
 
         flow_test_repository: FlowTestRepository = repositories.flow_test_repository
         case_run_status = flow_test_repository.get_test_case_run_status(
-            task_run_id=self.request.id
+            task_run_id=generated_task_id
         )
 
         if case_run_status == TestCaseRunStatus.CANCELLED:
@@ -45,11 +47,12 @@ def dispatch_run_test(self, user_id: int, flow_id: str, case_id: int):
             # Dùng .delay() hoặc .apply_async() để không block dispatcher
             # Sử dụng task_id của dispatcher task cho task 'run_flow_test'
             run_flow_test.delay(
-                task_id=self.request.id,
+                task_id=generated_task_id,
                 user_id=user_id,
                 case_id=case_id,
                 flow_id=flow_id,
             )
+            return
         else:
             countdown = 10 + random.randint(-5, 5)
             # Hết slot, retry sau 10 giây
@@ -58,7 +61,7 @@ def dispatch_run_test(self, user_id: int, flow_id: str, case_id: int):
 
     except Exception as e:
         # Nếu có lỗi bất ngờ, retry
-        logger.error(f"Error dispatching run test task {self.request.id}: " + str(e))
+        logger.error(f"Error dispatching run test task {generated_task_id}: " + str(e))
         countdown = 60 + random.randint(-3, 3)
         raise self.retry(exc=e, countdown=countdown)
     finally:

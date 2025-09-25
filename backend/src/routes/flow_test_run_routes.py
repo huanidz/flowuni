@@ -2,6 +2,7 @@ import asyncio
 import json
 import time
 import traceback
+from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
@@ -40,23 +41,27 @@ async def run_single_test(
                 detail="Test case not found",
             )
 
+        # NOTE: This to generate a unique task ID instead of using from celery to avoid race conditions of accessing the TestCaseRun with task_id may not be exist yet # noqa
+        generated_task_id = str(uuid4())
+        flow_test_service.queue_test_case_run(
+            test_case_id=request.case_id, task_run_id=generated_task_id
+        )
+
         # Submit run task to Celery
-        task = dispatch_run_test.delay(
+        dispatch_run_test.delay(
+            generated_task_id=generated_task_id,
             user_id=auth_user_id,
             flow_id=request.flow_id,
             case_id=request.case_id,
         )
 
-        flow_test_service.queue_test_case_run(
-            test_case_id=request.case_id, task_run_id=task.id
-        )
         logger.info(
-            f"Flow test task submitted to Celery. (submitted_by u_id: {auth_user_id}). Task ID: {task.id}."  # noqa
+            f"Flow test task submitted to Celery. (submitted_by u_id: {auth_user_id}). Task ID: {generated_task_id}."  # noqa
         )
 
         return FlowTestRunResponse(
             status=TestCaseRunStatus.QUEUED,
-            task_id=task.id,
+            task_id=generated_task_id,
             message="Flow test task has been queued.",
             case_id=request.case_id,
             flow_id=request.flow_id,
@@ -67,7 +72,7 @@ async def run_single_test(
 
     except Exception as e:
         logger.error(
-            f"Error queuing flow test task: {e}. traceback: {traceback.format_exc()}"
+            f"Error queuing flow test task ID: {generated_task_id}: {e}. traceback: {traceback.format_exc()}"
         )
         raise HTTPException(
             status_code=500,

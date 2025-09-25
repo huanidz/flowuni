@@ -410,7 +410,7 @@ class FlowTestRepository(BaseRepository):
             self.db_session.rollback()
             raise e
 
-    def get_test_case_run_status(self, task_run_id: str) -> str:
+    def get_test_case_run_status(self, task_run_id: str) -> Optional[str]:
         """
         Get the status of a test case run by its ID.
 
@@ -429,22 +429,12 @@ class FlowTestRepository(BaseRepository):
                 .filter_by(task_run_id=task_run_id)
                 .one_or_none()
             )
-
-            if not test_case_run:
-                logger.warning(f"Test case run with ID: {task_run_id} not found.")
-                raise NoResultFound(f"Test case run with ID {task_run_id} not found.")
-
             status = str(test_case_run.status)
             logger.info(
                 f"Retrieved status '{status}' for test case run with ID: {task_run_id}"
             )
             return status
 
-        except NoResultFound as e:
-            logger.error(
-                f"NoResultFound error when getting status for test case run with ID {task_run_id}: {e}"
-            )
-            raise e
         except Exception as e:
             logger.error(
                 f"Error getting status for test case run with ID {task_run_id}: {e}"
