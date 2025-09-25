@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 from loguru import logger
 from src.celery_worker.BaseTask import BaseTask
 from src.celery_worker.celery_worker import celery_app
-from src.core.semaphore import acquire_user_slot, release_user_slot
+from src.core.semaphore import acquire_user_slot_sync, release_user_slot_sync
 from src.dependencies.db_dependency import get_db
 from src.exceptions.graph_exceptions import GraphCompilerError
 from src.repositories.RepositoriesContainer import RepositoriesContainer
@@ -21,8 +21,8 @@ def dispatch_run_test(self, user_id: int, flow_id: str, case_id: int):
     """
 
     try:
-        # Sử dụng asyncio.run vì hàm semaphore là async
-        has_slot = asyncio.run(acquire_user_slot(user_id))
+        # Sử dụng helper function để gọi async code safely
+        has_slot = acquire_user_slot_sync(user_id)
 
         if has_slot:
             # Có slot, gọi task xử lý thật
@@ -139,4 +139,4 @@ def run_flow_test(
 
         # Release user slot
         logger.info(f"Releasing user slot for user_id: {user_id}")
-        asyncio.run(release_user_slot(user_id))
+        release_user_slot_sync(user_id)

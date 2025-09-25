@@ -1,4 +1,4 @@
-import redis.asyncio as aioredis
+import redis
 from src.configs.config import get_settings
 
 app_settings = get_settings()
@@ -16,7 +16,7 @@ SEMAPHORE_TTL = (
     app_settings.LIMIT_TTL_TEST_CASE_SEMAPHORE_PER_USER_SECONDS
 )  # 1 giờ, phòng trường hợp task chết đột ngột
 
-redis_client = aioredis.from_url(REDIS_URL, decode_responses=True)
+redis_client = redis.from_url(REDIS_URL, decode_responses=True)
 
 # ==========================
 # Lua script (semaphore)
@@ -53,16 +53,29 @@ acquire_script = redis_client.register_script(LUA_ACQUIRE)
 release_script = redis_client.register_script(LUA_RELEASE)
 
 
-async def acquire_user_slot(user_id: int) -> bool:
-    """Cố gắng chiếm một slot cho user."""
+### === Asynchronous version ===
+# async def acquire_user_slot(user_id: int) -> bool:
+#     """Cố gắng chiếm một slot cho user."""
+#     key = f"semaphore:user:{user_id}"
+#     result = await acquire_script(keys=[key], args=[USER_LIMIT, SEMAPHORE_TTL])
+#     return result == 1
+
+
+# async def release_user_slot(user_id: int):
+#     """Giải phóng một slot của user."""
+#     key = f"semaphore:user:{user_id}"
+#     await release_script(keys=[key])
+
+
+def acquire_user_slot_sync(user_id: int) -> bool:
+    """Synchronous version of acquire_user_slot."""
     key = f"semaphore:user:{user_id}"
-    # SỬA Ở ĐÂY: Bỏ .execute
-    result = await acquire_script(keys=[key], args=[USER_LIMIT, SEMAPHORE_TTL])
+    # Use sync Redis client with the same Lua script
+    result = redis_client.eval(LUA_ACQUIRE, 1, key, USER_LIMIT, SEMAPHORE_TTL)
     return result == 1
 
 
-async def release_user_slot(user_id: int):
-    """Giải phóng một slot của user."""
+def release_user_slot_sync(user_id: int):
+    """Synchronous version of release_user_slot."""
     key = f"semaphore:user:{user_id}"
-    # SỬA Ở ĐÂY: Bỏ .execute
-    await release_script(keys=[key])
+    redis_client.eval(LUA_RELEASE, 1, key)
