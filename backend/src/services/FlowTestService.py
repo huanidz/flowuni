@@ -1,4 +1,3 @@
-import json
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional
 
@@ -137,6 +136,13 @@ class FlowTestServiceInterface(ABC):
         """
         pass
 
+    @abstractmethod
+    def queue_test_case_run(self, test_case_id: int, task_run_id: str) -> None:
+        """
+        Queue a test case for execution
+        """
+        pass
+
 
 class FlowTestService(FlowTestServiceInterface):
     """
@@ -250,7 +256,7 @@ class FlowTestService(FlowTestServiceInterface):
                 flow_id=flow_id
             )
             logger.info(
-                f"Successfully retrieved {len(test_suites)} test suites for flow {flow_id}"
+                f"Successfully retrieved {len(test_suites)} test suites for flow {flow_id}"  # noqa
             )
             return test_suites
         except Exception as e:
@@ -414,11 +420,29 @@ class FlowTestService(FlowTestServiceInterface):
                 flow_id=flow_id
             )
             logger.info(
-                f"Successfully retrieved {len(test_suites)} test suites with case previews for flow {flow_id}"
+                f"Successfully retrieved {len(test_suites)} test suites with case previews for flow {flow_id}"  # noqa
             )
             return test_suites
         except Exception as e:
             logger.error(
-                f"Error retrieving test suites with case previews for flow {flow_id}: {str(e)}"
+                f"Error retrieving test suites with case previews for flow {flow_id}: {str(e)}"  # noqa
+            )
+            raise
+
+    def queue_test_case_run(self, test_case_id: int, task_run_id: str) -> None:
+        """
+        Queue a test case for execution
+        """
+        try:
+            # First check if the test case exists
+            self.test_repository.queue_a_test_case_run(
+                test_case_id=test_case_id, task_run_id=task_run_id
+            )
+            logger.info(
+                f"Successfully queued test case with ID {test_case_id} for execution"
+            )
+        except Exception as e:
+            logger.error(
+                f"Error queuing test case with ID {test_case_id} for execution: {str(e)}"  # noqa
             )
             raise

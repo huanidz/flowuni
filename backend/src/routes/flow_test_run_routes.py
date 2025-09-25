@@ -47,6 +47,9 @@ async def run_single_test(
             case_id=request.case_id,
         )
 
+        flow_test_service.queue_test_case_run(
+            test_case_id=request.case_id, task_run_id=task.id
+        )
         logger.info(
             f"Flow test task submitted to Celery. (submitted_by u_id: {auth_user_id}). Task ID: {task.id}."  # noqa
         )

@@ -29,7 +29,9 @@ def dispatch_run_test(self, user_id: int, flow_id: str, case_id: int):
         repositories = RepositoriesContainer.auto_init_all(db_session=app_db_session)
 
         flow_test_repository: FlowTestRepository = repositories.flow_test_repository
-        case_run_status = flow_test_repository.get_test_case_run_status(case_id=case_id)
+        case_run_status = flow_test_repository.get_test_case_run_status(
+            task_run_id=self.request.id
+        )
 
         if case_run_status == TestCaseRunStatus.CANCELLED:
             logger.info(f"Case {case_id} has already been cancelled.")

@@ -4,7 +4,10 @@ from loguru import logger
 from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlalchemy.orm import Session
 from src.models.alchemy.flows.FlowTestCaseModel import FlowTestCaseModel
-from src.models.alchemy.flows.FlowTestCaseRunModel import FlowTestCaseRunModel
+from src.models.alchemy.flows.FlowTestCaseRunModel import (
+    FlowTestCaseRunModel,
+    TestCaseRunStatus,
+)
 from src.models.alchemy.flows.FlowTestSuiteModel import FlowTestSuiteModel
 from src.repositories.BaseRepository import BaseRepository
 
@@ -407,12 +410,12 @@ class FlowTestRepository(BaseRepository):
             self.db_session.rollback()
             raise e
 
-    def get_test_case_run_status(self, case_id: int) -> str:
+    def get_test_case_run_status(self, task_run_id: str) -> str:
         """
         Get the status of a test case run by its ID.
 
         Args:
-            case_id: The ID of the test case run
+            task_run_id: The ID of the test case run
 
         Returns:
             str: The status of the test case run
@@ -423,28 +426,93 @@ class FlowTestRepository(BaseRepository):
         try:
             test_case_run = (
                 self.db_session.query(FlowTestCaseRunModel)
-                .filter_by(id=case_id)
+                .filter_by(task_run_id=task_run_id)
                 .one_or_none()
             )
 
             if not test_case_run:
-                logger.warning(f"Test case run with ID: {case_id} not found.")
-                raise NoResultFound(f"Test case run with ID {case_id} not found.")
+                logger.warning(f"Test case run with ID: {task_run_id} not found.")
+                raise NoResultFound(f"Test case run with ID {task_run_id} not found.")
 
             status = str(test_case_run.status)
             logger.info(
-                f"Retrieved status '{status}' for test case run with ID: {case_id}"
+                f"Retrieved status '{status}' for test case run with ID: {task_run_id}"
             )
             return status
 
         except NoResultFound as e:
             logger.error(
-                f"NoResultFound error when getting status for test case run with ID {case_id}: {e}"
+                f"NoResultFound error when getting status for test case run with ID {task_run_id}: {e}"
             )
             raise e
         except Exception as e:
             logger.error(
-                f"Error getting status for test case run with ID {case_id}: {e}"
+                f"Error getting status for test case run with ID {task_run_id}: {e}"
+            )
+            self.db_session.rollback()
+            raise e
+
+    def queue_a_test_case_run(self, test_case_id: int, task_run_id: str) -> None:
+        """
+        Create new TestCaseRunModel and set status to QUEUED
+        """
+        try:
+            test_case_run = FlowTestCaseRunModel(
+                task_run_id=task_run_id,
+                test_case_id=test_case_id,
+                status=TestCaseRunStatus.QUEUED,
+            )
+            self.db_session.add(test_case_run)
+            self.db_session.commit()
+            logger.info(
+                f"Successfully queued test case with ID {test_case_id} for execution"
+            )
+        except Exception as e:
+            logger.error(
+                f"Error queuing test case with ID {test_case_id} for execution: {str(e)}"
+            )
+            raise
+
+    def set_test_case_run_status(self, task_run_id: str, status: str) -> None:
+        """
+        Set the status of a test case run by its ID.
+
+        Args:
+            case_id: The ID of the test case run
+            status: The status of the test case run
+
+        Raises:
+            NoResultFound: If test case run with given ID is not found
+        """
+        try:
+            test_case_run = (
+                self.db_session.query(FlowTestCaseRunModel)
+                .filter_by(task_run_id=task_run_id)
+                .one_or_none()
+            )
+
+            if not test_case_run:
+                logger.warning(
+                    f"Test case run with task_run ID: {task_run_id} not found."
+                )
+                raise NoResultFound(
+                    f"Test case run with task_run ID {task_run_id} not found."
+                )
+
+            test_case_run.status = status
+            self.db_session.commit()
+            logger.info(
+                f"Updated status to '{status}' for test case run with task_run ID: {task_run_id}"
+            )
+
+        except NoResultFound as e:
+            logger.error(
+                f"NoResultFound error when setting status for test case run with task_run ID {task_run_id}: {e}"
+            )
+            raise e
+        except Exception as e:
+            logger.error(
+                f"Error setting status for test case run with task_run ID {task_run_id}: {e}"
             )
             self.db_session.rollback()
             raise e
