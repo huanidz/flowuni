@@ -205,11 +205,23 @@ class FlowSyncWorker:
         flow_service: FlowService,
         session_id: Optional[str] = None,
     ) -> None:
+        import time
+
+        start_time = time.time()
+
         try:
+            logger.info(f"Starting validated flow execution for flow_id: {flow_id}")
+
             # Retrieve and validate flow
+            flow_start = time.time()
             flow_definition = self._get_validated_flow(flow_id, flow_service)
+            flow_end = time.time()
+            logger.info(
+                f"Flow retrieval and validation took: {(flow_end - flow_start):.3f}s"
+            )
 
             # Execute the flow
+            execution_start = time.time()
             logger.info(f"Starting validated flow execution for flow_id: {flow_id}")
             self.run_test_sync(
                 case_id=case_id,
@@ -217,7 +229,15 @@ class FlowSyncWorker:
                 flow_graph_request_dict=flow_definition,
                 session_id=session_id,
             )
+            execution_end = time.time()
+            logger.info(
+                f"Flow execution took: {(execution_end - execution_start):.3f}s"
+            )
 
+            total_end = time.time()
+            logger.info(
+                f"Total flow test execution took: {(total_end - start_time):.3f}s"
+            )
             logger.success(f"Validated flow execution completed for flow_id: {flow_id}")
             return
 

@@ -31,6 +31,7 @@ async def run_single_test(
     Run a flow test by creating a Celery task
     """
     try:
+        start_time = time.time()
         # Verify the test case exists and the user has access to it
         test_case = flow_test_service.get_test_case_by_id(case_id=request.case_id)
         if not test_case:
@@ -48,8 +49,10 @@ async def run_single_test(
             input_metadata=request.input_metadata,
         )
 
+        total_time = time.time() - start_time
+
         logger.info(
-            f"Flow test task submitted to Celery. (submitted_by u_id: {auth_user_id}). Task ID: {task.id}"  # noqa
+            f"Flow test task submitted to Celery. (submitted_by u_id: {auth_user_id}). Task ID: {task.id}.Took: {total_time:.3f}s"  # noqa
         )
 
         return FlowTestRunResponse(
@@ -126,7 +129,7 @@ async def stream_events(
 
             else:
                 # Expire the cursor
-                redis_client.expire(stream_name, 5)
+                redis_client.expire(stream_name, 10)
 
                 # heartbeat so FE knows connection is alive
                 yield f"""data: {

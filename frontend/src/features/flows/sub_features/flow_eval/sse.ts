@@ -19,6 +19,11 @@ export const watchFlowTestEvents = (
 
     const eventSource = new EventSource(url.toString());
 
+    // Connection opened handler
+    eventSource.onopen = () => {
+        console.log('🔗 SSE connection opened for task:', taskId);
+    };
+
     // Message handler
     eventSource.onmessage = event => {
         try {

@@ -33,10 +33,16 @@ def run_flow_test(
     app_db_session = None
 
     try:
+        import time
+
+        task_start_time = time.time()
         logger.info(f"Starting flow test task for case_id: {case_id}")
 
         # Get DB session
+        db_start = time.time()
         app_db_session = next(get_db())
+        db_end = time.time()
+        logger.info(f"Database session acquisition took: {(db_end - db_start):.3f}s")
         repositories = RepositoriesContainer.auto_init_all(db_session=app_db_session)
 
         # Initialize services
@@ -73,7 +79,11 @@ def run_flow_test(
             "execution_time_ms": 100,  # Simulated execution time
         }
 
-        logger.success(f"Flow test completed successfully for case_id: {case_id}")
+        total_end_time = time.time()
+        total_duration = total_end_time - task_start_time
+        logger.success(
+            f"Flow test completed successfully for case_id: {case_id} in {total_duration:.3f}s"
+        )
 
         return test_result
 

@@ -80,6 +80,13 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
     const handleRunTest = (e: React.MouseEvent) => {
         e.stopPropagation(); // Prevent card selection when clicking run
 
+        console.log('🔄 Starting test run for case:', testCase.id);
+
+        // Reset current task ID to ensure clean state before starting new test
+        setCurrentTaskId(null);
+
+        const startTime = performance.now();
+
         runSingleTestMutation.mutate(
             {
                 case_id: testCase.id,
@@ -87,12 +94,33 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
             },
             {
                 onSuccess: data => {
+                    const endTime = performance.now();
+                    const duration = endTime - startTime;
+
+                    console.log(
+                        '✅ Test run API call completed in',
+                        duration.toFixed(2),
+                        'ms'
+                    );
+                    console.log('📡 Task ID received:', data.task_id);
+
                     // Set the task ID to start watching for SSE events
                     setCurrentTaskId(data.task_id);
 
                     console.log(
-                        'Test run started, watching for events with task ID:',
+                        '🔌 SSE connection setup starting for task ID:',
                         data.task_id
+                    );
+                },
+                onError: error => {
+                    const endTime = performance.now();
+                    const duration = endTime - startTime;
+
+                    console.error(
+                        '❌ Test run failed after',
+                        duration.toFixed(2),
+                        'ms:',
+                        error
                     );
                 },
             }
