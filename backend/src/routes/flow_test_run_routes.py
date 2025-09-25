@@ -80,7 +80,7 @@ async def run_single_test(
 async def stream_events(
     request: Request,
     task_id: str,
-    since_id: str = "0",  # or "$" if you only want new events
+    since_id: str = "0",
     _auth_user_id: int = Depends(auth_through_url_param),
     redis_client: Redis = Depends(get_redis_client),
     token: str = Query(None),
@@ -92,21 +92,92 @@ async def stream_events(
 
     async def event_generator():
         nonlocal since_id
-        # yield "retry: 3000\n\n"  # tell browser: wait 3s before reconnect
 
+        # First, get existing messages (like the working endpoint does)
+        # existing_messages = redis_client.xread(
+        #     streams={stream_name: "0"},  # Read from beginning
+        #     count=100,  # Get all existing messages
+        # )
+
+        # if existing_messages:
+        #     for _, messages in existing_messages:
+        #         for message_id, data in messages:
+        #             since_id = message_id
+
+        #             # Check if this is a DONE message
+        #             try:
+        #                 payload_data = json.loads(data.get("data", "{}"))
+        #                 if payload_data.get("event") == "DONE":
+        #                     # Send the DONE message and exit
+        #                     yield f"id: {message_id}\n"
+        #                     yield f"data: {
+        #                         json.dumps(
+        #                             {
+        #                                 'event': 'DONE',
+        #                                 'id': message_id,
+        #                                 'task_id': task_id,
+        #                                 'data': data,
+        #                                 'timestamp': time.time(),
+        #                             }
+        #                         )
+        #                     }\n\n"
+        #                     redis_client.delete(
+        #                         stream_name
+        #                     )  # Clean up like the working endpoint
+        #                     return
+        #             except:
+        #                 pass
+
+        #             # Send regular message
+        #             payload = {
+        #                 "event": "UPDATE",
+        #                 "id": message_id,
+        #                 "task_id": task_id,
+        #                 "data": data,
+        #                 "timestamp": time.time(),
+        #             }
+        #             yield f"id: {message_id}\n"
+        #             yield f"data: {json.dumps(payload)}\n\n"
+
+        # Now continue with blocking read for new messages (like BLPOP)
         while not await request.is_disconnected():
-            events = redis_client.xread(
+            events = await asyncio.to_thread(
+                redis_client.xread,
                 streams={stream_name: since_id},
-                count=5,  # batch a few
-                block=3000,  # 3s long-poll
+                count=5,
+                block=5000,  # Match the working endpoint's 5-second timeout
             )
 
             if events:
                 for _, messages in events:
                     for message_id, data in messages:
-                        since_id = message_id  # ✅ advance cursor
+                        since_id = message_id
+
+                        # Check for DONE message (mimic the working endpoint logic)
+                        try:
+                            payload_data = json.loads(data.get("data", "{}"))
+                            if payload_data.get("event") == "DONE":
+                                # Send DONE and break (like working endpoint)
+                                yield f"id: {message_id}\n"
+                                yield f"data: {
+                                    json.dumps(
+                                        {
+                                            'event': 'DONE',
+                                            'id': message_id,
+                                            'task_id': task_id,
+                                            'data': data,
+                                            'timestamp': time.time(),
+                                        }
+                                    )
+                                }\n\n"
+                                redis_client.delete(stream_name)  # Clean up
+                                return
+                        except:
+                            pass
+
+                        # Send regular update
                         payload = {
-                            "event": "UPDATE",  # TODO: Consistent the name to avoid magic string # noqa
+                            "event": "UPDATE",
                             "id": message_id,
                             "task_id": task_id,
                             "data": data,
@@ -115,33 +186,9 @@ async def stream_events(
                         yield f"id: {message_id}\n"
                         yield f"data: {json.dumps(payload)}\n\n"
 
-                yield f"""data: {
-                    json.dumps(
-                        {
-                            "event": "DONE",
-                            "task_id": task_id,
-                            "timestamp": time.time(),
-                            "data": {},
-                            "id": since_id,
-                        }
-                    )
-                }\n\n"""
+            # If no events after timeout, continue (don't send DONE like before)
 
-            else:
-                # Expire the cursor
-                redis_client.expire(stream_name, 10)
-
-                # heartbeat so FE knows connection is alive
-                yield f"""data: {
-                    json.dumps(
-                        {
-                            "event": "DONE",
-                            "task_id": task_id,
-                            "timestamp": time.time(),
-                            "data": {},
-                            "id": since_id,
-                        }
-                    )
-                }\n\n"""  # TODO: Consistent the name to avoid magic string # noqa
+        # Clean up when client disconnects
+        redis_client.delete(stream_name)
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
