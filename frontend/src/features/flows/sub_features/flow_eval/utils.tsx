@@ -4,7 +4,7 @@ import { TEST_CRITERIA_RULE_TYPES } from './const';
 import type { TestCriteriaRuleType } from './const';
 import { Badge } from '@/components/ui/badge';
 
-const getStatusBadge = (status: TestCaseRunStatus) => {
+const getTestRunStatusBadge = (status: TestCaseRunStatus) => {
     switch (status) {
         case TestCaseRunStatus.PASSED:
             return (
@@ -34,6 +34,36 @@ const getStatusBadge = (status: TestCaseRunStatus) => {
                 >
                     <div className="w-2 h-2 bg-blue-500 rounded-full mr-1 animate-pulse"></div>
                     RUNNING
+                </Badge>
+            );
+        case TestCaseRunStatus.QUEUED:
+            return (
+                <Badge
+                    variant="outline"
+                    className="bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800"
+                >
+                    <div className="w-2 h-2 bg-amber-500 rounded-full mr-1"></div>
+                    QUEUED
+                </Badge>
+            );
+        case TestCaseRunStatus.CANCELLED:
+            return (
+                <Badge
+                    variant="outline"
+                    className="bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800"
+                >
+                    <div className="w-2 h-2 bg-purple-500 rounded-full mr-1"></div>
+                    CANCELLED
+                </Badge>
+            );
+        case TestCaseRunStatus.SYSTEM_ERROR:
+            return (
+                <Badge
+                    variant="outline"
+                    className="bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800"
+                >
+                    <div className="w-2 h-2 bg-rose-500 rounded-full mr-1"></div>
+                    SYSTEM_ERROR
                 </Badge>
             );
         case TestCaseRunStatus.PENDING:
@@ -92,5 +122,4 @@ const create_default_rule = (type: TestCriteriaRuleType): TestRule => {
     }
 };
 
-export { create_default_rule };
-export default getStatusBadge;
+export { getTestRunStatusBadge, create_default_rule };

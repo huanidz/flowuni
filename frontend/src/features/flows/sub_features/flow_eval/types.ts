@@ -70,7 +70,8 @@ export type TestCaseRunStatus =
     | 'RUNNING'
     | 'PASSED'
     | 'FAILED'
-    | 'CANCEL';
+    | 'CANCELLED'
+    | 'SYSTEM_ERROR';
 
 export const TestCaseRunStatus = {
     PENDING: 'PENDING' as TestCaseRunStatus,
@@ -78,7 +79,8 @@ export const TestCaseRunStatus = {
     RUNNING: 'RUNNING' as TestCaseRunStatus,
     PASSED: 'PASSED' as TestCaseRunStatus,
     FAILED: 'FAILED' as TestCaseRunStatus,
-    CANCEL: 'CANCEL' as TestCaseRunStatus,
+    CANCELLED: 'CANCELLED' as TestCaseRunStatus,
+    SYSTEM_ERROR: 'SYSTEM_ERROR' as TestCaseRunStatus,
 };
 
 export interface TestSuiteMetadata {

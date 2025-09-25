@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, type KeyboardEvent } from 'react';
+import React, { useRef, useState, type KeyboardEvent } from 'react';
 import type { DraftTestCase, TestCasePreview, FlowTestCase } from '../types';
 import { Card, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
