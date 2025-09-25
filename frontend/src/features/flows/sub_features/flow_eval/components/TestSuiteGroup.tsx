@@ -6,6 +6,8 @@ import TestCasePreviewItem from './TestCasePreviewItem';
 import TestSuiteEdit from './TestSuiteEdit';
 import { useDeleteTestSuite } from '../hooks';
 import { useConfirmation } from '@/hooks/useConfirmationModal';
+import { useAllTestCaseStatuses } from '../stores/testCaseStatusStore';
+import { getTestRunStatusBadge } from '../utils';
 // Constants for test case display
 const INITIAL_TEST_CASES_DISPLAYED = 3;
 const TEST_CASE_THRESHOLD_FOR_BUTTONS = 3;
@@ -34,6 +36,9 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
     const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
     const [showAllTestCases, setShowAllTestCases] = React.useState(false);
 
+    // Get all test case statuses from the Zustand store
+    const allTestCaseStatuses = useAllTestCaseStatuses();
+
     // Check if any test case in this suite is selected
     const hasSelectedTestCase = testSuite.test_cases.some(testCase =>
         selectedTestCases.has(String(testCase.id))
@@ -46,8 +51,45 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
 
     // Calculate suite statistics
     const totalTests = testSuite.test_cases.length;
-    // Note: With the new preview schema, we don't have status information
-    // All test cases are considered pending until we fetch full details
+
+    // Calculate status counts for this suite
+    const statusCounts = testSuite.test_cases.reduce(
+        (acc, testCase) => {
+            const status =
+                allTestCaseStatuses[String(testCase.id)] || 'PENDING';
+            acc[status] = (acc[status] || 0) + 1;
+            return acc;
+        },
+        {} as Record<string, number>
+    );
+
+    // Determine the overall suite status based on test case statuses
+    const getSuiteStatus = () => {
+        if (totalTests === 0) return 'PENDING';
+
+        // If any test is running, the suite is running
+        if (statusCounts['RUNNING'] > 0) return 'RUNNING';
+
+        // If any test is queued, the suite is queued
+        if (statusCounts['QUEUED'] > 0) return 'QUEUED';
+
+        // If all tests passed, the suite passed
+        if (statusCounts['PASSED'] === totalTests) return 'PASSED';
+
+        // If any test failed, the suite failed
+        if (statusCounts['FAILED'] > 0) return 'FAILED';
+
+        // If any test has a system error, the suite has a system error
+        if (statusCounts['SYSTEM_ERROR'] > 0) return 'SYSTEM_ERROR';
+
+        // If any test was cancelled, the suite was cancelled
+        if (statusCounts['CANCELLED'] > 0) return 'CANCELLED';
+
+        // Default to pending
+        return 'PENDING';
+    };
+
+    const suiteStatus = getSuiteStatus();
 
     const toggleExpand = () => {
         onToggleExpand(testSuite.id.toString());
@@ -95,6 +137,7 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
                                         {totalTests}{' '}
                                         {totalTests === 1 ? 'case' : 'cases'}
                                     </span>
+                                    {getTestRunStatusBadge(suiteStatus)}
                                 </h3>
                             </div>
                         </div>
@@ -151,17 +194,32 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
                                 {testSuite.description}
                             </p>
                         )}
-                        <span
-                            className={`text-xs font-medium transition-opacity duration-200 ${
-                                selectedTestCaseCount > 0
-                                    ? 'text-blue-600 opacity-100 bg-blue-100 px-2 py-0.5 rounded-full'
-                                    : 'opacity-0'
-                            }`}
-                        >
-                            {selectedTestCaseCount > 0
-                                ? `${selectedTestCaseCount} selected`
-                                : '0 selected'}
-                        </span>
+                        <div className="flex items-center gap-2">
+                            <span
+                                className={`text-xs font-medium transition-opacity duration-200 ${
+                                    selectedTestCaseCount > 0
+                                        ? 'text-blue-600 opacity-100 bg-blue-100 px-2 py-0.5 rounded-full'
+                                        : 'opacity-0'
+                                }`}
+                            >
+                                {selectedTestCaseCount > 0
+                                    ? `${selectedTestCaseCount} selected`
+                                    : '0 selected'}
+                            </span>
+
+                            {/* Status summary badges */}
+                            {Object.entries(statusCounts).map(
+                                ([status, count]) =>
+                                    count > 0 && (
+                                        <span
+                                            key={status}
+                                            className="text-xs opacity-80"
+                                        >
+                                            {count} {status.toLowerCase()}
+                                        </span>
+                                    )
+                            )}
+                        </div>
                     </div>
                 </div>
 

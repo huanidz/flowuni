@@ -1,5 +1,7 @@
 import React from 'react';
 import type { TestCasePreview } from '../types';
+import { useTestCaseStatus } from '../stores/testCaseStatusStore';
+import { getTestRunStatusBadge } from '../utils';
 
 interface TestCasePreviewItemProps {
     testCase: TestCasePreview;
@@ -19,6 +21,9 @@ const TestCasePreviewItem: React.FC<TestCasePreviewItemProps> = ({
     showSuiteName = false,
     suiteName,
 }) => {
+    // Get the test case status from the Zustand store
+    const testCaseStatus = useTestCaseStatus(String(testCase.id));
+
     const handleSelect = () => {
         if (onSelect) {
             onSelect(String(testCase.id));
@@ -80,13 +85,16 @@ const TestCasePreviewItem: React.FC<TestCasePreviewItemProps> = ({
                             </p>
                         )}
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-between gap-3">
                             <div className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded text-xs font-mono">
                                 <span className="text-gray-400">ID:</span>
                                 <span className="text-gray-600">
                                     {String(testCase.id)?.substring(0, 8) ||
                                         'N/A'}
                                 </span>
+                            </div>
+                            <div className="flex items-center">
+                                {getTestRunStatusBadge(testCaseStatus)}
                             </div>
                         </div>
                     </div>

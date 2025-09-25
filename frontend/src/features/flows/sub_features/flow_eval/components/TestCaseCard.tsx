@@ -11,6 +11,8 @@ import {
     useRunSingleTest,
     useWatchFlowTestEvents,
 } from '../hooks';
+import { useTestCaseStatus } from '../stores/testCaseStatusStore';
+import { getTestRunStatusBadge } from '../utils';
 
 interface TestCaseCardProps {
     item: TestCasePreview | DraftTestCase;
@@ -47,10 +49,10 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
     const runSingleTestMutation = useRunSingleTest();
     const [currentTaskId, setCurrentTaskId] = useState<string | null>(null);
 
+    const isDraft = typeof item.id === 'string' && item.id.startsWith('draft-');
+
     // Use the SSE hook to watch for events when we have a task ID
     useWatchFlowTestEvents(currentTaskId);
-
-    const isDraft = typeof item.id === 'string' && item.id.startsWith('draft-');
 
     const handleDelete = (e: React.MouseEvent, testCase: TestCasePreview) => {
         e.stopPropagation(); // Prevent card selection when clicking delete
@@ -149,6 +151,9 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
     const testCase = item as TestCasePreview;
     const isItemSelected = String(selectedTestCase?.id) === String(testCase.id);
 
+    // Get the test case status from the Zustand store
+    const testCaseStatus = useTestCaseStatus(String(testCase.id));
+
     return (
         <>
             <Card
@@ -161,31 +166,38 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
                 onClick={() => onTestCaseSelect?.(testCase)}
             >
                 <CardHeader className="p-2">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <Badge variant="outline">CASE</Badge>
-                            <h4 className="text-sm font-medium truncate">
-                                {testCase.name}
-                            </h4>
+                    <div className="flex flex-col gap-2">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Badge variant="outline">CASE</Badge>
+                                <h4 className="text-sm font-medium truncate">
+                                    {testCase.name}
+                                </h4>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 w-7 p-0 text-muted-foreground hover:text-green-600"
+                                    onClick={handleRunTest}
+                                    disabled={runSingleTestMutation.isPending}
+                                >
+                                    <Play className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                                    onClick={e => handleDelete(e, testCase)}
+                                >
+                                    <Trash2 className="h-3 w-3" />
+                                </Button>
+                            </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-7 w-7 p-0 text-muted-foreground hover:text-green-600"
-                                onClick={handleRunTest}
-                                disabled={runSingleTestMutation.isPending}
-                            >
-                                <Play className="h-3 w-3" />
-                            </Button>
-                            <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-                                onClick={e => handleDelete(e, testCase)}
-                            >
-                                <Trash2 className="h-3 w-3" />
-                            </Button>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                {getTestRunStatusBadge(testCaseStatus)}
+                            </div>
                         </div>
                     </div>
                 </CardHeader>
