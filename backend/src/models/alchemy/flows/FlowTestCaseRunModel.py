@@ -4,7 +4,7 @@
 
 from enum import Enum
 
-from sqlalchemy import BigInteger, Column, Float, ForeignKey, String, Text
+from sqlalchemy import BigInteger, Column, DateTime, Float, ForeignKey, String, Text
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
@@ -32,6 +32,7 @@ class FlowTestCaseRunModel(AppBaseModel):
     )
 
     # Dữ liệu kết quả được chuyển từ FlowTestCaseModel sang đây
+    task_run_id = Column(String, nullable=True)  # Celery task run id
     status = Column(
         SQLEnum(TestCaseRunStatus, name="test_case_run_status"),
         nullable=False,
@@ -50,6 +51,9 @@ class FlowTestCaseRunModel(AppBaseModel):
     # Metadata về lần chạy (Rất quan trọng cho việc truy vết)
     trigger_type = Column(String, default="MANUAL")  # vd: "MANUAL", "API", "SCHEDULED"
     triggered_by = Column(String, nullable=True)  # vd: user_id, api_key_name
+
+    started_at = Column(DateTime, nullable=True)
+    finished_at = Column(DateTime, nullable=True)
 
     # Quan hệ ngược lại để từ một Run có thể truy cập Test Case
     test_case = relationship("FlowTestCaseModel", back_populates="runs")

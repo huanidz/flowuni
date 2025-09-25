@@ -1,12 +1,18 @@
-import React, { useRef, type KeyboardEvent } from 'react';
+import React, { useRef, useState, type KeyboardEvent } from 'react';
 import type { DraftTestCase, TestCasePreview, FlowTestCase } from '../types';
 import { Card, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { CornerDownLeft, Trash2 } from 'lucide-react';
+import { CornerDownLeft, Trash2, Play } from 'lucide-react';
 import { useConfirmation } from '@/hooks/useConfirmationModal';
-import { useDeleteTestCase } from '../hooks';
+import {
+    useDeleteTestCase,
+    useRunSingleTest,
+    useWatchFlowTestEvents,
+} from '../hooks';
+import { useTestCaseStatus } from '../stores/testCaseStatusStore';
+import { getTestRunStatusBadge } from '../utils';
 
 interface TestCaseCardProps {
     item: TestCasePreview | DraftTestCase;
@@ -20,6 +26,7 @@ interface TestCaseCardProps {
     onCreate?: () => void;
     onCancel?: () => void;
     onDraftNameChange?: (name: string) => void;
+    flowId: string;
 }
 
 const TestCaseCard: React.FC<TestCaseCardProps> = ({
@@ -34,12 +41,18 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
     onCreate,
     onCancel,
     onDraftNameChange,
+    flowId,
 }) => {
     const inputRef = useRef<HTMLInputElement>(null);
     const { confirm, ConfirmationDialog } = useConfirmation();
     const deleteTestCaseMutation = useDeleteTestCase();
+    const runSingleTestMutation = useRunSingleTest();
+    const [currentTaskId, setCurrentTaskId] = useState<string | null>(null);
 
     const isDraft = typeof item.id === 'string' && item.id.startsWith('draft-');
+
+    // Use the SSE hook to watch for events when we have a task ID
+    useWatchFlowTestEvents(currentTaskId);
 
     const handleDelete = (e: React.MouseEvent, testCase: TestCasePreview) => {
         e.stopPropagation(); // Prevent card selection when clicking delete
@@ -62,6 +75,56 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
         } else if (e.key === 'Escape' && onCancel) {
             onCancel();
         }
+    };
+
+    const handleRunTest = (e: React.MouseEvent) => {
+        e.stopPropagation(); // Prevent card selection when clicking run
+
+        console.log('🔄 Starting test run for case:', testCase.id);
+
+        // Reset current task ID to ensure clean state before starting new test
+        setCurrentTaskId(null);
+
+        const startTime = performance.now();
+
+        runSingleTestMutation.mutate(
+            {
+                case_id: testCase.id,
+                flow_id: flowId,
+            },
+            {
+                onSuccess: data => {
+                    const endTime = performance.now();
+                    const duration = endTime - startTime;
+
+                    console.log(
+                        '✅ Test run API call completed in',
+                        duration.toFixed(2),
+                        'ms'
+                    );
+                    console.log('📡 Task ID received:', data.task_id);
+
+                    // Set the task ID to start watching for SSE events
+                    setCurrentTaskId(data.task_id);
+
+                    console.log(
+                        '🔌 SSE connection setup starting for task ID:',
+                        data.task_id
+                    );
+                },
+                onError: error => {
+                    const endTime = performance.now();
+                    const duration = endTime - startTime;
+
+                    console.error(
+                        '❌ Test run failed after',
+                        duration.toFixed(2),
+                        'ms:',
+                        error
+                    );
+                },
+            }
+        );
     };
 
     if (isDraft) {
@@ -116,6 +179,9 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
     const testCase = item as TestCasePreview;
     const isItemSelected = String(selectedTestCase?.id) === String(testCase.id);
 
+    // Get the test case status from the Zustand store
+    const testCaseStatus = useTestCaseStatus(String(testCase.id));
+
     return (
         <>
             <Card
@@ -128,22 +194,38 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
                 onClick={() => onTestCaseSelect?.(testCase)}
             >
                 <CardHeader className="p-2">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <Badge variant="outline">CASE</Badge>
-                            <h4 className="text-sm font-medium truncate">
-                                {testCase.name}
-                            </h4>
+                    <div className="flex flex-col gap-2">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Badge variant="outline">CASE</Badge>
+                                <h4 className="text-sm font-medium truncate">
+                                    {testCase.name}
+                                </h4>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 w-7 p-0 text-muted-foreground hover:text-green-600"
+                                    onClick={handleRunTest}
+                                    disabled={runSingleTestMutation.isPending}
+                                >
+                                    <Play className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                                    onClick={e => handleDelete(e, testCase)}
+                                >
+                                    <Trash2 className="h-3 w-3" />
+                                </Button>
+                            </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-                                onClick={e => handleDelete(e, testCase)}
-                            >
-                                <Trash2 className="h-3 w-3" />
-                            </Button>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                {getTestRunStatusBadge(testCaseStatus)}
+                            </div>
                         </div>
                     </div>
                 </CardHeader>

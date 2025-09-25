@@ -1,22 +1,15 @@
-# --- Builder Stage ---
-FROM ghcr.io/astral-sh/uv:python3.11-bookworm-slim AS builder
+FROM python:3.12-slim-bookworm
 
 WORKDIR /app
+
+# Copy uv binaries directly into /bin
+COPY --from=docker.io/astral/uv:latest /uv /uvx /bin/
 
 # Copy requirements
 COPY ./backend/requirements.txt .
 
-# Install production dependencies using uv
-RUN uv pip install --system --no-cache-dir -r requirements.txt
-
-
-# --- Final Stage ---
-FROM python:3.11-slim
-
-WORKDIR /app
-
-# Copy installed dependencies from builder
-COPY --from=builder /usr/local /usr/local
+# Install production dependencies using uv (Use china server for faster speed)
+RUN uv pip install --system --no-cache-dir -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 # Copy application code
 COPY ./backend .

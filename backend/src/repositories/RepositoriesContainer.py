@@ -2,6 +2,7 @@ from typing import Optional
 
 from src.repositories.ApiKeyRepository import ApiKeyRepository
 from src.repositories.FlowRepositories import FlowRepository
+from src.repositories.FlowTestRepository import FlowTestRepository
 from src.repositories.SessionRepository import SessionRepository
 from src.repositories.UserGlobalTemplateRepository import UserGlobalTemplateRepository
 from src.repositories.UserRepository import UserRepository
@@ -34,6 +35,7 @@ class RepositoriesContainer:
             None
         )
         self.user_repository: Optional[UserRepository] = None
+        self.flow_test_repository: Optional[FlowTestRepository] = None
 
         # Set provided repositories
         for repo_name, repo_instance in repositories.items():
@@ -122,4 +124,5 @@ class RepositoriesContainer:
             session_repository=SessionRepository(db_session),
             user_global_template_repository=UserGlobalTemplateRepository(db_session),
             user_repository=UserRepository(db_session),
+            flow_test_repository=FlowTestRepository(db_session),
         )

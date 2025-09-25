@@ -19,7 +19,10 @@ from src.schemas.flows.flow_test_schemas import (
     TestCaseUpdateResponse,
     TestSuiteCreateRequest,
     TestSuiteCreateResponse,
+    TestSuitePartialUpdateRequest,
     TestSuitesWithCasePreviewsResponse,
+    TestSuiteUpdateRequest,
+    TestSuiteUpdateResponse,
 )
 from src.services.FlowService import FlowService
 from src.services.FlowTestService import FlowTestService
@@ -148,6 +151,136 @@ async def delete_test_suite(
         raise HTTPException(
             status_code=500,
             detail="An error occurred while deleting the test suite.",
+        )
+
+
+@flow_test_router.put("/suites/{suite_id}", response_model=TestSuiteUpdateResponse)
+async def update_test_suite(
+    suite_id: int = Path(..., description="Test suite ID"),
+    request: TestSuiteUpdateRequest = ...,
+    flow_test_service: FlowTestService = Depends(get_flow_test_service),
+    flow_service: FlowService = Depends(get_flow_service),
+    auth_user_id: int = Depends(get_current_user),
+):
+    """
+    Update a test suite by its ID (full update with PUT)
+    """
+    try:
+        # First get the test suite to verify it exists
+        test_suite = flow_test_service.get_test_suite_by_id(suite_id=suite_id)
+        if not test_suite:
+            logger.warning(f"Test suite with ID {suite_id} not found")
+            raise NOT_FOUND_EXCEPTION
+
+        # Get the flow to verify user ownership
+        flow = flow_service.get_flow_detail_by_id(flow_id=test_suite.flow_id)
+        if not flow:
+            logger.warning(f"Flow with ID {test_suite.flow_id} not found")
+            raise NOT_FOUND_EXCEPTION
+
+        # Check if the user is the owner of the flow
+        if flow.user_id != auth_user_id:
+            logger.warning(
+                f"User ID mismatch: flow owner is {flow.user_id}, "
+                f"but requester is {auth_user_id}"
+            )
+            raise UNAUTHORIZED_EXCEPTION
+
+        # Update the test suite
+        updated_test_suite = flow_test_service.update_test_suite(
+            suite_id=suite_id,
+            flow_id=request.flow_id,
+            name=request.name,
+            description=request.description,
+            is_active=request.is_active,
+        )
+
+        response = TestSuiteUpdateResponse(
+            id=updated_test_suite.id,
+            flow_id=updated_test_suite.flow_id,
+            name=updated_test_suite.name,
+            description=updated_test_suite.description,
+            is_active=updated_test_suite.is_active,
+        )
+
+        return response
+
+    except HTTPException as http_exc:
+        raise http_exc  # Re-raise known HTTP exceptions
+
+    except Exception as e:
+        logger.error(
+            f"Error updating test suite with ID {suite_id}: {e}. "
+            f"traceback: {traceback.format_exc()}"
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="An error occurred while updating the test suite.",
+        )
+
+
+@flow_test_router.patch("/suites/{suite_id}", response_model=TestSuiteUpdateResponse)
+async def partial_update_test_suite(
+    suite_id: int = Path(..., description="Test suite ID"),
+    request: TestSuitePartialUpdateRequest = ...,
+    flow_test_service: FlowTestService = Depends(get_flow_test_service),
+    flow_service: FlowService = Depends(get_flow_service),
+    auth_user_id: int = Depends(get_current_user),
+):
+    """
+    Partially update a test suite by its ID (partial update with PATCH)
+    """
+    try:
+        # First get the test suite to verify it exists
+        test_suite = flow_test_service.get_test_suite_by_id(suite_id=suite_id)
+        if not test_suite:
+            logger.warning(f"Test suite with ID {suite_id} not found")
+            raise NOT_FOUND_EXCEPTION
+
+        # Get the flow to verify user ownership
+        flow = flow_service.get_flow_detail_by_id(flow_id=test_suite.flow_id)
+        if not flow:
+            logger.warning(f"Flow with ID {test_suite.flow_id} not found")
+            raise NOT_FOUND_EXCEPTION
+
+        # Check if the user is the owner of the flow
+        if flow.user_id != auth_user_id:
+            logger.warning(
+                f"User ID mismatch: flow owner is {flow.user_id}, "
+                f"but requester is {auth_user_id}"
+            )
+            raise UNAUTHORIZED_EXCEPTION
+
+        # Update the test suite with only the provided fields
+        updated_test_suite = flow_test_service.update_test_suite(
+            suite_id=suite_id,
+            flow_id=request.flow_id,
+            name=request.name,
+            description=request.description,
+            is_active=request.is_active,
+        )
+
+        response = TestSuiteUpdateResponse(
+            id=updated_test_suite.id,
+            flow_id=updated_test_suite.flow_id,
+            name=updated_test_suite.name,
+            description=updated_test_suite.description,
+            is_active=updated_test_suite.is_active,
+        )
+
+        return response
+
+    except HTTPException as http_exc:
+        raise http_exc  # Re-raise known HTTP exceptions
+
+    except Exception as e:
+        logger.error(
+            f"Error partially updating test suite with ID {suite_id}: {e}. "
+            f"traceback: {traceback.format_exc()}"
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="An error occurred while partially updating the test suite.",
         )
 
 

@@ -3,12 +3,7 @@ from typing import Any, Dict, List, Optional
 
 import networkx as nx
 from loguru import logger
-
-
-class GraphCompilerError(Exception):
-    """Custom exception for graph compilation errors."""
-
-    pass
+from src.exceptions.graph_exceptions import GraphCompilerError
 
 
 class GraphCompiler:

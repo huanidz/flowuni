@@ -26,6 +26,40 @@ class TestSuiteCreateResponse(BaseModel):
     is_active: bool = Field(True, description="Test suite status")
 
 
+class TestSuiteUpdateRequest(BaseModel):
+    """
+    Request model for updating a test suite (full update with PUT)
+    """
+
+    flow_id: Optional[str] = Field(None, description="Flow ID")
+    name: Optional[str] = Field(None, description="Test suite name")
+    description: Optional[str] = Field(None, description="Test suite description")
+    is_active: Optional[bool] = Field(None, description="Test suite status")
+
+
+class TestSuitePartialUpdateRequest(BaseModel):
+    """
+    Request model for partially updating a test suite (with PATCH)
+    """
+
+    flow_id: Optional[str] = Field(None, description="Flow ID")
+    name: Optional[str] = Field(None, description="Test suite name")
+    description: Optional[str] = Field(None, description="Test suite description")
+    is_active: Optional[bool] = Field(None, description="Test suite status")
+
+
+class TestSuiteUpdateResponse(BaseModel):
+    """
+    Response model for test suite update
+    """
+
+    id: int = Field(..., description="Test suite ID")
+    flow_id: str = Field(..., description="Flow ID")
+    name: str = Field(..., description="Test suite name")
+    description: Optional[str] = Field(None, description="Test suite description")
+    is_active: bool = Field(True, description="Test suite status")
+
+
 class TestCaseCreateRequest(BaseModel):
     """
     Request model for creating a test case

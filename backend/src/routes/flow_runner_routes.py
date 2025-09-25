@@ -115,7 +115,7 @@ async def execute_flow_endpoint(
 
 
 @flow_execution_router.get("/stream/{task_id}")
-async def stream_execution(
+async def stream_execution(  # noqa
     task_id: str,
     request: Request,
     _auth_user_id: int = Depends(auth_through_url_param),

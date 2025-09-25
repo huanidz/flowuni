@@ -12,6 +12,7 @@ interface TestSuiteEditListPanelProps {
     onTestCaseSelect: (testCase: TestCasePreview) => void;
     onTestCaseDelete?: (deletedTestCaseId: number) => void;
     suiteId: number;
+    flowId: string;
 }
 
 const TestSuiteEditListPanel: React.FC<TestSuiteEditListPanelProps> = ({
@@ -20,6 +21,7 @@ const TestSuiteEditListPanel: React.FC<TestSuiteEditListPanelProps> = ({
     onTestCaseSelect,
     onTestCaseDelete,
     suiteId,
+    flowId,
 }) => {
     const [draft, setDraft] = useState<DraftTestCase | null>(null);
     const [isAdding, setIsAdding] = useState(false);
@@ -95,6 +97,7 @@ const TestSuiteEditListPanel: React.FC<TestSuiteEditListPanelProps> = ({
                                 onCreate={handleCreate}
                                 onCancel={handleCancel}
                                 onDraftNameChange={handleDraftNameChange}
+                                flowId={flowId}
                             />
                         ))}
                     </div>

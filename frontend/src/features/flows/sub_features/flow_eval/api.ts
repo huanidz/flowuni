@@ -9,6 +9,8 @@ import type {
     TestCaseUpdateResponse,
     TestSuiteCreateRequest,
     TestSuiteCreateResponse,
+    TestSuitePartialUpdateRequest,
+    TestSuiteUpdateResponse,
     TestSuitesWithCasePreviewsResponse,
 } from './types';
 
@@ -37,6 +39,17 @@ export const createTestCase = async (
  */
 export const deleteTestSuite = async (suiteId: number): Promise<void> => {
     await api.delete(`/flow-tests/suites/${suiteId}`);
+};
+
+/**
+ * Partially update a test suite by its ID
+ */
+export const partialUpdateTestSuite = async (
+    suiteId: number,
+    request: TestSuitePartialUpdateRequest
+): Promise<TestSuiteUpdateResponse> => {
+    const { data } = await api.patch(`/flow-tests/suites/${suiteId}`, request);
+    return data;
 };
 
 /**

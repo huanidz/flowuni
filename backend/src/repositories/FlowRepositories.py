@@ -187,6 +187,7 @@ class FlowRepository(BaseRepository):
                 name=name,
                 description="",
                 user_id=user_id,  # Assign user_id
+                is_active=True,
             )
             self.db_session.add(flow)
             self.db_session.commit()

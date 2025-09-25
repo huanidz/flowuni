@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useEffect, useRef } from 'react';
+import { TestCaseRunStatus } from './types';
 
 import {
     createTestSuite,
@@ -8,14 +10,18 @@ import {
     deleteTestCase,
     getTestSuitesWithCases,
     partialUpdateTestCase,
+    partialUpdateTestSuite,
     runSingleTest,
 } from './api';
+import { watchFlowTestEvents } from './sse';
 import type {
     FlowTestRunRequest,
     TestCaseCreateRequest,
     TestCasePartialUpdateRequest,
     TestSuiteCreateRequest,
+    TestSuitePartialUpdateRequest,
 } from './types';
+import { useTestCaseStatusStore } from './stores/testCaseStatusStore';
 
 /**
  * Hook for fetching test suites with cases for a specific flow
@@ -125,14 +131,55 @@ export const usePartialUpdateTestCase = () => {
 };
 
 /**
+ * Hook for partially updating a test suite
+ */
+export const usePartialUpdateTestSuite = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({
+            suiteId,
+            request,
+            flowId,
+        }: {
+            suiteId: number;
+            request: TestSuitePartialUpdateRequest;
+            flowId: string;
+        }) => partialUpdateTestSuite(suiteId, request),
+        onSuccess: (_, variables) => {
+            // Invalidate and refetch test suites for this flow
+            queryClient.invalidateQueries({
+                queryKey: ['testSuitesWithCases', variables.flowId],
+            });
+            toast.success('Test suite updated successfully');
+        },
+        onError: error => {
+            console.error('Error updating test suite:', error);
+            toast.error('Failed to update test suite');
+        },
+    });
+};
+
+/**
  * Hook for running a single test case
  */
 export const useRunSingleTest = () => {
     const queryClient = useQueryClient();
+    const { setTaskTestCaseMapping, updateTestCaseStatus } =
+        useTestCaseStatusStore();
 
     return useMutation({
         mutationFn: (request: FlowTestRunRequest) => runSingleTest(request),
         onSuccess: (data, variables) => {
+            // Map the task ID to the test case ID
+            setTaskTestCaseMapping(data.task_id, String(variables.case_id));
+
+            // Set initial status to QUEUED
+            updateTestCaseStatus(
+                String(variables.case_id),
+                TestCaseRunStatus.QUEUED
+            );
+
             // Invalidate and refetch test suites for this flow
             queryClient.invalidateQueries({
                 queryKey: ['testSuitesWithCases', variables.flow_id],
@@ -144,6 +191,80 @@ export const useRunSingleTest = () => {
             toast.error('Failed to run test case');
         },
     });
+};
+
+/**
+ * Hook for watching flow test events via SSE
+ */
+
+export const useWatchFlowTestEvents = (taskId: string | null) => {
+    const eventSourceRef = useRef<EventSource | null>(null);
+    const { updateTestCaseStatusByTaskId, updateTestCaseStatus } =
+        useTestCaseStatusStore();
+
+    useEffect(() => {
+        if (!taskId) {
+            return;
+        }
+
+        console.log(`Setting up SSE connection for task: ${taskId}`);
+
+        eventSourceRef.current = watchFlowTestEvents(
+            taskId,
+            message => {
+                console.log('Received SSE message:', message);
+
+                // Handle different types of SSE events
+                if (message.event === 'UPDATE') {
+                    // Update test case status based on the event data
+                    const { data: innerData } = message.data || {};
+
+                    const parsedInnerData = JSON.parse(innerData);
+                    /**
+                     * Example inner data:
+                    {
+                        "seq": 0,
+                        "task_id": "68b35758-2d5b-462f-83f7-f7d857fb7b4a",
+                        "payload": {
+                            "case_id": 8,
+                            "status": "QUEUED"
+                        }
+                    }
+                     */
+
+                    const { case_id, status } = parsedInnerData.payload;
+
+                    // Update the test case status
+                    updateTestCaseStatus(
+                        String(case_id),
+                        status as TestCaseRunStatus
+                    );
+                } else if (message.event === 'DONE') {
+                    // The entire task is done
+                    console.log('SSE stream completed for task:', taskId);
+                }
+            },
+            error => {
+                console.error('SSE connection error:', error);
+                // If there's a connection error, mark the test case as having a system error
+                updateTestCaseStatusByTaskId(
+                    taskId,
+                    TestCaseRunStatus.SYSTEM_ERROR
+                );
+            }
+        );
+
+        // Cleanup function to close the connection when component unmounts or taskId changes
+        return () => {
+            if (eventSourceRef.current) {
+                console.log('Closing SSE connection');
+                eventSourceRef.current.close();
+                eventSourceRef.current = null;
+            }
+        };
+    }, [taskId, updateTestCaseStatus, updateTestCaseStatusByTaskId]);
+
+    return { eventSource: eventSourceRef.current };
 };
 
 /**
