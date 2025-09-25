@@ -18,7 +18,7 @@ export const TEST_STATUS_COLORS = {
     [TestCaseRunStatus.RUNNING]: '#3b82f6', // blue-500
     [TestCaseRunStatus.PASSED]: '#10b981', // emerald-500
     [TestCaseRunStatus.FAILED]: '#ef4444', // red-500
-    [TestCaseRunStatus.CANCEL]: '#6b7280', // gray-500
+    [TestCaseRunStatus.CANCELLED]: '#6b7280', // gray-500
 } as const;
 
 /**

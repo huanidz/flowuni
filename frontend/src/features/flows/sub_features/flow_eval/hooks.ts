@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useEffect, useRef } from 'react';
+import { TestCaseRunStatus } from './types';
 
 import {
     createTestSuite,
@@ -174,7 +175,10 @@ export const useRunSingleTest = () => {
             setTaskTestCaseMapping(data.task_id, String(variables.case_id));
 
             // Set initial status to QUEUED
-            updateTestCaseStatus(String(variables.case_id), 'QUEUED');
+            updateTestCaseStatus(
+                String(variables.case_id),
+                TestCaseRunStatus.QUEUED
+            );
 
             // Invalidate and refetch test suites for this flow
             queryClient.invalidateQueries({
@@ -192,9 +196,11 @@ export const useRunSingleTest = () => {
 /**
  * Hook for watching flow test events via SSE
  */
+
 export const useWatchFlowTestEvents = (taskId: string | null) => {
     const eventSourceRef = useRef<EventSource | null>(null);
-    const { updateTestCaseStatusByTaskId } = useTestCaseStatusStore();
+    const { updateTestCaseStatusByTaskId, updateTestCaseStatus } =
+        useTestCaseStatusStore();
 
     useEffect(() => {
         if (!taskId) {
@@ -209,30 +215,30 @@ export const useWatchFlowTestEvents = (taskId: string | null) => {
                 console.log('Received SSE message:', message);
 
                 // Handle different types of SSE events
-                if (message.event === 'test_case_status_update') {
+                if (message.event === 'UPDATE') {
                     // Update test case status based on the event data
-                    const { status } = message.data || {};
-                    if (status) {
-                        updateTestCaseStatusByTaskId(taskId, status);
+                    const { data: innerData } = message.data || {};
+
+                    const parsedInnerData = JSON.parse(innerData);
+                    /**
+                     * Example inner data:
+                    {
+                        "seq": 0,
+                        "task_id": "68b35758-2d5b-462f-83f7-f7d857fb7b4a",
+                        "payload": {
+                            "case_id": 8,
+                            "status": "QUEUED"
+                        }
                     }
-                } else if (message.event === 'test_case_started') {
-                    // Test case started running
-                    updateTestCaseStatusByTaskId(taskId, 'RUNNING');
-                } else if (message.event === 'test_case_completed') {
-                    // Test case completed - check if it passed or failed
-                    const { status } = message.data || {};
-                    if (status === 'PASSED' || status === 'FAILED') {
-                        updateTestCaseStatusByTaskId(taskId, status);
-                    } else {
-                        // Default to FAILED if status is not clear
-                        updateTestCaseStatusByTaskId(taskId, 'FAILED');
-                    }
-                } else if (message.event === 'test_case_error') {
-                    // Test case encountered an error
-                    updateTestCaseStatusByTaskId(taskId, 'SYSTEM_ERROR');
-                } else if (message.event === 'test_case_cancelled') {
-                    // Test case was cancelled
-                    updateTestCaseStatusByTaskId(taskId, 'CANCELLED');
+                     */
+
+                    const { case_id, status } = parsedInnerData.payload;
+
+                    // Update the test case status
+                    updateTestCaseStatus(
+                        String(case_id),
+                        status as TestCaseRunStatus
+                    );
                 } else if (message.event === 'DONE') {
                     // The entire task is done
                     console.log('SSE stream completed for task:', taskId);
@@ -241,7 +247,10 @@ export const useWatchFlowTestEvents = (taskId: string | null) => {
             error => {
                 console.error('SSE connection error:', error);
                 // If there's a connection error, mark the test case as having a system error
-                updateTestCaseStatusByTaskId(taskId, 'SYSTEM_ERROR');
+                updateTestCaseStatusByTaskId(
+                    taskId,
+                    TestCaseRunStatus.SYSTEM_ERROR
+                );
             }
         );
 
@@ -253,7 +262,7 @@ export const useWatchFlowTestEvents = (taskId: string | null) => {
                 eventSourceRef.current = null;
             }
         };
-    }, [taskId, updateTestCaseStatusByTaskId]);
+    }, [taskId, updateTestCaseStatus, updateTestCaseStatusByTaskId]);
 
     return { eventSource: eventSourceRef.current };
 };

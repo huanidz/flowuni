@@ -1,7 +1,7 @@
+import asyncio
 import json
 import time
 import traceback
-from typing import Any, AsyncGenerator, Dict
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
@@ -89,13 +89,13 @@ async def stream_events(
 
     async def event_generator():
         nonlocal since_id
-        yield "retry: 3000\n\n"  # tell browser: wait 3s before reconnect
+        # yield "retry: 3000\n\n"  # tell browser: wait 3s before reconnect
 
         while not await request.is_disconnected():
             events = redis_client.xread(
                 streams={stream_name: since_id},
-                count=1,  # batch a few
-                block=2000,  # 1s long-poll
+                count=5,  # batch a few
+                block=3000,  # 3s long-poll
             )
 
             if events:
@@ -111,6 +111,19 @@ async def stream_events(
                         }
                         yield f"id: {message_id}\n"
                         yield f"data: {json.dumps(payload)}\n\n"
+
+                yield f"""data: {
+                    json.dumps(
+                        {
+                            "event": "DONE",
+                            "task_id": task_id,
+                            "timestamp": time.time(),
+                            "data": {},
+                            "id": since_id,
+                        }
+                    )
+                }\n\n"""
+
             else:
                 # Expire the cursor
                 redis_client.expire(stream_name, 5)
