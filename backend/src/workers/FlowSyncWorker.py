@@ -169,6 +169,9 @@ class FlowSyncWorker:
             )
 
             logger.info("(TEST RUN) Starting graph execution")
+            event_publisher.publish_test_run_event(
+                case_id=case_id, status=TestCaseRunStatus.RUNNING
+            )
             execution_result = executor.execute()
             event_publisher.publish_test_run_event(
                 case_id=case_id, status=TestCaseRunStatus.PASSED
@@ -197,6 +200,9 @@ class FlowSyncWorker:
                 f"(TEST RUN) Flow execution failed for flow_id {flow_id}: {str(e)}"
             )
             raise
+        # finally:
+        #     logger.error(f"(TEST RUN) Flow execution cleaned up for flow_id: {flow_id}")
+        #     event_publisher.end_publish_test_run_event(case_id=case_id)
 
     def run_flow_test(
         self,

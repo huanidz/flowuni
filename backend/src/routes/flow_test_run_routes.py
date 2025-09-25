@@ -93,52 +93,6 @@ async def stream_events(
     async def event_generator():
         nonlocal since_id
 
-        # First, get existing messages (like the working endpoint does)
-        # existing_messages = redis_client.xread(
-        #     streams={stream_name: "0"},  # Read from beginning
-        #     count=100,  # Get all existing messages
-        # )
-
-        # if existing_messages:
-        #     for _, messages in existing_messages:
-        #         for message_id, data in messages:
-        #             since_id = message_id
-
-        #             # Check if this is a DONE message
-        #             try:
-        #                 payload_data = json.loads(data.get("data", "{}"))
-        #                 if payload_data.get("event") == "DONE":
-        #                     # Send the DONE message and exit
-        #                     yield f"id: {message_id}\n"
-        #                     yield f"data: {
-        #                         json.dumps(
-        #                             {
-        #                                 'event': 'DONE',
-        #                                 'id': message_id,
-        #                                 'task_id': task_id,
-        #                                 'data': data,
-        #                                 'timestamp': time.time(),
-        #                             }
-        #                         )
-        #                     }\n\n"
-        #                     redis_client.delete(
-        #                         stream_name
-        #                     )  # Clean up like the working endpoint
-        #                     return
-        #             except:
-        #                 pass
-
-        #             # Send regular message
-        #             payload = {
-        #                 "event": "UPDATE",
-        #                 "id": message_id,
-        #                 "task_id": task_id,
-        #                 "data": data,
-        #                 "timestamp": time.time(),
-        #             }
-        #             yield f"id: {message_id}\n"
-        #             yield f"data: {json.dumps(payload)}\n\n"
-
         # Now continue with blocking read for new messages (like BLPOP)
         while not await request.is_disconnected():
             events = await asyncio.to_thread(
@@ -153,27 +107,9 @@ async def stream_events(
                     for message_id, data in messages:
                         since_id = message_id
 
-                        # Check for DONE message (mimic the working endpoint logic)
-                        try:
-                            payload_data = json.loads(data.get("data", "{}"))
-                            if payload_data.get("event") == "DONE":
-                                # Send DONE and break (like working endpoint)
-                                yield f"id: {message_id}\n"
-                                yield f"data: {
-                                    json.dumps(
-                                        {
-                                            'event': 'DONE',
-                                            'id': message_id,
-                                            'task_id': task_id,
-                                            'data': data,
-                                            'timestamp': time.time(),
-                                        }
-                                    )
-                                }\n\n"
-                                redis_client.delete(stream_name)  # Clean up
-                                return
-                        except:
-                            pass
+                        # Parse the inner data to check for terminal status
+                        inner_data = json.loads(data.get("data", "{}"))
+                        status = inner_data.get("payload", {}).get("status")
 
                         # Send regular update
                         payload = {
@@ -186,9 +122,27 @@ async def stream_events(
                         yield f"id: {message_id}\n"
                         yield f"data: {json.dumps(payload)}\n\n"
 
-            # If no events after timeout, continue (don't send DONE like before)
+                        # Check if this is a terminal status and send done event
+                        terminal_statuses = [
+                            "PASSED",
+                            "FAILED",
+                            "CANCELLED",
+                            "SYSTEM_ERROR",
+                        ]
+                        if status in terminal_statuses:
+                            # Send done event
+                            done_payload = {
+                                "event": "DONE",
+                                "id": f"{message_id}:done",
+                                "task_id": task_id,
+                                "status": status,
+                                "timestamp": time.time(),
+                            }
+                            yield f"id: {message_id}:done\n"
+                            yield f"data: {json.dumps(done_payload)}\n\n"
 
-        # Clean up when client disconnects
-        redis_client.delete(stream_name)
+                            # Exit the loop to stop streaming
+                            redis_client.expire(stream_name, 10)
+                            return
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
