@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
     TestActionButtons,
@@ -8,6 +8,7 @@ import {
 } from '../../../sub_features/flow_eval/components';
 import type { TestStatistics as TestStatisticsType } from '../../../sub_features/flow_eval/types';
 import { useTestSuitesWithCases } from '../../../sub_features/flow_eval/hooks';
+import { useGlobalSSEConnection } from '../../../sub_features/flow_eval/sseConnectionManager';
 import useFlowStore from '@/features/flows/stores/flow_stores';
 
 /**
@@ -31,6 +32,16 @@ const LCEvalContent: React.FC = () => {
     const [isRunning, setIsRunning] = useState(false);
 
     const [showStatistics, setShowStatistics] = useState(false);
+
+    // Initialize the global SSE connection when this component is first mounted
+    const { connect, isConnected } = useGlobalSSEConnection();
+
+    useEffect(() => {
+        // Connect to SSE when the component mounts
+        if (!isConnected) {
+            connect();
+        }
+    }, [connect, isConnected]);
 
     // Fetch test suites with cases
     const {

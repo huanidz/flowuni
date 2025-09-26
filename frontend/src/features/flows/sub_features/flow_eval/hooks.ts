@@ -14,7 +14,7 @@ import {
     partialUpdateTestSuite,
     runSingleTest,
 } from './api';
-import { watchUserEvents } from './sse';
+import { useGlobalSSEConnection } from './sseConnectionManager';
 import type {
     FlowTestRunRequest,
     TestCaseCreateRequest,
@@ -192,69 +192,6 @@ export const useRunSingleTest = () => {
             toast.error('Failed to run test case');
         },
     });
-};
-
-/**
- * Hook for watching user events via SSE
- */
-
-export const useWatchFlowTestEvents = (taskId: string | null) => {
-    const eventSourceRef = useRef<EventSource | null>(null);
-    const { updateTestCaseStatusByTaskId, updateTestCaseStatus } =
-        useTestCaseStatusStore();
-    const { user_id } = useAuthStore();
-
-    useEffect(() => {
-        if (!user_id) {
-            console.warn('User ID not found, cannot set up SSE connection');
-            return;
-        }
-
-        console.log(`Setting up SSE connection for user: ${user_id}`);
-
-        eventSourceRef.current = watchUserEvents(
-            user_id,
-            (message: any) => {
-                console.log('Received SSE message:', message);
-
-                // Handle different types of SSE events
-                if (message.event === 'USER_EVENT') {
-                    // Update test case status based on the event data
-                    const { payload, event_type } = message.data || {};
-
-                    if (event_type === 'TEST_CASE_STATUS_UPDATE') {
-                        const { case_id, status } = payload || {};
-
-                        // Update the test case status
-                        if (case_id && status) {
-                            updateTestCaseStatus(
-                                String(case_id),
-                                status as TestCaseRunStatus
-                            );
-                        }
-                    }
-                } else if (message.event === 'DONE') {
-                    // The entire task is done
-                    console.log('SSE stream completed for user:', user_id);
-                }
-            },
-            (error: Event) => {
-                console.error('SSE connection error:', error);
-                // If there's a connection error, mark the test case as having a system error
-            }
-        );
-
-        // Cleanup function to close the connection when component unmounts or user_id changes
-        return () => {
-            if (eventSourceRef.current) {
-                console.log('Closing SSE connection');
-                eventSourceRef.current.close();
-                eventSourceRef.current = null;
-            }
-        };
-    }, [user_id]);
-
-    return { eventSource: eventSourceRef.current };
 };
 
 /**

@@ -9,7 +9,6 @@ export const watchUserEvents = (
     onMessage: (msg: any) => void,
     onError?: (err: Event) => void
 ) => {
-    console.log('watchUserEvents', userId);
     const token = localStorage.getItem(ACCESS_TOKEN_KEY);
 
     // Build SSE URL
@@ -52,26 +51,4 @@ export const watchUserEvents = (
     };
 
     return eventSource;
-};
-
-// Keep the old function for backward compatibility during transition
-export const watchFlowTestEvents = (
-    taskId: string,
-    onMessage: (msg: any) => void,
-    onError?: (err: Event) => void
-) => {
-    console.warn(
-        'watchFlowTestEvents is deprecated. Use watchUserEvents instead.'
-    );
-
-    // Get user ID from auth store
-    const auth = useAuthStore.getState();
-    const userId = auth.user_id;
-
-    if (!userId) {
-        console.error('User ID not found in auth store');
-        return null;
-    }
-
-    return watchUserEvents(userId, onMessage, onError);
 };

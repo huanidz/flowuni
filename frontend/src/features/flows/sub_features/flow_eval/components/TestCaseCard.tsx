@@ -6,11 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CornerDownLeft, Trash2, Play } from 'lucide-react';
 import { useConfirmation } from '@/hooks/useConfirmationModal';
-import {
-    useDeleteTestCase,
-    useRunSingleTest,
-    useWatchFlowTestEvents,
-} from '../hooks';
+import { useDeleteTestCase, useRunSingleTest } from '../hooks';
 import { useTestCaseStatus } from '../stores/testCaseStatusStore';
 import { getTestRunStatusBadge } from '../utils';
 
@@ -50,9 +46,6 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
     const [currentTaskId, setCurrentTaskId] = useState<string | null>(null);
 
     const isDraft = typeof item.id === 'string' && item.id.startsWith('draft-');
-
-    // Use the SSE hook to watch for events when we have a task ID
-    useWatchFlowTestEvents(currentTaskId);
 
     const handleDelete = (e: React.MouseEvent, testCase: TestCasePreview) => {
         e.stopPropagation(); // Prevent card selection when clicking delete
