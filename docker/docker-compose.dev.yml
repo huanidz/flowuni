@@ -18,6 +18,24 @@ services:
         condition: service_healthy
     # restart: always
 
+  event-service:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dev.eventservice
+    volumes:
+      - ../eventservice/src:/app/src
+    env_file:
+      - ../.env
+    ports:
+      - "5003:5001"
+    depends_on:
+      redis-service:
+        condition: service_healthy
+    command: >
+      sh -c "
+        watchfiles 'uvicorn src.main:app --host 0.0.0.0 --port 5001' /app/src
+      " # ✅ Dùng watchfiles để hot-reload như celery-worker
+
   celery-worker:
     build: 
       context: ..
