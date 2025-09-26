@@ -82,6 +82,7 @@ class ExecutionEventPublisher:
         test_run_event = RedisFlowTestRunEvent(
             seq=self.seq,
             task_id=self.task_id,
+            event_type="TEST_CASE_STATUS_UPDATE",
             payload=RedisFlowTestRunEventPayload(case_id=case_id, status=status),
         )
 

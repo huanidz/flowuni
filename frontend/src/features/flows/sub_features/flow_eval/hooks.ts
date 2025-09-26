@@ -220,10 +220,10 @@ export const useWatchFlowTestEvents = (taskId: string | null) => {
                 // Handle different types of SSE events
                 if (message.event === 'USER_EVENT') {
                     // Update test case status based on the event data
-                    const { data, event_type } = message.data || {};
+                    const { payload, event_type } = message.data || {};
 
                     if (event_type === 'TEST_CASE_STATUS_UPDATE') {
-                        const { case_id, status } = data || {};
+                        const { case_id, status } = payload || {};
 
                         // Update the test case status
                         if (case_id && status) {
@@ -241,12 +241,6 @@ export const useWatchFlowTestEvents = (taskId: string | null) => {
             (error: Event) => {
                 console.error('SSE connection error:', error);
                 // If there's a connection error, mark the test case as having a system error
-                if (taskId) {
-                    updateTestCaseStatusByTaskId(
-                        taskId,
-                        TestCaseRunStatus.SYSTEM_ERROR
-                    );
-                }
             }
         );
 
@@ -258,7 +252,7 @@ export const useWatchFlowTestEvents = (taskId: string | null) => {
                 eventSourceRef.current = null;
             }
         };
-    }, [user_id, taskId, updateTestCaseStatus, updateTestCaseStatusByTaskId]);
+    }, [user_id]);
 
     return { eventSource: eventSourceRef.current };
 };
