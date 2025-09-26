@@ -19,10 +19,17 @@ class ExecutionControl(BaseModel):
 
 
 class ExecutionEventPublisher:
-    def __init__(self, task_id: str, redis_client: redis.Redis, is_test: bool = False):
+    def __init__(
+        self,
+        user_id: int,
+        task_id: str,
+        redis_client: redis.Redis,
+        is_test: bool = False,
+    ):
         self.task_id = task_id
         self.redis: redis.Redis = redis_client
         self.is_test = is_test
+        self.user_id = user_id
 
         self.seq = 0
 
@@ -70,7 +77,7 @@ class ExecutionEventPublisher:
         MAX_LEN = 100  # Temporary
 
         # Use provided stream name or create default one
-        stream_name = f"test_run_events:{self.task_id}"
+        stream_name = f"user_events:{self.user_id}"
 
         test_run_event = RedisFlowTestRunEvent(
             seq=self.seq,

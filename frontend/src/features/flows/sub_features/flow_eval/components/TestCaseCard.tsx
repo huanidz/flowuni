@@ -80,6 +80,7 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
     const handleRunTest = (e: React.MouseEvent) => {
         e.stopPropagation(); // Prevent card selection when clicking run
 
+        const testCase = item as TestCasePreview;
         console.log('🔄 Starting test run for case:', testCase.id);
 
         // Reset current task ID to ensure clean state before starting new test

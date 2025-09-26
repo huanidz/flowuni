@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 import networkx as nx
 from loguru import logger
-from src.consts.execution_consts import ROUTER_LABEL_SPLIT_JOIN_STRING
 from src.consts.node_consts import (
     NODE_DATA_MODE,
     NODE_EXECUTION_STATUS,

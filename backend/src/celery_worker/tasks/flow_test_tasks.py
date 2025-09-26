@@ -118,7 +118,7 @@ def run_flow_test(
         flow_service = FlowService(
             flow_repository=repositories.flow_repository,
         )
-        flow_sync_worker = FlowSyncWorker(task_id=task_id)
+        flow_sync_worker = FlowSyncWorker(user_id=user_id, task_id=task_id)
         flow_sync_worker.run_flow_test(
             flow_id=flow_id, case_id=case_id, flow_service=flow_service, session_id=None
         )

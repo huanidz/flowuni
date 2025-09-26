@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useEffect, useRef } from 'react';
+import useAuthStore from '@/features/auth/store';
 import { TestCaseRunStatus } from './types';
 
 import {
@@ -13,7 +14,7 @@ import {
     partialUpdateTestSuite,
     runSingleTest,
 } from './api';
-import { watchFlowTestEvents } from './sse';
+import { watchUserEvents } from './sse';
 import type {
     FlowTestRunRequest,
     TestCaseCreateRequest,
@@ -194,67 +195,62 @@ export const useRunSingleTest = () => {
 };
 
 /**
- * Hook for watching flow test events via SSE
+ * Hook for watching user events via SSE
  */
 
 export const useWatchFlowTestEvents = (taskId: string | null) => {
     const eventSourceRef = useRef<EventSource | null>(null);
     const { updateTestCaseStatusByTaskId, updateTestCaseStatus } =
         useTestCaseStatusStore();
+    const { user_id } = useAuthStore();
 
     useEffect(() => {
-        if (!taskId) {
+        if (!user_id) {
+            console.warn('User ID not found, cannot set up SSE connection');
             return;
         }
 
-        console.log(`Setting up SSE connection for task: ${taskId}`);
+        console.log(`Setting up SSE connection for user: ${user_id}`);
 
-        eventSourceRef.current = watchFlowTestEvents(
-            taskId,
-            message => {
+        eventSourceRef.current = watchUserEvents(
+            user_id,
+            (message: any) => {
                 console.log('Received SSE message:', message);
 
                 // Handle different types of SSE events
-                if (message.event === 'UPDATE') {
+                if (message.event === 'USER_EVENT') {
                     // Update test case status based on the event data
-                    const { data: innerData } = message.data || {};
+                    const { data, event_type } = message.data || {};
 
-                    const parsedInnerData = JSON.parse(innerData);
-                    /**
-                     * Example inner data:
-                    {
-                        "seq": 0,
-                        "task_id": "68b35758-2d5b-462f-83f7-f7d857fb7b4a",
-                        "payload": {
-                            "case_id": 8,
-                            "status": "QUEUED"
+                    if (event_type === 'TEST_CASE_STATUS_UPDATE') {
+                        const { case_id, status } = data || {};
+
+                        // Update the test case status
+                        if (case_id && status) {
+                            updateTestCaseStatus(
+                                String(case_id),
+                                status as TestCaseRunStatus
+                            );
                         }
                     }
-                     */
-
-                    const { case_id, status } = parsedInnerData.payload;
-
-                    // Update the test case status
-                    updateTestCaseStatus(
-                        String(case_id),
-                        status as TestCaseRunStatus
-                    );
                 } else if (message.event === 'DONE') {
                     // The entire task is done
-                    console.log('SSE stream completed for task:', taskId);
+                    console.log('SSE stream completed for user:', user_id);
                 }
             },
-            error => {
+            (error: Event) => {
                 console.error('SSE connection error:', error);
                 // If there's a connection error, mark the test case as having a system error
-                updateTestCaseStatusByTaskId(
-                    taskId,
-                    TestCaseRunStatus.SYSTEM_ERROR
-                );
+                if (taskId) {
+                    updateTestCaseStatusByTaskId(
+                        taskId,
+                        TestCaseRunStatus.SYSTEM_ERROR
+                    );
+                }
             }
         );
 
-        // Cleanup function to close the connection when component unmounts or taskId changes
+        // Cleanup function to close the connection when component unmounts or user_id changes
         return () => {
             if (eventSourceRef.current) {
                 console.log('Closing SSE connection');
@@ -262,7 +258,7 @@ export const useWatchFlowTestEvents = (taskId: string | null) => {
                 eventSourceRef.current = null;
             }
         };
-    }, [taskId, updateTestCaseStatus, updateTestCaseStatusByTaskId]);
+    }, [user_id, taskId, updateTestCaseStatus, updateTestCaseStatusByTaskId]);
 
     return { eventSource: eventSourceRef.current };
 };

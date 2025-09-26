@@ -4,6 +4,7 @@ from fastapi import HTTPException
 from loguru import logger
 from src.dependencies.redis_dependency import get_redis_client
 from src.exceptions.auth_exceptions import UNAUTHORIZED_EXCEPTION
+from src.exceptions.execution_exceptions import NotEnoughUserInformation
 from src.exceptions.graph_exceptions import GraphCompilerError
 from src.executors.ExecutionContext import ExecutionContext
 from src.executors.ExecutionEventPublisher import (
@@ -12,10 +13,6 @@ from src.executors.ExecutionEventPublisher import (
 )
 from src.executors.GraphExecutor import GraphExecutor
 from src.models.alchemy.flows.FlowTestCaseRunModel import TestCaseRunStatus
-from src.models.events.RedisEvents import (
-    RedisFlowTestRunEvent,
-    RedisFlowTestRunEventPayload,
-)
 from src.nodes.GraphCompiler import GraphCompiler
 from src.nodes.GraphLoader import GraphLoader
 from src.schemas.flowbuilder.flow_graph_schemas import (
@@ -30,26 +27,9 @@ from src.services.FlowService import FlowService
 class FlowSyncWorker:
     """Synchronous flow execution worker for handling flow runs."""
 
-    def __init__(self, task_id: str = ""):
+    def __init__(self, user_id: Optional[int] = None, task_id: str = ""):
+        self.user_id = user_id
         self.task_id = task_id
-
-    def event_shoot(self, case_id: int):
-        redis_client = get_redis_client()
-        event_publisher = ExecutionEventPublisher(
-            task_id=self.task_id, redis_client=redis_client, is_test=True
-        )
-
-        test_run_dummy_event = RedisFlowTestRunEvent(
-            seq=event_publisher.seq,
-            task_id=self.task_id,
-            payload=RedisFlowTestRunEventPayload(case_id=case_id, status="PASSED"),
-        )
-
-        event_publisher.publish_test_run_event(
-            stream_name=None, test_run_event=test_run_dummy_event
-        )
-
-        return
 
     def run_sync(
         self,
@@ -129,9 +109,18 @@ class FlowSyncWorker:
                 CANCELLED = "CANCELLED"
                 SYSTEM_ERROR = "SYSTEM_ERROR
             """
+
+            if not self.user_id:
+                raise NotEnoughUserInformation(
+                    f"User id is not provided for task_id {self.task_id}. Can't publish event for test."  # noqa
+                )
+
             redis_client = get_redis_client()
             event_publisher = ExecutionEventPublisher(
-                task_id=self.task_id, redis_client=redis_client, is_test=True
+                user_id=self.user_id,
+                task_id=self.task_id,
+                redis_client=redis_client,
+                is_test=True,
             )
             event_publisher.publish_test_run_event(
                 case_id=case_id, status=TestCaseRunStatus.QUEUED

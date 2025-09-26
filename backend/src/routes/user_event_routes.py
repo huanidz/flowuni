@@ -24,7 +24,6 @@ async def stream_user_events(
     _auth_user_id: int = Depends(auth_through_url_param),
     redis_client: Redis = Depends(get_redis_client),
     token: str = Query(None),
-    event_type: str = Query(None, description="Filter events by type"),
 ):
     """
     Stream events for a specific user in real-time using Redis streams.
@@ -34,8 +33,6 @@ async def stream_user_events(
         raise HTTPException(status_code=403, detail="Missing access token")
 
     stream_name = f"user_events:{user_id}"
-    if event_type:
-        stream_name = f"user_events:{user_id}:{event_type}"
 
     async def event_generator():
         nonlocal since_id
