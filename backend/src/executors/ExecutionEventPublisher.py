@@ -75,6 +75,7 @@ class ExecutionEventPublisher:
 
         # CONSTS
         MAX_LEN = 100  # Temporary
+        STREAM_TTL_SECONDS = 86400  # 24 hours expiry
 
         # Use provided stream name or create default one
         stream_name = f"user_events:{self.user_id}"
@@ -87,13 +88,22 @@ class ExecutionEventPublisher:
         )
 
         redis_message_json = test_run_event.model_dump_json()
-        logger.info(f"👉 redis_message: {redis_message_json}")
 
         # retval: Invalid input of type: 'dict'. Convert to a bytes, string, int or float first.
         send_data = {"data": redis_message_json}
 
+        # Check if stream exists to avoid resetting expiry
+        stream_exists = self.redis.exists(stream_name)
+
         # Publish to Redis Stream
         self.redis.xadd(stream_name, send_data, maxlen=MAX_LEN)
+
+        # Set expiry only if the stream didn't exist before
+        if not stream_exists:
+            logger.info(
+                f"Setting expiry of {STREAM_TTL_SECONDS} seconds on new stream: {stream_name}"
+            )
+            self.redis.expire(stream_name, STREAM_TTL_SECONDS)
 
         # Advance sequence
         self.seq += 1
