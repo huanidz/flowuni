@@ -1,4 +1,4 @@
-import React, { useRef, useState, type KeyboardEvent } from 'react';
+import React, { useRef, type KeyboardEvent } from 'react';
 import type { DraftTestCase, TestCasePreview, FlowTestCase } from '../types';
 import { Card, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -43,7 +43,6 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
     const { confirm, ConfirmationDialog } = useConfirmation();
     const deleteTestCaseMutation = useDeleteTestCase();
     const runSingleTestMutation = useRunSingleTest();
-    const [currentTaskId, setCurrentTaskId] = useState<string | null>(null);
 
     const isDraft = typeof item.id === 'string' && item.id.startsWith('draft-');
 
@@ -74,12 +73,6 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
         e.stopPropagation(); // Prevent card selection when clicking run
 
         const testCase = item as TestCasePreview;
-        console.log('🔄 Starting test run for case:', testCase.id);
-
-        // Reset current task ID to ensure clean state before starting new test
-        setCurrentTaskId(null);
-
-        const startTime = performance.now();
 
         runSingleTestMutation.mutate(
             {
@@ -87,35 +80,9 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
                 flow_id: flowId,
             },
             {
-                onSuccess: data => {
-                    const endTime = performance.now();
-                    const duration = endTime - startTime;
-
-                    console.log(
-                        '✅ Test run API call completed in',
-                        duration.toFixed(2),
-                        'ms'
-                    );
-                    console.log('📡 Task ID received:', data.task_id);
-
-                    // Set the task ID to start watching for SSE events
-                    setCurrentTaskId(data.task_id);
-
-                    console.log(
-                        '🔌 SSE connection setup starting for task ID:',
-                        data.task_id
-                    );
-                },
+                onSuccess: data => {},
                 onError: error => {
-                    const endTime = performance.now();
-                    const duration = endTime - startTime;
-
-                    console.error(
-                        '❌ Test run failed after',
-                        duration.toFixed(2),
-                        'ms:',
-                        error
-                    );
+                    console.error(error);
                 },
             }
         );

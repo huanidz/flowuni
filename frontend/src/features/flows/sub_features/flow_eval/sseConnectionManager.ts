@@ -2,6 +2,7 @@ import useAuthStore from '@/features/auth/store';
 import { watchUserEvents } from './sse';
 import { useTestCaseStatusStore } from './stores/testCaseStatusStore';
 import type { TestCaseRunStatus } from './types';
+import { LAST_EVENT_ID_KEY } from './const';
 
 interface SSEConnectionManager {
     eventSource: EventSource | null;
@@ -15,15 +16,47 @@ interface SSEConnectionManager {
 // Global singleton instance
 let globalSSEManager: SSEConnectionManager | null = null;
 
+// Helper functions to manage the last event ID
+const getLastEventId = (): string => {
+    try {
+        // Check if localStorage is available
+        if (typeof localStorage !== 'undefined') {
+            const lastEventId = localStorage.getItem(LAST_EVENT_ID_KEY);
+            // Return the stored ID or '0' if not found (new machine/browser)
+            return lastEventId || '0';
+        }
+        // localStorage not available (e.g., private browsing)
+        return '0';
+    } catch (error) {
+        console.error('Error accessing localStorage:', error);
+        return '0';
+    }
+};
+
+const setLastEventId = (eventId: string): void => {
+    try {
+        // Only write to localStorage if it's available
+        if (typeof localStorage !== 'undefined') {
+            localStorage.setItem(LAST_EVENT_ID_KEY, eventId);
+        }
+    } catch (error) {
+        console.error('Error writing to localStorage:', error);
+    }
+};
+
 const createSSEConnectionManager = (): SSEConnectionManager => {
     // Use regular object references instead of React hooks
     const eventSourceRef = { current: null as EventSource | null };
     const messageHandlersRef = { current: new Set<(message: any) => void>() };
-    const { updateTestCaseStatus, updateTestCaseStatusByTaskId } =
-        useTestCaseStatusStore.getState();
+    const { updateTestCaseStatus } = useTestCaseStatusStore.getState();
 
     const handleMessage = (message: any) => {
         console.log('Received SSE message:', message);
+
+        // Update the last processed event ID
+        if (message.id) {
+            setLastEventId(message.id);
+        }
 
         // Handle different types of SSE events
         if (message.event === 'USER_EVENT') {
@@ -77,10 +110,15 @@ const createSSEConnectionManager = (): SSEConnectionManager => {
 
             console.log(`Setting up global SSE connection for user: ${userId}`);
 
+            // Get the last event ID from localStorage
+            const lastEventId = getLastEventId();
+            console.log(`Resuming from event ID: ${lastEventId}`);
+
             eventSourceRef.current = watchUserEvents(
                 userId,
                 handleMessage,
-                handleError
+                handleError,
+                lastEventId // Pass the last event ID to resume from
             );
 
             // Update the eventSource property

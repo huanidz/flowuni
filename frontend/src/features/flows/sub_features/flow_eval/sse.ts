@@ -1,5 +1,4 @@
 import { ACCESS_TOKEN_KEY } from '@/features/auth/consts';
-import useAuthStore from '@/features/auth/store';
 
 const baseURL =
     import.meta.env.VITE_API_BASE_URL || 'http://localhost:5002/api';
@@ -7,7 +6,8 @@ const baseURL =
 export const watchUserEvents = (
     userId: number,
     onMessage: (msg: any) => void,
-    onError?: (err: Event) => void
+    onError?: (err: Event) => void,
+    sinceId?: string
 ) => {
     const token = localStorage.getItem(ACCESS_TOKEN_KEY);
 
@@ -16,12 +16,15 @@ export const watchUserEvents = (
     if (token) {
         url.searchParams.set('token', token);
     }
+    if (sinceId && sinceId !== '0') {
+        url.searchParams.set('since_id', sinceId);
+    }
 
     const eventSource = new EventSource(url.toString());
 
     // Connection opened handler
     eventSource.onopen = () => {
-        console.log('🔗 SSE connection opened for user:', userId);
+        console.log('🔗 SSE connection opened');
     };
 
     // Message handler

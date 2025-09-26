@@ -1,4 +1,5 @@
 import { TestCaseRunStatus } from './types';
+export const LAST_EVENT_ID_KEY = 'flowuni-last-sse-event-id';
 
 /*
  * Test execution run types

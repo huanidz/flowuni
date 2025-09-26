@@ -1,7 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { useEffect, useRef } from 'react';
-import useAuthStore from '@/features/auth/store';
 import { TestCaseRunStatus } from './types';
 
 import {
@@ -14,7 +12,6 @@ import {
     partialUpdateTestSuite,
     runSingleTest,
 } from './api';
-import { useGlobalSSEConnection } from './sseConnectionManager';
 import type {
     FlowTestRunRequest,
     TestCaseCreateRequest,
