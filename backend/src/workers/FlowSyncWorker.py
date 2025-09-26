@@ -22,6 +22,7 @@ from src.schemas.flowbuilder.flow_graph_schemas import (
 from src.schemas.flows.flow_schemas import FlowRunResult
 from src.services.ApiKeyService import ApiKeyService
 from src.services.FlowService import FlowService
+from src.services.FlowTestService import FlowTestService
 
 
 class FlowSyncWorker:
@@ -97,6 +98,7 @@ class FlowSyncWorker:
         flow_id: str,
         flow_graph_request_dict: Dict,
         session_id: Optional[str] = None,
+        flow_test_service: Optional[FlowTestService] = None,
     ) -> FlowRunResult:
         try:
             """
@@ -121,6 +123,9 @@ class FlowSyncWorker:
                 task_id=self.task_id,
                 redis_client=redis_client,
                 is_test=True,
+            )
+            flow_test_service.set_test_case_run_status(
+                task_run_id=self.task_id, status=TestCaseRunStatus.QUEUED
             )
             event_publisher.publish_test_run_event(
                 case_id=case_id, status=TestCaseRunStatus.QUEUED
@@ -198,41 +203,24 @@ class FlowSyncWorker:
         flow_id: str,
         case_id: int,
         flow_service: FlowService,
+        flow_test_service: FlowTestService,
         session_id: Optional[str] = None,
     ) -> None:
-        import time
-
-        start_time = time.time()
-
         try:
             logger.info(f"Starting validated flow execution for flow_id: {flow_id}")
 
             # Retrieve and validate flow
-            flow_start = time.time()
             flow_definition = self._get_validated_flow(flow_id, flow_service)
-            flow_end = time.time()
-            logger.info(
-                f"Flow retrieval and validation took: {(flow_end - flow_start):.3f}s"
-            )
 
             # Execute the flow
-            execution_start = time.time()
-            logger.info(f"Starting validated flow execution for flow_id: {flow_id}")
             self.run_test_sync(
                 case_id=case_id,
                 flow_id=flow_id,
                 flow_graph_request_dict=flow_definition,
                 session_id=session_id,
-            )
-            execution_end = time.time()
-            logger.info(
-                f"Flow execution took: {(execution_end - execution_start):.3f}s"
+                flow_test_service=flow_test_service,
             )
 
-            total_end = time.time()
-            logger.info(
-                f"Total flow test execution took: {(total_end - start_time):.3f}s"
-            )
             logger.success(f"Validated flow execution completed for flow_id: {flow_id}")
             return
 

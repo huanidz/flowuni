@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from datetime import datetime
 from typing import Any, Dict, Optional
 
 from loguru import logger
@@ -7,6 +8,10 @@ from src.consts.cache_consts import CACHE_PREFIX
 from src.exceptions.shared_exceptions import NOT_FOUND_EXCEPTION
 from src.helpers.CacheHelper import CacheHelper
 from src.models.alchemy.flows.FlowTestCaseModel import FlowTestCaseModel
+from src.models.alchemy.flows.FlowTestCaseRunModel import (
+    FlowTestCaseRunModel,
+    TestCaseRunStatus,
+)
 from src.models.alchemy.flows.FlowTestSuiteModel import FlowTestSuiteModel
 from src.models.validators.PassCriteriaValidator import PassCriteriaValidator
 from src.repositories.FlowTestRepository import FlowTestRepository
@@ -140,6 +145,49 @@ class FlowTestServiceInterface(ABC):
     def queue_test_case_run(self, test_case_id: int, task_run_id: str) -> None:
         """
         Queue a test case for execution
+        """
+        pass
+
+    @abstractmethod
+    def update_test_case_run(
+        self,
+        run_id: int,
+        status: Optional["TestCaseRunStatus"] = None,
+        actual_output: Optional[Dict[str, Any]] = None,
+        error_message: Optional[str] = None,
+        execution_time_ms: Optional[float] = None,
+        run_detail: Optional[Dict[str, Any]] = None,
+        criteria_results: Optional[Dict[str, Any]] = None,
+        started_at: Optional[datetime] = None,
+        finished_at: Optional[datetime] = None,
+    ) -> "FlowTestCaseRunModel":
+        """
+        Update a test case run by its ID.
+
+        Args:
+            run_id: Test case run ID to update
+            status: New run status (optional)
+            actual_output: New actual output data (optional)
+            error_message: New error message (optional)
+            execution_time_ms: New execution time in milliseconds (optional)
+            run_detail: New run detail data (optional)
+            criteria_results: New criteria results (optional)
+            started_at: New start time (optional)
+            finished_at: New finish time (optional)
+
+        Returns:
+            Updated test case run model
+        """
+        pass
+
+    @abstractmethod
+    def set_test_case_run_status(self, task_run_id: str, status: str) -> None:
+        """
+        Set the status of a test case run by its task run ID.
+
+        Args:
+            task_run_id: The task run ID of the test case run
+            status: The status to set for the test case run
         """
         pass
 
@@ -444,5 +492,81 @@ class FlowTestService(FlowTestServiceInterface):
         except Exception as e:
             logger.error(
                 f"Error queuing test case with ID {test_case_id} for execution: {str(e)}"  # noqa
+            )
+            raise
+
+    def update_test_case_run(
+        self,
+        run_id: int,
+        status: Optional[TestCaseRunStatus] = None,
+        actual_output: Optional[Dict[str, Any]] = None,
+        error_message: Optional[str] = None,
+        execution_time_ms: Optional[float] = None,
+        run_detail: Optional[Dict[str, Any]] = None,
+        criteria_results: Optional[Dict[str, Any]] = None,
+        started_at: Optional[datetime] = None,
+        finished_at: Optional[datetime] = None,
+    ) -> FlowTestCaseRunModel:
+        """
+        Update a test case run by its ID.
+
+        Args:
+            run_id: Test case run ID to update
+            status: New run status (optional)
+            actual_output: New actual output data (optional)
+            error_message: New error message (optional)
+            execution_time_ms: New execution time in milliseconds (optional)
+            run_detail: New run detail data (optional)
+            criteria_results: New criteria results (optional)
+            started_at: New start time (optional)
+            finished_at: New finish time (optional)
+
+        Returns:
+            Updated test case run model
+        """
+        try:
+            # First check if the test case run exists
+            test_case_run = self.test_repository.get_test_case_run_by_id(run_id=run_id)
+            if not test_case_run:
+                logger.warning(f"Test case run with ID {run_id} not found")
+                raise NOT_FOUND_EXCEPTION
+
+            # Update the test case run
+            updated_test_case_run = self.test_repository.update_test_case_run(
+                run_id=run_id,
+                status=status,
+                actual_output=actual_output,
+                error_message=error_message,
+                execution_time_ms=execution_time_ms,
+                run_detail=run_detail,
+                criteria_results=criteria_results,
+                started_at=started_at,
+                finished_at=finished_at,
+            )
+            logger.info(f"Successfully updated test case run with ID {run_id}")
+
+            return updated_test_case_run
+        except Exception as e:
+            logger.error(f"Error updating test case run with ID {run_id}: {str(e)}")
+            raise
+
+    def set_test_case_run_status(self, task_run_id: str, status: str) -> None:
+        """
+        Set the status of a test case run by its task run ID.
+
+        Args:
+            task_run_id: The task run ID of the test case run
+            status: The status to set for the test case run
+        """
+        try:
+            self.test_repository.set_test_case_run_status(
+                task_run_id=task_run_id, status=status
+            )
+            logger.info(
+                f"Successfully set status to '{status}' for test case run with task run ID {task_run_id}"
+            )
+        except Exception as e:
+            logger.error(
+                f"Error setting status for test case run with task run ID {task_run_id}: {str(e)}"
             )
             raise

@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any, Dict, Optional
 
 from loguru import logger
@@ -504,5 +505,108 @@ class FlowTestRepository(BaseRepository):
             logger.error(
                 f"Error setting status for test case run with task_run ID {task_run_id}: {e}"
             )
+            self.db_session.rollback()
+            raise e
+
+    def update_test_case_run(  # noqa
+        self,
+        run_id: int,
+        status: Optional[TestCaseRunStatus] = None,
+        actual_output: Optional[Dict[str, Any]] = None,
+        error_message: Optional[str] = None,
+        execution_time_ms: Optional[float] = None,
+        run_detail: Optional[Dict[str, Any]] = None,
+        criteria_results: Optional[Dict[str, Any]] = None,
+        started_at: Optional[datetime] = None,
+        finished_at: Optional[datetime] = None,
+    ) -> FlowTestCaseRunModel:
+        """
+        Update a test case run by its ID.
+
+        Args:
+            run_id: Test case run ID to update
+            status: New run status (optional)
+            actual_output: New actual output data (optional)
+            error_message: New error message (optional)
+            execution_time_ms: New execution time in milliseconds (optional)
+            run_detail: New run detail data (optional)
+            criteria_results: New criteria results (optional)
+            started_at: New start time (optional)
+            finished_at: New finish time (optional)
+
+        Returns:
+            Updated test case run model
+
+        Raises:
+            NoResultFound: If test case run with given ID is not found
+        """
+        try:
+            # Get the test case run to update
+            test_case_run = (
+                self.db_session.query(FlowTestCaseRunModel).filter_by(id=run_id).first()
+            )
+            if not test_case_run:
+                logger.warning(
+                    f"Attempted to update non-existent test case run with ID: {run_id}"
+                )
+                raise NoResultFound(f"Test case run with ID {run_id} not found.")
+
+            # Update fields if provided
+            if status is not None:
+                test_case_run.status = status
+            if actual_output is not None:
+                test_case_run.actual_output = actual_output
+            if error_message is not None:
+                test_case_run.error_message = error_message
+            if execution_time_ms is not None:
+                test_case_run.execution_time_ms = execution_time_ms
+            if run_detail is not None:
+                test_case_run.run_detail = run_detail
+            if criteria_results is not None:
+                test_case_run.criteria_results = criteria_results
+            if started_at is not None:
+                test_case_run.started_at = started_at
+            if finished_at is not None:
+                test_case_run.finished_at = finished_at
+
+            self.db_session.commit()
+            self.db_session.refresh(test_case_run)
+            logger.info(f"Updated test case run with ID: {run_id}")
+            return test_case_run
+
+        except NoResultFound as e:
+            self.db_session.rollback()
+            logger.error(
+                f"NoResultFound error when updating test case run with ID {run_id}: {e}"
+            )
+            raise e
+        except Exception as e:
+            self.db_session.rollback()
+            logger.error(f"Error updating test case run with ID {run_id}: {e}")
+            raise e
+
+    def get_test_case_run_by_id(self, run_id: int) -> Optional[FlowTestCaseRunModel]:
+        """
+        Get a test case run by its ID.
+
+        Args:
+            run_id: Test case run ID to retrieve
+
+        Returns:
+            FlowTestCaseRunModel if found, None otherwise
+        """
+        try:
+            test_case_run = (
+                self.db_session.query(FlowTestCaseRunModel)
+                .filter_by(id=run_id)
+                .one_or_none()
+            )
+            if test_case_run:
+                logger.info(f"Retrieved test case run with ID: {run_id}")
+            else:
+                logger.info(f"Test case run with ID: {run_id} not found.")
+            return test_case_run
+        except Exception as e:
+            logger.error(f"Error retrieving test case run by ID {run_id}: {e}")
             self.db_session.rollback()
             raise e
