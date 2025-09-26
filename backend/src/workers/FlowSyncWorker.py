@@ -1,3 +1,5 @@
+from datetime import datetime
+from time import perf_counter
 from typing import Dict, Optional
 
 from fastapi import HTTPException
@@ -124,14 +126,18 @@ class FlowSyncWorker:
                 redis_client=redis_client,
                 is_test=True,
             )
-            flow_test_service.set_test_case_run_status(
-                task_run_id=self.task_id, status=TestCaseRunStatus.QUEUED
+            flow_test_service.update_test_case_run(
+                run_id=self.task_id,
+                status=TestCaseRunStatus.QUEUED,
+                started_at=datetime.now(),
             )
             event_publisher.publish_test_run_event(
                 case_id=case_id, status=TestCaseRunStatus.QUEUED
             )
 
             # ===== TEST RUN START HERE =====
+
+            start_time = perf_counter()
 
             logger.info(f"(TEST RUN) Starting flow execution for flow_id: {flow_id}")
 
@@ -163,10 +169,25 @@ class FlowSyncWorker:
             )
 
             logger.info("(TEST RUN) Starting graph execution")
+            flow_test_service.set_test_case_run_status(
+                task_run_id=self.task_id, status=TestCaseRunStatus.RUNNING
+            )
             event_publisher.publish_test_run_event(
                 case_id=case_id, status=TestCaseRunStatus.RUNNING
             )
             execution_result = executor.execute()
+
+            end_time = perf_counter()
+            execution_time_ms = (end_time - start_time) / 1000
+
+            flow_test_service.update_test_case_run(
+                run_id=self.task_id,
+                status=TestCaseRunStatus.PASSED,
+                finished_at=datetime.now(),
+                execution_time_ms=execution_time_ms,
+                actual_output=execution_result,
+            )
+
             event_publisher.publish_test_run_event(
                 case_id=case_id, status=TestCaseRunStatus.PASSED
             )
@@ -178,6 +199,9 @@ class FlowSyncWorker:
             return FlowRunResult(**execution_result)
 
         except GraphCompilerError as e:
+            flow_test_service.set_test_case_run_status(
+                task_run_id=self.task_id, status=TestCaseRunStatus.FAILED
+            )
             event_publisher.publish_test_run_event(
                 case_id=case_id, status=TestCaseRunStatus.FAILED
             )
@@ -187,6 +211,12 @@ class FlowSyncWorker:
             raise
 
         except Exception as e:
+            flow_test_service.update_test_case_run(
+                run_id=self.task_id,
+                status=TestCaseRunStatus.FAILED,
+                error_message=str(e),
+                finished_at=datetime.now(),
+            )
             event_publisher.publish_test_run_event(
                 case_id=case_id, status=TestCaseRunStatus.FAILED
             )

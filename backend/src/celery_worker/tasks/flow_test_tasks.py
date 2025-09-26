@@ -54,7 +54,7 @@ def dispatch_run_test(
             )
             return
         else:
-            countdown = 10 + random.randint(-5, 5)
+            countdown = 6 + random.randint(-3, 3)
             # Hết slot, retry sau 10 giây
             # Celery sẽ tự động đưa task này về queue
             raise self.retry(countdown=countdown)
@@ -110,17 +110,16 @@ def run_flow_test(
             redis_client=None,
         )
 
-        # Get the test case
-        test_case = flow_test_service.get_test_case_by_id(case_id=case_id)
-        if not test_case:
-            raise ValueError(f"Test case with ID {case_id} not found")
-
         flow_service = FlowService(
             flow_repository=repositories.flow_repository,
         )
         flow_sync_worker = FlowSyncWorker(user_id=user_id, task_id=task_id)
         flow_sync_worker.run_flow_test(
-            flow_id=flow_id, case_id=case_id, flow_service=flow_service, session_id=None
+            flow_id=flow_id,
+            case_id=case_id,
+            flow_service=flow_service,
+            session_id=None,
+            flow_test_service=flow_test_service,
         )
 
         return

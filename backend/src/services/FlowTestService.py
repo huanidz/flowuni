@@ -525,12 +525,6 @@ class FlowTestService(FlowTestServiceInterface):
             Updated test case run model
         """
         try:
-            # First check if the test case run exists
-            test_case_run = self.test_repository.get_test_case_run_by_id(run_id=run_id)
-            if not test_case_run:
-                logger.warning(f"Test case run with ID {run_id} not found")
-                raise NOT_FOUND_EXCEPTION
-
             # Update the test case run
             updated_test_case_run = self.test_repository.update_test_case_run(
                 run_id=run_id,

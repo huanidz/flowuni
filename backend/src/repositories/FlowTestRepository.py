@@ -510,7 +510,7 @@ class FlowTestRepository(BaseRepository):
 
     def update_test_case_run(  # noqa
         self,
-        run_id: int,
+        run_id: int,  # Task_Run_ID
         status: Optional[TestCaseRunStatus] = None,
         actual_output: Optional[Dict[str, Any]] = None,
         error_message: Optional[str] = None,
@@ -521,10 +521,10 @@ class FlowTestRepository(BaseRepository):
         finished_at: Optional[datetime] = None,
     ) -> FlowTestCaseRunModel:
         """
-        Update a test case run by its ID.
+        Update a test case run by its Task_Run_ID.
 
         Args:
-            run_id: Test case run ID to update
+            run_id: Test case run Task_Run_ID to update
             status: New run status (optional)
             actual_output: New actual output data (optional)
             error_message: New error message (optional)
@@ -543,13 +543,17 @@ class FlowTestRepository(BaseRepository):
         try:
             # Get the test case run to update
             test_case_run = (
-                self.db_session.query(FlowTestCaseRunModel).filter_by(id=run_id).first()
+                self.db_session.query(FlowTestCaseRunModel)
+                .filter_by(task_run_id=run_id)
+                .first()
             )
             if not test_case_run:
                 logger.warning(
-                    f"Attempted to update non-existent test case run with ID: {run_id}"
+                    f"Attempted to update non-existent test case run with Task_Run_ID: {run_id}"
                 )
-                raise NoResultFound(f"Test case run with ID {run_id} not found.")
+                raise NoResultFound(
+                    f"Test case run with Task_Run_ID {run_id} not found."
+                )
 
             # Update fields if provided
             if status is not None:
@@ -571,42 +575,16 @@ class FlowTestRepository(BaseRepository):
 
             self.db_session.commit()
             self.db_session.refresh(test_case_run)
-            logger.info(f"Updated test case run with ID: {run_id}")
+            logger.info(f"Updated test case run with Task_Run_ID: {run_id}")
             return test_case_run
 
         except NoResultFound as e:
             self.db_session.rollback()
             logger.error(
-                f"NoResultFound error when updating test case run with ID {run_id}: {e}"
+                f"NoResultFound error when updating test case run with Task_Run_ID {run_id}: {e}"
             )
             raise e
         except Exception as e:
             self.db_session.rollback()
-            logger.error(f"Error updating test case run with ID {run_id}: {e}")
-            raise e
-
-    def get_test_case_run_by_id(self, run_id: int) -> Optional[FlowTestCaseRunModel]:
-        """
-        Get a test case run by its ID.
-
-        Args:
-            run_id: Test case run ID to retrieve
-
-        Returns:
-            FlowTestCaseRunModel if found, None otherwise
-        """
-        try:
-            test_case_run = (
-                self.db_session.query(FlowTestCaseRunModel)
-                .filter_by(id=run_id)
-                .one_or_none()
-            )
-            if test_case_run:
-                logger.info(f"Retrieved test case run with ID: {run_id}")
-            else:
-                logger.info(f"Test case run with ID: {run_id} not found.")
-            return test_case_run
-        except Exception as e:
-            logger.error(f"Error retrieving test case run by ID {run_id}: {e}")
-            self.db_session.rollback()
+            logger.error(f"Error updating test case run with Task_Run_ID {run_id}: {e}")
             raise e
