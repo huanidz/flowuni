@@ -174,25 +174,29 @@ const LCEvalContent: React.FC = () => {
             return;
         }
 
-        // For now, we'll run all tests as we don't have status information
-        // In a real implementation, we would filter for failed test cases
-        const allTestCaseIds = testSuites.flatMap(suite =>
-            suite.test_cases.map(testCase => testCase.id)
+        // Filter for test cases that have failed status
+        const failedTestCaseIds = testSuites.flatMap(suite =>
+            suite.test_cases
+                .filter(testCase => {
+                    const status = allTestCaseStatuses[String(testCase.id)];
+                    return status === 'FAILED';
+                })
+                .map(testCase => testCase.id)
         );
 
-        if (allTestCaseIds.length === 0) {
+        if (failedTestCaseIds.length === 0) {
             return;
         }
 
-        // Run single test if only one test case, otherwise run batch
-        if (allTestCaseIds.length === 1) {
+        // Run single test if only one failed test case, otherwise run batch
+        if (failedTestCaseIds.length === 1) {
             runSingleTest.mutate({
-                case_id: allTestCaseIds[0],
+                case_id: failedTestCaseIds[0],
                 flow_id: flowId,
             });
         } else {
             runBatchTest.mutate({
-                case_ids: allTestCaseIds,
+                case_ids: failedTestCaseIds,
                 flow_id: flowId,
             });
         }
