@@ -20,6 +20,9 @@ class TestCaseRunStatus(str, Enum):
     CANCELLED = "CANCELLED"
     SYSTEM_ERROR = "SYSTEM_ERROR"
 
+    def __str__(self):
+        return self.value
+
 
 class FlowTestCaseRunModel(AppBaseModel):
     __tablename__ = "flow_test_case_runs"

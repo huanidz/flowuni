@@ -188,7 +188,22 @@ export const useRunSingleTest = () => {
         },
         onError: error => {
             console.error('Error running test case:', error);
-            toast.error('Failed to run test case');
+
+            // Handle 409 Conflict error (test case already running or queued)
+            if (
+                error &&
+                typeof error === 'object' &&
+                'status' in error &&
+                error.status === 409
+            ) {
+                const errorMessage =
+                    'detail' in error && typeof error.detail === 'string'
+                        ? error.detail
+                        : 'Test case is already running or queued';
+                toast.error(errorMessage);
+            } else {
+                toast.error('Failed to run test case');
+            }
         },
     });
 };
@@ -206,7 +221,7 @@ export const useRunBatchTest = () => {
         onSuccess: (data, variables) => {
             // Map each task ID to its corresponding test case ID
             data.task_ids.forEach((taskId, index) => {
-                const caseId = variables.case_ids[index];
+                const caseId = data.case_ids[index];
                 setTaskTestCaseMapping(taskId, String(caseId));
 
                 // Set initial status to QUEUED for each test case
@@ -217,7 +232,19 @@ export const useRunBatchTest = () => {
             queryClient.invalidateQueries({
                 queryKey: ['testSuitesWithCases', variables.flow_id],
             });
-            toast.success('Batch test run initiated successfully');
+
+            // Check if some test cases were skipped (already running or queued)
+            const requestedCount = variables.case_ids.length;
+            const queuedCount = data.case_ids.length;
+
+            if (requestedCount > queuedCount) {
+                const skippedCount = requestedCount - queuedCount;
+                toast.success(
+                    `Batch test run initiated for ${queuedCount} test cases. ${skippedCount} test cases were skipped as they are already running or queued.`
+                );
+            } else {
+                toast.success('Batch test run initiated successfully');
+            }
         },
         onError: error => {
             console.error('Error running batch test:', error);

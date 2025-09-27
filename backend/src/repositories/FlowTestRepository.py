@@ -738,7 +738,7 @@ class FlowTestRepository(BaseRepository):
                 logger.info(
                     f"No test case runs found for test case with ID: {test_case_id}, returning PENDING"
                 )
-                return TestCaseRunStatus.PENDING
+                return TestCaseRunStatus.PENDING.value
 
         except Exception as e:
             logger.error(

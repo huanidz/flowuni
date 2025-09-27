@@ -48,6 +48,23 @@ async def run_single_test(
                 detail="Test case not found",
             )
 
+        # Check the latest test case run status
+        latest_status = flow_test_service.get_latest_test_case_run_status(
+            test_case_id=request.case_id
+        )
+
+        if str(latest_status) in (
+            TestCaseRunStatus.QUEUED.value,
+            TestCaseRunStatus.RUNNING.value,
+        ):
+            logger.warning(
+                f"Test case with ID {request.case_id} already has status {latest_status}"
+            )
+            raise HTTPException(
+                status_code=409,
+                detail=f"Test case is already {latest_status.lower()}",
+            )
+
         # NOTE: This to generate a unique task ID instead of using from celery to avoid race conditions of accessing the TestCaseRun with task_id may not be exist yet # noqa
         generated_task_id = str(uuid4())
         flow_test_service.queue_test_case_run(
@@ -107,11 +124,44 @@ async def run_batch_test(
                     detail=f"Test case with ID {case_id} not found",
                 )
 
+        # Check the latest test case run status for all cases
+        latest_statuses = flow_test_service.get_latest_test_cases_run_status(
+            test_case_ids=request.case_ids
+        )
+
+        # Filter out test cases that are already QUEUED or RUNNING
+        valid_case_ids = []
+        for case_id in request.case_ids:
+            latest_status = TestCaseRunStatus(
+                latest_statuses.get(case_id, TestCaseRunStatus.PENDING.value)
+            )
+            if str(latest_status) in (
+                TestCaseRunStatus.QUEUED.value,
+                TestCaseRunStatus.RUNNING.value,
+            ):
+                logger.warning(
+                    f"Test case with ID {case_id} already has status {latest_status}, skipping"
+                )
+            else:
+                logger.info(f"Test case is valid status: {latest_status}")
+                valid_case_ids.append(case_id)
+
+        # If no valid test cases, return empty response
+        if not valid_case_ids:
+            logger.info("No valid test cases to run in batch request")
+            return FlowBatchTestRunResponse(
+                status=TestCaseRunStatus.QUEUED,
+                task_ids=[],
+                message="No test cases were queued as they are already running or queued.",
+                case_ids=[],
+                flow_id=request.flow_id,
+            )
+
         # NOTE: This to generate a unique task ID instead of using from celery to avoid race conditions of accessing the TestCaseRun with task_id may not be exist yet # noqa
 
-        # Generate unique task IDs for all cases and queue them
+        # Generate unique task IDs for valid cases and queue them
         generated_task_ids = []
-        for case_id in request.case_ids:
+        for case_id in valid_case_ids:
             generated_task_id = str(uuid4())
             generated_task_ids.append(generated_task_id)
 
@@ -127,14 +177,14 @@ async def run_batch_test(
             )
 
         logger.info(
-            f"Batch flow test tasks submitted to Celery. (submitted_by u_id: {auth_user_id}). Task IDs: {generated_task_ids}. Cases: {request.case_ids}."  # noqa
+            f"Batch flow test tasks submitted to Celery. (submitted_by u_id: {auth_user_id}). Task IDs: {generated_task_ids}. Cases: {valid_case_ids}."  # noqa
         )
 
         return FlowBatchTestRunResponse(
             status=TestCaseRunStatus.QUEUED,
             task_ids=generated_task_ids,
             message="Batch flow test tasks have been queued.",
-            case_ids=request.case_ids,
+            case_ids=valid_case_ids,
             flow_id=request.flow_id,
         )
 
