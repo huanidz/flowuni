@@ -26,7 +26,7 @@ const LCEvalContent: React.FC = () => {
     const flowId = current_flow?.flow_id;
 
     if (!flowId) {
-        return;
+        return null;
     }
     const [expandedSuites, setExpandedSuites] = useState<Set<string>>(
         new Set()

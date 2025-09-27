@@ -1,3 +1,4 @@
+import React from 'react';
 import useAuthStore from '@/features/auth/store';
 import { watchUserEvents } from './sse';
 import { useTestCaseStatusStore } from './stores/testCaseStatusStore';
@@ -12,6 +13,16 @@ interface SSEConnectionManager {
     disconnect: () => void;
     addMessageHandler: (handler: (message: any) => void) => void;
     removeMessageHandler: (handler: (message: any) => void) => void;
+    setUpdateFunctions: (functions: {
+        updateTestCaseStatus: (
+            caseIdStr: string,
+            statusValue: TestCaseRunStatus
+        ) => void;
+        updateQueryData: (
+            caseIdStr: string,
+            statusValue: TestCaseRunStatus
+        ) => void;
+    }) => void;
 }
 
 // Global singleton instance
@@ -49,8 +60,24 @@ const createSSEConnectionManager = (): SSEConnectionManager => {
     // Use regular object references instead of React hooks
     const eventSourceRef = { current: null as EventSource | null };
     const messageHandlersRef = { current: new Set<(message: any) => void>() };
-    const { updateTestCaseStatus } = useTestCaseStatusStore.getState();
-    const queryClient = useQueryClient();
+
+    // Store references to update functions that will be set by the hook
+    const updateFunctionsRef = {
+        updateTestCaseStatus: (
+            caseIdStr: string,
+            statusValue: TestCaseRunStatus
+        ) => {
+            // Default implementation - will be overridden by the hook
+            console.log('updateTestCaseStatus not properly initialized');
+        },
+        updateQueryData: (
+            caseIdStr: string,
+            statusValue: TestCaseRunStatus
+        ) => {
+            // Default implementation - will be overridden by the hook
+            console.log('updateQueryData not properly initialized');
+        },
+    };
 
     const handleMessage = (message: any) => {
         console.log('Received SSE message:', message);
@@ -73,40 +100,14 @@ const createSSEConnectionManager = (): SSEConnectionManager => {
                     const caseIdStr = String(case_id);
                     const statusValue = status as TestCaseRunStatus;
 
-                    // Update the store status
-                    updateTestCaseStatus(caseIdStr, statusValue);
-
-                    // Update the React Query cache to reflect the new latest_run_status
-                    queryClient.setQueriesData(
-                        { queryKey: ['testSuitesWithCases'] },
-                        (oldData: any) => {
-                            if (!oldData) return oldData;
-
-                            // Create a deep copy of the old data
-                            const newData = JSON.parse(JSON.stringify(oldData));
-
-                            // Update the latest_run_status for the specific test case
-                            if (newData.test_suites) {
-                                newData.test_suites.forEach((suite: any) => {
-                                    if (suite.test_cases) {
-                                        suite.test_cases.forEach(
-                                            (testCase: any) => {
-                                                if (
-                                                    String(testCase.id) ===
-                                                    caseIdStr
-                                                ) {
-                                                    testCase.latest_run_status =
-                                                        statusValue;
-                                                }
-                                            }
-                                        );
-                                    }
-                                });
-                            }
-
-                            return newData;
-                        }
+                    // Update the store status using the reference
+                    updateFunctionsRef.updateTestCaseStatus(
+                        caseIdStr,
+                        statusValue
                     );
+
+                    // Update the React Query cache using the reference
+                    updateFunctionsRef.updateQueryData(caseIdStr, statusValue);
                 }
             }
         } else if (message.event === 'DONE') {
@@ -170,6 +171,21 @@ const createSSEConnectionManager = (): SSEConnectionManager => {
         removeMessageHandler: (handler: (message: any) => void) => {
             messageHandlersRef.current.delete(handler);
         },
+        // Expose the update functions reference so the hook can set them
+        setUpdateFunctions: (functions: {
+            updateTestCaseStatus: (
+                caseIdStr: string,
+                statusValue: TestCaseRunStatus
+            ) => void;
+            updateQueryData: (
+                caseIdStr: string,
+                statusValue: TestCaseRunStatus
+            ) => void;
+        }) => {
+            updateFunctionsRef.updateTestCaseStatus =
+                functions.updateTestCaseStatus;
+            updateFunctionsRef.updateQueryData = functions.updateQueryData;
+        },
     };
 
     return manager;
@@ -185,7 +201,57 @@ export const getSSEConnectionManager = (): SSEConnectionManager => {
 // Hook to use the global SSE connection
 export const useGlobalSSEConnection = () => {
     const { user_id } = useAuthStore();
+    const { updateTestCaseStatus } = useTestCaseStatusStore.getState();
+    const queryClient = useQueryClient();
     const manager = getSSEConnectionManager();
+
+    // Set up the update functions when the hook is used
+    React.useEffect(() => {
+        manager.setUpdateFunctions({
+            updateTestCaseStatus: (
+                caseIdStr: string,
+                statusValue: TestCaseRunStatus
+            ) => {
+                updateTestCaseStatus(caseIdStr, statusValue);
+            },
+            updateQueryData: (
+                caseIdStr: string,
+                statusValue: TestCaseRunStatus
+            ) => {
+                // Update the React Query cache to reflect the new latest_run_status
+                queryClient.setQueriesData(
+                    { queryKey: ['testSuitesWithCases'] },
+                    (oldData: any) => {
+                        if (!oldData) return oldData;
+
+                        // Create a deep copy of the old data
+                        const newData = JSON.parse(JSON.stringify(oldData));
+
+                        // Update the latest_run_status for the specific test case
+                        if (newData.test_suites) {
+                            newData.test_suites.forEach((suite: any) => {
+                                if (suite.test_cases) {
+                                    suite.test_cases.forEach(
+                                        (testCase: any) => {
+                                            if (
+                                                String(testCase.id) ===
+                                                caseIdStr
+                                            ) {
+                                                testCase.latest_run_status =
+                                                    statusValue;
+                                            }
+                                        }
+                                    );
+                                }
+                            });
+                        }
+
+                        return newData;
+                    }
+                );
+            },
+        });
+    }, [manager, updateTestCaseStatus, queryClient]);
 
     const connect = () => {
         if (user_id) {
