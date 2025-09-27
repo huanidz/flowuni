@@ -121,15 +121,6 @@ class FlowSyncWorker:
                 SYSTEM_ERROR = "SYSTEM_ERROR
             """
 
-            if not self.user_id:
-                raise NotEnoughUserInformation(
-                    f"User id is not provided for task_id {self.task_id}. Can't publish event for test."  # noqa
-                )
-
-            pass_criteria = flow_test_service.get_test_case_pass_criteria(
-                test_case_id=case_id
-            )
-
             redis_client = get_redis_client()
             event_publisher = ExecutionEventPublisher(
                 user_id=self.user_id,
@@ -137,6 +128,17 @@ class FlowSyncWorker:
                 redis_client=redis_client,
                 is_test=True,
             )
+
+            if not self.user_id:
+                raise NotEnoughUserInformation(
+                    f"User id is not provided for task_id {self.task_id}. Can't publish event for test."  # noqa
+                )
+
+            test_case = flow_test_service.get_test_case_by_id(case_id=case_id)
+
+            pass_criteria = test_case.pass_criteria
+            input_text = test_case.input_text
+
             flow_test_service.update_test_case_run(
                 run_id=self.task_id,
                 status=TestCaseRunStatus.QUEUED,
@@ -154,7 +156,9 @@ class FlowSyncWorker:
 
             # Parse and load the flow graph
             flow_graph_request = CanvasFlowRunRequest(**flow_graph_request_dict)
-            graph = GraphLoader.from_request(flow_graph_request)
+            graph = GraphLoader.from_request(
+                flow_graph_request, custom_input_text=input_text
+            )
 
             # Compile execution plan
             compiler = GraphCompiler(graph=graph, remove_standalone=False)
