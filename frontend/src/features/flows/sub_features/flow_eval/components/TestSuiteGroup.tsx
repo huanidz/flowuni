@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, ChevronRight } from 'lucide-react';
+import { Edit, Trash2, ChevronRight, CheckSquare, Square } from 'lucide-react';
 import type { TestSuiteWithCasePreviews } from '../types';
 import TestCasePreviewItem from './TestCasePreviewItem';
 import TestSuiteEdit from './TestSuiteEdit';
@@ -16,6 +16,7 @@ interface TestSuiteGroupProps {
     testSuite: TestSuiteWithCasePreviews;
     selectedTestCases: Set<string>;
     onTestCaseSelect: (testCaseId: string) => void;
+    onTestCaseSelectAll: (testCaseIds: string[], selected: boolean) => void;
     expandedSuites: Set<string>;
     onToggleExpand: (suiteId: string) => void;
 }
@@ -24,6 +25,7 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
     testSuite,
     selectedTestCases,
     onTestCaseSelect,
+    onTestCaseSelectAll,
     expandedSuites,
     onToggleExpand,
 }) => {
@@ -41,6 +43,8 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
     );
     const hasSelectedTestCase = selectedTestCasesInSuite.length > 0;
     const totalTests = testSuite.test_cases.length;
+    const allTestCasesSelected =
+        totalTests > 0 && selectedTestCasesInSuite.length === totalTests;
 
     // Status counts and suite status
     const statusCounts = testSuite.test_cases.reduce(
@@ -62,6 +66,12 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
         if (statusCounts.SYSTEM_ERROR > 0) return 'SYSTEM_ERROR';
         if (statusCounts.CANCELLED > 0) return 'CANCELLED';
         return 'PENDING';
+    };
+
+    const handleSelectAll = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        const testCaseIds = testSuite.test_cases.map(tc => String(tc.id));
+        onTestCaseSelectAll(testCaseIds, !allTestCasesSelected);
     };
 
     const handleDelete = (e: React.MouseEvent) => {
@@ -109,6 +119,23 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
                                 }`}
                             />
                             <div className="flex items-center gap-2">
+                                {totalTests > 0 && (
+                                    <button
+                                        onClick={handleSelectAll}
+                                        className="flex items-center justify-center text-gray-500 hover:text-blue-600 focus:outline-none"
+                                        title={
+                                            allTestCasesSelected
+                                                ? 'Deselect all'
+                                                : 'Select all'
+                                        }
+                                    >
+                                        {allTestCasesSelected ? (
+                                            <CheckSquare className="w-4 h-4 text-blue-600" />
+                                        ) : (
+                                            <Square className="w-4 h-4" />
+                                        )}
+                                    </button>
+                                )}
                                 <span className="text-xs font-semibold text-gray-500 uppercase bg-gray-100 px-2 py-0.5 rounded">
                                     SUITE
                                 </span>

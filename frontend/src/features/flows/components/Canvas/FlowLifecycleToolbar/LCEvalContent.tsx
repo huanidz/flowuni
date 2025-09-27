@@ -98,6 +98,21 @@ const LCEvalContent: React.FC = () => {
         setSelectedTestCases(newSelected);
     };
 
+    const handleTestCaseSelectAll = (
+        testCaseIds: string[],
+        selected: boolean
+    ) => {
+        const newSelected = new Set(selectedTestCases);
+        if (selected) {
+            // Add all test case IDs to the selection
+            testCaseIds.forEach(id => newSelected.add(id));
+        } else {
+            // Remove all test case IDs from the selection
+            testCaseIds.forEach(id => newSelected.delete(id));
+        }
+        setSelectedTestCases(newSelected);
+    };
+
     const handleRunAll = () => {
         setIsRunning(true);
         console.log('Running all tests...');
@@ -192,6 +207,7 @@ const LCEvalContent: React.FC = () => {
                                 testSuite={suite}
                                 selectedTestCases={selectedTestCases}
                                 onTestCaseSelect={handleTestCaseSelect}
+                                onTestCaseSelectAll={handleTestCaseSelectAll}
                                 expandedSuites={expandedSuites}
                                 onToggleExpand={handleToggleExpand}
                             />
