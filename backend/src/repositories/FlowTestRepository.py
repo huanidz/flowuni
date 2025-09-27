@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Any, Dict, Optional
 
 from loguru import logger
-from sqlalchemy import desc, func
+from sqlalchemy import and_, desc, func
 from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlalchemy.orm import Session
 from src.models.alchemy.flows.FlowTestCaseModel import FlowTestCaseModel
@@ -348,125 +348,110 @@ class FlowTestRepository(BaseRepository):
 
     def get_test_suites_with_case_previews(self, flow_id: str) -> list[dict]:
         """
-        Get all test suites for a specific flow with their test case previews.
-
-        Returns:
-            list[dict]: List of test suites with their test case previews (only needed fields)
-        """  # noqa
+        Get all test suites for a flow with case previews + latest run status.
+        Single round-trip for suites, single round-trip for cases+runs.
+        """
         try:
-            # Get all test suites for the flow
-            test_suites = (
-                self.db_session.query(FlowTestSuiteModel)
-                .filter_by(flow_id=flow_id)
+            s = self.db_session
+
+            # 1) Fetch suites (only fields we need)
+            suites = (
+                s.query(
+                    FlowTestSuiteModel.id,
+                    FlowTestSuiteModel.simple_id,
+                    FlowTestSuiteModel.flow_id,
+                    FlowTestSuiteModel.name,
+                    FlowTestSuiteModel.description,
+                    FlowTestSuiteModel.is_active,
+                )
+                .filter(FlowTestSuiteModel.flow_id == flow_id)
                 .all()
             )
 
-            result = []
+            if not suites:
+                logger.info(f"Retrieved 0 test suites for flow {flow_id}")
+                return []
 
-            # For each test suite, get only the needed fields from test cases
-            for suite in test_suites:
-                suite_dict = {
-                    "id": suite.id,
-                    "simple_id": suite.simple_id,
-                    "flow_id": suite.flow_id,
-                    "name": suite.name,
-                    "description": suite.description,
-                    "is_active": suite.is_active,
-                    "test_cases": [],
-                }
+            suite_ids = [row.id for row in suites]
 
-                # Query only the needed fields from test cases
-                test_cases = (
-                    self.db_session.query(
-                        FlowTestCaseModel.id,
-                        FlowTestCaseModel.simple_id,
-                        FlowTestCaseModel.suite_id,
-                        FlowTestCaseModel.name,
-                        FlowTestCaseModel.description,
-                        FlowTestCaseModel.is_active,
-                    )
-                    .filter_by(suite_id=suite.id)
-                    .all()
+            # 2) Build a subquery that picks the latest run per test_case using a window function
+            #    ROW_NUMBER() OVER (PARTITION BY test_case_id ORDER BY created_at DESC) = 1
+            latest_runs_sq = s.query(
+                FlowTestCaseRunModel.test_case_id.label("case_id"),
+                FlowTestCaseRunModel.status.label("latest_status"),
+                func.row_number()
+                .over(
+                    partition_by=FlowTestCaseRunModel.test_case_id,
+                    order_by=FlowTestCaseRunModel.created_at.desc(),
+                )
+                .label("rn"),
+            ).subquery("latest_runs_sq")
+
+            # 3) Fetch all cases for all suites in one go, left-joining the "rn=1" row for latest status
+            #    Note: put rn=1 in the join condition to keep it an OUTER join.
+            cases_rows = (
+                s.query(
+                    FlowTestCaseModel.id.label("id"),
+                    FlowTestCaseModel.simple_id.label("simple_id"),
+                    FlowTestCaseModel.suite_id.label("suite_id"),
+                    FlowTestCaseModel.name.label("name"),
+                    FlowTestCaseModel.description.label("description"),
+                    FlowTestCaseModel.is_active.label("is_active"),
+                    latest_runs_sq.c.latest_status.label("latest_run_status"),
+                )
+                .filter(FlowTestCaseModel.suite_id.in_(suite_ids))
+                .outerjoin(
+                    latest_runs_sq,
+                    and_(
+                        latest_runs_sq.c.case_id == FlowTestCaseModel.id,
+                        latest_runs_sq.c.rn == 1,
+                    ),
+                )
+                .all()
+            )
+
+            # 4) Group cases by suite_id
+            cases_by_suite = {}
+            for r in cases_rows:
+                cases_by_suite.setdefault(r.suite_id, []).append(
+                    {
+                        "id": r.id,
+                        "simple_id": r.simple_id,
+                        "suite_id": r.suite_id,
+                        "name": r.name,
+                        "description": r.description,
+                        "is_active": r.is_active,
+                        # Ensure the field is always present (None if no runs yet)
+                        "latest_run_status": r.latest_run_status,
+                    }
                 )
 
-                # Get all test case IDs for this suite to fetch their latest run statuses
-                case_ids = [case.id for case in test_cases]
-
-                # Query to get the latest run status for each test case
-                latest_runs = {}
-                if case_ids:
-                    # Subquery to get the latest created_at for each test case
-                    latest_run_subquery = (
-                        self.db_session.query(
-                            FlowTestCaseRunModel.test_case_id,
-                            func.max(FlowTestCaseRunModel.created_at).label(
-                                "max_created_at"
-                            ),
-                        )
-                        .filter(FlowTestCaseRunModel.test_case_id.in_(case_ids))
-                        .group_by(FlowTestCaseRunModel.test_case_id)
-                        .subquery("latest_run_subquery")
-                    )
-
-                    # Query to get the status of the latest run for each test case
-                    latest_run_query = (
-                        self.db_session.query(
-                            FlowTestCaseRunModel.test_case_id,
-                            FlowTestCaseRunModel.status,
-                        )
-                        .join(
-                            latest_run_subquery,
-                            (
-                                FlowTestCaseRunModel.test_case_id
-                                == latest_run_subquery.c.test_case_id
-                            )
-                            & (
-                                FlowTestCaseRunModel.created_at
-                                == latest_run_subquery.c.max_created_at
-                            ),
-                        )
-                        .all()
-                    )
-
-                    # Create a dictionary mapping test_case_id to its latest run status
-                    latest_runs = {
-                        str(test_case_id): status
-                        for test_case_id, status in latest_run_query
+            # 5) Assemble final structure
+            result = []
+            for suite in suites:
+                result.append(
+                    {
+                        "id": suite.id,
+                        "simple_id": suite.simple_id,
+                        "flow_id": suite.flow_id,
+                        "name": suite.name,
+                        "description": suite.description,
+                        "is_active": suite.is_active,
+                        "test_cases": cases_by_suite.get(suite.id, []),
                     }
-
-                # Convert test case tuples to dictionaries and add latest run status
-                for case in test_cases:
-                    case_dict = {
-                        "id": case.id,
-                        "simple_id": case.simple_id,
-                        "suite_id": case.suite_id,
-                        "name": case.name,
-                        "description": case.description,
-                        "is_active": case.is_active,
-                    }
-
-                    # Add the latest run status if available
-                    case_id_str = str(case.id)
-                    if case_id_str in latest_runs:
-                        case_dict["latest_run_status"] = latest_runs[case_id_str]
-                    else:
-                        # For backward compatibility, include the field with None value
-                        case_dict["latest_run_status"] = None
-
-                    suite_dict["test_cases"].append(case_dict)
-
-                result.append(suite_dict)
+                )
 
             logger.info(
-                f"Retrieved {len(result)} test suites with case previews for flow {flow_id}"  # noqa
+                f"Retrieved {len(result)} test suites with case previews for flow {flow_id}"
             )
             return result
+
         except Exception as e:
             logger.error(
-                f"Error retrieving test suites with case previews for flow {flow_id}: {e}"  # noqa
+                f"Error retrieving test suites with case previews for flow {flow_id}: {e}"
             )
             self.db_session.rollback()
-            raise e
+            raise
 
     def get_test_case_run_status(self, task_run_id: str) -> Optional[str]:
         """

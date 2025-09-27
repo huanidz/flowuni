@@ -207,10 +207,16 @@ class FlowSyncWorker:
             runner_result: RunnerResult = criteria_runner.run()
 
             if runner_result.passed:
+                flow_test_service.set_test_case_run_status(
+                    task_run_id=self.task_id, status=TestCaseRunStatus.PASSED
+                )
                 event_publisher.publish_test_run_event(
                     case_id=case_id, status=TestCaseRunStatus.PASSED
                 )
             else:
+                flow_test_service.set_test_case_run_status(
+                    task_run_id=self.task_id, status=TestCaseRunStatus.FAILED
+                )
                 event_publisher.publish_test_run_event(
                     case_id=case_id, status=TestCaseRunStatus.FAILED
                 )
