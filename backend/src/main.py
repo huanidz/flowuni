@@ -39,7 +39,8 @@ async def startup_event():
     try:
         redis_client = get_redis_client()
         redis_client.delete("node_catalog")
-        logger.info("Cleared node catalog cache on startup")
+        redis_client.delete("llm_support_config")
+        logger.info("Cleared some redis global cache items on startup")
     except Exception as e:
         logger.error(f"Failed to clear node catalog cache on startup: {str(e)}")
 
