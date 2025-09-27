@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from pydantic import BaseModel
 
@@ -14,7 +14,7 @@ class CheckResult(BaseModel):
 
 
 class StepDetail(BaseModel):
-    id: str
+    id: Union[str, int]
     result: CheckResult
 
 

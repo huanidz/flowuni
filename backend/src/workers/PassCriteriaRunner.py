@@ -2,13 +2,16 @@ from typing import Any, Dict, List
 
 from src.criterion import LLMJudgeCriterion, RegexCriterion, StringCriterion
 from src.criterion.BaseCriterion import Criterion
-from src.models.parsers import LLMJudgeParser, RegexRuleParser, StringRuleParser
+from src.models.parsers import LLMJudgeRuleParser, RegexRuleParser, StringRuleParser
 from src.models.validators.PassCriteriaRunnerModels import (
     CheckResult,
     RunnerResult,
     StepDetail,
 )
-from src.models.validators.PassCriteriaValidator import PassCriteriaValidator
+from src.models.validators.PassCriteriaValidator import (
+    PassCriteriaRuleItem,
+    PassCriteriaValidator,
+)
 
 
 class PassCriteriaRunner:
@@ -39,13 +42,16 @@ class PassCriteriaRunner:
         self.logics_sequence: List[str] = pass_criteria.logics
 
         criteria_sequence: List[Criterion] = []
+        rule_parser: PassCriteriaRuleItem
         for rule_parser in pass_criteria.rules:
             if rule_parser.type == "llm_judge":
                 criteria_sequence.append(
                     LLMJudgeCriterion(
                         id=rule_parser.id,
                         input=self.flow_output,
-                        rule=LLMJudgeParser.model_validate(rule_parser),
+                        rule=LLMJudgeRuleParser.model_validate(
+                            rule_parser.config.model_dump()
+                        ),
                     )
                 )
             elif rule_parser.type == "string":
@@ -53,7 +59,9 @@ class PassCriteriaRunner:
                     StringCriterion(
                         id=rule_parser.id,
                         input=self.flow_output,
-                        rule=StringRuleParser.model_validate(rule_parser),
+                        rule=StringRuleParser.model_validate(
+                            rule_parser.config.model_dump()
+                        ),
                     )
                 )
             elif rule_parser.type == "regex":
@@ -61,7 +69,9 @@ class PassCriteriaRunner:
                     RegexCriterion(
                         id=rule_parser.id,
                         input=self.flow_output,
-                        rule=RegexRuleParser.model_validate(rule_parser),
+                        rule=RegexRuleParser.model_validate(
+                            rule_parser.config.model_dump()
+                        ),
                     )
                 )
             else:
