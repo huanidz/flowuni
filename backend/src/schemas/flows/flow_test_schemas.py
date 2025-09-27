@@ -220,7 +220,7 @@ class FlowBatchTestRunResponse(BaseModel):
     """
 
     status: str = Field(..., description="Status of the test run")
-    task_id: str = Field(..., description="Celery task ID")
+    task_ids: List[str] = Field(..., description="List of Celery task IDs")
     message: str = Field(..., description="Message about the test run")
     case_ids: List[int] = Field(..., description="List of test case IDs")
     flow_id: str = Field(..., description="Flow ID")

@@ -9,7 +9,6 @@ from fastapi.responses import StreamingResponse
 from loguru import logger
 from redis import Redis
 from src.celery_worker.tasks.flow_test_tasks import (
-    dispatch_batch_run_test,
     dispatch_run_test,
     run_flow_test,
 )
@@ -110,32 +109,32 @@ async def run_batch_test(
                 )
 
         # NOTE: This to generate a unique task ID instead of using from celery to avoid race conditions of accessing the TestCaseRun with task_id may not be exist yet # noqa
-        generated_task_id = str(uuid4())
 
-        # Queue test case runs for all cases
+        # Generate unique task IDs for all cases and queue them
+        generated_task_ids = []
         for case_id in request.case_ids:
-            unique_task_id = f"{generated_task_id}_{case_id}"
+            generated_task_id = str(uuid4())
+            generated_task_ids.append(generated_task_id)
 
             flow_test_service.queue_test_case_run(
-                test_case_id=case_id, task_run_id=unique_task_id
+                test_case_id=case_id, task_run_id=generated_task_id
             )
 
-        # Submit batch run task to Celery
-        dispatch_batch_run_test.delay(
-            generated_task_id=generated_task_id,
-            user_id=auth_user_id,
-            flow_id=request.flow_id,
-            case_ids=request.case_ids,
-        )
+            dispatch_run_test.delay(
+                generated_task_id=generated_task_id,
+                user_id=auth_user_id,
+                flow_id=request.flow_id,
+                case_id=case_id,
+            )
 
         logger.info(
-            f"Batch flow test task submitted to Celery. (submitted_by u_id: {auth_user_id}). Task ID: {generated_task_id}. Cases: {request.case_ids}."  # noqa
+            f"Batch flow test tasks submitted to Celery. (submitted_by u_id: {auth_user_id}). Task IDs: {generated_task_ids}. Cases: {request.case_ids}."  # noqa
         )
 
         return FlowBatchTestRunResponse(
             status=TestCaseRunStatus.QUEUED,
-            task_id=generated_task_id,
-            message="Batch flow test task has been queued.",
+            task_ids=generated_task_ids,
+            message="Batch flow test tasks have been queued.",
             case_ids=request.case_ids,
             flow_id=request.flow_id,
         )

@@ -376,7 +376,7 @@ export interface FlowBatchTestRunRequest {
  */
 export interface FlowBatchTestRunResponse {
     status: TestCaseRunStatus;
-    task_id: string;
+    task_ids: string[];
     message: string;
     case_ids: number[];
     flow_id: string;

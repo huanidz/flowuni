@@ -204,10 +204,10 @@ export const useRunBatchTest = () => {
     return useMutation({
         mutationFn: (request: FlowBatchTestRunRequest) => runBatchTest(request),
         onSuccess: (data, variables) => {
-            // Map the task ID to each test case ID
-            variables.case_ids.forEach(caseId => {
-                const uniqueTaskId = `${data.task_id}_${caseId}`;
-                setTaskTestCaseMapping(uniqueTaskId, String(caseId));
+            // Map each task ID to its corresponding test case ID
+            data.task_ids.forEach((taskId, index) => {
+                const caseId = variables.case_ids[index];
+                setTaskTestCaseMapping(taskId, String(caseId));
 
                 // Set initial status to QUEUED for each test case
                 updateTestCaseStatus(String(caseId), TestCaseRunStatus.QUEUED);
