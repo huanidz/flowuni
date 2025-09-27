@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useEffect } from 'react';
 import { TestCaseRunStatus } from './types';
 
 import {
@@ -20,6 +21,7 @@ import type {
     TestCasePartialUpdateRequest,
     TestSuiteCreateRequest,
     TestSuitePartialUpdateRequest,
+    TestSuitesWithCasePreviewsResponse,
 } from './types';
 import { useTestCaseStatusStore } from './stores/testCaseStatusStore';
 
@@ -27,12 +29,36 @@ import { useTestCaseStatusStore } from './stores/testCaseStatusStore';
  * Hook for fetching test suites with cases for a specific flow
  */
 export const useTestSuitesWithCases = (flowId: string) => {
-    return useQuery({
+    const { updateTestCaseStatus, resetAllStatuses } = useTestCaseStatusStore();
+
+    const query = useQuery({
         queryKey: ['testSuitesWithCases', flowId],
         queryFn: () => getTestSuitesWithCases(flowId),
         enabled: !!flowId,
         staleTime: 5 * 60 * 1000, // 5 minutes
     });
+
+    // Use useEffect to update the store when data changes
+    useEffect(() => {
+        if (query.data) {
+            // Reset all statuses before updating with new data
+            resetAllStatuses();
+
+            // Update the store with the latest test case statuses from the API
+            query.data.test_suites.forEach(suite => {
+                suite.test_cases.forEach(testCase => {
+                    if (testCase.latest_run_status) {
+                        updateTestCaseStatus(
+                            String(testCase.id),
+                            testCase.latest_run_status
+                        );
+                    }
+                });
+            });
+        }
+    }, [query.data, resetAllStatuses, updateTestCaseStatus]);
+
+    return query;
 };
 
 /**

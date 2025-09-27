@@ -26,9 +26,13 @@ const TestCasePreviewItem: React.FC<TestCasePreviewItemProps> = ({
     suiteName,
     flowId,
 }) => {
-    // Get the test case status from the Zustand store or use the latest_run_status from the test case
+    // Get the test case status from the Zustand store
+    // The store status takes precedence over the API response status
     const storeStatus = useTestCaseStatus(String(testCase.id));
-    const testCaseStatus = testCase.latest_run_status || storeStatus;
+    const testCaseStatus =
+        storeStatus !== 'PENDING'
+            ? storeStatus
+            : testCase.latest_run_status || 'PENDING';
     const runSingleTestMutation = useRunSingleTest();
 
     const handleSelect = () => {

@@ -7,13 +7,17 @@ import {
     TestStatistics,
     TestSuiteGroup,
 } from '../../../sub_features/flow_eval/components';
-import type { TestStatistics as TestStatisticsType } from '../../../sub_features/flow_eval/types';
+import type {
+    TestStatistics as TestStatisticsType,
+    TestSuiteWithCasePreviews,
+} from '../../../sub_features/flow_eval/types';
 import {
     useTestSuitesWithCases,
     useRunSingleTest,
     useRunBatchTest,
 } from '../../../sub_features/flow_eval/hooks';
 import { useGlobalSSEConnection } from '../../../sub_features/flow_eval/sseConnectionManager';
+import { useAllTestCaseStatuses } from '../../../sub_features/flow_eval/stores/testCaseStatusStore';
 import useFlowStore from '@/features/flows/stores/flow_stores';
 
 /**
@@ -63,7 +67,11 @@ const LCEvalContent: React.FC = () => {
     const runBatchTest = useRunBatchTest();
 
     // Extract the test suites array from the response
-    const testSuites = testSuitesData?.test_suites || [];
+    const testSuites: TestSuiteWithCasePreviews[] =
+        testSuitesData?.test_suites || [];
+
+    // Get all test case statuses from the store
+    const allTestCaseStatuses = useAllTestCaseStatuses();
 
     const statistics = useMemo((): TestStatisticsType => {
         if (!testSuites || testSuites.length === 0) {
@@ -78,16 +86,25 @@ const LCEvalContent: React.FC = () => {
 
         const allTestCases = testSuites.flatMap(suite => suite.test_cases);
 
-        // Note: With the new preview schema, we don't have status information
-        // All test cases are considered pending until we fetch full details
+        // Calculate statistics based on the status store
+        const statusCounts = allTestCases.reduce(
+            (acc, testCase) => {
+                const status =
+                    allTestCaseStatuses[String(testCase.id)] || 'PENDING';
+                acc[status] = (acc[status] || 0) + 1;
+                return acc;
+            },
+            {} as Record<string, number>
+        );
+
         return {
             total: allTestCases.length,
-            passed: 0,
-            failed: 0,
-            pending: allTestCases.length,
-            running: 0,
+            passed: statusCounts.PASSED || 0,
+            failed: statusCounts.FAILED || 0,
+            pending: statusCounts.PENDING || 0,
+            running: statusCounts.RUNNING || 0,
         };
-    }, [testSuites]);
+    }, [testSuites, allTestCaseStatuses]);
 
     const handleToggleExpand = (suiteId: string) => {
         const newExpanded = new Set(expandedSuites);
