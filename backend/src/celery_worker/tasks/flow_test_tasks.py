@@ -1,5 +1,6 @@
 import random
-from typing import Any, Dict, List, Optional
+import time
+from typing import Any, Dict, Optional
 
 from loguru import logger
 from src.celery_worker.BaseTask import BaseTask
@@ -93,8 +94,6 @@ def run_flow_test(
     app_db_session = None
 
     try:
-        import time
-
         logger.info(f"Starting flow test task for case_id: {case_id}")
 
         # Get DB session

@@ -10,7 +10,6 @@ from loguru import logger
 from redis import Redis
 from src.celery_worker.tasks.flow_test_tasks import (
     dispatch_run_test,
-    run_flow_test,
 )
 from src.dependencies.auth_dependency import auth_through_url_param, get_current_user
 from src.dependencies.flow_test_dep import get_flow_test_service

@@ -191,6 +191,35 @@ class FlowTestServiceInterface(ABC):
         """
         pass
 
+    @abstractmethod
+    def get_latest_test_case_run_status(self, test_case_id: int) -> str:
+        """
+        Get the status of the latest test case run for a given test case ID.
+
+        Args:
+            test_case_id: The ID of the test case
+
+        Returns:
+            str: The status of the latest test case run, or PENDING if no runs exist
+        """
+        pass
+
+    @abstractmethod
+    def get_latest_test_cases_run_status(
+        self, test_case_ids: list[int]
+    ) -> dict[int, str]:
+        """
+        Get the status of the latest test case run for multiple test case IDs.
+
+        Args:
+            test_case_ids: List of test case IDs
+
+        Returns:
+            dict[int, str]: Dictionary mapping test case IDs to their latest run status,
+                           or PENDING if no runs exist for a test case
+        """
+        pass
+
 
 class FlowTestService(FlowTestServiceInterface):
     """
@@ -562,5 +591,83 @@ class FlowTestService(FlowTestServiceInterface):
         except Exception as e:
             logger.error(
                 f"Error setting status for test case run with task run ID {task_run_id}: {str(e)}"
+            )
+            raise
+
+    def get_latest_test_case_run_status(self, test_case_id: int) -> str:
+        """
+        Get the status of the latest test case run for a given test case ID.
+
+        Args:
+            test_case_id: The ID of the test case
+
+        Returns:
+            str: The status of the latest test case run, or PENDING if no runs exist
+        """
+        try:
+            # First check if the test case exists
+            test_case = self.test_repository.get_test_case_by_id(case_id=test_case_id)
+            if not test_case:
+                logger.warning(f"Test case with ID {test_case_id} not found")
+                raise NOT_FOUND_EXCEPTION
+
+            # Get the latest test case run status
+            status = self.test_repository.get_latest_test_case_run_status(
+                test_case_id=test_case_id
+            )
+            logger.info(
+                f"Successfully retrieved latest run status '{status}' for test case with ID {test_case_id}"
+            )
+            return status
+        except Exception as e:
+            logger.error(
+                f"Error retrieving latest run status for test case with ID {test_case_id}: {str(e)}"
+            )
+            raise
+
+    def get_latest_test_cases_run_status(
+        self, test_case_ids: list[int]
+    ) -> dict[int, str]:
+        """
+        Get the status of the latest test case run for multiple test case IDs.
+
+        Args:
+            test_case_ids: List of test case IDs
+
+        Returns:
+            dict[int, str]: Dictionary mapping test case IDs to their latest run status,
+                           or PENDING if no runs exist for a test case
+        """
+        try:
+            if not test_case_ids:
+                return {}
+
+            # First check if all test cases exist
+            existing_test_cases = set()
+            for test_case_id in test_case_ids:
+                test_case = self.test_repository.get_test_case_by_id(
+                    case_id=test_case_id
+                )
+                if test_case:
+                    existing_test_cases.add(test_case_id)
+                else:
+                    logger.warning(f"Test case with ID {test_case_id} not found")
+
+            # Get the latest test case run statuses for existing test cases
+            if existing_test_cases:
+                statuses = self.test_repository.get_latest_test_cases_run_status(
+                    test_case_ids=list(existing_test_cases)
+                )
+                logger.info(
+                    f"Successfully retrieved latest run statuses for {len(existing_test_cases)} test cases"
+                )
+                return statuses
+            else:
+                logger.warning("No valid test cases found")
+                return {}
+
+        except Exception as e:
+            logger.error(
+                f"Error retrieving latest run statuses for test cases: {str(e)}"
             )
             raise

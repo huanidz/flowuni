@@ -642,3 +642,107 @@ class FlowTestRepository(BaseRepository):
             self.db_session.rollback()
             logger.error(f"Error updating test case run with Task_Run_ID {run_id}: {e}")
             raise e
+
+    def get_latest_test_cases_run_status(
+        self, test_case_ids: list[int]
+    ) -> dict[int, str]:
+        """
+        Get the status of the latest test case run for multiple test case IDs.
+
+        Args:
+            test_case_ids: List of test case IDs
+
+        Returns:
+            dict[int, str]: Dictionary mapping test case IDs to their latest run status,
+                           or PENDING if no runs exist for a test case
+        """
+        try:
+            if not test_case_ids:
+                return {}
+
+            # Query to get the latest run for each test case
+            # Subquery to get the latest created_at for each test case
+            latest_run_subquery = (
+                self.db_session.query(
+                    FlowTestCaseRunModel.test_case_id,
+                    func.max(FlowTestCaseRunModel.created_at).label("max_created_at"),
+                )
+                .filter(FlowTestCaseRunModel.test_case_id.in_(test_case_ids))
+                .group_by(FlowTestCaseRunModel.test_case_id)
+                .subquery("latest_run_subquery")
+            )
+
+            # Query to get the status of the latest run for each test case
+            latest_run_query = (
+                self.db_session.query(
+                    FlowTestCaseRunModel.test_case_id,
+                    FlowTestCaseRunModel.status,
+                )
+                .join(
+                    latest_run_subquery,
+                    (
+                        FlowTestCaseRunModel.test_case_id
+                        == latest_run_subquery.c.test_case_id
+                    )
+                    & (
+                        FlowTestCaseRunModel.created_at
+                        == latest_run_subquery.c.max_created_at
+                    ),
+                )
+                .all()
+            )
+
+            # Create a dictionary mapping test_case_id to its latest run status
+            result = dict.fromkeys(test_case_ids, TestCaseRunStatus.PENDING)
+
+            # Update with actual statuses for test cases that have runs
+            for test_case_id, status in latest_run_query:
+                result[test_case_id] = str(status)
+
+            logger.info(
+                f"Retrieved latest run statuses for {len(test_case_ids)} test cases"
+            )
+            return result
+
+        except Exception as e:
+            logger.error(f"Error getting latest run statuses for test cases: {e}")
+            self.db_session.rollback()
+            raise e
+
+    def get_latest_test_case_run_status(self, test_case_id: int) -> Optional[str]:
+        """
+        Get the status of the latest test case run for a given test case ID.
+
+        Args:
+            test_case_id: The ID of the test case
+
+        Returns:
+            str: The status of the latest test case run, or PENDING if no runs exist
+        """
+        try:
+            # Query to get the latest run for the test case
+            latest_run = (
+                self.db_session.query(FlowTestCaseRunModel)
+                .filter_by(test_case_id=test_case_id)
+                .order_by(desc(FlowTestCaseRunModel.created_at))
+                .first()
+            )
+
+            if latest_run:
+                status = str(latest_run.status)
+                logger.info(
+                    f"Retrieved status '{status}' for latest run of test case with ID: {test_case_id}"
+                )
+                return status
+            else:
+                logger.info(
+                    f"No test case runs found for test case with ID: {test_case_id}, returning PENDING"
+                )
+                return TestCaseRunStatus.PENDING
+
+        except Exception as e:
+            logger.error(
+                f"Error getting latest run status for test case with ID {test_case_id}: {e}"
+            )
+            self.db_session.rollback()
+            raise e
