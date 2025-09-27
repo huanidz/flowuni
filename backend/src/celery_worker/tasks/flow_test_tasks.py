@@ -63,8 +63,7 @@ def dispatch_run_test(
     except Exception as e:
         # Nếu có lỗi bất ngờ, retry
         logger.error(f"Error dispatching run test task {generated_task_id}: " + str(e))
-        countdown = 60 + random.randint(-3, 3)
-        raise self.retry(exc=e, countdown=countdown)
+        return
     finally:
         if app_db_session:
             app_db_session.close()
