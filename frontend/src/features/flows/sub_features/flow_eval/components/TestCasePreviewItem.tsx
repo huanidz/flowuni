@@ -2,6 +2,9 @@ import React from 'react';
 import type { TestCasePreview } from '../types';
 import { useTestCaseStatus } from '../stores/testCaseStatusStore';
 import { getTestRunStatusBadge } from '../utils';
+import { Button } from '@/components/ui/button';
+import { Play } from 'lucide-react';
+import { useRunSingleTest } from '../hooks';
 
 interface TestCasePreviewItemProps {
     testCase: TestCasePreview;
@@ -9,6 +12,7 @@ interface TestCasePreviewItemProps {
     onSelect?: (testCaseId: string) => void;
     showSuiteName?: boolean;
     suiteName?: string;
+    flowId: string;
 }
 
 /**
@@ -20,10 +24,12 @@ const TestCasePreviewItem: React.FC<TestCasePreviewItemProps> = ({
     onSelect,
     showSuiteName = false,
     suiteName,
+    flowId,
 }) => {
     // Get the test case status from the Zustand store or use the latest_run_status from the test case
     const storeStatus = useTestCaseStatus(String(testCase.id));
     const testCaseStatus = testCase.latest_run_status || storeStatus;
+    const runSingleTestMutation = useRunSingleTest();
 
     const handleSelect = () => {
         if (onSelect) {
@@ -39,6 +45,23 @@ const TestCasePreviewItem: React.FC<TestCasePreviewItemProps> = ({
     const handleDivClick = (e: React.MouseEvent<HTMLDivElement>) => {
         e.stopPropagation();
         handleSelect();
+    };
+
+    const handleRunTest = (e: React.MouseEvent) => {
+        e.stopPropagation(); // Prevent card selection when clicking run
+
+        runSingleTestMutation.mutate(
+            {
+                case_id: testCase.id,
+                flow_id: flowId,
+            },
+            {
+                onSuccess: data => {},
+                onError: error => {
+                    console.error(error);
+                },
+            }
+        );
     };
 
     return (
@@ -94,7 +117,16 @@ const TestCasePreviewItem: React.FC<TestCasePreviewItemProps> = ({
                                         'N/A'}
                                 </span>
                             </div>
-                            <div className="flex items-center">
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 w-6 p-0 text-muted-foreground hover:text-green-600"
+                                    onClick={handleRunTest}
+                                    disabled={runSingleTestMutation.isPending}
+                                >
+                                    <Play className="h-3 w-3" />
+                                </Button>
                                 {getTestRunStatusBadge(testCaseStatus)}
                             </div>
                         </div>

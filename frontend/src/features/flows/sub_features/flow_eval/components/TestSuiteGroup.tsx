@@ -207,6 +207,7 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
                                             onSelect={onTestCaseSelect}
                                             suiteName={testSuite.name}
                                             showSuiteName={false}
+                                            flowId={testSuite.flow_id}
                                         />
                                     </div>
                                 </div>
