@@ -10,9 +10,11 @@ import {
     getTestSuitesWithCases,
     partialUpdateTestCase,
     partialUpdateTestSuite,
+    runBatchTest,
     runSingleTest,
 } from './api';
 import type {
+    FlowBatchTestRunRequest,
     FlowTestRunRequest,
     TestCaseCreateRequest,
     TestCasePartialUpdateRequest,
@@ -187,6 +189,39 @@ export const useRunSingleTest = () => {
         onError: error => {
             console.error('Error running test case:', error);
             toast.error('Failed to run test case');
+        },
+    });
+};
+
+/**
+ * Hook for running a batch of test cases
+ */
+export const useRunBatchTest = () => {
+    const queryClient = useQueryClient();
+    const { setTaskTestCaseMapping, updateTestCaseStatus } =
+        useTestCaseStatusStore();
+
+    return useMutation({
+        mutationFn: (request: FlowBatchTestRunRequest) => runBatchTest(request),
+        onSuccess: (data, variables) => {
+            // Map the task ID to each test case ID
+            variables.case_ids.forEach(caseId => {
+                const uniqueTaskId = `${data.task_id}_${caseId}`;
+                setTaskTestCaseMapping(uniqueTaskId, String(caseId));
+
+                // Set initial status to QUEUED for each test case
+                updateTestCaseStatus(String(caseId), TestCaseRunStatus.QUEUED);
+            });
+
+            // Invalidate and refetch test suites for this flow
+            queryClient.invalidateQueries({
+                queryKey: ['testSuitesWithCases', variables.flow_id],
+            });
+            toast.success('Batch test run initiated successfully');
+        },
+        onError: error => {
+            console.error('Error running batch test:', error);
+            toast.error('Failed to run batch test');
         },
     });
 };

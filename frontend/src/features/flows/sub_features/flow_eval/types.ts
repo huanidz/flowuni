@@ -360,3 +360,26 @@ export interface FlowTestRunResponse {
     case_id: number;
     flow_id: string;
 }
+
+/**
+ * Flow batch test run request interface based on backend FlowBatchTestRunRequest
+ */
+export interface FlowBatchTestRunRequest {
+    case_ids: number[];
+    flow_id: string;
+    input_text?: string;
+    input_metadata?: Record<string, any>;
+}
+
+/**
+ * Flow batch test run response interface based on backend FlowBatchTestRunResponse
+ */
+export interface FlowBatchTestRunResponse {
+    status: TestCaseRunStatus;
+    task_id: string;
+    message: string;
+    case_ids: number[];
+    flow_id: string;
+    input_text?: string;
+    input_metadata?: Record<string, any>;
+}
