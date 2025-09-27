@@ -6,10 +6,7 @@ import TestCasePreviewItem from './TestCasePreviewItem';
 import TestSuiteEdit from './TestSuiteEdit';
 import { useDeleteTestSuite } from '../hooks';
 import { useConfirmation } from '@/hooks/useConfirmationModal';
-import {
-    useAllTestCaseStatuses,
-    useTestCaseStatusStore,
-} from '../stores/testCaseStatusStore';
+import { useAllTestCaseStatuses } from '../stores/testCaseStatusStore';
 import { getTestRunStatusBadge } from '../utils';
 
 const INITIAL_TEST_CASES_DISPLAYED = 3;

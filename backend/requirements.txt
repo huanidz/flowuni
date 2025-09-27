@@ -2,7 +2,6 @@ fastapi[standard]
 uvicorn==0.34.0
 pydantic==2.10.6
 redis==5.2.1
-asyncpg==0.30.0
 requests==2.32.3
 alembic==1.14.1
 loguru==0.7.3
@@ -18,6 +17,7 @@ asyncpg==0.30.0
 # Others
 natsort==8.4.0
 rich==14.0.0
+fastnanoid==0.4.3
 
 # LLM-related
 instructor[vertexai]

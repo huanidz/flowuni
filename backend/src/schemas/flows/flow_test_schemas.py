@@ -20,6 +20,7 @@ class TestSuiteCreateResponse(BaseModel):
     """
 
     id: int = Field(..., description="Test suite ID")
+    simple_id: str = Field(..., description="Simple test suite ID")
     flow_id: str = Field(..., description="Flow ID")
     name: str = Field(..., description="Test suite name")
     description: Optional[str] = Field(None, description="Test suite description")
@@ -54,6 +55,7 @@ class TestSuiteUpdateResponse(BaseModel):
     """
 
     id: int = Field(..., description="Test suite ID")
+    simple_id: str = Field(..., description="Simple test suite ID")
     flow_id: str = Field(..., description="Flow ID")
     name: str = Field(..., description="Test suite name")
     description: Optional[str] = Field(None, description="Test suite description")
@@ -76,6 +78,7 @@ class TestCaseCreateResponse(BaseModel):
     """
 
     id: int = Field(..., description="Test case ID")
+    simple_id: str = Field(..., description="Simple test case ID")
     suite_id: int = Field(..., description="Test suite ID")
     name: str = Field(..., description="Test case name")
     description: Optional[str] = Field(None, description="Test case description")
@@ -88,6 +91,7 @@ class TestCaseGetResponse(BaseModel):
     """
 
     id: int = Field(..., description="Test case ID")
+    simple_id: str = Field(..., description="Simple test case ID")
     suite_id: int = Field(..., description="Test suite ID")
     name: str = Field(..., description="Test case name")
     description: Optional[str] = Field(None, description="Test case description")
@@ -106,6 +110,7 @@ class TestCasePreview(BaseModel):
     """
 
     id: int = Field(..., description="Test case ID")
+    simple_id: str = Field(..., description="Simple test case ID")
     suite_id: int = Field(..., description="Test suite ID")
     name: str = Field(..., description="Test case name")
     description: Optional[str] = Field(None, description="Test case description")
@@ -121,6 +126,7 @@ class TestSuiteWithCasePreviews(BaseModel):
     """
 
     id: int = Field(..., description="Test suite ID")
+    simple_id: str = Field(..., description="Simple test case ID")
     flow_id: str = Field(..., description="Flow ID")
     name: str = Field(..., description="Test suite name")
     description: Optional[str] = Field(None, description="Test suite description")
@@ -180,6 +186,7 @@ class TestCaseUpdateResponse(BaseModel):
     """
 
     id: int = Field(..., description="Test case ID")
+    simple_id: str = Field(..., description="Simple test case ID")
     suite_id: int = Field(..., description="Test suite ID")
     name: str = Field(..., description="Test case name")
     description: Optional[str] = Field(None, description="Test case description")

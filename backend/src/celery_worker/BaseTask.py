@@ -27,7 +27,7 @@ class BaseTask(Task):
         logger.error(
             f"[TASK FAILURE] {self.name} (id={task_id}) raised: {exc}\n"
             f"Args: {args}\nKwargs: {kwargs}\n"
-            f"Traceback: {traceback.format_exc()}"
+            # f"Traceback: {traceback.format_exc()}" # TODO: Handle traceback better
         )
         # Optional: report to Sentry, Prometheus, etc.
         # sentry_sdk.capture_exception(exc)

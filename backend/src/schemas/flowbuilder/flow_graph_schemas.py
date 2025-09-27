@@ -59,7 +59,7 @@ class FlowEdge(BaseModel):
 class CanvasFlowRunRequest(BaseModel):
     """Top-level request model representing the entire flow graph."""
 
-    flow_id: str
+    flow_id: Optional[str] = None
 
     nodes: List[FlowNode]
     edges: List[FlowEdge]

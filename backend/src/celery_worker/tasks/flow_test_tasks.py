@@ -126,14 +126,13 @@ def run_flow_test(
     except GraphCompilerError as e:
         raise self.retry(
             exc=e,
-            countdown=60,
+            countdown=2,
             max_retries=0,  # Disables retry
         )
 
     except Exception as e:
         logger.error(f"Flow test failed for case_id {case_id}: {str(e)}")
         # Re-raise the exception so Celery marks the task as failed
-        raise
     finally:
         if app_db_session:
             app_db_session.close()

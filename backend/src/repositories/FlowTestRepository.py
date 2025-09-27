@@ -367,6 +367,7 @@ class FlowTestRepository(BaseRepository):
             for suite in test_suites:
                 suite_dict = {
                     "id": suite.id,
+                    "simple_id": suite.simple_id,
                     "flow_id": suite.flow_id,
                     "name": suite.name,
                     "description": suite.description,
@@ -378,6 +379,7 @@ class FlowTestRepository(BaseRepository):
                 test_cases = (
                     self.db_session.query(
                         FlowTestCaseModel.id,
+                        FlowTestCaseModel.simple_id,
                         FlowTestCaseModel.suite_id,
                         FlowTestCaseModel.name,
                         FlowTestCaseModel.description,
@@ -436,6 +438,7 @@ class FlowTestRepository(BaseRepository):
                 for case in test_cases:
                     case_dict = {
                         "id": case.id,
+                        "simple_id": case.simple_id,
                         "suite_id": case.suite_id,
                         "name": case.name,
                         "description": case.description,

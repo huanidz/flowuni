@@ -270,6 +270,7 @@ export interface DraftTestCase {
  */
 export interface TestCasePreview {
     id: number;
+    simple_id?: string;
     suite_id: number;
     name: string;
     description?: string;
@@ -282,6 +283,7 @@ export interface TestCasePreview {
  */
 export interface TestSuiteWithCasePreviews {
     id: number;
+    simple_id?: string;
     flow_id: string;
     name: string;
     description?: string;
