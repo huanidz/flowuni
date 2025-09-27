@@ -41,12 +41,13 @@ export const useTestSuitesWithCases = (flowId: string) => {
     // Use useEffect to update the store when data changes
     useEffect(() => {
         if (query.data) {
-            // Reset all statuses before updating with new data
-            resetAllStatuses();
-
-            // Update the store with the latest test case statuses from the API
+            // Collect all test case IDs from the new data
+            const currentTestCaseIds = new Set<string>();
             query.data.test_suites.forEach(suite => {
                 suite.test_cases.forEach(testCase => {
+                    currentTestCaseIds.add(String(testCase.id));
+
+                    // Update the store with the latest test case status from the API
                     if (testCase.latest_run_status) {
                         updateTestCaseStatus(
                             String(testCase.id),
@@ -55,8 +56,18 @@ export const useTestSuitesWithCases = (flowId: string) => {
                     }
                 });
             });
+
+            // Only reset statuses for test cases that are no longer present
+            // This preserves statuses during refetches and prevents UI flickering
+            const { testCaseStatuses, resetTestCaseStatus } =
+                useTestCaseStatusStore.getState();
+            Object.keys(testCaseStatuses).forEach(testCaseId => {
+                if (!currentTestCaseIds.has(testCaseId)) {
+                    resetTestCaseStatus(testCaseId);
+                }
+            });
         }
-    }, [query.data, resetAllStatuses, updateTestCaseStatus]);
+    }, [query.data, updateTestCaseStatus]);
 
     return query;
 };

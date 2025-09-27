@@ -50,7 +50,17 @@ const TestSuiteEditListPanel: React.FC<TestSuiteEditListPanelProps> = ({
         setDraft(prev => (prev ? { ...prev, name } : null));
     };
 
-    const allItems = [...testCases, ...(draft ? [draft] : [])];
+    // Sort test cases by ID to maintain consistent ordering
+    const sortedTestCases = [...testCases].sort((a, b) => {
+        // Use numeric ID if available, otherwise fallback to simple_id comparison
+        const aId =
+            typeof a.id === 'number' ? a.id : parseInt(a.simple_id || '0');
+        const bId =
+            typeof b.id === 'number' ? b.id : parseInt(b.simple_id || '0');
+        return aId - bId;
+    });
+
+    const allItems = [...sortedTestCases, ...(draft ? [draft] : [])];
 
     return (
         <div className="w-full md:w-1/3 border-r flex flex-col bg-background">

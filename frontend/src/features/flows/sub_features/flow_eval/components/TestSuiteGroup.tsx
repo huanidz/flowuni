@@ -90,10 +90,20 @@ const TestSuiteGroup: React.FC<TestSuiteGroupProps> = ({
         });
     };
 
+    // Sort test cases by ID to maintain consistent ordering
+    const sortedTestCases = [...testSuite.test_cases].sort((a, b) => {
+        // Use numeric ID if available, otherwise fallback to simple_id comparison
+        const aId =
+            typeof a.id === 'number' ? a.id : parseInt(a.simple_id || '0');
+        const bId =
+            typeof b.id === 'number' ? b.id : parseInt(b.simple_id || '0');
+        return aId - bId;
+    });
+
     const displayedTestCases =
         showAllTestCases || totalTests <= TEST_CASE_THRESHOLD
-            ? testSuite.test_cases
-            : testSuite.test_cases.slice(0, INITIAL_TEST_CASES_DISPLAYED);
+            ? sortedTestCases
+            : sortedTestCases.slice(0, INITIAL_TEST_CASES_DISPLAYED);
 
     const containerClass = `border rounded transition-colors ${
         hasSelectedTestCase

@@ -407,6 +407,7 @@ class FlowTestRepository(BaseRepository):
                         latest_runs_sq.c.rn == 1,
                     ),
                 )
+                .order_by(FlowTestCaseModel.id)  # Consistent ordering by ID
                 .all()
             )
 
