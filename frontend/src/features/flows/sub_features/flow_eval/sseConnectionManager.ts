@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import useAuthStore from '@/features/auth/store';
 import { watchUserEvents } from './sse';
 import { useTestCaseStatusStore } from './stores/testCaseStatusStore';
@@ -253,11 +253,11 @@ export const useGlobalSSEConnection = () => {
         });
     }, [manager, updateTestCaseStatus, queryClient]);
 
-    const connect = () => {
+    const connect = useCallback(() => {
         if (user_id) {
             manager.connect(user_id);
         }
-    };
+    }, [user_id, manager]);
 
     return {
         connect,

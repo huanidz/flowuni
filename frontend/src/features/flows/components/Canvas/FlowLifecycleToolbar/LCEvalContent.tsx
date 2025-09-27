@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, FileText } from 'lucide-react';
 import {
@@ -38,14 +38,18 @@ const LCEvalContent: React.FC = () => {
     const [showStatistics, setShowStatistics] = useState(false);
 
     // Initialize the global SSE connection when this component is first mounted
-    const { connect, isConnected } = useGlobalSSEConnection();
+    const { connect } = useGlobalSSEConnection();
+
+    // Use a ref to track if we've already attempted to connect
+    const hasConnected = useRef(false);
 
     useEffect(() => {
-        // Connect to SSE when the component mounts
-        if (!isConnected) {
+        // Connect to SSE only once when the component mounts
+        if (!hasConnected.current) {
+            hasConnected.current = true;
             connect();
         }
-    }, [connect, isConnected]);
+    }, [connect]);
 
     // Fetch test suites with cases
     const {
