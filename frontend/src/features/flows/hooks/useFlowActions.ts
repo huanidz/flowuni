@@ -90,6 +90,7 @@ const handleFlowRequest = async (
 };
 
 export const useFlowActions = (
+    flow_id: string,
     nodes: Node[],
     edges: Edge[],
     setNodes: SetNodesType,
@@ -132,7 +133,7 @@ export const useFlowActions = (
         console.log('[onRunFlow] Running flow...');
 
         try {
-            const response = await runFlow(n, e);
+            const response = await runFlow(flow_id, n, e);
             const { task_id } = response;
 
             console.log('[onRunFlow] Flow run response:', response);
@@ -165,6 +166,7 @@ export const useFlowActions = (
 
         try {
             const response = await runFlow(
+                flow_id,
                 n,
                 e,
                 selectedNode?.id || '',
@@ -195,6 +197,7 @@ export const useFlowActions = (
 
         try {
             const response = await runFlow(
+                flow_id,
                 n,
                 e,
                 selectedNode?.id || '',

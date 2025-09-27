@@ -90,6 +90,7 @@ export const compileFlow = async (nodes: Node[], edges: Edge[]) => {
 };
 
 export const runFlow = async (
+    flow_id: string,
     nodes: Node[],
     edges: Edge[],
     startNode: string | null = null,
@@ -101,6 +102,7 @@ export const runFlow = async (
     // Create the request payload with optional start_node and scope
     const requestPayload: any = {
         ...payload,
+        flow_id,
     };
 
     // Add start_node and scope to the payload if provided

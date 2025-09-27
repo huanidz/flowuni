@@ -230,6 +230,7 @@ const PlaygroundChatBox: React.FC<PlaygroundChatBoxProps> = ({
             const current_session_id = currentSession?.user_defined_session_id;
 
             const response = await runFlow(
+                flowId,
                 nodesRef.current,
                 edgesRef.current,
                 null,
