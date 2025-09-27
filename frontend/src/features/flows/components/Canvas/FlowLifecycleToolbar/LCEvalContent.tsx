@@ -8,7 +8,11 @@ import {
     TestSuiteGroup,
 } from '../../../sub_features/flow_eval/components';
 import type { TestStatistics as TestStatisticsType } from '../../../sub_features/flow_eval/types';
-import { useTestSuitesWithCases } from '../../../sub_features/flow_eval/hooks';
+import {
+    useTestSuitesWithCases,
+    useRunSingleTest,
+    useRunBatchTest,
+} from '../../../sub_features/flow_eval/hooks';
 import { useGlobalSSEConnection } from '../../../sub_features/flow_eval/sseConnectionManager';
 import useFlowStore from '@/features/flows/stores/flow_stores';
 
@@ -30,7 +34,6 @@ const LCEvalContent: React.FC = () => {
     const [selectedTestCases, setSelectedTestCases] = useState<Set<string>>(
         new Set()
     );
-    const [isRunning, setIsRunning] = useState(false);
 
     const [showStatistics, setShowStatistics] = useState(false);
 
@@ -50,6 +53,10 @@ const LCEvalContent: React.FC = () => {
         isLoading,
         error,
     } = useTestSuitesWithCases(flowId);
+
+    // Test running hooks
+    const runSingleTest = useRunSingleTest();
+    const runBatchTest = useRunBatchTest();
 
     // Extract the test suites array from the response
     const testSuites = testSuitesData?.test_suites || [];
@@ -114,32 +121,84 @@ const LCEvalContent: React.FC = () => {
     };
 
     const handleRunAll = () => {
-        setIsRunning(true);
-        console.log('Running all tests...');
-        setTimeout(() => {
-            setIsRunning(false);
-            console.log('All tests completed');
-        }, 3000);
+        if (!flowId || !testSuites || testSuites.length === 0) {
+            return;
+        }
+
+        // Get all test case IDs
+        const allTestCaseIds = testSuites.flatMap(suite =>
+            suite.test_cases.map(testCase => testCase.id)
+        );
+
+        if (allTestCaseIds.length === 0) {
+            return;
+        }
+
+        // Run single test if only one test case, otherwise run batch
+        if (allTestCaseIds.length === 1) {
+            runSingleTest.mutate({
+                case_id: allTestCaseIds[0],
+                flow_id: flowId,
+            });
+        } else {
+            runBatchTest.mutate({
+                case_ids: allTestCaseIds,
+                flow_id: flowId,
+            });
+        }
     };
 
     const handleRunFailed = () => {
-        setIsRunning(true);
-        console.log('Running failed tests...');
-        setTimeout(() => {
-            setIsRunning(false);
-            console.log('Failed tests completed');
-        }, 2000);
+        if (!flowId || !testSuites || testSuites.length === 0) {
+            return;
+        }
+
+        // For now, we'll run all tests as we don't have status information
+        // In a real implementation, we would filter for failed test cases
+        const allTestCaseIds = testSuites.flatMap(suite =>
+            suite.test_cases.map(testCase => testCase.id)
+        );
+
+        if (allTestCaseIds.length === 0) {
+            return;
+        }
+
+        // Run single test if only one test case, otherwise run batch
+        if (allTestCaseIds.length === 1) {
+            runSingleTest.mutate({
+                case_id: allTestCaseIds[0],
+                flow_id: flowId,
+            });
+        } else {
+            runBatchTest.mutate({
+                case_ids: allTestCaseIds,
+                flow_id: flowId,
+            });
+        }
     };
 
     const handleRunSelected = () => {
-        setIsRunning(true);
-        console.log(
-            `Running selected tests: ${Array.from(selectedTestCases).join(', ')}`
+        if (!flowId || selectedTestCases.size === 0) {
+            return;
+        }
+
+        // Convert selected test case IDs from string to number
+        const selectedTestCaseIds = Array.from(selectedTestCases).map(id =>
+            parseInt(id, 10)
         );
-        setTimeout(() => {
-            setIsRunning(false);
-            console.log('Selected tests completed');
-        }, 1500);
+
+        // Run single test if only one test case, otherwise run batch
+        if (selectedTestCaseIds.length === 1) {
+            runSingleTest.mutate({
+                case_id: selectedTestCaseIds[0],
+                flow_id: flowId,
+            });
+        } else {
+            runBatchTest.mutate({
+                case_ids: selectedTestCaseIds,
+                flow_id: flowId,
+            });
+        }
     };
 
     React.useEffect(() => {
@@ -233,7 +292,6 @@ const LCEvalContent: React.FC = () => {
                 onRunAll={handleRunAll}
                 onRunFailed={handleRunFailed}
                 onRunSelected={handleRunSelected}
-                isRunning={isRunning}
             />
         </div>
     );
