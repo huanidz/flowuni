@@ -102,6 +102,18 @@ class GraphExecutor:
         Checks the execution control to determine if execution should start from a specific node.
         """
 
+        if len(self.execution_plan) == 0:
+            total_time = 0
+            execute_result = {
+                "success": True,
+                "total_nodes": 0,
+                "completed_nodes": 0,
+                "total_layers": 0,
+                "execution_time": total_time,
+                "results": [],
+            }
+            return execute_result
+
         # Check if we should start execution from a specific node
         if self.execution_control.start_node is not None:
             return self._run_from_node_strategy.execute(

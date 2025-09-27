@@ -18,7 +18,7 @@ from src.models.alchemy.shared.AppBaseModel import AppBaseModel
 
 
 def generate_test_case_nanoid() -> str:
-    return f"C-{generate(size=16)}"
+    return f"C-{generate(alphabet='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', size=16)}"  # noqa
 
 
 class FlowTestCaseModel(AppBaseModel):

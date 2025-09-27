@@ -208,7 +208,6 @@ class FlowSyncWorker:
             logger.error(
                 f"(TEST RUN) Flow compilation failed for flow_id {flow_id}: {str(e)}"
             )
-            raise GraphCompilerError(str(e))
 
         except Exception as e:
             flow_test_service.update_test_case_run(

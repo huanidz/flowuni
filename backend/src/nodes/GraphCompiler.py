@@ -72,8 +72,6 @@ class GraphCompiler:
         Raises:
             GraphCompilerError: If the graph is not a DAG
         """
-        if len(graph.nodes) == 0:
-            raise GraphCompilerError("Graph cannot be empty after processing")
 
         if not nx.is_directed_acyclic_graph(graph):
             raise GraphCompilerError(
@@ -90,6 +88,10 @@ class GraphCompiler:
         Raises:
             GraphCompilerError: If compilation fails due to graph structure issues
         """  # noqa
+        if len(self.graph.nodes) == 0:
+            logger.warning("Graph is empty. No execution plan generated.")
+            return []
+
         logger.info(
             f"Compiling graph with {len(self.graph.nodes)} nodes and {len(self.graph.edges)} edges"  # noqa
         )

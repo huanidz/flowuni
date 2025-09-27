@@ -10,7 +10,7 @@ from src.models.alchemy.shared.AppBaseModel import AppBaseModel
 
 
 def generate_suite_nanoid():
-    return f"S-{generate(size=16)}"
+    return f"S-{generate(alphabet='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', size=16)}"  # noqa
 
 
 class FlowTestSuiteModel(AppBaseModel):

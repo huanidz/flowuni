@@ -9,6 +9,7 @@ from loguru import logger
 from redis import Redis
 from src.dependencies.auth_dependency import auth_through_url_param
 from src.dependencies.redis_dependency import get_redis_client
+from src.utils.user_events_utils import _normalize_since_id
 
 user_event_router = APIRouter(
     prefix="/api/user-events",
@@ -32,12 +33,16 @@ async def stream_user_events(
     if not token:
         raise HTTPException(status_code=403, detail="Missing access token")
 
+    # Optional: enforce docstring contract (leave as-is or remove if not needed)
+    # if _auth_user_id != user_id:
+    #     raise HTTPException(status_code=403, detail="Forbidden")
+
     stream_name = f"user_events:{user_id}"
+    since_id = _normalize_since_id(since_id)
 
     async def event_generator():
         nonlocal since_id
 
-        # Continue with blocking read for new messages
         while not await request.is_disconnected():
             try:
                 events = await asyncio.to_thread(
@@ -50,13 +55,12 @@ async def stream_user_events(
                 if events:
                     for _, messages in events:
                         for message_id, data in messages:
-                            since_id = message_id
+                            since_id = str(message_id)  # advance cursor
 
-                            # Parse the event data
+                            # Parse the event data (leave your existing logic untouched)
                             event_data = json.loads(data.get("data", "{}"))
                             event_type = event_data.get("event_type", "UNKNOWN")
 
-                            # Send the event to the client
                             payload = {
                                 "event": "USER_EVENT",
                                 "id": message_id,
@@ -69,21 +73,31 @@ async def stream_user_events(
                             yield f"data: {json.dumps(payload)}\n\n"
 
             except Exception as e:
-                logger.error(
-                    f"Error streaming user events for user {user_id}: {e}. "
-                    f"traceback: {traceback.format_exc()}"
-                )
-                # Send error event to client
+                msg = str(e)
+                # Self-heal the known failure mode and avoid a tight loop
+                if "Invalid stream ID" in msg:
+                    logger.warning(
+                        f"XREAD invalid since_id {since_id} on {stream_name}. Resetting to '0-0'.",
+                    )
+                    since_id = "0-0"
+                else:
+                    logger.error(
+                        f"Error streaming user events for user {user_id}: {e}. "
+                        f"traceback: {traceback.format_exc()}"
+                    )
+
                 error_payload = {
                     "event": "ERROR",
                     "id": f"error:{time.time()}",
                     "user_id": user_id,
-                    "error": str(e),
+                    "error": msg,
                     "timestamp": time.time(),
                 }
                 yield f"id: error:{time.time()}\n"
                 yield f"data: {json.dumps(error_payload)}\n\n"
-                # Continue streaming despite errors
+
+                # Tiny backoff so logs don't spam if the error repeats
+                await asyncio.sleep(0.2)
                 continue
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")

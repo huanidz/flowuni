@@ -1,3 +1,4 @@
+// sseConnectionManager.ts
 import React, { useCallback } from 'react';
 import useAuthStore from '@/features/auth/store';
 import { watchUserEvents } from './sse';
@@ -31,23 +32,20 @@ let globalSSEManager: SSEConnectionManager | null = null;
 // Helper functions to manage the last event ID
 const getLastEventId = (): string => {
     try {
-        // Check if localStorage is available
         if (typeof localStorage !== 'undefined') {
             const lastEventId = localStorage.getItem(LAST_EVENT_ID_KEY);
-            // Return the stored ID or '0' if not found (new machine/browser)
-            return lastEventId || '0';
+            // Return the stored ID or '0-0' if not found (valid Redis start)
+            return lastEventId || '0-0';
         }
-        // localStorage not available (e.g., private browsing)
-        return '0';
+        return '0-0';
     } catch (error) {
         console.error('Error accessing localStorage:', error);
-        return '0';
+        return '0-0';
     }
 };
 
 const setLastEventId = (eventId: string): void => {
     try {
-        // Only write to localStorage if it's available
         if (typeof localStorage !== 'undefined') {
             localStorage.setItem(LAST_EVENT_ID_KEY, eventId);
         }
@@ -57,9 +55,11 @@ const setLastEventId = (eventId: string): void => {
 };
 
 const createSSEConnectionManager = (): SSEConnectionManager => {
-    // Use regular object references instead of React hooks
     const eventSourceRef = { current: null as EventSource | null };
     const messageHandlersRef = { current: new Set<(message: any) => void>() };
+
+    // Track current user id to support reconnects
+    const userIdRef = { current: null as number | null };
 
     // Store references to update functions that will be set by the hook
     const updateFunctionsRef = {
@@ -67,55 +67,82 @@ const createSSEConnectionManager = (): SSEConnectionManager => {
             caseIdStr: string,
             statusValue: TestCaseRunStatus
         ) => {
-            // Default implementation - will be overridden by the hook
             console.log('updateTestCaseStatus not properly initialized');
         },
         updateQueryData: (
             caseIdStr: string,
             statusValue: TestCaseRunStatus
         ) => {
-            // Default implementation - will be overridden by the hook
             console.log('updateQueryData not properly initialized');
         },
+    };
+
+    const reconnectNow = (forceSinceId?: string) => {
+        const uid = userIdRef.current;
+        if (!uid) return;
+
+        try {
+            eventSourceRef.current?.close();
+        } catch {}
+
+        const sinceId = forceSinceId ?? getLastEventId();
+        console.log(`🔁 Reconnecting SSE for user ${uid} from ID: ${sinceId}`);
+
+        eventSourceRef.current = watchUserEvents(
+            uid,
+            handleMessage,
+            handleError,
+            sinceId
+        );
+
+        manager.eventSource = eventSourceRef.current;
     };
 
     const handleMessage = (message: any) => {
         console.log('Received SSE message:', message);
 
-        // Update the last processed event ID
-        if (message.id) {
-            setLastEventId(message.id);
+        // Persist last processed ID; prefer explicit id, else browser lastEventId pass-through
+        const effectiveId =
+            (typeof message.id === 'string' && message.id) ||
+            (typeof message.__lastEventId === 'string' &&
+                message.__lastEventId) ||
+            null;
+        if (effectiveId) setLastEventId(effectiveId);
+
+        // Handle ERROR events from server — e.g., invalid stream id
+        if (message.event === 'ERROR') {
+            const errMsg = String(message.error || '');
+            if (/Invalid stream ID/i.test(errMsg)) {
+                console.warn(
+                    'Server reported invalid stream ID; resetting to 0-0 and reconnecting.'
+                );
+                setLastEventId('0-0');
+                // Explicit reconnect; do not wait for native retry since connection is open
+                reconnectNow('0-0');
+                return;
+            }
         }
 
-        // Handle different types of SSE events
+        // Handle USER_EVENT; server payload structure: event_type at top level, data contains the event_data
         if (message.event === 'USER_EVENT') {
-            // Update test case status based on the event data
-            const { payload, event_type } = message.data || {};
-
+            const { event_type, data } = message || {};
             if (event_type === 'TEST_CASE_STATUS_UPDATE') {
-                const { case_id, status } = payload || {};
-
-                // Update the test case status
+                const { case_id, status } = data?.payload ?? data ?? {};
                 if (case_id && status) {
                     const caseIdStr = String(case_id);
                     const statusValue = status as TestCaseRunStatus;
-
-                    // Update the store status using the reference
                     updateFunctionsRef.updateTestCaseStatus(
                         caseIdStr,
                         statusValue
                     );
-
-                    // Update the React Query cache using the reference
                     updateFunctionsRef.updateQueryData(caseIdStr, statusValue);
                 }
             }
         } else if (message.event === 'DONE') {
-            // The entire task is done
-            console.log('SSE stream completed');
+            console.log('SSE stream completed by server');
         }
 
-        // Forward message to all registered handlers
+        // Forward to external handlers
         messageHandlersRef.current.forEach(handler => {
             try {
                 handler(message);
@@ -127,7 +154,12 @@ const createSSEConnectionManager = (): SSEConnectionManager => {
 
     const handleError = (error: Event) => {
         console.error('SSE connection error:', error);
-        // If there's a connection error, we'll let the individual components handle it
+        // Do not close; EventSource will auto-retry.
+        // If you want proactive manual reconnect backoff, you can do:
+        // setTimeout(() => {
+        //   reconnectNow();
+        //   backoffRef.current = Math.min(backoffRef.current * 2, backoffCap);
+        // }, backoffRef.current);
     };
 
     const manager: SSEConnectionManager = {
@@ -144,9 +176,9 @@ const createSSEConnectionManager = (): SSEConnectionManager => {
                 return;
             }
 
+            userIdRef.current = userId;
             console.log(`Setting up global SSE connection for user: ${userId}`);
 
-            // Get the last event ID from localStorage
             const lastEventId = getLastEventId();
             console.log(`Resuming from event ID: ${lastEventId}`);
 
@@ -154,15 +186,13 @@ const createSSEConnectionManager = (): SSEConnectionManager => {
                 userId,
                 handleMessage,
                 handleError,
-                lastEventId // Pass the last event ID to resume from
+                lastEventId // Resume from last known message
             );
 
-            // Update the eventSource property
             manager.eventSource = eventSourceRef.current;
         },
         disconnect: () => {
-            // We don't actually disconnect to maintain the connection throughout the session
-            // This ensures the SSE connection persists even when LCEvalContent is closed
+            // Keep-alive strategy; no-op by design
             console.log('SSE connection will remain active for the session');
         },
         addMessageHandler: (handler: (message: any) => void) => {
@@ -171,7 +201,6 @@ const createSSEConnectionManager = (): SSEConnectionManager => {
         removeMessageHandler: (handler: (message: any) => void) => {
             messageHandlersRef.current.delete(handler);
         },
-        // Expose the update functions reference so the hook can set them
         setUpdateFunctions: (functions: {
             updateTestCaseStatus: (
                 caseIdStr: string,
@@ -205,7 +234,6 @@ export const useGlobalSSEConnection = () => {
     const queryClient = useQueryClient();
     const manager = getSSEConnectionManager();
 
-    // Set up the update functions when the hook is used
     React.useEffect(() => {
         manager.setUpdateFunctions({
             updateTestCaseStatus: (
@@ -223,11 +251,7 @@ export const useGlobalSSEConnection = () => {
                     { queryKey: ['testSuitesWithCases'] },
                     (oldData: any) => {
                         if (!oldData) return oldData;
-
-                        // Create a deep copy of the old data
                         const newData = JSON.parse(JSON.stringify(oldData));
-
-                        // Update the latest_run_status for the specific test case
                         if (newData.test_suites) {
                             newData.test_suites.forEach((suite: any) => {
                                 if (suite.test_cases) {
@@ -245,7 +269,6 @@ export const useGlobalSSEConnection = () => {
                                 }
                             });
                         }
-
                         return newData;
                     }
                 );
