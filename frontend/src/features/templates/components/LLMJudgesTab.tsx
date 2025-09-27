@@ -9,6 +9,13 @@ import {
 } from '../hooks';
 import LLMJudgeCard from './LLMJudgeCard';
 import LLMJudgeForm from './LLMJudgeForm';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+} from '@/components/ui/dialog';
 import type {
     LLMJudge,
     CreateLLMJudgeRequest,
@@ -77,27 +84,43 @@ const LLMJudgesTab: React.FC = () => {
 
     return (
         <div className="flex-1 p-4">
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold">LLM Judges</h2>
-                <Button
-                    onClick={handleCreate}
-                    className="flex items-center gap-2"
-                >
-                    <Plus className="h-4 w-4" />
-                    New Judge
-                </Button>
-            </div>
+            {
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-bold">LLM Judges</h2>
+                    <Button
+                        onClick={handleCreate}
+                        className="flex items-center gap-2"
+                    >
+                        <Plus className="h-4 w-4" />
+                        New Judge
+                    </Button>
+                </div>
+            }
 
-            {showForm ? (
-                <LLMJudgeForm
-                    llmJudge={editingJudge || undefined}
-                    onSave={handleFormSave}
-                    onCancel={handleFormCancel}
-                    isLoading={
-                        createLLMJudge.isPending || updateLLMJudge.isPending
-                    }
-                />
-            ) : (
+            <Dialog open={showForm} onOpenChange={setShowForm}>
+                <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>
+                            {editingJudge
+                                ? 'Edit LLM Judge'
+                                : 'Create New LLM Judge'}
+                        </DialogTitle>
+                        <DialogDescription>
+                            Configure your LLM judge for evaluating responses
+                        </DialogDescription>
+                    </DialogHeader>
+                    <LLMJudgeForm
+                        llmJudge={editingJudge || undefined}
+                        onSave={handleFormSave}
+                        onCancel={handleFormCancel}
+                        isLoading={
+                            createLLMJudge.isPending || updateLLMJudge.isPending
+                        }
+                    />
+                </DialogContent>
+            </Dialog>
+
+            {!showForm && (
                 <>
                     {data?.templates && data.templates.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -115,13 +138,6 @@ const LLMJudgesTab: React.FC = () => {
                             <p className="text-muted-foreground mb-4">
                                 No LLM Judges found
                             </p>
-                            <Button
-                                onClick={handleCreate}
-                                className="flex items-center gap-2"
-                            >
-                                <Plus className="h-4 w-4" />
-                                Create Your First Judge
-                            </Button>
                         </div>
                     )}
                 </>
