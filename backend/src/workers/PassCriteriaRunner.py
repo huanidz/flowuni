@@ -1,11 +1,14 @@
-from typing import List, Sequence
+from typing import Any, Dict, List
 
+from src.criterion import LLMJudgeCriterion, RegexCriterion, StringCriterion
 from src.criterion.BaseCriterion import Criterion
+from src.models.parsers import LLMJudgeParser, RegexRuleParser, StringRuleParser
 from src.models.validators.PassCriteriaRunnerModels import (
     CheckResult,
     RunnerResult,
     StepDetail,
 )
+from src.models.validators.PassCriteriaValidator import PassCriteriaValidator
 
 
 class PassCriteriaRunner:
@@ -16,14 +19,57 @@ class PassCriteriaRunner:
     - Short-circuits across groups on first success.
     """
 
-    def run(self, criteria: Sequence[Criterion], logics: Sequence[str]) -> RunnerResult:  # noqa
-        if len(criteria) != len(logics) + 1:
+    def __init__(self, flow_output: str):
+        self.flow_output = flow_output
+
+        self.logics_sequence: List[str] = []
+        self.criteria_sequence: List[Criterion] = []
+
+    def load(self, pass_criteria: Dict[str, Any]):
+        # Literal["string", "regex", "llm_judge"]
+        pass_criteria: PassCriteriaValidator = PassCriteriaValidator.model_validate(
+            pass_criteria
+        )
+        self.logics_sequence: List[str] = pass_criteria.logics
+
+        criteria_sequence: List[Criterion] = []
+        for rule_parser in pass_criteria.rules:
+            if rule_parser.type == "llm_judge":
+                criteria_sequence.append(
+                    LLMJudgeCriterion(
+                        id=rule_parser.id,
+                        input=self.flow_output,
+                        rule=LLMJudgeParser.model_validate(rule_parser),
+                    )
+                )
+            elif rule_parser.type == "string":
+                criteria_sequence.append(
+                    StringCriterion(
+                        id=rule_parser.id,
+                        input=self.flow_output,
+                        rule=StringRuleParser.model_validate(rule_parser),
+                    )
+                )
+            elif rule_parser.type == "regex":
+                criteria_sequence.append(
+                    RegexCriterion(
+                        id=rule_parser.id,
+                        input=self.flow_output,
+                        rule=RegexRuleParser.model_validate(rule_parser),
+                    )
+                )
+            else:
+                raise ValueError(f"Unknown rule type: {rule_parser.type}")
+        self.criteria_sequence: List[Criterion] = criteria_sequence
+
+    def run(self) -> RunnerResult:  # noqa
+        if len(self.criteria_sequence) != len(self.logics_sequence) + 1:
             raise ValueError("Number of criteria must be len(logics) + 1")
 
         # Partition into AND-groups split by OR
         groups: List[List[Criterion]] = []
-        cur: List[Criterion] = [criteria[0]]
-        for op, crit in zip(logics, criteria[1:]):
+        cur: List[Criterion] = [self.criteria_sequence[0]]
+        for op, crit in zip(self.logics_sequence, self.criteria_sequence[1:]):
             op_u = op.strip().upper()
             if op_u == "AND":
                 cur.append(crit)

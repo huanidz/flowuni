@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field
+from src.executors.DataClass import NodeExecutionResult
 
 
 class Position(BaseModel):
@@ -97,3 +98,34 @@ class ApiFlowRunRequest(BaseModel):
         description="List of messages to be sent to the flow run.",
     )
     session_id: Optional[str] = None
+
+
+# --- For Chat Input and Chat Ouput ---
+
+
+class FlowChatOutputResult(BaseModel):
+    content: Optional[str] = None
+
+
+"""Flow execution result:
+execute_result = {
+                "success": True,
+                "total_nodes": total_nodes,
+                "completed_nodes": completed_nodes,
+                "total_layers": len(execution_plan),
+                "execution_time": total_time,
+                "results": final_layer_results,
+                "chat_output": chat_output_node_data.model_dump(),
+                "ancestors": ancestors,  # Include ancestors in the result
+            }"""
+
+
+class FlowExecutionResult(BaseModel):
+    success: bool
+    total_nodes: int
+    completed_nodes: int
+    total_layers: int
+    execution_time: float
+    results: List[NodeExecutionResult]
+    chat_output: FlowChatOutputResult
+    ancestors: List[str]

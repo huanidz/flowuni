@@ -220,6 +220,22 @@ class FlowTestServiceInterface(ABC):
         """
         pass
 
+    @abstractmethod
+    def get_test_case_pass_criteria(
+        self, test_case_id: int
+    ) -> Optional[PassCriteriaValidator]:
+        """
+        Get the pass criteria for a specific test case.
+
+        Args:
+            test_case_id: The ID of the test case
+
+        Returns:
+            Optional[PassCriteriaValidator]: The pass criteria validator for the test case,
+                                           or None if not found
+        """
+        pass
+
 
 class FlowTestService(FlowTestServiceInterface):
     """
@@ -669,5 +685,38 @@ class FlowTestService(FlowTestServiceInterface):
         except Exception as e:
             logger.error(
                 f"Error retrieving latest run statuses for test cases: {str(e)}"
+            )
+            raise
+
+    def get_test_case_pass_criteria(
+        self, test_case_id: int
+    ) -> Optional[PassCriteriaValidator]:
+        """
+        Get the pass criteria for a specific test case.
+
+        Args:
+            test_case_id: The ID of the test case
+
+        Returns:
+            Optional[PassCriteriaValidator]: The pass criteria validator for the test case,
+                                           or None if not found
+        """
+        try:
+            # First check if the test case exists
+            test_case = self.test_repository.get_test_case_by_id(case_id=test_case_id)
+            if not test_case:
+                logger.warning(f"Test case with ID {test_case_id} not found")
+                return None
+
+            # Get the pass criteria from the test case
+            pass_criteria = test_case.pass_criteria
+            logger.info(
+                f"Successfully retrieved pass criteria for test case with ID {test_case_id}"
+            )
+
+            return pass_criteria
+        except Exception as e:
+            logger.error(
+                f"Error retrieving pass criteria for test case with ID {test_case_id}: {str(e)}"
             )
             raise

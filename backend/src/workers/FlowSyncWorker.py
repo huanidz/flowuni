@@ -15,16 +15,23 @@ from src.executors.ExecutionEventPublisher import (
 )
 from src.executors.GraphExecutor import GraphExecutor
 from src.models.alchemy.flows.FlowTestCaseRunModel import TestCaseRunStatus
+from src.models.validators.PassCriteriaRunnerModels import (
+    CheckResult,
+    RunnerResult,
+    StepDetail,
+)
 from src.nodes.GraphCompiler import GraphCompiler
 from src.nodes.GraphLoader import GraphLoader
 from src.schemas.flowbuilder.flow_graph_schemas import (
     ApiFlowRunRequest,
     CanvasFlowRunRequest,
+    FlowExecutionResult,
 )
 from src.schemas.flows.flow_schemas import FlowRunResult
 from src.services.ApiKeyService import ApiKeyService
 from src.services.FlowService import FlowService
 from src.services.FlowTestService import FlowTestService
+from src.workers.PassCriteriaRunner import PassCriteriaRunner
 
 
 class FlowSyncWorker:
@@ -119,6 +126,10 @@ class FlowSyncWorker:
                     f"User id is not provided for task_id {self.task_id}. Can't publish event for test."  # noqa
                 )
 
+            pass_criteria = flow_test_service.get_test_case_pass_criteria(
+                test_case_id=case_id
+            )
+
             redis_client = get_redis_client()
             event_publisher = ExecutionEventPublisher(
                 user_id=self.user_id,
@@ -175,7 +186,7 @@ class FlowSyncWorker:
             event_publisher.publish_test_run_event(
                 case_id=case_id, status=TestCaseRunStatus.RUNNING
             )
-            execution_result = executor.execute()
+            execution_result: FlowExecutionResult = executor.execute()
 
             end_time = perf_counter()
             execution_time_ms = (end_time - start_time) / 1000
@@ -188,9 +199,21 @@ class FlowSyncWorker:
                 actual_output=execution_result,
             )
 
-            event_publisher.publish_test_run_event(
-                case_id=case_id, status=TestCaseRunStatus.PASSED
+            # Start run pass criteria
+            criteria_runner = PassCriteriaRunner(
+                flow_output=execution_result.chat_output
             )
+            criteria_runner.load(pass_criteria=pass_criteria)
+            runner_result: RunnerResult = criteria_runner.run()
+
+            if runner_result.passed:
+                event_publisher.publish_test_run_event(
+                    case_id=case_id, status=TestCaseRunStatus.PASSED
+                )
+            else:
+                event_publisher.publish_test_run_event(
+                    case_id=case_id, status=TestCaseRunStatus.FAILED
+                )
 
             logger.success(
                 f"(TEST RUN) Flow execution completed for flow_id: {flow_id}"

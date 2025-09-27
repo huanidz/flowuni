@@ -5,6 +5,11 @@ from typing import Any, Dict
 from loguru import logger
 from src.consts.node_consts import NODE_EXECUTION_STATUS
 from src.exceptions.execution_exceptions import GraphExecutorError
+from src.schemas.flowbuilder.flow_graph_schemas import (
+    FlowChatOutputResult,
+    FlowExecutionResult,
+    NodeData,
+)
 
 
 class RunFullStrategy:
@@ -24,7 +29,7 @@ class RunFullStrategy:
         """
         self.graph_executor = graph_executor
 
-    def execute(self) -> Dict[str, Any]:
+    def execute(self) -> FlowExecutionResult:  # noqa
         """
         Execute the full graph from the beginning.
         """
@@ -100,6 +105,7 @@ class RunFullStrategy:
 
             # Collect results from the final layer
             final_layer_results = []
+            chat_output_node_data = FlowChatOutputResult(content=None)
             if layer_results:
                 final_layer_results = [
                     {
@@ -112,14 +118,28 @@ class RunFullStrategy:
                     for result in layer_results
                 ]
 
-            execute_result = {
-                "success": True,
-                "total_nodes": total_nodes,
-                "completed_nodes": completed_nodes,
-                "total_layers": len(self.graph_executor.execution_plan),
-                "execution_time": total_time,
-                "results": final_layer_results,
-            }
+            # Loop through final layer results to collect chat output
+            for result in final_layer_results:
+                if result["data"]:
+                    node_data: NodeData = NodeData.model_validate(result["data"])
+                    if node_data.node_type == "Chat Output":
+                        chat_output_node_data.content = node_data.input_values[
+                            "message_in"
+                        ]
+                        break
+
+            execute_result = FlowExecutionResult.model_validate(
+                {
+                    "success": True,
+                    "total_nodes": total_nodes,
+                    "completed_nodes": completed_nodes,
+                    "total_layers": len(self.graph_executor.execution_plan),
+                    "execution_time": total_time,
+                    "results": final_layer_results,
+                    "chat_output": chat_output_node_data.model_dump(),
+                    "ancestors": [],
+                }
+            )
 
             # logger.info(f"👉 execute_result: {execute_result}")
 
