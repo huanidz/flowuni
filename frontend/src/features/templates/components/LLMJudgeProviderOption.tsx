@@ -23,7 +23,7 @@ const LLMJudgeProviderOption: React.FC<LLMJudgeProviderOptionProps> = ({
     isLoadingConfig,
 }) => {
     return (
-        <div className="space-y-2">
+        <div className="space-y-2 w-full">
             <Label htmlFor="provider">Provider</Label>
             <Select
                 value={provider}
@@ -31,7 +31,7 @@ const LLMJudgeProviderOption: React.FC<LLMJudgeProviderOptionProps> = ({
                 disabled={isLoadingConfig || !llmConfig}
                 required
             >
-                <SelectTrigger>
+                <SelectTrigger className="w-full h-11 min-h-[44px]">
                     <SelectValue placeholder="Select a provider" />
                 </SelectTrigger>
                 <SelectContent>

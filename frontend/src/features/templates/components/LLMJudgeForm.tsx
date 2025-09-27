@@ -159,9 +159,9 @@ const LLMJudgeForm: React.FC<LLMJudgeFormProps> = ({
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="w-full space-y-6">
             {/* Basic Information Section */}
-            <div className="space-y-6">
+            <div className="w-full space-y-6">
                 <div className="flex items-center space-x-3 mb-6">
                     <div className="w-1 h-6 bg-blue-600 rounded-full"></div>
                     <h3 className="text-lg font-semibold text-gray-900">
@@ -169,8 +169,8 @@ const LLMJudgeForm: React.FC<LLMJudgeFormProps> = ({
                     </h3>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="space-y-3">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
+                    <div className="space-y-3 w-full">
                         <Label
                             htmlFor="name"
                             className="text-sm font-medium text-gray-700"
@@ -182,11 +182,11 @@ const LLMJudgeForm: React.FC<LLMJudgeFormProps> = ({
                             value={name}
                             onChange={e => setName(e.target.value)}
                             placeholder="Enter a name for this template"
-                            className="h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                            className="w-full h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
                         />
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="space-y-3 w-full">
                         <Label
                             htmlFor="description"
                             className="text-sm font-medium text-gray-700"
@@ -199,14 +199,14 @@ const LLMJudgeForm: React.FC<LLMJudgeFormProps> = ({
                             onChange={e => setDescription(e.target.value)}
                             placeholder="Describe the purpose of this template"
                             rows={3}
-                            className="resize-none border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                            className="w-full resize-none border-gray-200 focus:border-blue-500 focus:ring-blue-500"
                         />
                     </div>
                 </div>
             </div>
 
             {/* LLM Provider Configuration Section */}
-            <div className="space-y-6 border-t border-gray-200 pt-6">
+            <div className="w-full space-y-6 border-t border-gray-200 pt-6">
                 <div className="flex items-center space-x-3 mb-6">
                     <div className="w-1 h-6 bg-green-600 rounded-full"></div>
                     <h3 className="text-lg font-semibold text-gray-900">
@@ -215,8 +215,8 @@ const LLMJudgeForm: React.FC<LLMJudgeFormProps> = ({
                 </div>
 
                 {/* Provider, Model, and API Key Row */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="space-y-3">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
+                    <div className="space-y-3 w-full">
                         <Label
                             htmlFor="provider"
                             className="text-sm font-medium text-gray-700"
@@ -229,7 +229,7 @@ const LLMJudgeForm: React.FC<LLMJudgeFormProps> = ({
                             disabled={isLoadingConfig || !llmConfig}
                             required
                         >
-                            <SelectTrigger className="h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500">
+                            <SelectTrigger className="w-full h-11 min-h-[44px] border-gray-200 focus:border-blue-500 focus:ring-blue-500">
                                 <SelectValue placeholder="Select a provider" />
                             </SelectTrigger>
                             <SelectContent>
@@ -258,7 +258,7 @@ const LLMJudgeForm: React.FC<LLMJudgeFormProps> = ({
                         </Select>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="space-y-3 w-full">
                         <Label
                             htmlFor="model"
                             className="text-sm font-medium text-gray-700"
@@ -271,7 +271,7 @@ const LLMJudgeForm: React.FC<LLMJudgeFormProps> = ({
                             disabled={!provider || availableModels.length === 0}
                             required
                         >
-                            <SelectTrigger className="h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500">
+                            <SelectTrigger className="w-full h-11 min-h-[44px] border-gray-200 focus:border-blue-500 focus:ring-blue-500">
                                 <SelectValue placeholder="Select a model" />
                             </SelectTrigger>
                             <SelectContent>
@@ -292,7 +292,7 @@ const LLMJudgeForm: React.FC<LLMJudgeFormProps> = ({
                         </Select>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="space-y-3 w-full">
                         <Label
                             htmlFor="apiKey"
                             className="text-sm font-medium text-gray-700"
@@ -305,14 +305,14 @@ const LLMJudgeForm: React.FC<LLMJudgeFormProps> = ({
                             value={apiKey}
                             onChange={e => setApiKey(e.target.value)}
                             placeholder="Enter your API key"
-                            className="h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                            className="w-full h-11 min-h-[44px] border-gray-200 focus:border-blue-500 focus:ring-blue-500"
                             required
                         />
                     </div>
                 </div>
 
                 {/* System Prompt Row */}
-                <div className="space-y-3">
+                <div className="space-y-3 w-full">
                     <Label
                         htmlFor="systemPrompt"
                         className="text-sm font-medium text-gray-700"
@@ -328,12 +328,12 @@ const LLMJudgeForm: React.FC<LLMJudgeFormProps> = ({
                         onChange={e => setSystemPrompt(e.target.value)}
                         placeholder="Enter a system prompt for the LLM"
                         rows={4}
-                        className="resize-none border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                        className="w-full resize-none border-gray-200 focus:border-blue-500 focus:ring-blue-500"
                     />
                 </div>
             </div>
 
-            <div className="flex justify-between items-center pt-6 border-t border-gray-200">
+            <div className="flex justify-between items-center pt-6 border-t border-gray-200 w-full">
                 <Button
                     type="button"
                     variant="outline"

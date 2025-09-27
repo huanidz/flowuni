@@ -22,7 +22,7 @@ const LLMJudgeModelOption: React.FC<LLMJudgeModelOptionProps> = ({
     availableModels,
 }) => {
     return (
-        <div className="space-y-2">
+        <div className="space-y-2 w-full">
             <Label htmlFor="model">Model</Label>
             <Select
                 value={model}
@@ -30,7 +30,7 @@ const LLMJudgeModelOption: React.FC<LLMJudgeModelOptionProps> = ({
                 disabled={!provider || availableModels.length === 0}
                 required
             >
-                <SelectTrigger>
+                <SelectTrigger className="w-full h-11 min-h-[44px]">
                     <SelectValue placeholder="Select a model" />
                 </SelectTrigger>
                 <SelectContent>
