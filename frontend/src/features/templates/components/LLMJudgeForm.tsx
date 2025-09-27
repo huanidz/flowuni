@@ -4,6 +4,13 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import {
     Card,
     CardContent,
     CardDescription,
@@ -11,12 +18,16 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import { JSONPath } from 'jsonpath-plus';
 import type {
     LLMJudge,
     CreateLLMJudgeRequest,
     UpdateLLMJudgeRequest,
     LLMProviderParser,
+    LLMProvider,
+    LLMSupportConfig,
 } from '../types';
+import { getLLMConfig } from '../api';
 
 interface LLMJudgeFormProps {
     llmJudge?: LLMJudge;
@@ -39,6 +50,27 @@ const LLMJudgeForm: React.FC<LLMJudgeFormProps> = ({
     const [systemPrompt, setSystemPrompt] = useState('');
     const [temperature, setTemperature] = useState<number>(0.0);
     const [maxOutputTokens, setMaxOutputTokens] = useState<number>(1024);
+    const [llmConfig, setLLMConfig] = useState<LLMSupportConfig | null>(null);
+    const [availableModels, setAvailableModels] = useState<string[]>([]);
+    const [selectedProvider, setSelectedProvider] =
+        useState<LLMProvider | null>(null);
+    const [isLoadingConfig, setIsLoadingConfig] = useState(false);
+
+    useEffect(() => {
+        const fetchLLMConfig = async () => {
+            setIsLoadingConfig(true);
+            try {
+                const config = await getLLMConfig();
+                setLLMConfig(config);
+            } catch (error) {
+                console.error('Failed to fetch LLM config:', error);
+            } finally {
+                setIsLoadingConfig(false);
+            }
+        };
+
+        fetchLLMConfig();
+    }, []);
 
     useEffect(() => {
         if (llmJudge) {
@@ -55,6 +87,53 @@ const LLMJudgeForm: React.FC<LLMJudgeFormProps> = ({
             }
         }
     }, [llmJudge]);
+
+    useEffect(() => {
+        if (llmConfig && provider) {
+            const selectedProvider = llmConfig.supported_providers.find(
+                p => p.provider_name === provider
+            );
+            setSelectedProvider(selectedProvider || null);
+
+            if (selectedProvider) {
+                if (selectedProvider.type === 'predefined') {
+                    setAvailableModels(selectedProvider.predefined_models);
+                } else if (selectedProvider.type === 'http') {
+                    // For HTTP providers, we need to fetch models from the URL
+                    fetchHttpModels(
+                        selectedProvider.http_url,
+                        selectedProvider.response_path
+                    );
+                }
+            } else {
+                setAvailableModels([]);
+            }
+        }
+    }, [llmConfig, provider]);
+
+    const fetchHttpModels = async (url: string, responsePath: string) => {
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+
+            // Extract models using JSONPath
+            const models = JSONPath({ path: responsePath, json: data });
+
+            // Normalize array results
+            if (Array.isArray(models)) {
+                setAvailableModels(
+                    models.map(item =>
+                        typeof item === 'string' ? item : String(item)
+                    )
+                );
+            } else {
+                setAvailableModels([]);
+            }
+        } catch (error) {
+            console.error('Failed to fetch HTTP models:', error);
+            setAvailableModels([]);
+        }
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -128,24 +207,83 @@ const LLMJudgeForm: React.FC<LLMJudgeFormProps> = ({
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="provider">Provider</Label>
-                                <Input
-                                    id="provider"
+                                <Select
                                     value={provider}
-                                    onChange={e => setProvider(e.target.value)}
-                                    placeholder="e.g., OpenAI, Anthropic"
+                                    onValueChange={setProvider}
+                                    disabled={isLoadingConfig || !llmConfig}
                                     required
-                                />
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select a provider" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {isLoadingConfig ? (
+                                            <SelectItem
+                                                value="loading"
+                                                disabled
+                                            >
+                                                Loading providers...
+                                            </SelectItem>
+                                        ) : llmConfig &&
+                                          llmConfig.supported_providers.length >
+                                              0 ? (
+                                            llmConfig.supported_providers.map(
+                                                provider => (
+                                                    <SelectItem
+                                                        key={
+                                                            provider.provider_name
+                                                        }
+                                                        value={
+                                                            provider.provider_name
+                                                        }
+                                                    >
+                                                        {provider.provider_name}
+                                                    </SelectItem>
+                                                )
+                                            )
+                                        ) : (
+                                            <SelectItem value="none" disabled>
+                                                No providers available
+                                            </SelectItem>
+                                        )}
+                                    </SelectContent>
+                                </Select>
                             </div>
 
                             <div className="space-y-2">
                                 <Label htmlFor="model">Model</Label>
-                                <Input
-                                    id="model"
+                                <Select
                                     value={model}
-                                    onChange={e => setModel(e.target.value)}
-                                    placeholder="e.g., gpt-4, claude-3"
+                                    onValueChange={setModel}
+                                    disabled={
+                                        !provider ||
+                                        availableModels.length === 0
+                                    }
                                     required
-                                />
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select a model" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {provider &&
+                                        availableModels.length > 0 ? (
+                                            availableModels.map(model => (
+                                                <SelectItem
+                                                    key={model}
+                                                    value={model}
+                                                >
+                                                    {model}
+                                                </SelectItem>
+                                            ))
+                                        ) : (
+                                            <SelectItem value="none" disabled>
+                                                {provider
+                                                    ? 'Loading models...'
+                                                    : 'Select a provider first'}
+                                            </SelectItem>
+                                        )}
+                                    </SelectContent>
+                                </Select>
                             </div>
                         </div>
 

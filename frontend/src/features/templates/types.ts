@@ -33,3 +33,15 @@ export interface UpdateLLMJudgeRequest {
     description?: string;
     data?: LLMProviderParser;
 }
+
+export interface LLMProvider {
+    provider_name: string;
+    type: 'predefined' | 'http';
+    predefined_models: string[];
+    http_url: string;
+    response_path: string;
+}
+
+export interface LLMSupportConfig {
+    supported_providers: LLMProvider[];
+}

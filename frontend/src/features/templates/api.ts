@@ -1,10 +1,12 @@
 import apiClient from '@/api/secureClient';
-import { LLM_JUDGES_ENDPOINT } from './consts';
+import { LLM_JUDGES_ENDPOINT, LLM_CONFIG_ENDPOINT } from './consts';
 import type {
     LLMJudge,
     LLMJudgeListResponse,
     CreateLLMJudgeRequest,
     UpdateLLMJudgeRequest,
+    LLMSupportConfig,
+    LLMProvider,
 } from './types';
 
 export const getLLMJudges = async (): Promise<LLMJudgeListResponse> => {
@@ -32,4 +34,9 @@ export const updateLLMJudge = async (
 
 export const deleteLLMJudge = async (templateId: number): Promise<void> => {
     await apiClient.delete(`${LLM_JUDGES_ENDPOINT}/${templateId}`);
+};
+
+export const getLLMConfig = async (): Promise<LLMSupportConfig> => {
+    const { data } = await apiClient.get(LLM_CONFIG_ENDPOINT);
+    return data;
 };
