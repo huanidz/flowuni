@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 from src.models.validators.PassCriteriaValidator import PassCriteriaValidator
@@ -198,6 +198,31 @@ class FlowTestRunRequest(BaseModel):
     """
 
     case_id: int = Field(..., description="Test case ID")
+    flow_id: str = Field(..., description="Flow ID")
+
+
+class FlowBatchTestRunRequest(BaseModel):
+    """
+    Request model for running a batch of flow tests
+    """
+
+    case_ids: List[int] = Field(..., description="List of test case IDs")
+    flow_id: str = Field(..., description="Flow ID")
+    input_text: Optional[str] = Field(None, description="Input text for the test")
+    input_metadata: Optional[Dict[str, Any]] = Field(
+        None, description="Input metadata for the test"
+    )
+
+
+class FlowBatchTestRunResponse(BaseModel):
+    """
+    Response model for batch flow test run
+    """
+
+    status: str = Field(..., description="Status of the test run")
+    task_id: str = Field(..., description="Celery task ID")
+    message: str = Field(..., description="Message about the test run")
+    case_ids: List[int] = Field(..., description="List of test case IDs")
     flow_id: str = Field(..., description="Flow ID")
     input_text: Optional[str] = Field(None, description="Input text for the test")
     input_metadata: Optional[Dict[str, Any]] = Field(
