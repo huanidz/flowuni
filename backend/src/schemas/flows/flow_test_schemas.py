@@ -110,6 +110,9 @@ class TestCasePreview(BaseModel):
     name: str = Field(..., description="Test case name")
     description: Optional[str] = Field(None, description="Test case description")
     is_active: bool = Field(True, description="Test case status")
+    latest_run_status: Optional[str] = Field(
+        None, description="Latest test case run status"
+    )
 
 
 class TestSuiteWithCasePreviews(BaseModel):

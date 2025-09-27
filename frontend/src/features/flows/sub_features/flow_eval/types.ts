@@ -274,6 +274,7 @@ export interface TestCasePreview {
     name: string;
     description?: string;
     is_active: boolean;
+    latest_run_status?: TestCaseRunStatus | null;
 }
 
 /**

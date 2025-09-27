@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Any, Dict, Optional
 
 from loguru import logger
+from sqlalchemy import desc, func
 from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlalchemy.orm import Session
 from src.models.alchemy.flows.FlowTestCaseModel import FlowTestCaseModel
@@ -386,17 +387,70 @@ class FlowTestRepository(BaseRepository):
                     .all()
                 )
 
-                # Convert test case tuples to dictionaries
-                for case in test_cases:
-                    suite_dict["test_cases"].append(
-                        {
-                            "id": case.id,
-                            "suite_id": case.suite_id,
-                            "name": case.name,
-                            "description": case.description,
-                            "is_active": case.is_active,
-                        }
+                # Get all test case IDs for this suite to fetch their latest run statuses
+                case_ids = [case.id for case in test_cases]
+
+                # Query to get the latest run status for each test case
+                latest_runs = {}
+                if case_ids:
+                    # Subquery to get the latest created_at for each test case
+                    latest_run_subquery = (
+                        self.db_session.query(
+                            FlowTestCaseRunModel.test_case_id,
+                            func.max(FlowTestCaseRunModel.created_at).label(
+                                "max_created_at"
+                            ),
+                        )
+                        .filter(FlowTestCaseRunModel.test_case_id.in_(case_ids))
+                        .group_by(FlowTestCaseRunModel.test_case_id)
+                        .subquery("latest_run_subquery")
                     )
+
+                    # Query to get the status of the latest run for each test case
+                    latest_run_query = (
+                        self.db_session.query(
+                            FlowTestCaseRunModel.test_case_id,
+                            FlowTestCaseRunModel.status,
+                        )
+                        .join(
+                            latest_run_subquery,
+                            (
+                                FlowTestCaseRunModel.test_case_id
+                                == latest_run_subquery.c.test_case_id
+                            )
+                            & (
+                                FlowTestCaseRunModel.created_at
+                                == latest_run_subquery.c.max_created_at
+                            ),
+                        )
+                        .all()
+                    )
+
+                    # Create a dictionary mapping test_case_id to its latest run status
+                    latest_runs = {
+                        str(test_case_id): status
+                        for test_case_id, status in latest_run_query
+                    }
+
+                # Convert test case tuples to dictionaries and add latest run status
+                for case in test_cases:
+                    case_dict = {
+                        "id": case.id,
+                        "suite_id": case.suite_id,
+                        "name": case.name,
+                        "description": case.description,
+                        "is_active": case.is_active,
+                    }
+
+                    # Add the latest run status if available
+                    case_id_str = str(case.id)
+                    if case_id_str in latest_runs:
+                        case_dict["latest_run_status"] = latest_runs[case_id_str]
+                    else:
+                        # For backward compatibility, include the field with None value
+                        case_dict["latest_run_status"] = None
+
+                    suite_dict["test_cases"].append(case_dict)
 
                 result.append(suite_dict)
 
