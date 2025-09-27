@@ -120,7 +120,7 @@ const LLMJudgesTab: React.FC = () => {
                 </DialogContent>
             </Dialog>
 
-            {!showForm && (
+            {
                 <>
                     {data?.templates && data.templates.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -141,7 +141,7 @@ const LLMJudgesTab: React.FC = () => {
                         </div>
                     )}
                 </>
-            )}
+            }
         </div>
     );
 };
