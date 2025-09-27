@@ -140,8 +140,9 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
     const testCase = item as TestCasePreview;
     const isItemSelected = String(selectedTestCase?.id) === String(testCase.id);
 
-    // Get the test case status from the Zustand store
-    const testCaseStatus = useTestCaseStatus(String(testCase.id));
+    // Get the test case status from the Zustand store or use the latest_run_status from the test case
+    const storeStatus = useTestCaseStatus(String(testCase.id));
+    const testCaseStatus = testCase.latest_run_status || storeStatus;
 
     return (
         <>

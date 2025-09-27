@@ -21,8 +21,9 @@ const TestCasePreviewItem: React.FC<TestCasePreviewItemProps> = ({
     showSuiteName = false,
     suiteName,
 }) => {
-    // Get the test case status from the Zustand store
-    const testCaseStatus = useTestCaseStatus(String(testCase.id));
+    // Get the test case status from the Zustand store or use the latest_run_status from the test case
+    const storeStatus = useTestCaseStatus(String(testCase.id));
+    const testCaseStatus = testCase.latest_run_status || storeStatus;
 
     const handleSelect = () => {
         if (onSelect) {

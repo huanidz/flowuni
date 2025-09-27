@@ -3,6 +3,7 @@ import { watchUserEvents } from './sse';
 import { useTestCaseStatusStore } from './stores/testCaseStatusStore';
 import type { TestCaseRunStatus } from './types';
 import { LAST_EVENT_ID_KEY } from './const';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface SSEConnectionManager {
     eventSource: EventSource | null;
@@ -49,6 +50,7 @@ const createSSEConnectionManager = (): SSEConnectionManager => {
     const eventSourceRef = { current: null as EventSource | null };
     const messageHandlersRef = { current: new Set<(message: any) => void>() };
     const { updateTestCaseStatus } = useTestCaseStatusStore.getState();
+    const queryClient = useQueryClient();
 
     const handleMessage = (message: any) => {
         console.log('Received SSE message:', message);
@@ -68,9 +70,42 @@ const createSSEConnectionManager = (): SSEConnectionManager => {
 
                 // Update the test case status
                 if (case_id && status) {
-                    updateTestCaseStatus(
-                        String(case_id),
-                        status as TestCaseRunStatus
+                    const caseIdStr = String(case_id);
+                    const statusValue = status as TestCaseRunStatus;
+
+                    // Update the store status
+                    updateTestCaseStatus(caseIdStr, statusValue);
+
+                    // Update the React Query cache to reflect the new latest_run_status
+                    queryClient.setQueriesData(
+                        { queryKey: ['testSuitesWithCases'] },
+                        (oldData: any) => {
+                            if (!oldData) return oldData;
+
+                            // Create a deep copy of the old data
+                            const newData = JSON.parse(JSON.stringify(oldData));
+
+                            // Update the latest_run_status for the specific test case
+                            if (newData.test_suites) {
+                                newData.test_suites.forEach((suite: any) => {
+                                    if (suite.test_cases) {
+                                        suite.test_cases.forEach(
+                                            (testCase: any) => {
+                                                if (
+                                                    String(testCase.id) ===
+                                                    caseIdStr
+                                                ) {
+                                                    testCase.latest_run_status =
+                                                        statusValue;
+                                                }
+                                            }
+                                        );
+                                    }
+                                });
+                            }
+
+                            return newData;
+                        }
                     );
                 }
             }
