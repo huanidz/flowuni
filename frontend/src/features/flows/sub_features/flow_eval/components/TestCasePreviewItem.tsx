@@ -117,8 +117,10 @@ const TestCasePreviewItem: React.FC<TestCasePreviewItemProps> = ({
                             <div className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded text-xs font-mono">
                                 <span className="text-gray-400">ID:</span>
                                 <span className="text-gray-600">
-                                    {String(testCase.id)?.substring(0, 8) ||
-                                        'N/A'}
+                                    {String(testCase.simple_id)?.substring(
+                                        0,
+                                        18
+                                    ) || 'N/A'}
                                 </span>
                             </div>
                             <div className="flex items-center gap-2">

@@ -122,6 +122,7 @@ export interface FlowTestSuite {
  */
 export interface FlowTestCase {
     id: number;
+    simple_id?: string;
     suite_id: number;
     name: string;
     description?: string;
