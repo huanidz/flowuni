@@ -5,13 +5,13 @@ from typing import Any, Dict, List
 from loguru import logger
 from src.consts.node_consts import NODE_EXECUTION_STATUS
 from src.exceptions.execution_exceptions import GraphExecutorError
-from src.executors.DataClass import NodeExecutionResult
 from src.executors.NodeDataFlowAdapter import NodeDataFlowAdapter
 from src.nodes.core import NodeInput, NodeOutput
 from src.schemas.flowbuilder.flow_graph_schemas import (
     FlowChatOutputResult,
     FlowExecutionResult,
     NodeData,
+    NodeExecutionResult,
 )
 
 

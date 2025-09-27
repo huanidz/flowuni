@@ -27,9 +27,15 @@ class PassCriteriaRunner:
 
     def load(self, pass_criteria: Dict[str, Any]):
         # Literal["string", "regex", "llm_judge"]
+        if pass_criteria is None:
+            self.logics_sequence: List[str] = []
+            self.criteria_sequence: List[Criterion] = []
+            return
+
         pass_criteria: PassCriteriaValidator = PassCriteriaValidator.model_validate(
             pass_criteria
         )
+
         self.logics_sequence: List[str] = pass_criteria.logics
 
         criteria_sequence: List[Criterion] = []
@@ -63,6 +69,11 @@ class PassCriteriaRunner:
         self.criteria_sequence: List[Criterion] = criteria_sequence
 
     def run(self) -> RunnerResult:  # noqa
+        if len(self.criteria_sequence) == 0:
+            return RunnerResult(
+                passed=True, stop_reason="no_criteria", failed_items=[], details=[]
+            )
+
         if len(self.criteria_sequence) != len(self.logics_sequence) + 1:
             raise ValueError("Number of criteria must be len(logics) + 1")
 

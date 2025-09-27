@@ -13,7 +13,6 @@ from src.consts.node_consts import (
     NODE_TAGS_CONSTS,
 )
 from src.exceptions.execution_exceptions import GraphExecutorError
-from src.executors.DataClass import NodeExecutionResult
 from src.executors.ExecutionEventPublisher import (
     ExecutionControl,
     ExecutionEventPublisher,
@@ -29,7 +28,7 @@ from src.nodes.core import NodeInput, NodeOutput
 from src.nodes.handles.basics.outputs.RouterOutputHandle import RouterOutputData
 from src.nodes.NodeBase import Node, NodeSpec
 from src.nodes.NodeRegistry import NodeRegistry
-from src.schemas.flowbuilder.flow_graph_schemas import NodeData
+from src.schemas.flowbuilder.flow_graph_schemas import NodeData, NodeExecutionResult
 from src.schemas.nodes.node_data_parsers import ToolDataParser
 
 if TYPE_CHECKING:

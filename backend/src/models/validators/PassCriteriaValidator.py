@@ -1,6 +1,5 @@
-from typing import List, Literal, Union
+from typing import List, Literal, Optional, Union
 
-from loguru import logger
 from pydantic import BaseModel, Field
 from src.models.parsers.LLMJudgeParser import LLMJudgeRuleParser
 from src.models.parsers.RegexRuleParser import RegexRuleParser
@@ -26,31 +25,14 @@ class PassCriteriaValidator(BaseModel):
     - logics: A list of strings representing logical operations
     """
 
-    rules: List[PassCriteriaRuleItem] = Field(
-        ..., description="List of rules to validate against"
+    rules: Optional[List[PassCriteriaRuleItem]] = Field(
+        default=None, description="List of rules to validate against"
     )
-    logics: List[str] = Field(
-        ..., description="List of logical operations to combine rules"
+    logics: Optional[List[str]] = Field(
+        default=None, description="List of logical operations to combine rules"
     )
 
     class Config:
         """Pydantic model configuration"""
 
         arbitrary_types_allowed = True
-
-    def __init__(self, **data):
-        """
-        Initialize the PassCriteriaValidator with validation logging.
-
-        Args:
-            **data: Data to initialize the model with
-
-        Raises:
-            ValidationError: If the data doesn't conform to the model schema
-        """
-        try:
-            super().__init__(**data)
-            logger.debug("PassCriteria validation successful")
-        except Exception as e:
-            logger.error(f"PassCriteria validation failed: {e}")
-            raise

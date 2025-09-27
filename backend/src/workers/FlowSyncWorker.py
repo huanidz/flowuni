@@ -108,7 +108,7 @@ class FlowSyncWorker:
         flow_graph_request_dict: Dict,
         session_id: Optional[str] = None,
         flow_test_service: Optional[FlowTestService] = None,
-    ) -> FlowRunResult:
+    ) -> None:
         try:
             """
             class TestCaseRunStatus(str, Enum):
@@ -196,7 +196,7 @@ class FlowSyncWorker:
                 status=TestCaseRunStatus.PASSED,
                 finished_at=datetime.now(),
                 execution_time_ms=execution_time_ms,
-                actual_output=execution_result,
+                actual_output=execution_result.model_dump(),
             )
 
             # Start run pass criteria
@@ -219,7 +219,7 @@ class FlowSyncWorker:
                 f"(TEST RUN) Flow execution completed for flow_id: {flow_id}"
             )
 
-            return FlowRunResult(**execution_result)
+            return
 
         except GraphCompilerError as e:
             flow_test_service.set_test_case_run_status(
@@ -235,12 +235,12 @@ class FlowSyncWorker:
         except Exception as e:
             flow_test_service.update_test_case_run(
                 run_id=self.task_id,
-                status=TestCaseRunStatus.FAILED,
+                status=TestCaseRunStatus.SYSTEM_ERROR,
                 error_message=str(e),
                 finished_at=datetime.now(),
             )
             event_publisher.publish_test_run_event(
-                case_id=case_id, status=TestCaseRunStatus.FAILED
+                case_id=case_id, status=TestCaseRunStatus.SYSTEM_ERROR
             )
             logger.error(
                 f"(TEST RUN) Flow execution failed for flow_id {flow_id}: {str(e)}"

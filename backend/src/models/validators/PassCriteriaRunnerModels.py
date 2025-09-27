@@ -21,5 +21,5 @@ class StepDetail(BaseModel):
 class RunnerResult(BaseModel):
     passed: bool
     stop_reason: str
-    failed_items: List[StepDetail]
-    details: List[StepDetail]
+    failed_items: List[StepDetail] = []
+    details: List[StepDetail] = []

@@ -1,7 +1,6 @@
 from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field
-from src.executors.DataClass import NodeExecutionResult
 
 
 class Position(BaseModel):
@@ -118,6 +117,16 @@ execute_result = {
                 "chat_output": chat_output_node_data.model_dump(),
                 "ancestors": ancestors,  # Include ancestors in the result
             }"""
+
+
+class NodeExecutionResult(BaseModel):
+    """Container for node execution results."""
+
+    node_id: str
+    success: bool
+    data: Optional[NodeData] = None
+    error: Optional[str] = None
+    execution_time: float = 0.0
 
 
 class FlowExecutionResult(BaseModel):
