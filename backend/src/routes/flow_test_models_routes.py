@@ -82,6 +82,7 @@ async def create_test_suite(
 
         response = TestSuiteCreateResponse(
             id=test_suite.id,
+            simple_id=test_suite.simple_id,
             flow_id=test_suite.flow_id,
             name=test_suite.name,
             description=test_suite.description,
@@ -197,6 +198,7 @@ async def update_test_suite(
 
         response = TestSuiteUpdateResponse(
             id=updated_test_suite.id,
+            simple_id=updated_test_suite.simple_id,
             flow_id=updated_test_suite.flow_id,
             name=updated_test_suite.name,
             description=updated_test_suite.description,
@@ -262,6 +264,7 @@ async def partial_update_test_suite(
 
         response = TestSuiteUpdateResponse(
             id=updated_test_suite.id,
+            simple_id=updated_test_suite.simple_id,
             flow_id=updated_test_suite.flow_id,
             name=updated_test_suite.name,
             description=updated_test_suite.description,
@@ -384,6 +387,7 @@ async def create_test_case(
 
         response = TestCaseCreateResponse(
             id=test_case.id,
+            simple_id=test_case.simple_id,
             suite_id=test_case.suite_id,
             name=test_case.name,
             description=test_case.description,
@@ -444,6 +448,7 @@ async def get_test_case(
 
         response = TestCaseGetResponse(
             id=test_case.id,
+            simple_id=test_case.simple_id,
             suite_id=test_case.suite_id,
             name=test_case.name,
             description=test_case.description,
@@ -523,6 +528,7 @@ async def update_test_case(
 
         response = TestCaseUpdateResponse(
             id=updated_test_case.id,
+            simple_id=updated_test_case.simple_id,
             suite_id=updated_test_case.suite_id,
             name=updated_test_case.name,
             description=updated_test_case.description,
@@ -602,6 +608,7 @@ async def partial_update_test_case(
 
         response = TestCaseUpdateResponse(
             id=updated_test_case.id,
+            simple_id=updated_test_case.simple_id,
             suite_id=updated_test_case.suite_id,
             name=updated_test_case.name,
             description=updated_test_case.description,

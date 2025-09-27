@@ -1,4 +1,4 @@
-import React, { useRef, useState, type KeyboardEvent } from 'react';
+import React, { useRef, type KeyboardEvent } from 'react';
 import type { DraftTestCase, TestCasePreview, FlowTestCase } from '../types';
 import { Card, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -6,11 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CornerDownLeft, Trash2, Play } from 'lucide-react';
 import { useConfirmation } from '@/hooks/useConfirmationModal';
-import {
-    useDeleteTestCase,
-    useRunSingleTest,
-    useWatchFlowTestEvents,
-} from '../hooks';
+import { useDeleteTestCase, useRunSingleTest } from '../hooks';
 import { useTestCaseStatus } from '../stores/testCaseStatusStore';
 import { getTestRunStatusBadge } from '../utils';
 
@@ -47,12 +43,8 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
     const { confirm, ConfirmationDialog } = useConfirmation();
     const deleteTestCaseMutation = useDeleteTestCase();
     const runSingleTestMutation = useRunSingleTest();
-    const [currentTaskId, setCurrentTaskId] = useState<string | null>(null);
 
     const isDraft = typeof item.id === 'string' && item.id.startsWith('draft-');
-
-    // Use the SSE hook to watch for events when we have a task ID
-    useWatchFlowTestEvents(currentTaskId);
 
     const handleDelete = (e: React.MouseEvent, testCase: TestCasePreview) => {
         e.stopPropagation(); // Prevent card selection when clicking delete
@@ -80,12 +72,7 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
     const handleRunTest = (e: React.MouseEvent) => {
         e.stopPropagation(); // Prevent card selection when clicking run
 
-        console.log('🔄 Starting test run for case:', testCase.id);
-
-        // Reset current task ID to ensure clean state before starting new test
-        setCurrentTaskId(null);
-
-        const startTime = performance.now();
+        const testCase = item as TestCasePreview;
 
         runSingleTestMutation.mutate(
             {
@@ -93,35 +80,9 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
                 flow_id: flowId,
             },
             {
-                onSuccess: data => {
-                    const endTime = performance.now();
-                    const duration = endTime - startTime;
-
-                    console.log(
-                        '✅ Test run API call completed in',
-                        duration.toFixed(2),
-                        'ms'
-                    );
-                    console.log('📡 Task ID received:', data.task_id);
-
-                    // Set the task ID to start watching for SSE events
-                    setCurrentTaskId(data.task_id);
-
-                    console.log(
-                        '🔌 SSE connection setup starting for task ID:',
-                        data.task_id
-                    );
-                },
+                onSuccess: data => {},
                 onError: error => {
-                    const endTime = performance.now();
-                    const duration = endTime - startTime;
-
-                    console.error(
-                        '❌ Test run failed after',
-                        duration.toFixed(2),
-                        'ms:',
-                        error
-                    );
+                    console.error(error);
                 },
             }
         );
@@ -179,8 +140,9 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
     const testCase = item as TestCasePreview;
     const isItemSelected = String(selectedTestCase?.id) === String(testCase.id);
 
-    // Get the test case status from the Zustand store
-    const testCaseStatus = useTestCaseStatus(String(testCase.id));
+    // Get the test case status from the Zustand store or use the latest_run_status from the test case
+    const storeStatus = useTestCaseStatus(String(testCase.id));
+    const testCaseStatus = testCase.latest_run_status || storeStatus;
 
     return (
         <>

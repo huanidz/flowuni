@@ -5,10 +5,14 @@ from typing import Any, Dict, List
 from loguru import logger
 from src.consts.node_consts import NODE_EXECUTION_STATUS
 from src.exceptions.execution_exceptions import GraphExecutorError
-from src.executors.DataClass import NodeExecutionResult
 from src.executors.NodeDataFlowAdapter import NodeDataFlowAdapter
 from src.nodes.core import NodeInput, NodeOutput
-from src.schemas.flowbuilder.flow_graph_schemas import NodeData
+from src.schemas.flowbuilder.flow_graph_schemas import (
+    FlowChatOutputResult,
+    FlowExecutionResult,
+    NodeData,
+    NodeExecutionResult,
+)
 
 
 class RunFromNodeStrategy:
@@ -404,7 +408,7 @@ class RunFromNodeStrategy:
         self,
         execution_plan: List[List[str]],
         ancestors: List[str],
-    ) -> Dict[str, Any]:
+    ) -> FlowExecutionResult:
         """
         Execute a modified execution plan.
 
@@ -479,6 +483,7 @@ class RunFromNodeStrategy:
 
             # Collect results from the final layer
             final_layer_results = []
+            chat_output_node_data = FlowChatOutputResult(content=None)
             if layer_results:
                 final_layer_results = [
                     {
@@ -491,15 +496,28 @@ class RunFromNodeStrategy:
                     for result in layer_results
                 ]
 
-            execute_result = {
-                "success": True,
-                "total_nodes": total_nodes,
-                "completed_nodes": completed_nodes,
-                "total_layers": len(execution_plan),
-                "execution_time": total_time,
-                "results": final_layer_results,
-                "ancestors": ancestors,  # Include ancestors in the result
-            }
+            # Loop through final layer results to collect chat output
+            for result in final_layer_results:
+                if result["data"]:
+                    node_data: NodeData = NodeData.model_validate(result["data"])
+                    if node_data.node_type == "Chat Output":
+                        chat_output_node_data.content = node_data.input_values[
+                            "message_in"
+                        ]
+                        break
+
+            execute_result = FlowExecutionResult.model_validate(
+                {
+                    "success": True,
+                    "total_nodes": total_nodes,
+                    "completed_nodes": completed_nodes,
+                    "total_layers": len(execution_plan),
+                    "execution_time": total_time,
+                    "results": final_layer_results,
+                    "chat_output": chat_output_node_data.model_dump(),
+                    "ancestors": ancestors,  # Include ancestors in the result
+                }
+            )
 
             self.graph_executor.end_event(data=execute_result)
 

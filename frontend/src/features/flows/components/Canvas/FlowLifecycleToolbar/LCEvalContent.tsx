@@ -1,13 +1,23 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
+import { AlertCircle, FileText } from 'lucide-react';
 import {
     TestActionButtons,
     TestCreationButtons,
     TestStatistics,
     TestSuiteGroup,
 } from '../../../sub_features/flow_eval/components';
-import type { TestStatistics as TestStatisticsType } from '../../../sub_features/flow_eval/types';
-import { useTestSuitesWithCases } from '../../../sub_features/flow_eval/hooks';
+import type {
+    TestStatistics as TestStatisticsType,
+    TestSuiteWithCasePreviews,
+} from '../../../sub_features/flow_eval/types';
+import {
+    useTestSuitesWithCases,
+    useRunSingleTest,
+    useRunBatchTest,
+} from '../../../sub_features/flow_eval/hooks';
+import { useGlobalSSEConnection } from '../../../sub_features/flow_eval/sseConnectionManager';
+import { useAllTestCaseStatuses } from '../../../sub_features/flow_eval/stores/testCaseStatusStore';
 import useFlowStore from '@/features/flows/stores/flow_stores';
 
 /**
@@ -20,7 +30,7 @@ const LCEvalContent: React.FC = () => {
     const flowId = current_flow?.flow_id;
 
     if (!flowId) {
-        return;
+        return null;
     }
     const [expandedSuites, setExpandedSuites] = useState<Set<string>>(
         new Set()
@@ -28,9 +38,22 @@ const LCEvalContent: React.FC = () => {
     const [selectedTestCases, setSelectedTestCases] = useState<Set<string>>(
         new Set()
     );
-    const [isRunning, setIsRunning] = useState(false);
 
     const [showStatistics, setShowStatistics] = useState(false);
+
+    // Initialize the global SSE connection when this component is first mounted
+    const { connect } = useGlobalSSEConnection();
+
+    // Use a ref to track if we've already attempted to connect
+    const hasConnected = useRef(false);
+
+    useEffect(() => {
+        // Connect to SSE only once when the component mounts
+        if (!hasConnected.current) {
+            hasConnected.current = true;
+            connect();
+        }
+    }, [connect]);
 
     // Fetch test suites with cases
     const {
@@ -39,8 +62,16 @@ const LCEvalContent: React.FC = () => {
         error,
     } = useTestSuitesWithCases(flowId);
 
+    // Test running hooks
+    const runSingleTest = useRunSingleTest();
+    const runBatchTest = useRunBatchTest();
+
     // Extract the test suites array from the response
-    const testSuites = testSuitesData?.test_suites || [];
+    const testSuites: TestSuiteWithCasePreviews[] =
+        testSuitesData?.test_suites || [];
+
+    // Get all test case statuses from the store
+    const allTestCaseStatuses = useAllTestCaseStatuses();
 
     const statistics = useMemo((): TestStatisticsType => {
         if (!testSuites || testSuites.length === 0) {
@@ -55,16 +86,25 @@ const LCEvalContent: React.FC = () => {
 
         const allTestCases = testSuites.flatMap(suite => suite.test_cases);
 
-        // Note: With the new preview schema, we don't have status information
-        // All test cases are considered pending until we fetch full details
+        // Calculate statistics based on the status store
+        const statusCounts = allTestCases.reduce(
+            (acc, testCase) => {
+                const status =
+                    allTestCaseStatuses[String(testCase.id)] || 'PENDING';
+                acc[status] = (acc[status] || 0) + 1;
+                return acc;
+            },
+            {} as Record<string, number>
+        );
+
         return {
             total: allTestCases.length,
-            passed: 0,
-            failed: 0,
-            pending: allTestCases.length,
-            running: 0,
+            passed: statusCounts.PASSED || 0,
+            failed: statusCounts.FAILED || 0,
+            pending: statusCounts.PENDING || 0,
+            running: statusCounts.RUNNING || 0,
         };
-    }, [testSuites]);
+    }, [testSuites, allTestCaseStatuses]);
 
     const handleToggleExpand = (suiteId: string) => {
         const newExpanded = new Set(expandedSuites);
@@ -86,33 +126,104 @@ const LCEvalContent: React.FC = () => {
         setSelectedTestCases(newSelected);
     };
 
+    const handleTestCaseSelectAll = (
+        testCaseIds: string[],
+        selected: boolean
+    ) => {
+        const newSelected = new Set(selectedTestCases);
+        if (selected) {
+            // Add all test case IDs to the selection
+            testCaseIds.forEach(id => newSelected.add(id));
+        } else {
+            // Remove all test case IDs from the selection
+            testCaseIds.forEach(id => newSelected.delete(id));
+        }
+        setSelectedTestCases(newSelected);
+    };
+
     const handleRunAll = () => {
-        setIsRunning(true);
-        console.log('Running all tests...');
-        setTimeout(() => {
-            setIsRunning(false);
-            console.log('All tests completed');
-        }, 3000);
+        if (!flowId || !testSuites || testSuites.length === 0) {
+            return;
+        }
+
+        // Get all test case IDs
+        const allTestCaseIds = testSuites.flatMap(suite =>
+            suite.test_cases.map(testCase => testCase.id)
+        );
+
+        if (allTestCaseIds.length === 0) {
+            return;
+        }
+
+        // Run single test if only one test case, otherwise run batch
+        if (allTestCaseIds.length === 1) {
+            runSingleTest.mutate({
+                case_id: allTestCaseIds[0],
+                flow_id: flowId,
+            });
+        } else {
+            runBatchTest.mutate({
+                case_ids: allTestCaseIds,
+                flow_id: flowId,
+            });
+        }
     };
 
     const handleRunFailed = () => {
-        setIsRunning(true);
-        console.log('Running failed tests...');
-        setTimeout(() => {
-            setIsRunning(false);
-            console.log('Failed tests completed');
-        }, 2000);
+        if (!flowId || !testSuites || testSuites.length === 0) {
+            return;
+        }
+
+        // Filter for test cases that have failed status
+        const failedTestCaseIds = testSuites.flatMap(suite =>
+            suite.test_cases
+                .filter(testCase => {
+                    const status = allTestCaseStatuses[String(testCase.id)];
+                    return status === 'FAILED';
+                })
+                .map(testCase => testCase.id)
+        );
+
+        if (failedTestCaseIds.length === 0) {
+            return;
+        }
+
+        // Run single test if only one failed test case, otherwise run batch
+        if (failedTestCaseIds.length === 1) {
+            runSingleTest.mutate({
+                case_id: failedTestCaseIds[0],
+                flow_id: flowId,
+            });
+        } else {
+            runBatchTest.mutate({
+                case_ids: failedTestCaseIds,
+                flow_id: flowId,
+            });
+        }
     };
 
     const handleRunSelected = () => {
-        setIsRunning(true);
-        console.log(
-            `Running selected tests: ${Array.from(selectedTestCases).join(', ')}`
+        if (!flowId || selectedTestCases.size === 0) {
+            return;
+        }
+
+        // Convert selected test case IDs from string to number
+        const selectedTestCaseIds = Array.from(selectedTestCases).map(id =>
+            parseInt(id, 10)
         );
-        setTimeout(() => {
-            setIsRunning(false);
-            console.log('Selected tests completed');
-        }, 1500);
+
+        // Run single test if only one test case, otherwise run batch
+        if (selectedTestCaseIds.length === 1) {
+            runSingleTest.mutate({
+                case_id: selectedTestCaseIds[0],
+                flow_id: flowId,
+            });
+        } else {
+            runBatchTest.mutate({
+                case_ids: selectedTestCaseIds,
+                flow_id: flowId,
+            });
+        }
     };
 
     React.useEffect(() => {
@@ -165,19 +276,7 @@ const LCEvalContent: React.FC = () => {
                         </div>
                     ) : error ? (
                         <div className="text-center py-8 text-gray-500">
-                            <svg
-                                className="w-8 h-8 mx-auto mb-3 text-gray-300"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={1}
-                                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                                />
-                            </svg>
+                            <AlertCircle className="w-8 h-8 mx-auto mb-3 text-gray-300" />
                             <h3 className="text-sm font-medium mb-1">
                                 Error Loading Test Suites
                             </h3>
@@ -192,25 +291,14 @@ const LCEvalContent: React.FC = () => {
                                 testSuite={suite}
                                 selectedTestCases={selectedTestCases}
                                 onTestCaseSelect={handleTestCaseSelect}
+                                onTestCaseSelectAll={handleTestCaseSelectAll}
                                 expandedSuites={expandedSuites}
                                 onToggleExpand={handleToggleExpand}
                             />
                         ))
                     ) : (
                         <div className="text-center py-8 text-gray-500">
-                            <svg
-                                className="w-8 h-8 mx-auto mb-3 text-gray-300"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={1}
-                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                                />
-                            </svg>
+                            <FileText className="w-8 h-8 mx-auto mb-3 text-gray-300" />
                             <h3 className="text-sm font-medium mb-1">
                                 No Test Suites
                             </h3>
@@ -229,7 +317,6 @@ const LCEvalContent: React.FC = () => {
                 onRunAll={handleRunAll}
                 onRunFailed={handleRunFailed}
                 onRunSelected={handleRunSelected}
-                isRunning={isRunning}
             />
         </div>
     );

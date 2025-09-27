@@ -2,6 +2,9 @@ import React from 'react';
 import type { TestCasePreview } from '../types';
 import { useTestCaseStatus } from '../stores/testCaseStatusStore';
 import { getTestRunStatusBadge } from '../utils';
+import { Button } from '@/components/ui/button';
+import { Play } from 'lucide-react';
+import { useRunSingleTest } from '../hooks';
 
 interface TestCasePreviewItemProps {
     testCase: TestCasePreview;
@@ -9,6 +12,7 @@ interface TestCasePreviewItemProps {
     onSelect?: (testCaseId: string) => void;
     showSuiteName?: boolean;
     suiteName?: string;
+    flowId: string;
 }
 
 /**
@@ -20,9 +24,16 @@ const TestCasePreviewItem: React.FC<TestCasePreviewItemProps> = ({
     onSelect,
     showSuiteName = false,
     suiteName,
+    flowId,
 }) => {
     // Get the test case status from the Zustand store
-    const testCaseStatus = useTestCaseStatus(String(testCase.id));
+    // The store status takes precedence over the API response status
+    const storeStatus = useTestCaseStatus(String(testCase.id));
+    const testCaseStatus =
+        storeStatus !== 'PENDING'
+            ? storeStatus
+            : testCase.latest_run_status || 'PENDING';
+    const runSingleTestMutation = useRunSingleTest();
 
     const handleSelect = () => {
         if (onSelect) {
@@ -38,6 +49,23 @@ const TestCasePreviewItem: React.FC<TestCasePreviewItemProps> = ({
     const handleDivClick = (e: React.MouseEvent<HTMLDivElement>) => {
         e.stopPropagation();
         handleSelect();
+    };
+
+    const handleRunTest = (e: React.MouseEvent) => {
+        e.stopPropagation(); // Prevent card selection when clicking run
+
+        runSingleTestMutation.mutate(
+            {
+                case_id: testCase.id,
+                flow_id: flowId,
+            },
+            {
+                onSuccess: data => {},
+                onError: error => {
+                    console.error(error);
+                },
+            }
+        );
     };
 
     return (
@@ -89,11 +117,22 @@ const TestCasePreviewItem: React.FC<TestCasePreviewItemProps> = ({
                             <div className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded text-xs font-mono">
                                 <span className="text-gray-400">ID:</span>
                                 <span className="text-gray-600">
-                                    {String(testCase.id)?.substring(0, 8) ||
-                                        'N/A'}
+                                    {String(testCase.simple_id)?.substring(
+                                        0,
+                                        18
+                                    ) || 'N/A'}
                                 </span>
                             </div>
-                            <div className="flex items-center">
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 w-6 p-0 text-muted-foreground hover:text-green-600"
+                                    onClick={handleRunTest}
+                                    disabled={runSingleTestMutation.isPending}
+                                >
+                                    <Play className="h-3 w-3" />
+                                </Button>
                                 {getTestRunStatusBadge(testCaseStatus)}
                             </div>
                         </div>

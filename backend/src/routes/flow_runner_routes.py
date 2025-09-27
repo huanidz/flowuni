@@ -88,7 +88,8 @@ async def execute_flow_endpoint(
         )
 
         # Submit run task to Celery
-        task = run_flow.delay("flow-execute", flow_graph_request.model_dump())
+        flow_id = flow_graph_request.flow_id
+        task = run_flow.delay(_auth_user_id, flow_id, flow_graph_request.model_dump())
 
         logger.info(
             f"Execution task submitted to Celery. (submitted_by u_id: {_auth_user_id}). Task ID: {task.id}"  # noqa: E501

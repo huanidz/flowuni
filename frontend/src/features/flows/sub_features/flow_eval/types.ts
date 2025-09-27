@@ -122,6 +122,7 @@ export interface FlowTestSuite {
  */
 export interface FlowTestCase {
     id: number;
+    simple_id?: string;
     suite_id: number;
     name: string;
     description?: string;
@@ -270,10 +271,12 @@ export interface DraftTestCase {
  */
 export interface TestCasePreview {
     id: number;
+    simple_id?: string;
     suite_id: number;
     name: string;
     description?: string;
     is_active: boolean;
+    latest_run_status?: TestCaseRunStatus | null;
 }
 
 /**
@@ -281,6 +284,7 @@ export interface TestCasePreview {
  */
 export interface TestSuiteWithCasePreviews {
     id: number;
+    simple_id?: string;
     flow_id: string;
     name: string;
     description?: string;
@@ -358,4 +362,27 @@ export interface FlowTestRunResponse {
     message: string;
     case_id: number;
     flow_id: string;
+}
+
+/**
+ * Flow batch test run request interface based on backend FlowBatchTestRunRequest
+ */
+export interface FlowBatchTestRunRequest {
+    case_ids: number[];
+    flow_id: string;
+    input_text?: string;
+    input_metadata?: Record<string, any>;
+}
+
+/**
+ * Flow batch test run response interface based on backend FlowBatchTestRunResponse
+ */
+export interface FlowBatchTestRunResponse {
+    status: TestCaseRunStatus;
+    task_ids: string[];
+    message: string;
+    case_ids: number[];
+    flow_id: string;
+    input_text?: string;
+    input_metadata?: Record<string, any>;
 }

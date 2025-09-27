@@ -2,8 +2,7 @@
 # This id is treated as database-level unique. All kind of id currently defined
 # is for app logic which may looks confusing at first but it does serve a purpose.
 
-from typing import Any, Dict
-
+from fastnanoid import generate
 from sqlalchemy import (
     BigInteger,
     Boolean,
@@ -16,6 +15,10 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from src.models.alchemy.shared.AppBaseModel import AppBaseModel
+
+
+def generate_test_case_nanoid() -> str:
+    return f"C-{generate(alphabet='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', size=16)}"  # noqa
 
 
 class FlowTestCaseModel(AppBaseModel):
@@ -33,6 +36,7 @@ class FlowTestCaseModel(AppBaseModel):
         ForeignKey("flow_test_suites.id", ondelete="CASCADE"),
         nullable=False,
     )
+    simple_id = Column(String, nullable=True, default=generate_test_case_nanoid)
     name = Column(String, nullable=False)
     description = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True)  # Un-used field for now

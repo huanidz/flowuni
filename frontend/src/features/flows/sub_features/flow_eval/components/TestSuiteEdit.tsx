@@ -43,8 +43,11 @@ const TestSuiteEdit: React.FC<TestSuiteEditProps> = ({
     // Calculate status counts for this suite
     const statusCounts = testCases.reduce(
         (acc, testCase) => {
+            // Use latest_run_status from the test case if available, otherwise use the store status
             const status =
-                allTestCaseStatuses[String(testCase.id)] || 'PENDING';
+                testCase.latest_run_status ||
+                allTestCaseStatuses[String(testCase.id)] ||
+                'PENDING';
             acc[status] = (acc[status] || 0) + 1;
             return acc;
         },

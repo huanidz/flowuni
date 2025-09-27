@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { TestCaseRunStatus } from './types';
 
 import {
@@ -11,15 +11,17 @@ import {
     getTestSuitesWithCases,
     partialUpdateTestCase,
     partialUpdateTestSuite,
+    runBatchTest,
     runSingleTest,
 } from './api';
-import { watchFlowTestEvents } from './sse';
 import type {
+    FlowBatchTestRunRequest,
     FlowTestRunRequest,
     TestCaseCreateRequest,
     TestCasePartialUpdateRequest,
     TestSuiteCreateRequest,
     TestSuitePartialUpdateRequest,
+    TestSuitesWithCasePreviewsResponse,
 } from './types';
 import { useTestCaseStatusStore } from './stores/testCaseStatusStore';
 
@@ -27,12 +29,47 @@ import { useTestCaseStatusStore } from './stores/testCaseStatusStore';
  * Hook for fetching test suites with cases for a specific flow
  */
 export const useTestSuitesWithCases = (flowId: string) => {
-    return useQuery({
+    const { updateTestCaseStatus, resetAllStatuses } = useTestCaseStatusStore();
+
+    const query = useQuery({
         queryKey: ['testSuitesWithCases', flowId],
         queryFn: () => getTestSuitesWithCases(flowId),
         enabled: !!flowId,
         staleTime: 5 * 60 * 1000, // 5 minutes
     });
+
+    // Use useEffect to update the store when data changes
+    useEffect(() => {
+        if (query.data) {
+            // Collect all test case IDs from the new data
+            const currentTestCaseIds = new Set<string>();
+            query.data.test_suites.forEach(suite => {
+                suite.test_cases.forEach(testCase => {
+                    currentTestCaseIds.add(String(testCase.id));
+
+                    // Update the store with the latest test case status from the API
+                    if (testCase.latest_run_status) {
+                        updateTestCaseStatus(
+                            String(testCase.id),
+                            testCase.latest_run_status
+                        );
+                    }
+                });
+            });
+
+            // Only reset statuses for test cases that are no longer present
+            // This preserves statuses during refetches and prevents UI flickering
+            const { testCaseStatuses, resetTestCaseStatus } =
+                useTestCaseStatusStore.getState();
+            Object.keys(testCaseStatuses).forEach(testCaseId => {
+                if (!currentTestCaseIds.has(testCaseId)) {
+                    resetTestCaseStatus(testCaseId);
+                }
+            });
+        }
+    }, [query.data, updateTestCaseStatus]);
+
+    return query;
 };
 
 /**
@@ -188,83 +225,69 @@ export const useRunSingleTest = () => {
         },
         onError: error => {
             console.error('Error running test case:', error);
-            toast.error('Failed to run test case');
+
+            // Handle 409 Conflict error (test case already running or queued)
+            if (
+                error &&
+                typeof error === 'object' &&
+                'status' in error &&
+                error.status === 409
+            ) {
+                const errorMessage =
+                    'detail' in error && typeof error.detail === 'string'
+                        ? error.detail
+                        : 'Test case is already running or queued';
+                toast.error(errorMessage);
+            } else {
+                toast.error('Failed to run test case');
+            }
         },
     });
 };
 
 /**
- * Hook for watching flow test events via SSE
+ * Hook for running a batch of test cases
  */
-
-export const useWatchFlowTestEvents = (taskId: string | null) => {
-    const eventSourceRef = useRef<EventSource | null>(null);
-    const { updateTestCaseStatusByTaskId, updateTestCaseStatus } =
+export const useRunBatchTest = () => {
+    const queryClient = useQueryClient();
+    const { setTaskTestCaseMapping, updateTestCaseStatus } =
         useTestCaseStatusStore();
 
-    useEffect(() => {
-        if (!taskId) {
-            return;
-        }
+    return useMutation({
+        mutationFn: (request: FlowBatchTestRunRequest) => runBatchTest(request),
+        onSuccess: (data, variables) => {
+            // Map each task ID to its corresponding test case ID
+            data.task_ids.forEach((taskId, index) => {
+                const caseId = data.case_ids[index];
+                setTaskTestCaseMapping(taskId, String(caseId));
 
-        console.log(`Setting up SSE connection for task: ${taskId}`);
+                // Set initial status to QUEUED for each test case
+                updateTestCaseStatus(String(caseId), TestCaseRunStatus.QUEUED);
+            });
 
-        eventSourceRef.current = watchFlowTestEvents(
-            taskId,
-            message => {
-                console.log('Received SSE message:', message);
+            // Invalidate and refetch test suites for this flow
+            queryClient.invalidateQueries({
+                queryKey: ['testSuitesWithCases', variables.flow_id],
+            });
 
-                // Handle different types of SSE events
-                if (message.event === 'UPDATE') {
-                    // Update test case status based on the event data
-                    const { data: innerData } = message.data || {};
+            // Check if some test cases were skipped (already running or queued)
+            const requestedCount = variables.case_ids.length;
+            const queuedCount = data.case_ids.length;
 
-                    const parsedInnerData = JSON.parse(innerData);
-                    /**
-                     * Example inner data:
-                    {
-                        "seq": 0,
-                        "task_id": "68b35758-2d5b-462f-83f7-f7d857fb7b4a",
-                        "payload": {
-                            "case_id": 8,
-                            "status": "QUEUED"
-                        }
-                    }
-                     */
-
-                    const { case_id, status } = parsedInnerData.payload;
-
-                    // Update the test case status
-                    updateTestCaseStatus(
-                        String(case_id),
-                        status as TestCaseRunStatus
-                    );
-                } else if (message.event === 'DONE') {
-                    // The entire task is done
-                    console.log('SSE stream completed for task:', taskId);
-                }
-            },
-            error => {
-                console.error('SSE connection error:', error);
-                // If there's a connection error, mark the test case as having a system error
-                updateTestCaseStatusByTaskId(
-                    taskId,
-                    TestCaseRunStatus.SYSTEM_ERROR
+            if (requestedCount > queuedCount) {
+                const skippedCount = requestedCount - queuedCount;
+                toast.success(
+                    `Batch test run initiated for ${queuedCount} test cases. ${skippedCount} test cases were skipped as they are already running or queued.`
                 );
+            } else {
+                toast.success('Batch test run initiated successfully');
             }
-        );
-
-        // Cleanup function to close the connection when component unmounts or taskId changes
-        return () => {
-            if (eventSourceRef.current) {
-                console.log('Closing SSE connection');
-                eventSourceRef.current.close();
-                eventSourceRef.current = null;
-            }
-        };
-    }, [taskId, updateTestCaseStatus, updateTestCaseStatusByTaskId]);
-
-    return { eventSource: eventSourceRef.current };
+        },
+        onError: error => {
+            console.error('Error running batch test:', error);
+            toast.error('Failed to run batch test');
+        },
+    });
 };
 
 /**

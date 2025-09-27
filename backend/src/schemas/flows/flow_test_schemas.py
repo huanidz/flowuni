@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 from src.models.validators.PassCriteriaValidator import PassCriteriaValidator
@@ -20,6 +20,7 @@ class TestSuiteCreateResponse(BaseModel):
     """
 
     id: int = Field(..., description="Test suite ID")
+    simple_id: str = Field(..., description="Simple test suite ID")
     flow_id: str = Field(..., description="Flow ID")
     name: str = Field(..., description="Test suite name")
     description: Optional[str] = Field(None, description="Test suite description")
@@ -54,6 +55,7 @@ class TestSuiteUpdateResponse(BaseModel):
     """
 
     id: int = Field(..., description="Test suite ID")
+    simple_id: str = Field(..., description="Simple test suite ID")
     flow_id: str = Field(..., description="Flow ID")
     name: str = Field(..., description="Test suite name")
     description: Optional[str] = Field(None, description="Test suite description")
@@ -76,6 +78,7 @@ class TestCaseCreateResponse(BaseModel):
     """
 
     id: int = Field(..., description="Test case ID")
+    simple_id: str = Field(..., description="Simple test case ID")
     suite_id: int = Field(..., description="Test suite ID")
     name: str = Field(..., description="Test case name")
     description: Optional[str] = Field(None, description="Test case description")
@@ -88,6 +91,7 @@ class TestCaseGetResponse(BaseModel):
     """
 
     id: int = Field(..., description="Test case ID")
+    simple_id: str = Field(..., description="Simple test case ID")
     suite_id: int = Field(..., description="Test suite ID")
     name: str = Field(..., description="Test case name")
     description: Optional[str] = Field(None, description="Test case description")
@@ -106,10 +110,14 @@ class TestCasePreview(BaseModel):
     """
 
     id: int = Field(..., description="Test case ID")
+    simple_id: str = Field(..., description="Simple test case ID")
     suite_id: int = Field(..., description="Test suite ID")
     name: str = Field(..., description="Test case name")
     description: Optional[str] = Field(None, description="Test case description")
     is_active: bool = Field(True, description="Test case status")
+    latest_run_status: Optional[str] = Field(
+        None, description="Latest test case run status"
+    )
 
 
 class TestSuiteWithCasePreviews(BaseModel):
@@ -118,6 +126,7 @@ class TestSuiteWithCasePreviews(BaseModel):
     """
 
     id: int = Field(..., description="Test suite ID")
+    simple_id: str = Field(..., description="Simple test case ID")
     flow_id: str = Field(..., description="Flow ID")
     name: str = Field(..., description="Test suite name")
     description: Optional[str] = Field(None, description="Test suite description")
@@ -177,6 +186,7 @@ class TestCaseUpdateResponse(BaseModel):
     """
 
     id: int = Field(..., description="Test case ID")
+    simple_id: str = Field(..., description="Simple test case ID")
     suite_id: int = Field(..., description="Test suite ID")
     name: str = Field(..., description="Test case name")
     description: Optional[str] = Field(None, description="Test case description")
@@ -195,6 +205,31 @@ class FlowTestRunRequest(BaseModel):
     """
 
     case_id: int = Field(..., description="Test case ID")
+    flow_id: str = Field(..., description="Flow ID")
+
+
+class FlowBatchTestRunRequest(BaseModel):
+    """
+    Request model for running a batch of flow tests
+    """
+
+    case_ids: List[int] = Field(..., description="List of test case IDs")
+    flow_id: str = Field(..., description="Flow ID")
+    input_text: Optional[str] = Field(None, description="Input text for the test")
+    input_metadata: Optional[Dict[str, Any]] = Field(
+        None, description="Input metadata for the test"
+    )
+
+
+class FlowBatchTestRunResponse(BaseModel):
+    """
+    Response model for batch flow test run
+    """
+
+    status: str = Field(..., description="Status of the test run")
+    task_ids: List[str] = Field(..., description="List of Celery task IDs")
+    message: str = Field(..., description="Message about the test run")
+    case_ids: List[int] = Field(..., description="List of test case IDs")
     flow_id: str = Field(..., description="Flow ID")
     input_text: Optional[str] = Field(None, description="Input text for the test")
     input_metadata: Optional[Dict[str, Any]] = Field(

@@ -1,15 +1,21 @@
-from typing import List
+from typing import List, Optional
 
 import networkx as nx
 from loguru import logger
 from src.nodes.NodeRegistry import NodeRegistry
 from src.schemas.flowbuilder.flow_crud_schemas import FlowCreateRequest
-from src.schemas.flowbuilder.flow_graph_schemas import CanvasFlowRunRequest, FlowNode
+from src.schemas.flowbuilder.flow_graph_schemas import (
+    CanvasFlowRunRequest,
+    FlowNode,
+    NodeData,
+)
 
 
 class GraphLoader:
     @staticmethod
-    def from_request(flow: CanvasFlowRunRequest) -> nx.MultiDiGraph:
+    def from_request(
+        flow: CanvasFlowRunRequest, custom_input_text: Optional[str] = None
+    ) -> nx.MultiDiGraph:
         """
         Load a flow graph from CanvasFlowRunRequest and return a NetworkX MultiDiGraph.
         Each node is enriched with spec and runtime class (if available).
@@ -25,6 +31,9 @@ class GraphLoader:
             node_spec = nodeRegistry.get_node_spec_by_name(node.type)
             if not node_spec:
                 raise ValueError(f"Unknown node type: {node.type}")
+
+            if custom_input_text and node_spec.name == "Chat Input":
+                node.data.input_values["message_in"] = custom_input_text
 
             G.add_node(
                 node.id,

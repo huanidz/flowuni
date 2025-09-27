@@ -7,14 +7,12 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 import networkx as nx
 from loguru import logger
-from src.consts.execution_consts import ROUTER_LABEL_SPLIT_JOIN_STRING
 from src.consts.node_consts import (
     NODE_DATA_MODE,
     NODE_EXECUTION_STATUS,
     NODE_TAGS_CONSTS,
 )
 from src.exceptions.execution_exceptions import GraphExecutorError
-from src.executors.DataClass import NodeExecutionResult
 from src.executors.ExecutionEventPublisher import (
     ExecutionControl,
     ExecutionEventPublisher,
@@ -30,7 +28,7 @@ from src.nodes.core import NodeInput, NodeOutput
 from src.nodes.handles.basics.outputs.RouterOutputHandle import RouterOutputData
 from src.nodes.NodeBase import Node, NodeSpec
 from src.nodes.NodeRegistry import NodeRegistry
-from src.schemas.flowbuilder.flow_graph_schemas import NodeData
+from src.schemas.flowbuilder.flow_graph_schemas import NodeData, NodeExecutionResult
 from src.schemas.nodes.node_data_parsers import ToolDataParser
 
 if TYPE_CHECKING:
@@ -102,6 +100,18 @@ class GraphExecutor:
         This is the synchronous version that matches your old working code structure.
         Checks the execution control to determine if execution should start from a specific node.
         """
+
+        if len(self.execution_plan) == 0:
+            total_time = 0
+            execute_result = {
+                "success": True,
+                "total_nodes": 0,
+                "completed_nodes": 0,
+                "total_layers": 0,
+                "execution_time": total_time,
+                "results": [],
+            }
+            return execute_result
 
         # Check if we should start execution from a specific node
         if self.execution_control.start_node is not None:

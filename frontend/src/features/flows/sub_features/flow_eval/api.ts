@@ -1,5 +1,7 @@
 import api from '@/api/secureClient';
 import type {
+    FlowBatchTestRunRequest,
+    FlowBatchTestRunResponse,
     FlowTestRunRequest,
     FlowTestRunResponse,
     TestCaseCreateRequest,
@@ -101,5 +103,15 @@ export const runSingleTest = async (
     request: FlowTestRunRequest
 ): Promise<FlowTestRunResponse> => {
     const { data } = await api.post('/flow-test-runs/', request);
+    return data;
+};
+
+/**
+ * Run a batch of flow tests
+ */
+export const runBatchTest = async (
+    request: FlowBatchTestRunRequest
+): Promise<FlowBatchTestRunResponse> => {
+    const { data } = await api.post('/flow-test-runs/batch', request);
     return data;
 };

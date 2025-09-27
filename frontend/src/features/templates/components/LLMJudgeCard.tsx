@@ -67,7 +67,7 @@ const LLMJudgeCard: React.FC<LLMJudgeCardProps> = ({
                                 {llmJudge.data.system_prompt}
                             </div>
                         )}
-                        {llmJudge.data.temperature !== undefined && (
+                        {/* {llmJudge.data.temperature !== undefined && (
                             <div>
                                 <span className="font-medium">
                                     Temperature:
@@ -82,7 +82,7 @@ const LLMJudgeCard: React.FC<LLMJudgeCardProps> = ({
                                 </span>{' '}
                                 {llmJudge.data.max_output_tokens}
                             </div>
-                        )}
+                        )} */}
                     </div>
                 )}
             </CardContent>

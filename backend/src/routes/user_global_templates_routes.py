@@ -1,12 +1,19 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+import json
+
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi.responses import JSONResponse
 from loguru import logger
+from src.components.llm.registry.LLMConstructingRegistry import LLMConstructingRegistry
+from src.core.cache import generate_catalog_etag
 from src.dependencies.auth_dependency import get_current_user
 from src.dependencies.db_dependency import get_db
+from src.dependencies.redis_dependency import get_redis_client
 from src.repositories.UserGlobalTemplateRepository import UserGlobalTemplateRepository
 from src.schemas.users.user_global_template_schemas import (
     CreateLLMJudgeRequest,
     LLMJudgeListResponse,
     LLMJudgeResponse,
+    LLMSupportConfigResponse,
     UpdateLLMJudgeRequest,
 )
 from src.services.UserGlobalTemplateService import UserGlobalTemplateService
@@ -208,4 +215,62 @@ async def delete_llm_judge(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete LLM judge template.",
+        ) from e
+
+
+@user_global_templates_router.get(
+    "/llm-config",
+    response_model=LLMSupportConfigResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def get_llm_config(
+    request: Request,
+    auth_user_id: int = Depends(get_current_user),
+):
+    """
+    Get the supported LLM configuration with caching
+    """
+    try:
+        redis_client = get_redis_client()
+        cache_key = "llm_support_config"
+
+        # Try to get config from Redis cache
+        cached_config = redis_client.get(cache_key)
+        if cached_config:
+            config = json.loads(cached_config)
+        else:
+            # Generate the config
+            config = LLMConstructingRegistry.get_constructing_support_config()
+            # Cache it in Redis for 1 hour (3600 seconds)
+            redis_client.setex(cache_key, 24 * 3600, json.dumps(config))
+
+        # Generate ETag from config
+        etag = generate_catalog_etag(config)
+
+        # Check for 304 Not Modified
+        if request.headers.get("If-None-Match") == etag:
+            logger.info("304 Not Modified for LLM config")
+            return Response(status_code=304, headers={"ETag": etag})
+
+        # Get the current time for Last-Modified header
+        now = __import__("datetime").datetime.utcnow()
+
+        # Set proper cache headers for public caching
+        headers = {
+            "Cache-Control": "public, max-age=31536000, immutable",
+            "ETag": etag,
+            "Last-Modified": now.strftime("%a, %d %b %Y %H:%M:%S GMT"),
+        }
+
+        # Return the config with proper headers
+        return JSONResponse(content=config, headers=headers)
+
+    except Exception as e:
+        logger.error(
+            f"Error retrieving LLM config for user {auth_user_id}: {str(e)}",
+            exc_info=True,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve LLM config.",
         ) from e

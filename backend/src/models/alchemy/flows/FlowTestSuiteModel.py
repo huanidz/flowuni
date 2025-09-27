@@ -2,10 +2,15 @@
 # This id is treated as database-level unique. All kind of id currently defined
 # is for app logic which may looks confusing at first but it does serve a purpose.
 
+from fastnanoid import generate
 from sqlalchemy import Boolean, Column, ForeignKey, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from src.models.alchemy.shared.AppBaseModel import AppBaseModel
+
+
+def generate_suite_nanoid():
+    return f"S-{generate(alphabet='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', size=16)}"  # noqa
 
 
 class FlowTestSuiteModel(AppBaseModel):
@@ -21,6 +26,7 @@ class FlowTestSuiteModel(AppBaseModel):
     flow_id = Column(
         String, ForeignKey("flows.flow_id", ondelete="CASCADE"), nullable=False
     )
+    simple_id = Column(String, nullable=True, default=generate_suite_nanoid)
     name = Column(String, nullable=False)
     description = Column(String, nullable=True)
     is_active = Column(Boolean, default=True)

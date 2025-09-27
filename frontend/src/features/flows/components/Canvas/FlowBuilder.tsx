@@ -170,6 +170,7 @@ const FlowBuilderContent: React.FC<FlowBuilderContentProps> = ({ flow_id }) => {
         onEval,
         onPublish,
     } = useFlowActions(
+        flow_id,
         currentNodes,
         currentEdges,
         setNodes,

@@ -59,6 +59,8 @@ class FlowEdge(BaseModel):
 class CanvasFlowRunRequest(BaseModel):
     """Top-level request model representing the entire flow graph."""
 
+    flow_id: Optional[str] = None
+
     nodes: List[FlowNode]
     edges: List[FlowEdge]
 
@@ -95,3 +97,44 @@ class ApiFlowRunRequest(BaseModel):
         description="List of messages to be sent to the flow run.",
     )
     session_id: Optional[str] = None
+
+
+# --- For Chat Input and Chat Ouput ---
+
+
+class FlowChatOutputResult(BaseModel):
+    content: Optional[str] = None
+
+
+"""Flow execution result:
+execute_result = {
+                "success": True,
+                "total_nodes": total_nodes,
+                "completed_nodes": completed_nodes,
+                "total_layers": len(execution_plan),
+                "execution_time": total_time,
+                "results": final_layer_results,
+                "chat_output": chat_output_node_data.model_dump(),
+                "ancestors": ancestors,  # Include ancestors in the result
+            }"""
+
+
+class NodeExecutionResult(BaseModel):
+    """Container for node execution results."""
+
+    node_id: str
+    success: bool
+    data: Optional[NodeData] = None
+    error: Optional[str] = None
+    execution_time: float = 0.0
+
+
+class FlowExecutionResult(BaseModel):
+    success: bool
+    total_nodes: int
+    completed_nodes: int
+    total_layers: int
+    execution_time: float
+    results: List[NodeExecutionResult]
+    chat_output: FlowChatOutputResult
+    ancestors: List[str]

@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from datetime import datetime
 from typing import Any, Dict, Optional
 
 from loguru import logger
@@ -7,6 +8,10 @@ from src.consts.cache_consts import CACHE_PREFIX
 from src.exceptions.shared_exceptions import NOT_FOUND_EXCEPTION
 from src.helpers.CacheHelper import CacheHelper
 from src.models.alchemy.flows.FlowTestCaseModel import FlowTestCaseModel
+from src.models.alchemy.flows.FlowTestCaseRunModel import (
+    FlowTestCaseRunModel,
+    TestCaseRunStatus,
+)
 from src.models.alchemy.flows.FlowTestSuiteModel import FlowTestSuiteModel
 from src.models.validators.PassCriteriaValidator import PassCriteriaValidator
 from src.repositories.FlowTestRepository import FlowTestRepository
@@ -140,6 +145,94 @@ class FlowTestServiceInterface(ABC):
     def queue_test_case_run(self, test_case_id: int, task_run_id: str) -> None:
         """
         Queue a test case for execution
+        """
+        pass
+
+    @abstractmethod
+    def update_test_case_run(
+        self,
+        run_id: int,
+        status: Optional["TestCaseRunStatus"] = None,
+        actual_output: Optional[Dict[str, Any]] = None,
+        error_message: Optional[str] = None,
+        execution_time_ms: Optional[float] = None,
+        run_detail: Optional[Dict[str, Any]] = None,
+        criteria_results: Optional[Dict[str, Any]] = None,
+        started_at: Optional[datetime] = None,
+        finished_at: Optional[datetime] = None,
+    ) -> "FlowTestCaseRunModel":
+        """
+        Update a test case run by its ID.
+
+        Args:
+            run_id: Test case run ID to update
+            status: New run status (optional)
+            actual_output: New actual output data (optional)
+            error_message: New error message (optional)
+            execution_time_ms: New execution time in milliseconds (optional)
+            run_detail: New run detail data (optional)
+            criteria_results: New criteria results (optional)
+            started_at: New start time (optional)
+            finished_at: New finish time (optional)
+
+        Returns:
+            Updated test case run model
+        """
+        pass
+
+    @abstractmethod
+    def set_test_case_run_status(self, task_run_id: str, status: str) -> None:
+        """
+        Set the status of a test case run by its task run ID.
+
+        Args:
+            task_run_id: The task run ID of the test case run
+            status: The status to set for the test case run
+        """
+        pass
+
+    @abstractmethod
+    def get_latest_test_case_run_status(self, test_case_id: int) -> str:
+        """
+        Get the status of the latest test case run for a given test case ID.
+
+        Args:
+            test_case_id: The ID of the test case
+
+        Returns:
+            str: The status of the latest test case run, or PENDING if no runs exist
+        """
+        pass
+
+    @abstractmethod
+    def get_latest_test_cases_run_status(
+        self, test_case_ids: list[int]
+    ) -> dict[int, str]:
+        """
+        Get the status of the latest test case run for multiple test case IDs.
+
+        Args:
+            test_case_ids: List of test case IDs
+
+        Returns:
+            dict[int, str]: Dictionary mapping test case IDs to their latest run status,
+                           or PENDING if no runs exist for a test case
+        """
+        pass
+
+    @abstractmethod
+    def get_test_case_pass_criteria(
+        self, test_case_id: int
+    ) -> Optional[PassCriteriaValidator]:
+        """
+        Get the pass criteria for a specific test case.
+
+        Args:
+            test_case_id: The ID of the test case
+
+        Returns:
+            Optional[PassCriteriaValidator]: The pass criteria validator for the test case,
+                                           or None if not found
         """
         pass
 
@@ -444,5 +537,186 @@ class FlowTestService(FlowTestServiceInterface):
         except Exception as e:
             logger.error(
                 f"Error queuing test case with ID {test_case_id} for execution: {str(e)}"  # noqa
+            )
+            raise
+
+    def update_test_case_run(
+        self,
+        run_id: int,
+        status: Optional[TestCaseRunStatus] = None,
+        actual_output: Optional[Dict[str, Any]] = None,
+        error_message: Optional[str] = None,
+        execution_time_ms: Optional[float] = None,
+        run_detail: Optional[Dict[str, Any]] = None,
+        criteria_results: Optional[Dict[str, Any]] = None,
+        started_at: Optional[datetime] = None,
+        finished_at: Optional[datetime] = None,
+    ) -> FlowTestCaseRunModel:
+        """
+        Update a test case run by its ID.
+
+        Args:
+            run_id: Test case run ID to update
+            status: New run status (optional)
+            actual_output: New actual output data (optional)
+            error_message: New error message (optional)
+            execution_time_ms: New execution time in milliseconds (optional)
+            run_detail: New run detail data (optional)
+            criteria_results: New criteria results (optional)
+            started_at: New start time (optional)
+            finished_at: New finish time (optional)
+
+        Returns:
+            Updated test case run model
+        """
+        try:
+            # Update the test case run
+            updated_test_case_run = self.test_repository.update_test_case_run(
+                run_id=run_id,
+                status=status,
+                actual_output=actual_output,
+                error_message=error_message,
+                execution_time_ms=execution_time_ms,
+                run_detail=run_detail,
+                criteria_results=criteria_results,
+                started_at=started_at,
+                finished_at=finished_at,
+            )
+            logger.info(f"Successfully updated test case run with ID {run_id}")
+
+            return updated_test_case_run
+        except Exception as e:
+            logger.error(f"Error updating test case run with ID {run_id}: {str(e)}")
+            raise
+
+    def set_test_case_run_status(self, task_run_id: str, status: str) -> None:
+        """
+        Set the status of a test case run by its task run ID.
+
+        Args:
+            task_run_id: The task run ID of the test case run
+            status: The status to set for the test case run
+        """
+        try:
+            self.test_repository.set_test_case_run_status(
+                task_run_id=task_run_id, status=status
+            )
+            logger.info(
+                f"Successfully set status to '{status}' for test case run with task run ID {task_run_id}"
+            )
+        except Exception as e:
+            logger.error(
+                f"Error setting status for test case run with task run ID {task_run_id}: {str(e)}"
+            )
+            raise
+
+    def get_latest_test_case_run_status(self, test_case_id: int) -> str:
+        """
+        Get the status of the latest test case run for a given test case ID.
+
+        Args:
+            test_case_id: The ID of the test case
+
+        Returns:
+            str: The status of the latest test case run, or PENDING if no runs exist
+        """
+        try:
+            # First check if the test case exists
+            test_case = self.test_repository.get_test_case_by_id(case_id=test_case_id)
+            if not test_case:
+                logger.warning(f"Test case with ID {test_case_id} not found")
+                raise NOT_FOUND_EXCEPTION
+
+            # Get the latest test case run status
+            status = self.test_repository.get_latest_test_case_run_status(
+                test_case_id=test_case_id
+            )
+            logger.info(
+                f"Successfully retrieved latest run status '{status}' for test case with ID {test_case_id}"
+            )
+            return status
+        except Exception as e:
+            logger.error(
+                f"Error retrieving latest run status for test case with ID {test_case_id}: {str(e)}"
+            )
+            raise
+
+    def get_latest_test_cases_run_status(
+        self, test_case_ids: list[int]
+    ) -> dict[int, str]:
+        """
+        Get the status of the latest test case run for multiple test case IDs.
+
+        Args:
+            test_case_ids: List of test case IDs
+
+        Returns:
+            dict[int, str]: Dictionary mapping test case IDs to their latest run status,
+                           or PENDING if no runs exist for a test case
+        """
+        try:
+            if not test_case_ids:
+                return {}
+
+            # First check if all test cases exist
+            existing_test_cases = set()
+            for test_case_id in test_case_ids:
+                test_case = self.test_repository.get_test_case_by_id(
+                    case_id=test_case_id
+                )
+                if test_case:
+                    existing_test_cases.add(test_case_id)
+                else:
+                    logger.warning(f"Test case with ID {test_case_id} not found")
+
+            # Get the latest test case run statuses for existing test cases
+            if existing_test_cases:
+                statuses = self.test_repository.get_latest_test_cases_run_status(
+                    test_case_ids=list(existing_test_cases)
+                )
+                logger.info(
+                    f"Successfully retrieved latest run statuses for {len(existing_test_cases)} test cases"
+                )
+                return statuses
+            else:
+                logger.warning("No valid test cases found")
+                return {}
+
+        except Exception as e:
+            logger.error(
+                f"Error retrieving latest run statuses for test cases: {str(e)}"
+            )
+            raise
+
+    def get_test_case_pass_criteria(
+        self, test_case_id: int
+    ) -> Optional[PassCriteriaValidator]:
+        """
+        Get the pass criteria for a specific test case.
+
+        Args:
+            test_case_id: The ID of the test case
+
+        Returns:
+            Optional[PassCriteriaValidator]: The pass criteria validator for the test case,
+                                           or None if not found
+        """
+        try:
+            # First check if the test case exists
+            test_case = self.test_repository.get_test_case_by_id(case_id=test_case_id)
+            if not test_case:
+                logger.warning(f"Test case with ID {test_case_id} not found")
+                return None
+
+            # Get the pass criteria from the test case
+            pass_criteria = test_case.pass_criteria
+            logger.info(
+                f"Successfully retrieved pass criteria for test case with ID {test_case_id}"
+            )
+
+            return pass_criteria
+        except Exception as e:
+            logger.error(
+                f"Error retrieving pass criteria for test case with ID {test_case_id}: {str(e)}"
             )
             raise

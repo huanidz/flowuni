@@ -13,6 +13,10 @@ interface TestCaseStatusState {
         testCaseId: string,
         status: TestCaseRunStatus
     ) => void;
+    // ADDED: New action for batch updates
+    updateMultipleTestCaseStatuses: (
+        updates: Map<string, TestCaseRunStatus>
+    ) => void;
     updateTestCaseStatusByTaskId: (
         taskId: string,
         status: TestCaseRunStatus
@@ -42,6 +46,25 @@ export const useTestCaseStatusStore = create<TestCaseStatusState>(
                 },
             }));
         },
+
+        // --- 👇 NEW BATCH ACTION ---
+        /**
+         * Efficiently updates multiple test case statuses in a single operation.
+         * This triggers only one re-render for components subscribed to the store,
+         * preventing UI lag from rapid, individual updates.
+         */
+        updateMultipleTestCaseStatuses: (
+            updates: Map<string, TestCaseRunStatus>
+        ) => {
+            set(state => ({
+                testCaseStatuses: {
+                    ...state.testCaseStatuses,
+                    // Convert the Map to an object and spread it to merge updates
+                    ...Object.fromEntries(updates),
+                },
+            }));
+        },
+        // --- END OF NEW BATCH ACTION ---
 
         updateTestCaseStatusByTaskId: (
             taskId: string,
@@ -112,7 +135,7 @@ export const useTestCaseStatusStore = create<TestCaseStatusState>(
     })
 );
 
-// Selector hooks for optimized performance
+// Selector hooks for optimized performance (unchanged)
 export const useTestCaseStatus = (testCaseId: string) =>
     useTestCaseStatusStore(state => state.getTestCaseStatus(testCaseId));
 

@@ -34,8 +34,12 @@ const TestCriteriaSummary: React.FC<TestCriteriaSummaryProps> = ({
 
     return (
         <div className="sticky top-4">
-            <h3 className="text-sm font-medium mb-3 text-muted-foreground">
+            <h3 className="text-sm font-medium mb-3 text-emerald-950">
                 Logic Chain Summary
+                <span className="text-xs text-red-900">
+                    <br />
+                    (Runs in optimized order, stops at first failed rule/group)
+                </span>
             </h3>
             {criteria.rules.length > 0 ? (
                 <Card className="border-muted">

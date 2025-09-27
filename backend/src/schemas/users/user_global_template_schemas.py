@@ -50,3 +50,25 @@ class LLMJudgeListResponse(BaseModel):
     templates: List[LLMJudgeResponse] = Field(
         ..., description="List of LLM judge templates"
     )
+
+
+class LLMProviderConfigItemResponse(BaseModel):
+    """Response schema for LLM provider configuration item"""
+
+    provider_name: str = Field(..., description="Name of the LLM provider")
+    type: str = Field(..., description="Type of the provider (predefined or http)")
+    predefined_models: List[str] = Field(
+        default=[], description="List of predefined models for the provider"
+    )
+    http_url: str = Field(default="", description="HTTP URL for fetching models")
+    response_path: str = Field(
+        default="", description="JSONPath to extract model IDs from HTTP response"
+    )
+
+
+class LLMSupportConfigResponse(BaseModel):
+    """Response schema for LLM support configuration"""
+
+    supported_providers: List[LLMProviderConfigItemResponse] = Field(
+        ..., description="List of supported LLM providers"
+    )

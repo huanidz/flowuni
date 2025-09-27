@@ -1,6 +1,8 @@
+from datetime import datetime
 from typing import Any, Dict, Optional
 
 from loguru import logger
+from sqlalchemy import and_, desc, func
 from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlalchemy.orm import Session
 from src.models.alchemy.flows.FlowTestCaseModel import FlowTestCaseModel
@@ -346,69 +348,111 @@ class FlowTestRepository(BaseRepository):
 
     def get_test_suites_with_case_previews(self, flow_id: str) -> list[dict]:
         """
-        Get all test suites for a specific flow with their test case previews.
-
-        Returns:
-            list[dict]: List of test suites with their test case previews (only needed fields)
-        """  # noqa
+        Get all test suites for a flow with case previews + latest run status.
+        Single round-trip for suites, single round-trip for cases+runs.
+        """
         try:
-            # Get all test suites for the flow
-            test_suites = (
-                self.db_session.query(FlowTestSuiteModel)
-                .filter_by(flow_id=flow_id)
+            s = self.db_session
+
+            # 1) Fetch suites (only fields we need)
+            suites = (
+                s.query(
+                    FlowTestSuiteModel.id,
+                    FlowTestSuiteModel.simple_id,
+                    FlowTestSuiteModel.flow_id,
+                    FlowTestSuiteModel.name,
+                    FlowTestSuiteModel.description,
+                    FlowTestSuiteModel.is_active,
+                )
+                .filter(FlowTestSuiteModel.flow_id == flow_id)
                 .all()
             )
 
-            result = []
+            if not suites:
+                logger.info(f"Retrieved 0 test suites for flow {flow_id}")
+                return []
 
-            # For each test suite, get only the needed fields from test cases
-            for suite in test_suites:
-                suite_dict = {
-                    "id": suite.id,
-                    "flow_id": suite.flow_id,
-                    "name": suite.name,
-                    "description": suite.description,
-                    "is_active": suite.is_active,
-                    "test_cases": [],
-                }
+            suite_ids = [row.id for row in suites]
 
-                # Query only the needed fields from test cases
-                test_cases = (
-                    self.db_session.query(
-                        FlowTestCaseModel.id,
-                        FlowTestCaseModel.suite_id,
-                        FlowTestCaseModel.name,
-                        FlowTestCaseModel.description,
-                        FlowTestCaseModel.is_active,
-                    )
-                    .filter_by(suite_id=suite.id)
-                    .all()
+            # 2) Build a subquery that picks the latest run per test_case using a window function
+            #    ROW_NUMBER() OVER (PARTITION BY test_case_id ORDER BY created_at DESC) = 1
+            latest_runs_sq = s.query(
+                FlowTestCaseRunModel.test_case_id.label("case_id"),
+                FlowTestCaseRunModel.status.label("latest_status"),
+                func.row_number()
+                .over(
+                    partition_by=FlowTestCaseRunModel.test_case_id,
+                    order_by=FlowTestCaseRunModel.created_at.desc(),
+                )
+                .label("rn"),
+            ).subquery("latest_runs_sq")
+
+            # 3) Fetch all cases for all suites in one go, left-joining the "rn=1" row for latest status
+            #    Note: put rn=1 in the join condition to keep it an OUTER join.
+            cases_rows = (
+                s.query(
+                    FlowTestCaseModel.id.label("id"),
+                    FlowTestCaseModel.simple_id.label("simple_id"),
+                    FlowTestCaseModel.suite_id.label("suite_id"),
+                    FlowTestCaseModel.name.label("name"),
+                    FlowTestCaseModel.description.label("description"),
+                    FlowTestCaseModel.is_active.label("is_active"),
+                    latest_runs_sq.c.latest_status.label("latest_run_status"),
+                )
+                .filter(FlowTestCaseModel.suite_id.in_(suite_ids))
+                .outerjoin(
+                    latest_runs_sq,
+                    and_(
+                        latest_runs_sq.c.case_id == FlowTestCaseModel.id,
+                        latest_runs_sq.c.rn == 1,
+                    ),
+                )
+                .order_by(FlowTestCaseModel.id)  # Consistent ordering by ID
+                .all()
+            )
+
+            # 4) Group cases by suite_id
+            cases_by_suite = {}
+            for r in cases_rows:
+                cases_by_suite.setdefault(r.suite_id, []).append(
+                    {
+                        "id": r.id,
+                        "simple_id": r.simple_id,
+                        "suite_id": r.suite_id,
+                        "name": r.name,
+                        "description": r.description,
+                        "is_active": r.is_active,
+                        # Ensure the field is always present (None if no runs yet)
+                        "latest_run_status": r.latest_run_status,
+                    }
                 )
 
-                # Convert test case tuples to dictionaries
-                for case in test_cases:
-                    suite_dict["test_cases"].append(
-                        {
-                            "id": case.id,
-                            "suite_id": case.suite_id,
-                            "name": case.name,
-                            "description": case.description,
-                            "is_active": case.is_active,
-                        }
-                    )
-
-                result.append(suite_dict)
+            # 5) Assemble final structure
+            result = []
+            for suite in suites:
+                result.append(
+                    {
+                        "id": suite.id,
+                        "simple_id": suite.simple_id,
+                        "flow_id": suite.flow_id,
+                        "name": suite.name,
+                        "description": suite.description,
+                        "is_active": suite.is_active,
+                        "test_cases": cases_by_suite.get(suite.id, []),
+                    }
+                )
 
             logger.info(
-                f"Retrieved {len(result)} test suites with case previews for flow {flow_id}"  # noqa
+                f"Retrieved {len(result)} test suites with case previews for flow {flow_id}"
             )
             return result
+
         except Exception as e:
             logger.error(
-                f"Error retrieving test suites with case previews for flow {flow_id}: {e}"  # noqa
+                f"Error retrieving test suites with case previews for flow {flow_id}: {e}"
             )
             self.db_session.rollback()
-            raise e
+            raise
 
     def get_test_case_run_status(self, task_run_id: str) -> Optional[str]:
         """
@@ -503,6 +547,191 @@ class FlowTestRepository(BaseRepository):
         except Exception as e:
             logger.error(
                 f"Error setting status for test case run with task_run ID {task_run_id}: {e}"
+            )
+            self.db_session.rollback()
+            raise e
+
+    def update_test_case_run(  # noqa
+        self,
+        run_id: int,  # Task_Run_ID
+        status: Optional[TestCaseRunStatus] = None,
+        actual_output: Optional[Dict[str, Any]] = None,
+        error_message: Optional[str] = None,
+        execution_time_ms: Optional[float] = None,
+        run_detail: Optional[Dict[str, Any]] = None,
+        criteria_results: Optional[Dict[str, Any]] = None,
+        started_at: Optional[datetime] = None,
+        finished_at: Optional[datetime] = None,
+    ) -> FlowTestCaseRunModel:
+        """
+        Update a test case run by its Task_Run_ID.
+
+        Args:
+            run_id: Test case run Task_Run_ID to update
+            status: New run status (optional)
+            actual_output: New actual output data (optional)
+            error_message: New error message (optional)
+            execution_time_ms: New execution time in milliseconds (optional)
+            run_detail: New run detail data (optional)
+            criteria_results: New criteria results (optional)
+            started_at: New start time (optional)
+            finished_at: New finish time (optional)
+
+        Returns:
+            Updated test case run model
+
+        Raises:
+            NoResultFound: If test case run with given ID is not found
+        """
+        try:
+            # Get the test case run to update
+            test_case_run = (
+                self.db_session.query(FlowTestCaseRunModel)
+                .filter_by(task_run_id=run_id)
+                .first()
+            )
+            if not test_case_run:
+                logger.warning(
+                    f"Attempted to update non-existent test case run with Task_Run_ID: {run_id}"
+                )
+                raise NoResultFound(
+                    f"Test case run with Task_Run_ID {run_id} not found."
+                )
+
+            # Update fields if provided
+            if status is not None:
+                test_case_run.status = status
+            if actual_output is not None:
+                test_case_run.actual_output = actual_output
+            if error_message is not None:
+                test_case_run.error_message = error_message
+            if execution_time_ms is not None:
+                test_case_run.execution_time_ms = execution_time_ms
+            if run_detail is not None:
+                test_case_run.run_detail = run_detail
+            if criteria_results is not None:
+                test_case_run.criteria_results = criteria_results
+            if started_at is not None:
+                test_case_run.started_at = started_at
+            if finished_at is not None:
+                test_case_run.finished_at = finished_at
+
+            self.db_session.commit()
+            self.db_session.refresh(test_case_run)
+            logger.info(f"Updated test case run with Task_Run_ID: {run_id}")
+            return test_case_run
+
+        except NoResultFound as e:
+            self.db_session.rollback()
+            logger.error(
+                f"NoResultFound error when updating test case run with Task_Run_ID {run_id}: {e}"
+            )
+            raise e
+        except Exception as e:
+            self.db_session.rollback()
+            logger.error(f"Error updating test case run with Task_Run_ID {run_id}: {e}")
+            raise e
+
+    def get_latest_test_cases_run_status(
+        self, test_case_ids: list[int]
+    ) -> dict[int, str]:
+        """
+        Get the status of the latest test case run for multiple test case IDs.
+
+        Args:
+            test_case_ids: List of test case IDs
+
+        Returns:
+            dict[int, str]: Dictionary mapping test case IDs to their latest run status,
+                           or PENDING if no runs exist for a test case
+        """
+        try:
+            if not test_case_ids:
+                return {}
+
+            # Query to get the latest run for each test case
+            # Subquery to get the latest created_at for each test case
+            latest_run_subquery = (
+                self.db_session.query(
+                    FlowTestCaseRunModel.test_case_id,
+                    func.max(FlowTestCaseRunModel.created_at).label("max_created_at"),
+                )
+                .filter(FlowTestCaseRunModel.test_case_id.in_(test_case_ids))
+                .group_by(FlowTestCaseRunModel.test_case_id)
+                .subquery("latest_run_subquery")
+            )
+
+            # Query to get the status of the latest run for each test case
+            latest_run_query = (
+                self.db_session.query(
+                    FlowTestCaseRunModel.test_case_id,
+                    FlowTestCaseRunModel.status,
+                )
+                .join(
+                    latest_run_subquery,
+                    (
+                        FlowTestCaseRunModel.test_case_id
+                        == latest_run_subquery.c.test_case_id
+                    )
+                    & (
+                        FlowTestCaseRunModel.created_at
+                        == latest_run_subquery.c.max_created_at
+                    ),
+                )
+                .all()
+            )
+
+            # Create a dictionary mapping test_case_id to its latest run status
+            result = dict.fromkeys(test_case_ids, TestCaseRunStatus.PENDING)
+
+            # Update with actual statuses for test cases that have runs
+            for test_case_id, status in latest_run_query:
+                result[test_case_id] = str(status)
+
+            logger.info(
+                f"Retrieved latest run statuses for {len(test_case_ids)} test cases"
+            )
+            return result
+
+        except Exception as e:
+            logger.error(f"Error getting latest run statuses for test cases: {e}")
+            self.db_session.rollback()
+            raise e
+
+    def get_latest_test_case_run_status(self, test_case_id: int) -> Optional[str]:
+        """
+        Get the status of the latest test case run for a given test case ID.
+
+        Args:
+            test_case_id: The ID of the test case
+
+        Returns:
+            str: The status of the latest test case run, or PENDING if no runs exist
+        """
+        try:
+            # Query to get the latest run for the test case
+            latest_run = (
+                self.db_session.query(FlowTestCaseRunModel)
+                .filter_by(test_case_id=test_case_id)
+                .order_by(desc(FlowTestCaseRunModel.created_at))
+                .first()
+            )
+
+            if latest_run:
+                status = str(latest_run.status)
+                logger.info(
+                    f"Retrieved status '{status}' for latest run of test case with ID: {test_case_id}"
+                )
+                return status
+            else:
+                logger.info(
+                    f"No test case runs found for test case with ID: {test_case_id}, returning PENDING"
+                )
+                return TestCaseRunStatus.PENDING.value
+
+        except Exception as e:
+            logger.error(
+                f"Error getting latest run status for test case with ID {test_case_id}: {e}"
             )
             self.db_session.rollback()
             raise e

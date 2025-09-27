@@ -8,12 +8,19 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from loguru import logger
 from redis import Redis
-from src.celery_worker.tasks.flow_test_tasks import dispatch_run_test, run_flow_test
+from src.celery_worker.tasks.flow_test_tasks import (
+    dispatch_run_test,
+)
 from src.dependencies.auth_dependency import auth_through_url_param, get_current_user
 from src.dependencies.flow_test_dep import get_flow_test_service
 from src.dependencies.redis_dependency import get_redis_client
 from src.models.alchemy.flows.FlowTestCaseRunModel import TestCaseRunStatus
-from src.schemas.flows.flow_test_schemas import FlowTestRunRequest, FlowTestRunResponse
+from src.schemas.flows.flow_test_schemas import (
+    FlowBatchTestRunRequest,
+    FlowBatchTestRunResponse,
+    FlowTestRunRequest,
+    FlowTestRunResponse,
+)
 from src.services.FlowTestService import FlowTestService
 
 flow_test_run_router = APIRouter(
@@ -39,6 +46,23 @@ async def run_single_test(
             raise HTTPException(
                 status_code=404,
                 detail="Test case not found",
+            )
+
+        # Check the latest test case run status
+        latest_status = flow_test_service.get_latest_test_case_run_status(
+            test_case_id=request.case_id
+        )
+
+        if str(latest_status) in (
+            TestCaseRunStatus.QUEUED.value,
+            TestCaseRunStatus.RUNNING.value,
+        ):
+            logger.warning(
+                f"Test case with ID {request.case_id} already has status {latest_status}"
+            )
+            raise HTTPException(
+                status_code=409,
+                detail=f"Test case is already {latest_status.lower()}",
             )
 
         # NOTE: This to generate a unique task ID instead of using from celery to avoid race conditions of accessing the TestCaseRun with task_id may not be exist yet # noqa
@@ -77,6 +101,103 @@ async def run_single_test(
         raise HTTPException(
             status_code=500,
             detail="An error occurred while queuing the flow test task.",
+        )
+
+
+@flow_test_run_router.post("/batch", response_model=FlowBatchTestRunResponse)
+async def run_batch_test(
+    request: FlowBatchTestRunRequest,
+    flow_test_service: FlowTestService = Depends(get_flow_test_service),
+    auth_user_id: int = Depends(get_current_user),
+):
+    """
+    Run a batch of flow tests by creating a Celery task
+    """
+    try:
+        # Verify all test cases exist and the user has access to them
+        for case_id in request.case_ids:
+            test_case = flow_test_service.get_test_case_by_id(case_id=case_id)
+            if not test_case:
+                logger.warning(f"Test case with ID {case_id} not found")
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Test case with ID {case_id} not found",
+                )
+
+        # Check the latest test case run status for all cases
+        latest_statuses = flow_test_service.get_latest_test_cases_run_status(
+            test_case_ids=request.case_ids
+        )
+
+        # Filter out test cases that are already QUEUED or RUNNING
+        valid_case_ids = []
+        for case_id in request.case_ids:
+            latest_status = TestCaseRunStatus(
+                latest_statuses.get(case_id, TestCaseRunStatus.PENDING.value)
+            )
+            if str(latest_status) in (
+                TestCaseRunStatus.QUEUED.value,
+                TestCaseRunStatus.RUNNING.value,
+            ):
+                logger.warning(
+                    f"Test case with ID {case_id} already has status {latest_status}, skipping"
+                )
+            else:
+                logger.info(f"Test case is valid status: {latest_status}")
+                valid_case_ids.append(case_id)
+
+        # If no valid test cases, return empty response
+        if not valid_case_ids:
+            logger.info("No valid test cases to run in batch request")
+            return FlowBatchTestRunResponse(
+                status=TestCaseRunStatus.QUEUED,
+                task_ids=[],
+                message="No test cases were queued as they are already running or queued.",
+                case_ids=[],
+                flow_id=request.flow_id,
+            )
+
+        # NOTE: This to generate a unique task ID instead of using from celery to avoid race conditions of accessing the TestCaseRun with task_id may not be exist yet # noqa
+
+        # Generate unique task IDs for valid cases and queue them
+        generated_task_ids = []
+        for case_id in valid_case_ids:
+            generated_task_id = str(uuid4())
+            generated_task_ids.append(generated_task_id)
+
+            flow_test_service.queue_test_case_run(
+                test_case_id=case_id, task_run_id=generated_task_id
+            )
+
+            dispatch_run_test.delay(
+                generated_task_id=generated_task_id,
+                user_id=auth_user_id,
+                flow_id=request.flow_id,
+                case_id=case_id,
+            )
+
+        logger.info(
+            f"Batch flow test tasks submitted to Celery. (submitted_by u_id: {auth_user_id}). Task IDs: {generated_task_ids}. Cases: {valid_case_ids}."  # noqa
+        )
+
+        return FlowBatchTestRunResponse(
+            status=TestCaseRunStatus.QUEUED,
+            task_ids=generated_task_ids,
+            message="Batch flow test tasks have been queued.",
+            case_ids=valid_case_ids,
+            flow_id=request.flow_id,
+        )
+
+    except HTTPException as http_exc:
+        raise http_exc  # Re-raise known HTTP exceptions
+
+    except Exception as e:
+        logger.error(
+            f"Error queuing batch flow test task ID: {generated_task_id}: {e}. traceback: {traceback.format_exc()}"
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="An error occurred while queuing the batch flow test task.",
         )
 
 

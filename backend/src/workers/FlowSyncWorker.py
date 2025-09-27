@@ -1,9 +1,12 @@
+from datetime import datetime
+from time import perf_counter
 from typing import Dict, Optional
 
 from fastapi import HTTPException
 from loguru import logger
 from src.dependencies.redis_dependency import get_redis_client
 from src.exceptions.auth_exceptions import UNAUTHORIZED_EXCEPTION
+from src.exceptions.execution_exceptions import NotEnoughUserInformation
 from src.exceptions.graph_exceptions import GraphCompilerError
 from src.executors.ExecutionContext import ExecutionContext
 from src.executors.ExecutionEventPublisher import (
@@ -12,44 +15,31 @@ from src.executors.ExecutionEventPublisher import (
 )
 from src.executors.GraphExecutor import GraphExecutor
 from src.models.alchemy.flows.FlowTestCaseRunModel import TestCaseRunStatus
-from src.models.events.RedisEvents import (
-    RedisFlowTestRunEvent,
-    RedisFlowTestRunEventPayload,
+from src.models.validators.PassCriteriaRunnerModels import (
+    CheckResult,
+    RunnerResult,
+    StepDetail,
 )
 from src.nodes.GraphCompiler import GraphCompiler
 from src.nodes.GraphLoader import GraphLoader
 from src.schemas.flowbuilder.flow_graph_schemas import (
     ApiFlowRunRequest,
     CanvasFlowRunRequest,
+    FlowExecutionResult,
 )
 from src.schemas.flows.flow_schemas import FlowRunResult
 from src.services.ApiKeyService import ApiKeyService
 from src.services.FlowService import FlowService
+from src.services.FlowTestService import FlowTestService
+from src.workers.PassCriteriaRunner import PassCriteriaRunner
 
 
 class FlowSyncWorker:
     """Synchronous flow execution worker for handling flow runs."""
 
-    def __init__(self, task_id: str = ""):
+    def __init__(self, user_id: Optional[int] = None, task_id: str = ""):
+        self.user_id = user_id
         self.task_id = task_id
-
-    def event_shoot(self, case_id: int):
-        redis_client = get_redis_client()
-        event_publisher = ExecutionEventPublisher(
-            task_id=self.task_id, redis_client=redis_client, is_test=True
-        )
-
-        test_run_dummy_event = RedisFlowTestRunEvent(
-            seq=event_publisher.seq,
-            task_id=self.task_id,
-            payload=RedisFlowTestRunEventPayload(case_id=case_id, status="PASSED"),
-        )
-
-        event_publisher.publish_test_run_event(
-            stream_name=None, test_run_event=test_run_dummy_event
-        )
-
-        return
 
     def run_sync(
         self,
@@ -117,7 +107,8 @@ class FlowSyncWorker:
         flow_id: str,
         flow_graph_request_dict: Dict,
         session_id: Optional[str] = None,
-    ) -> FlowRunResult:
+        flow_test_service: Optional[FlowTestService] = None,
+    ) -> None:
         try:
             """
             class TestCaseRunStatus(str, Enum):
@@ -129,9 +120,29 @@ class FlowSyncWorker:
                 CANCELLED = "CANCELLED"
                 SYSTEM_ERROR = "SYSTEM_ERROR
             """
+
             redis_client = get_redis_client()
             event_publisher = ExecutionEventPublisher(
-                task_id=self.task_id, redis_client=redis_client, is_test=True
+                user_id=self.user_id,
+                task_id=self.task_id,
+                redis_client=redis_client,
+                is_test=True,
+            )
+
+            if not self.user_id:
+                raise NotEnoughUserInformation(
+                    f"User id is not provided for task_id {self.task_id}. Can't publish event for test."  # noqa
+                )
+
+            test_case = flow_test_service.get_test_case_by_id(case_id=case_id)
+
+            pass_criteria = test_case.pass_criteria
+            input_text = test_case.input_text
+
+            flow_test_service.update_test_case_run(
+                run_id=self.task_id,
+                status=TestCaseRunStatus.QUEUED,
+                started_at=datetime.now(),
             )
             event_publisher.publish_test_run_event(
                 case_id=case_id, status=TestCaseRunStatus.QUEUED
@@ -139,11 +150,15 @@ class FlowSyncWorker:
 
             # ===== TEST RUN START HERE =====
 
+            start_time = perf_counter()
+
             logger.info(f"(TEST RUN) Starting flow execution for flow_id: {flow_id}")
 
             # Parse and load the flow graph
             flow_graph_request = CanvasFlowRunRequest(**flow_graph_request_dict)
-            graph = GraphLoader.from_request(flow_graph_request)
+            graph = GraphLoader.from_request(
+                flow_graph_request, custom_input_text=input_text
+            )
 
             # Compile execution plan
             compiler = GraphCompiler(graph=graph, remove_standalone=False)
@@ -169,32 +184,73 @@ class FlowSyncWorker:
             )
 
             logger.info("(TEST RUN) Starting graph execution")
+            flow_test_service.set_test_case_run_status(
+                task_run_id=self.task_id, status=TestCaseRunStatus.RUNNING
+            )
             event_publisher.publish_test_run_event(
                 case_id=case_id, status=TestCaseRunStatus.RUNNING
             )
-            execution_result = executor.execute()
-            event_publisher.publish_test_run_event(
-                case_id=case_id, status=TestCaseRunStatus.PASSED
+            execution_result: FlowExecutionResult = executor.execute()
+
+            end_time = perf_counter()
+            execution_time_ms = (end_time - start_time) / 1000
+
+            flow_test_service.update_test_case_run(
+                run_id=self.task_id,
+                status=TestCaseRunStatus.PASSED,
+                finished_at=datetime.now(),
+                execution_time_ms=execution_time_ms,
+                actual_output=execution_result.model_dump(),
             )
+
+            # Start run pass criteria
+            criteria_runner = PassCriteriaRunner(
+                flow_output=execution_result.chat_output
+            )
+            criteria_runner.load(pass_criteria=pass_criteria)
+            runner_result: RunnerResult = criteria_runner.run()
+
+            if runner_result.passed:
+                flow_test_service.set_test_case_run_status(
+                    task_run_id=self.task_id, status=TestCaseRunStatus.PASSED
+                )
+                event_publisher.publish_test_run_event(
+                    case_id=case_id, status=TestCaseRunStatus.PASSED
+                )
+            else:
+                flow_test_service.set_test_case_run_status(
+                    task_run_id=self.task_id, status=TestCaseRunStatus.FAILED
+                )
+                event_publisher.publish_test_run_event(
+                    case_id=case_id, status=TestCaseRunStatus.FAILED
+                )
 
             logger.success(
                 f"(TEST RUN) Flow execution completed for flow_id: {flow_id}"
             )
 
-            return FlowRunResult(**execution_result)
+            return
 
         except GraphCompilerError as e:
+            flow_test_service.set_test_case_run_status(
+                task_run_id=self.task_id, status=TestCaseRunStatus.FAILED
+            )
             event_publisher.publish_test_run_event(
                 case_id=case_id, status=TestCaseRunStatus.FAILED
             )
             logger.error(
                 f"(TEST RUN) Flow compilation failed for flow_id {flow_id}: {str(e)}"
             )
-            raise
 
         except Exception as e:
+            flow_test_service.update_test_case_run(
+                run_id=self.task_id,
+                status=TestCaseRunStatus.SYSTEM_ERROR,
+                error_message=str(e),
+                finished_at=datetime.now(),
+            )
             event_publisher.publish_test_run_event(
-                case_id=case_id, status=TestCaseRunStatus.FAILED
+                case_id=case_id, status=TestCaseRunStatus.SYSTEM_ERROR
             )
             logger.error(
                 f"(TEST RUN) Flow execution failed for flow_id {flow_id}: {str(e)}"
@@ -209,41 +265,24 @@ class FlowSyncWorker:
         flow_id: str,
         case_id: int,
         flow_service: FlowService,
+        flow_test_service: FlowTestService,
         session_id: Optional[str] = None,
     ) -> None:
-        import time
-
-        start_time = time.time()
-
         try:
             logger.info(f"Starting validated flow execution for flow_id: {flow_id}")
 
             # Retrieve and validate flow
-            flow_start = time.time()
             flow_definition = self._get_validated_flow(flow_id, flow_service)
-            flow_end = time.time()
-            logger.info(
-                f"Flow retrieval and validation took: {(flow_end - flow_start):.3f}s"
-            )
 
             # Execute the flow
-            execution_start = time.time()
-            logger.info(f"Starting validated flow execution for flow_id: {flow_id}")
             self.run_test_sync(
                 case_id=case_id,
                 flow_id=flow_id,
                 flow_graph_request_dict=flow_definition,
                 session_id=session_id,
-            )
-            execution_end = time.time()
-            logger.info(
-                f"Flow execution took: {(execution_end - execution_start):.3f}s"
+                flow_test_service=flow_test_service,
             )
 
-            total_end = time.time()
-            logger.info(
-                f"Total flow test execution took: {(total_end - start_time):.3f}s"
-            )
             logger.success(f"Validated flow execution completed for flow_id: {flow_id}")
             return
 

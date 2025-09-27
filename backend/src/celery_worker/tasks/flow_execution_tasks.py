@@ -30,7 +30,11 @@ def compile_flow(flow_id: str, flow_graph_request_dict: Dict):
 
 @celery_app.task(bind=True)
 def run_flow(
-    self, flow_id: str, flow_graph_request_dict: Dict, enable_debug: bool = True
+    self,
+    user_id: int,
+    flow_id: str,
+    flow_graph_request_dict: Dict,
+    enable_debug: bool = True,
 ):
     """
     Synchronous Celery task that runs graph execution.
@@ -76,6 +80,7 @@ def run_flow(
             decode_responses=True,
         )
         exe_event_publisher = ExecutionEventPublisher(
+            user_id=user_id,
             task_id=self.request.id,
             redis_client=redis_client,
         )
