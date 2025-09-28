@@ -7,6 +7,12 @@ import type { TestCaseRunStatus } from './types';
 import { LAST_EVENT_ID_KEY } from './const';
 import { useQueryClient } from '@tanstack/react-query';
 
+interface TestCaseUpdate {
+    status?: TestCaseRunStatus;
+    error_message?: string | null;
+    chat_output?: Record<string, any> | null;
+}
+
 interface SSEConnectionManager {
     eventSource: EventSource | null;
     isConnected: boolean;
@@ -14,9 +20,9 @@ interface SSEConnectionManager {
     disconnect: () => void;
     addMessageHandler: (handler: (message: any) => void) => void;
     removeMessageHandler: (handler: (message: any) => void) => void;
-    // MODIFIED: We now expect a single function that can handle a batch of updates.
+    // UPDATED: We now expect a single function that can handle a batch of updates with all fields.
     setBatchUpdateFunction: (
-        batchUpdateHandler: (updates: Map<string, TestCaseRunStatus>) => void
+        batchUpdateHandler: (updates: Map<string, TestCaseUpdate>) => void
     ) => void;
 }
 
@@ -55,12 +61,12 @@ const createSSEConnectionManager = (): SSEConnectionManager => {
     // --- NEW: Batching Logic ---
     // A Map to store updates. If we get multiple updates for the same test case,
     // we'll only store the latest one, which is a great optimization.
-    let updateQueue = new Map<string, TestCaseRunStatus>();
+    let updateQueue = new Map<string, TestCaseUpdate>();
     let animationFrameId: number | null = null;
 
     // A reference to the batch update function provided by the hook.
     let batchUpdateHandlerRef: {
-        current: ((updates: Map<string, TestCaseRunStatus>) => void) | null;
+        current: ((updates: Map<string, TestCaseUpdate>) => void) | null;
     } = { current: null };
 
     // This function will be called by requestAnimationFrame to process the queue.
@@ -74,7 +80,7 @@ const createSSEConnectionManager = (): SSEConnectionManager => {
         // Atomically swap the queue and clear the old one.
         // This prevents race conditions if new messages arrive while processing.
         const updatesToProcess = updateQueue;
-        updateQueue = new Map<string, TestCaseRunStatus>();
+        updateQueue = new Map<string, TestCaseUpdate>();
 
         console.log(`🚀 Processing batch of ${updatesToProcess.size} updates.`);
 
@@ -132,13 +138,27 @@ const createSSEConnectionManager = (): SSEConnectionManager => {
         if (message.event === 'USER_EVENT') {
             const { event_type, data } = message || {};
             if (event_type === 'TEST_CASE_STATUS_UPDATE') {
-                const { case_id, status } = data?.payload ?? data ?? {};
-                if (case_id && status) {
+                const { case_id, status, chat_output, error_message } =
+                    data?.payload ?? data ?? {};
+                if (
+                    case_id &&
+                    (status ||
+                        chat_output !== undefined ||
+                        error_message !== undefined)
+                ) {
                     const caseIdStr = String(case_id);
                     const statusValue = status as TestCaseRunStatus;
 
+                    // Create update object with all available fields
+                    const update: TestCaseUpdate = {};
+                    if (status) update.status = statusValue;
+                    if (chat_output !== undefined)
+                        update.chat_output = chat_output;
+                    if (error_message !== undefined)
+                        update.error_message = error_message;
+
                     // --- MODIFIED: Instead of updating state directly, add to the queue. ---
-                    updateQueue.set(caseIdStr, statusValue);
+                    updateQueue.set(caseIdStr, update);
 
                     // Schedule a batch process if one isn't already scheduled for the next frame.
                     if (!animationFrameId) {
@@ -201,9 +221,9 @@ const createSSEConnectionManager = (): SSEConnectionManager => {
         removeMessageHandler: (handler: (message: any) => void) => {
             messageHandlersRef.current.delete(handler);
         },
-        // MODIFIED: Renamed and simplified this method.
+        // UPDATED: Now handles all test case update fields.
         setBatchUpdateFunction: (
-            handler: (updates: Map<string, TestCaseRunStatus>) => void
+            handler: (updates: Map<string, TestCaseUpdate>) => void
         ) => {
             batchUpdateHandlerRef.current = handler;
         },
@@ -221,19 +241,17 @@ export const getSSEConnectionManager = (): SSEConnectionManager => {
 // Hook to use the global SSE connection
 export const useGlobalSSEConnection = () => {
     const { user_id } = useAuthStore();
-    // MODIFIED: Zustand's update function isn't called directly from the manager anymore.
-    const { updateMultipleTestCaseStatuses } =
-        useTestCaseStatusStore.getState();
+    // UPDATED: Use the new batch update function that handles all fields
+    const { updateMultipleTestCaseFields } = useTestCaseStatusStore.getState();
     const queryClient = useQueryClient();
     const manager = getSSEConnectionManager();
 
     React.useEffect(() => {
-        // MODIFIED: We now provide ONE function that knows how to handle a batch.
+        // UPDATED: We now provide ONE function that knows how to handle a batch with all fields.
         manager.setBatchUpdateFunction(
-            (updates: Map<string, TestCaseRunStatus>) => {
-                // 1. Update Zustand store in one go.
-                // You'll need to implement `updateMultipleTestCaseStatuses` in your store.
-                updateMultipleTestCaseStatuses(updates);
+            (updates: Map<string, TestCaseUpdate>) => {
+                // 1. Update Zustand store in one go with all fields.
+                updateMultipleTestCaseFields(updates);
 
                 // 2. Update React Query cache in one go.
                 queryClient.setQueriesData(
@@ -254,11 +272,22 @@ export const useGlobalSSEConnection = () => {
                                 });
                             });
 
-                            // Iterate over the batch of updates and apply them
-                            updates.forEach((statusValue, caseIdStr) => {
+                            // Iterate over the batch of updates and apply all fields
+                            updates.forEach((update, caseIdStr) => {
                                 const testCase = caseMap.get(caseIdStr);
                                 if (testCase) {
-                                    testCase.latest_run_status = statusValue;
+                                    if (update.status !== undefined) {
+                                        testCase.latest_run_status =
+                                            update.status;
+                                    }
+                                    if (update.error_message !== undefined) {
+                                        testCase.latest_run_error_message =
+                                            update.error_message;
+                                    }
+                                    if (update.chat_output !== undefined) {
+                                        testCase.latest_run_chat_output =
+                                            update.chat_output;
+                                    }
                                 }
                             });
                         }
@@ -267,7 +296,7 @@ export const useGlobalSSEConnection = () => {
                 );
             }
         );
-    }, [manager, updateMultipleTestCaseStatuses, queryClient]);
+    }, [manager, updateMultipleTestCaseFields, queryClient]);
 
     const connect = useCallback(() => {
         if (user_id) {

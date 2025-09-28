@@ -378,7 +378,19 @@ class FlowTestRepository(BaseRepository):
             #    ROW_NUMBER() OVER (PARTITION BY test_case_id ORDER BY created_at DESC) = 1
             latest_runs_sq = s.query(
                 FlowTestCaseRunModel.test_case_id.label("case_id"),
+                FlowTestCaseRunModel.id.label("run_id"),
+                FlowTestCaseRunModel.task_run_id.label("task_run_id"),
                 FlowTestCaseRunModel.status.label("latest_status"),
+                FlowTestCaseRunModel.actual_output.label("actual_output"),
+                FlowTestCaseRunModel.error_message.label("error_message"),
+                FlowTestCaseRunModel.execution_time_ms.label("execution_time_ms"),
+                FlowTestCaseRunModel.run_detail.label("run_detail"),
+                FlowTestCaseRunModel.criteria_results.label("criteria_results"),
+                FlowTestCaseRunModel.trigger_type.label("trigger_type"),
+                FlowTestCaseRunModel.triggered_by.label("triggered_by"),
+                FlowTestCaseRunModel.started_at.label("started_at"),
+                FlowTestCaseRunModel.finished_at.label("finished_at"),
+                FlowTestCaseRunModel.created_at.label("created_at"),
                 func.row_number()
                 .over(
                     partition_by=FlowTestCaseRunModel.test_case_id,
@@ -398,6 +410,22 @@ class FlowTestRepository(BaseRepository):
                     FlowTestCaseModel.description.label("description"),
                     FlowTestCaseModel.is_active.label("is_active"),
                     latest_runs_sq.c.latest_status.label("latest_run_status"),
+                    latest_runs_sq.c.run_id.label("latest_run_id"),
+                    latest_runs_sq.c.task_run_id.label("latest_run_task_run_id"),
+                    latest_runs_sq.c.actual_output.label("latest_run_actual_output"),
+                    latest_runs_sq.c.error_message.label("latest_run_error_message"),
+                    latest_runs_sq.c.execution_time_ms.label(
+                        "latest_run_execution_time_ms"
+                    ),
+                    latest_runs_sq.c.run_detail.label("latest_run_run_detail"),
+                    latest_runs_sq.c.criteria_results.label(
+                        "latest_run_criteria_results"
+                    ),
+                    latest_runs_sq.c.trigger_type.label("latest_run_trigger_type"),
+                    latest_runs_sq.c.triggered_by.label("latest_run_triggered_by"),
+                    latest_runs_sq.c.started_at.label("latest_run_started_at"),
+                    latest_runs_sq.c.finished_at.label("latest_run_finished_at"),
+                    latest_runs_sq.c.created_at.label("latest_run_created_at"),
                 )
                 .filter(FlowTestCaseModel.suite_id.in_(suite_ids))
                 .outerjoin(
@@ -424,6 +452,12 @@ class FlowTestRepository(BaseRepository):
                         "is_active": r.is_active,
                         # Ensure the field is always present (None if no runs yet)
                         "latest_run_status": r.latest_run_status,
+                        "latest_run_error_message": r.latest_run_error_message,
+                        "latest_run_chat_output": r.latest_run_actual_output.get(
+                            "chat_output"
+                        )
+                        if r.latest_run_actual_output
+                        else {"content": None},
                     }
                 )
 
@@ -732,6 +766,36 @@ class FlowTestRepository(BaseRepository):
         except Exception as e:
             logger.error(
                 f"Error getting latest run status for test case with ID {test_case_id}: {e}"
+            )
+            self.db_session.rollback()
+            raise e
+
+    def get_test_case_run_by_task_id(
+        self, task_run_id: str
+    ) -> Optional[FlowTestCaseRunModel]:
+        """
+        Get a test case run by its task run ID.
+
+        Args:
+            task_run_id: The task run ID of the test case run
+
+        Returns:
+            FlowTestCaseRunModel: The test case run model, or None if not found
+        """
+        try:
+            test_case_run = (
+                self.db_session.query(FlowTestCaseRunModel)
+                .filter_by(task_run_id=task_run_id)
+                .one_or_none()
+            )
+            if test_case_run:
+                logger.info(f"Retrieved test case run with task_run_id: {task_run_id}")
+            else:
+                logger.info(f"Test case run with task_run_id: {task_run_id} not found.")
+            return test_case_run
+        except Exception as e:
+            logger.error(
+                f"Error retrieving test case run by task_run_id {task_run_id}: {e}"
             )
             self.db_session.rollback()
             raise e

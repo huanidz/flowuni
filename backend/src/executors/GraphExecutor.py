@@ -28,7 +28,12 @@ from src.nodes.core import NodeInput, NodeOutput
 from src.nodes.handles.basics.outputs.RouterOutputHandle import RouterOutputData
 from src.nodes.NodeBase import Node, NodeSpec
 from src.nodes.NodeRegistry import NodeRegistry
-from src.schemas.flowbuilder.flow_graph_schemas import NodeData, NodeExecutionResult
+from src.schemas.flowbuilder.flow_graph_schemas import (
+    FlowChatOutputResult,
+    FlowExecutionResult,
+    NodeData,
+    NodeExecutionResult,
+)
 from src.schemas.nodes.node_data_parsers import ToolDataParser
 
 if TYPE_CHECKING:
@@ -93,7 +98,7 @@ class GraphExecutor:
         if self.execution_event_publisher and self.enable_debug:
             self.execution_event_publisher.end(data=data)
 
-    def execute(self) -> Dict[str, Any]:
+    def execute(self) -> FlowExecutionResult:
         """
         Execute the graph with parallel processing within layers.
 
@@ -102,15 +107,16 @@ class GraphExecutor:
         """
 
         if len(self.execution_plan) == 0:
-            total_time = 0
-            execute_result = {
-                "success": True,
-                "total_nodes": 0,
-                "completed_nodes": 0,
-                "total_layers": 0,
-                "execution_time": total_time,
-                "results": [],
-            }
+            execute_result = FlowExecutionResult(
+                success=True,
+                total_nodes=0,
+                completed_nodes=0,
+                total_layers=0,
+                execution_time=0,
+                results=[],
+                chat_output=FlowChatOutputResult(content=None),
+                ancestors=[],
+            )
             return execute_result
 
         # Check if we should start execution from a specific node

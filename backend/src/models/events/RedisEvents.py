@@ -1,6 +1,7 @@
-from typing import Any, Dict, Literal
+from typing import Any, Dict, Literal, Optional
 
 from pydantic import BaseModel
+from src.schemas.flowbuilder.flow_graph_schemas import FlowChatOutputResult
 
 
 class RedisFlowRunEndEvent(BaseModel):
@@ -36,6 +37,12 @@ class RedisFlowTestRunEventPayload(BaseModel):
     status: Literal[
         "PENDING", "QUEUED", "RUNNING", "PASSED", "FAILED", "CANCELLED", "SYSTEM_ERROR"
     ]
+    test_run_data: Optional[
+        Dict[str, Any]
+    ] = {}  # For future use. Current it consume too much data which can waste Redis memory. # noqa
+    chat_output: Optional[FlowChatOutputResult] = None
+    error_message: Optional[str] = None
+    execution_time_ms: Optional[float] = None
 
 
 class RedisFlowTestRunEvent(BaseModel):

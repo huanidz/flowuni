@@ -236,6 +236,21 @@ class FlowTestServiceInterface(ABC):
         """
         pass
 
+    @abstractmethod
+    def get_test_case_run_by_task_id(
+        self, task_run_id: str
+    ) -> Optional[FlowTestCaseRunModel]:
+        """
+        Get a test case run by its task run ID.
+
+        Args:
+            task_run_id: The task run ID of the test case run
+
+        Returns:
+            Optional[FlowTestCaseRunModel]: The test case run model, or None if not found
+        """
+        pass
+
 
 class FlowTestService(FlowTestServiceInterface):
     """
@@ -685,6 +700,35 @@ class FlowTestService(FlowTestServiceInterface):
         except Exception as e:
             logger.error(
                 f"Error retrieving latest run statuses for test cases: {str(e)}"
+            )
+            raise
+
+    def get_test_case_run_by_task_id(
+        self, task_run_id: str
+    ) -> Optional[FlowTestCaseRunModel]:
+        """
+        Get a test case run by its task run ID.
+
+        Args:
+            task_run_id: The task run ID of the test case run
+
+        Returns:
+            Optional[FlowTestCaseRunModel]: The test case run model, or None if not found
+        """
+        try:
+            test_case_run = self.test_repository.get_test_case_run_by_task_id(
+                task_run_id=task_run_id
+            )
+            if test_case_run:
+                logger.info(
+                    f"Successfully retrieved test case run with task_run_id {task_run_id}"
+                )
+            else:
+                logger.info(f"Test case run with task_run_id {task_run_id} not found")
+            return test_case_run
+        except Exception as e:
+            logger.error(
+                f"Error retrieving test case run with task_run_id {task_run_id}: {str(e)}"
             )
             raise
 

@@ -1,9 +1,21 @@
 import { create } from 'zustand';
 import type { TestCaseRunStatus } from '../types';
 
+interface TestCaseUpdate {
+    status?: TestCaseRunStatus;
+    error_message?: string | null;
+    chat_output?: Record<string, any> | null;
+}
+
 interface TestCaseStatusState {
     // Map of test case IDs to their current run status
     testCaseStatuses: Record<string, TestCaseRunStatus>;
+
+    // Map of test case IDs to their error messages
+    testCaseErrorMessages: Record<string, string | null>;
+
+    // Map of test case IDs to their chat output
+    testCaseChatOutputs: Record<string, Record<string, any> | null>;
 
     // Map of task IDs to the test case IDs they're running
     taskToTestCaseMap: Record<string, string>;
@@ -16,6 +28,10 @@ interface TestCaseStatusState {
     // ADDED: New action for batch updates
     updateMultipleTestCaseStatuses: (
         updates: Map<string, TestCaseRunStatus>
+    ) => void;
+    // NEW: Batch update with all fields
+    updateMultipleTestCaseFields: (
+        updates: Map<string, TestCaseUpdate>
     ) => void;
     updateTestCaseStatusByTaskId: (
         taskId: string,
@@ -33,6 +49,8 @@ const defaultStatus: TestCaseRunStatus = 'PENDING';
 export const useTestCaseStatusStore = create<TestCaseStatusState>(
     (set, get) => ({
         testCaseStatuses: {},
+        testCaseErrorMessages: {},
+        testCaseChatOutputs: {},
         taskToTestCaseMap: {},
 
         updateTestCaseStatus: (
@@ -65,6 +83,35 @@ export const useTestCaseStatusStore = create<TestCaseStatusState>(
             }));
         },
         // --- END OF NEW BATCH ACTION ---
+
+        // NEW: Batch update with all fields
+        updateMultipleTestCaseFields: (
+            updates: Map<string, TestCaseUpdate>
+        ) => {
+            set(state => {
+                const newStatuses = { ...state.testCaseStatuses };
+                const newErrorMessages = { ...state.testCaseErrorMessages };
+                const newChatOutputs = { ...state.testCaseChatOutputs };
+
+                updates.forEach((update, testCaseId) => {
+                    if (update.status !== undefined) {
+                        newStatuses[testCaseId] = update.status;
+                    }
+                    if (update.error_message !== undefined) {
+                        newErrorMessages[testCaseId] = update.error_message;
+                    }
+                    if (update.chat_output !== undefined) {
+                        newChatOutputs[testCaseId] = update.chat_output;
+                    }
+                });
+
+                return {
+                    testCaseStatuses: newStatuses,
+                    testCaseErrorMessages: newErrorMessages,
+                    testCaseChatOutputs: newChatOutputs,
+                };
+            });
+        },
 
         updateTestCaseStatusByTaskId: (
             taskId: string,
@@ -144,3 +191,20 @@ export const useTaskIdForTestCase = (testCaseId: string) =>
 
 export const useAllTestCaseStatuses = () =>
     useTestCaseStatusStore(state => state.testCaseStatuses);
+
+// NEW: Selector hooks for error messages and chat output
+export const useTestCaseErrorMessage = (testCaseId: string) =>
+    useTestCaseStatusStore(
+        state => state.testCaseErrorMessages[testCaseId] || null
+    );
+
+export const useTestCaseChatOutput = (testCaseId: string) =>
+    useTestCaseStatusStore(
+        state => state.testCaseChatOutputs[testCaseId] || null
+    );
+
+export const useAllTestCaseErrorMessages = () =>
+    useTestCaseStatusStore(state => state.testCaseErrorMessages);
+
+export const useAllTestCaseChatOutputs = () =>
+    useTestCaseStatusStore(state => state.testCaseChatOutputs);

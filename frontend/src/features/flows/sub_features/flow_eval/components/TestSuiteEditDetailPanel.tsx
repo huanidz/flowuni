@@ -200,7 +200,6 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
                     className="w-full h-40 p-3 border rounded-md font-mono text-sm resize-none"
                 />
             </div>
-
             {/* Criteria */}
             <div className="mb-6">
                 <label className="block text-sm font-medium mb-3">

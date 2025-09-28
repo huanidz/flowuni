@@ -42,6 +42,7 @@ export const useTestSuitesWithCases = (flowId: string) => {
     useEffect(() => {
         if (query.data) {
             // Collect all test case IDs from the new data
+            console.log('query.data: ', query.data);
             const currentTestCaseIds = new Set<string>();
             query.data.test_suites.forEach(suite => {
                 suite.test_cases.forEach(testCase => {
@@ -218,10 +219,10 @@ export const useRunSingleTest = () => {
             );
 
             // Invalidate and refetch test suites for this flow
-            queryClient.invalidateQueries({
-                queryKey: ['testSuitesWithCases', variables.flow_id],
-            });
-            toast.success('Test case run initiated successfully');
+            // queryClient.invalidateQueries({
+            //     queryKey: ['testSuitesWithCases', variables.flow_id],
+            // });
+            // toast.success('Test case run initiated successfully');
         },
         onError: error => {
             console.error('Error running test case:', error);

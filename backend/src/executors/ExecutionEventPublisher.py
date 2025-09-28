@@ -1,6 +1,6 @@
 import json
 from datetime import datetime
-from typing import Literal, Optional
+from typing import Any, Dict, Literal, Optional
 
 import redis
 from loguru import logger
@@ -10,6 +10,10 @@ from src.models.events.RedisEvents import (
     RedisFlowRunNodeEvent,
     RedisFlowTestRunEvent,
     RedisFlowTestRunEventPayload,
+)
+from src.schemas.flowbuilder.flow_graph_schemas import (
+    FlowChatOutputResult,
+    FlowExecutionResult,
 )
 
 
@@ -62,6 +66,9 @@ class ExecutionEventPublisher:
         self,
         case_id: int,
         status: str,
+        flow_exec_result: Optional[FlowExecutionResult] = None,
+        test_run_data: Dict[str, Any] = None,
+        error_message: Optional[str] = None,
     ):
         """
         Publish test run event to Redis Stream
@@ -69,7 +76,7 @@ class ExecutionEventPublisher:
         Args:
             test_case_id: ID of the test case being run
             status: Status of the test run (e.g., PENDING, RUNNING, PASSED, FAILED)
-            data: Additional data to include in the event
+            test_run_data: Full test run data to include in the event
             stream_name: Optional custom stream name, defaults to test_run_events:{task_id}
         """
 
@@ -80,11 +87,29 @@ class ExecutionEventPublisher:
         # Use provided stream name or create default one
         stream_name = f"user_events:{self.user_id}"
 
+        # Ensure test_run_data is a dict
+        if test_run_data is None:
+            test_run_data = {}
+
+        # Data simplifing process.
+        chat_output = None
+        exec_time_ms = None
+        if flow_exec_result is not None:
+            chat_output = flow_exec_result.chat_output
+            exec_time_ms = flow_exec_result.execution_time
+
         test_run_event = RedisFlowTestRunEvent(
             seq=self.seq,
             task_id=self.task_id,
             event_type="TEST_CASE_STATUS_UPDATE",
-            payload=RedisFlowTestRunEventPayload(case_id=case_id, status=status),
+            payload=RedisFlowTestRunEventPayload(
+                case_id=case_id,
+                status=status,
+                test_run_data={},  # May use in the future. Disable for now.
+                chat_output=chat_output,
+                execution_time_ms=exec_time_ms,
+                error_message=error_message,
+            ),
         )
 
         redis_message_json = test_run_event.model_dump_json()

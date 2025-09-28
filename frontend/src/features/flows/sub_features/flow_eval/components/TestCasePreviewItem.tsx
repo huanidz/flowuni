@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { TestCasePreview } from '../types';
 import { useTestCaseStatus } from '../stores/testCaseStatusStore';
 import { getTestRunStatusBadge } from '../utils';
 import { Button } from '@/components/ui/button';
-import { Play } from 'lucide-react';
+import { Play, ChevronDown } from 'lucide-react';
 import { useRunSingleTest } from '../hooks';
 
 interface TestCasePreviewItemProps {
@@ -34,6 +34,20 @@ const TestCasePreviewItem: React.FC<TestCasePreviewItemProps> = ({
             ? storeStatus
             : testCase.latest_run_status || 'PENDING';
     const runSingleTestMutation = useRunSingleTest();
+
+    // State for expanded sections
+    const [expandedSections, setExpandedSections] = useState({
+        error: false,
+        output: false,
+    });
+
+    // Toggle section expansion
+    const toggleSection = (section: 'error' | 'output') => {
+        setExpandedSections(prev => ({
+            ...prev,
+            [section]: !prev[section],
+        }));
+    };
 
     const handleSelect = () => {
         if (onSelect) {
@@ -136,6 +150,73 @@ const TestCasePreviewItem: React.FC<TestCasePreviewItemProps> = ({
                                 {getTestRunStatusBadge(testCaseStatus)}
                             </div>
                         </div>
+
+                        {/* Display error message and chat output if available */}
+                        {(testCase.latest_run_error_message ||
+                            testCase.latest_run_chat_output) && (
+                            <div className="mt-3 pt-3 border-t border-gray-100">
+                                {testCase.latest_run_error_message && (
+                                    <div
+                                        className="mb-3 p-2 bg-red-50 rounded-md border border-red-100 cursor-pointer relative"
+                                        onClick={() => toggleSection('error')}
+                                    >
+                                        <div className="flex items-center justify-between mb-1">
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-xs font-semibold text-red-700 uppercase tracking-wide">
+                                                    Error
+                                                </span>
+                                            </div>
+                                            <ChevronDown
+                                                className={`h-3 w-3 text-red-600 transition-transform duration-200 ${expandedSections.error ? 'rotate-180' : ''}`}
+                                            />
+                                        </div>
+                                        <div
+                                            className={`relative ${expandedSections.error ? '' : 'max-h-12 overflow-hidden'}`}
+                                        >
+                                            <p className="text-xs text-red-600 break-words leading-relaxed">
+                                                {
+                                                    testCase.latest_run_error_message
+                                                }
+                                            </p>
+                                            {!expandedSections.error && (
+                                                <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-red-50 to-transparent"></div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                                {testCase.latest_run_chat_output?.content && (
+                                    <div
+                                        className="p-2 bg-gray-50 rounded-md border border-gray-100 cursor-pointer relative"
+                                        onClick={() => toggleSection('output')}
+                                    >
+                                        <div className="flex items-center justify-between mb-1">
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                                                    Output
+                                                </span>
+                                            </div>
+                                            <ChevronDown
+                                                className={`h-3 w-3 text-gray-600 transition-transform duration-200 ${expandedSections.output ? 'rotate-180' : ''}`}
+                                            />
+                                        </div>
+                                        <div
+                                            className={`relative ${expandedSections.output ? '' : 'max-h-12 overflow-hidden'}`}
+                                        >
+                                            <p className="text-xs text-gray-600 break-words leading-relaxed">
+                                                {
+                                                    testCase
+                                                        .latest_run_chat_output
+                                                        .content
+                                                }
+                                            </p>
+                                            {!expandedSections.output && (
+                                                <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-gray-50 to-transparent"></div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

@@ -87,6 +87,14 @@ class PassCriteriaRunner:
         if len(self.criteria_sequence) != len(self.logics_sequence) + 1:
             raise ValueError("Number of criteria must be len(logics) + 1")
 
+        if self.flow_output is None:
+            return RunnerResult(
+                passed=False,
+                stop_reason="no_flow_output",
+                failed_items=[],
+                details=[],
+            )
+
         # Partition into AND-groups split by OR
         groups: List[List[Criterion]] = []
         cur: List[Criterion] = [self.criteria_sequence[0]]

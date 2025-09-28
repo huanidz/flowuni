@@ -1,3 +1,4 @@
+from loguru import logger
 from src.criterion.BaseCriterion import Criterion
 from src.models.validators.PassCriteriaRunnerModels import CheckResult
 from src.models.validators.PassCriteriaValidator import StringRuleParser
@@ -12,7 +13,9 @@ class StringCriterion(Criterion):
     def run(self) -> CheckResult:
         op = self.rule.operation
         val = self.rule.value
+        logger.info(f"👉 val: {val}")
         s = self.input
+        logger.info(f"👉 s: {s}")
 
         if op == "contains":
             passed = val in s

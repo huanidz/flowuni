@@ -118,6 +118,12 @@ class TestCasePreview(BaseModel):
     latest_run_status: Optional[str] = Field(
         None, description="Latest test case run status"
     )
+    latest_run_error_message: Optional[str] = Field(
+        None, description="Latest test case run error message"
+    )
+    latest_run_chat_output: Optional[Dict[str, Any]] = Field(
+        None, description="Latest test case run chat output"
+    )
 
 
 class TestSuiteWithCasePreviews(BaseModel):
