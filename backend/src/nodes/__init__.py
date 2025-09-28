@@ -1,4 +1,4 @@
-from src.nodes.customs import (
+from src.nodes.categories.customs import (
     AgentNode,
     CalculatorNode,
     ComparisonRouterNode,
@@ -12,24 +12,28 @@ from src.nodes.customs import (
     StringAggregatorNode,
     StringTransformNode,
 )
-from src.nodes.primitives import (
+from src.nodes.categories.primitives import (
     ChatInput,
     ChatOutput,
 )
+from src.nodes.categories.trials import DelayNode, TrialTextInputNode
 
-__all__ = [
-    ChatInput,
-    ChatOutput,
-    StringTransformNode,
+custom_nodes = [
     AgentNode,
     CalculatorNode,
-    HttpRequestNode,
-    RouterNode,
-    StringAggregatorNode,
     ComparisonRouterNode,
-    MemoryNode,
-    LLMProviderNode,
-    LLMRouterNode,
     FanInNode,
     FanOutNode,
+    HttpRequestNode,
+    LLMProviderNode,
+    LLMRouterNode,
+    MemoryNode,
+    RouterNode,
+    StringAggregatorNode,
+    StringTransformNode,
 ]
+
+primitives_nodes = [ChatInput, ChatOutput]
+trials_nodes = [TrialTextInputNode, DelayNode]
+
+__all__ = [*primitives_nodes, *custom_nodes, *trials_nodes]
