@@ -100,6 +100,9 @@ const TestCriteriaBuilder: React.FC<{
             <div className="md:col-span-2 space-y-0">
                 {currentCriteria.rules.map((rule, index) => (
                     <React.Fragment key={rule.id}>
+                        <span className="text-xs text-gray-500">
+                            Rule {rule.id}
+                        </span>
                         {/* Rule without border */}
                         <div className="py-2">
                             <RuleEditor
