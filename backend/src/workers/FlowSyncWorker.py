@@ -460,14 +460,18 @@ class FlowSyncWorker:
 
         construct_error_msg: str = ""
         for item in failed_criteria:
-            construct_error_msg += f"{item.id}: {item.result.reason}\n"
+            construct_error_msg += f"Criteria-{item.id}: {item.result.reason}\n"
 
         status: TestCaseRunStatus = (
             TestCaseRunStatus.PASSED
             if runner_result.passed
             else TestCaseRunStatus.FAILED
         )
-        service.set_test_case_run_status(task_run_id=self.task_id, status=status)
+        service.update_test_case_run(
+            run_id=self.task_id,
+            status=status,
+            error_message=construct_error_msg if failed_criteria else None,
+        )
         publisher.publish_test_run_event(
             case_id=case_id,
             status=status,
