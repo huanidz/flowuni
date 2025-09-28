@@ -1,4 +1,4 @@
-from typing import Any, Dict, Literal
+from typing import Any, Dict, Literal, Optional
 
 from pydantic import BaseModel
 
@@ -36,7 +36,12 @@ class RedisFlowTestRunEventPayload(BaseModel):
     status: Literal[
         "PENDING", "QUEUED", "RUNNING", "PASSED", "FAILED", "CANCELLED", "SYSTEM_ERROR"
     ]
-    test_run_data: Dict[str, Any] = {}
+    test_run_data: Dict[
+        str, Any
+    ] = {}  # For future use. Current it consume too much data which can waste Redis memory. # noqa
+    chat_output: Optional[str] = None
+    error_message: Optional[str] = None
+    execution_time_ms: Optional[float] = None
 
 
 class RedisFlowTestRunEvent(BaseModel):
