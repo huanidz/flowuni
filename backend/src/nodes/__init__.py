@@ -12,6 +12,7 @@ from src.nodes.categories.customs import (
     StringAggregatorNode,
     StringTransformNode,
 )
+from src.nodes.categories.integrations import TavilySearchNode
 from src.nodes.categories.primitives import (
     ChatInput,
     ChatOutput,
@@ -36,4 +37,6 @@ custom_nodes = [
 primitives_nodes = [ChatInput, ChatOutput]
 trials_nodes = [TrialTextInputNode, DelayNode]
 
-__all__ = [*primitives_nodes, *custom_nodes, *trials_nodes]
+integrations_nodes = [TavilySearchNode]
+
+__all__ = [*primitives_nodes, *custom_nodes, *trials_nodes, *integrations_nodes]

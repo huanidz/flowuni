@@ -39,3 +39,4 @@ python-jose[cryptography]
 
 # LLM providers
 google-genai==1.20.0
+openai==1.97.0

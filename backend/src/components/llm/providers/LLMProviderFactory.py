@@ -14,6 +14,14 @@ class LLMProviderFactory:
             )
 
             return GoogleGeminiProvider()
+        elif provider_name == LLMProviderName.OPENROUTER:
+            from src.components.llm.providers.adapters import OpenRouterProvider
+
+            return OpenRouterProvider()
+        elif provider_name == LLMProviderName.OPEN_AI:
+            from src.components.llm.providers.adapters import OpenAIProvider
+
+            return OpenAIProvider()
 
         else:
             raise ValueError(f"Unknown provider: {provider_name}")
