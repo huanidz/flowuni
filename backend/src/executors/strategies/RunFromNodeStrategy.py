@@ -519,7 +519,7 @@ class RunFromNodeStrategy:
                 }
             )
 
-            self.graph_executor.end_event(data=execute_result)
+            self.graph_executor.end_event(data=execute_result.model_dump())
 
             return execute_result
 
@@ -655,7 +655,7 @@ class RunFromNodeStrategy:
                 "ancestors": [],  # No ancestors for standalone node
             }
 
-            self.graph_executor.end_event(data=execute_result)
+            self.graph_executor.end_event(data=execute_result.model_dump())
 
             return execute_result
 

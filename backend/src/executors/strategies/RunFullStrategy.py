@@ -143,7 +143,7 @@ class RunFullStrategy:
 
             # logger.info(f"👉 execute_result: {execute_result}")
 
-            self.graph_executor.end_event(data=execute_result)
+            self.graph_executor.end_event(data=execute_result.model_dump())
 
             return execute_result
 
