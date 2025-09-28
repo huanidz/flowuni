@@ -1,6 +1,7 @@
 from .AgentNode import AgentNode
 from .CalculatorNode import CalculatorNode
 from .ComparisonRouterNode import ComparisonRouterNode
+from .EmbeddingProviderNode import EmbeddingProviderNode
 from .FanInNode import FanInNode
 from .FanOutNode import FanOutNode
 from .HttpRequestNode import HttpRequestNode
@@ -17,6 +18,7 @@ __all__ = [
     "AgentNode",
     "CalculatorNode",
     "ComparisonRouterNode",
+    "EmbeddingProviderNode",
     "FanInNode",
     "FanOutNode",
     "HttpRequestNode",

@@ -17,7 +17,7 @@ def generate_node_catalog():
             instance: Node = _class()
             spec = instance.get_spec_json()
             catalog.append(spec)
-            logger.debug(f"Added spec for {_class.__name__}")
+            # logger.debug(f"Added spec for {_class.__name__}")
         except Exception as e:
             logger.error(
                 f"Error processing class {_class.__name__}: {e}. {traceback.format_exc()}"

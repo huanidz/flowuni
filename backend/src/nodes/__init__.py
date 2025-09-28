@@ -2,6 +2,7 @@ from src.nodes.categories.customs import (
     AgentNode,
     CalculatorNode,
     ComparisonRouterNode,
+    EmbeddingProviderNode,
     FanInNode,
     FanOutNode,
     HttpRequestNode,
@@ -32,6 +33,7 @@ custom_nodes = [
     RouterNode,
     StringAggregatorNode,
     StringTransformNode,
+    EmbeddingProviderNode,
 ]
 
 primitives_nodes = [ChatInput, ChatOutput]
