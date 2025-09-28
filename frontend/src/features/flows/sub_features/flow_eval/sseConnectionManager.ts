@@ -132,7 +132,8 @@ const createSSEConnectionManager = (): SSEConnectionManager => {
         if (message.event === 'USER_EVENT') {
             const { event_type, data } = message || {};
             if (event_type === 'TEST_CASE_STATUS_UPDATE') {
-                const { case_id, status } = data?.payload ?? data ?? {};
+                const { case_id, status, test_run_data } =
+                    data?.payload ?? data ?? {};
                 if (case_id && status) {
                     const caseIdStr = String(case_id);
                     const statusValue = status as TestCaseRunStatus;

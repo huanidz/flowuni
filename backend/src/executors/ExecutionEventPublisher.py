@@ -1,6 +1,6 @@
 import json
 from datetime import datetime
-from typing import Literal, Optional
+from typing import Any, Dict, Literal, Optional
 
 import redis
 from loguru import logger
@@ -62,6 +62,7 @@ class ExecutionEventPublisher:
         self,
         case_id: int,
         status: str,
+        test_run_data: Dict[str, Any] = None,
     ):
         """
         Publish test run event to Redis Stream
@@ -69,7 +70,7 @@ class ExecutionEventPublisher:
         Args:
             test_case_id: ID of the test case being run
             status: Status of the test run (e.g., PENDING, RUNNING, PASSED, FAILED)
-            data: Additional data to include in the event
+            test_run_data: Full test run data to include in the event
             stream_name: Optional custom stream name, defaults to test_run_events:{task_id}
         """
 
@@ -80,11 +81,17 @@ class ExecutionEventPublisher:
         # Use provided stream name or create default one
         stream_name = f"user_events:{self.user_id}"
 
+        # Ensure test_run_data is a dict
+        if test_run_data is None:
+            test_run_data = {}
+
         test_run_event = RedisFlowTestRunEvent(
             seq=self.seq,
             task_id=self.task_id,
             event_type="TEST_CASE_STATUS_UPDATE",
-            payload=RedisFlowTestRunEventPayload(case_id=case_id, status=status),
+            payload=RedisFlowTestRunEventPayload(
+                case_id=case_id, status=status, test_run_data=test_run_data
+            ),
         )
 
         redis_message_json = test_run_event.model_dump_json()

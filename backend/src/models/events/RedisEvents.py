@@ -36,6 +36,7 @@ class RedisFlowTestRunEventPayload(BaseModel):
     status: Literal[
         "PENDING", "QUEUED", "RUNNING", "PASSED", "FAILED", "CANCELLED", "SYSTEM_ERROR"
     ]
+    test_run_data: Dict[str, Any] = {}
 
 
 class RedisFlowTestRunEvent(BaseModel):

@@ -144,8 +144,15 @@ class FlowSyncWorker:
                 status=TestCaseRunStatus.QUEUED,
                 started_at=datetime.now(),
             )
+            # Get the updated test case run data
+            test_case_run = flow_test_service.get_test_case_run_by_task_id(
+                task_run_id=self.task_id
+            )
+            test_run_data = test_case_run.to_dict() if test_case_run else {}
             event_publisher.publish_test_run_event(
-                case_id=case_id, status=TestCaseRunStatus.QUEUED
+                case_id=case_id,
+                status=TestCaseRunStatus.QUEUED,
+                test_run_data=test_run_data,
             )
 
             # ===== TEST RUN START HERE =====
@@ -187,8 +194,15 @@ class FlowSyncWorker:
             flow_test_service.set_test_case_run_status(
                 task_run_id=self.task_id, status=TestCaseRunStatus.RUNNING
             )
+            # Get the updated test case run data
+            test_case_run = flow_test_service.get_test_case_run_by_task_id(
+                task_run_id=self.task_id
+            )
+            test_run_data = test_case_run.to_dict() if test_case_run else {}
             event_publisher.publish_test_run_event(
-                case_id=case_id, status=TestCaseRunStatus.RUNNING
+                case_id=case_id,
+                status=TestCaseRunStatus.RUNNING,
+                test_run_data=test_run_data,
             )
             execution_result: FlowExecutionResult = executor.execute()
 
@@ -214,15 +228,29 @@ class FlowSyncWorker:
                 flow_test_service.set_test_case_run_status(
                     task_run_id=self.task_id, status=TestCaseRunStatus.PASSED
                 )
+                # Get the updated test case run data
+                test_case_run = flow_test_service.get_test_case_run_by_task_id(
+                    task_run_id=self.task_id
+                )
+                test_run_data = test_case_run.to_dict() if test_case_run else {}
                 event_publisher.publish_test_run_event(
-                    case_id=case_id, status=TestCaseRunStatus.PASSED
+                    case_id=case_id,
+                    status=TestCaseRunStatus.PASSED,
+                    test_run_data=test_run_data,
                 )
             else:
                 flow_test_service.set_test_case_run_status(
                     task_run_id=self.task_id, status=TestCaseRunStatus.FAILED
                 )
+                # Get the updated test case run data
+                test_case_run = flow_test_service.get_test_case_run_by_task_id(
+                    task_run_id=self.task_id
+                )
+                test_run_data = test_case_run.to_dict() if test_case_run else {}
                 event_publisher.publish_test_run_event(
-                    case_id=case_id, status=TestCaseRunStatus.FAILED
+                    case_id=case_id,
+                    status=TestCaseRunStatus.FAILED,
+                    test_run_data=test_run_data,
                 )
 
             logger.success(
@@ -235,8 +263,15 @@ class FlowSyncWorker:
             flow_test_service.set_test_case_run_status(
                 task_run_id=self.task_id, status=TestCaseRunStatus.FAILED
             )
+            # Get the updated test case run data
+            test_case_run = flow_test_service.get_test_case_run_by_task_id(
+                task_run_id=self.task_id
+            )
+            test_run_data = test_case_run.to_dict() if test_case_run else {}
             event_publisher.publish_test_run_event(
-                case_id=case_id, status=TestCaseRunStatus.FAILED
+                case_id=case_id,
+                status=TestCaseRunStatus.FAILED,
+                test_run_data=test_run_data,
             )
             logger.error(
                 f"(TEST RUN) Flow compilation failed for flow_id {flow_id}: {str(e)}"
@@ -249,8 +284,15 @@ class FlowSyncWorker:
                 error_message=str(e),
                 finished_at=datetime.now(),
             )
+            # Get the updated test case run data
+            test_case_run = flow_test_service.get_test_case_run_by_task_id(
+                task_run_id=self.task_id
+            )
+            test_run_data = test_case_run.to_dict() if test_case_run else {}
             event_publisher.publish_test_run_event(
-                case_id=case_id, status=TestCaseRunStatus.SYSTEM_ERROR
+                case_id=case_id,
+                status=TestCaseRunStatus.SYSTEM_ERROR,
+                test_run_data=test_run_data,
             )
             logger.error(
                 f"(TEST RUN) Flow execution failed for flow_id {flow_id}: {str(e)}"

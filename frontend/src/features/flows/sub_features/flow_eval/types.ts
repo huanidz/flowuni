@@ -105,6 +105,32 @@ export interface TestRunDetail {
 }
 
 /**
+ * Test Case Run interface based on FlowTestCaseRunModel
+ */
+export interface TestCaseRun {
+    id: number;
+    test_case_id: number;
+    task_run_id?: string;
+    status: TestCaseRunStatus;
+    actual_output?: TestCaseActualOutput;
+    error_message?: string;
+    execution_time_ms?: number;
+    run_detail?: TestRunDetail;
+    criteria_results?: any;
+    trigger_type?: string;
+    triggered_by?: string;
+    started_at?: string;
+    finished_at?: string;
+}
+
+/**
+ * Test Case Run interface with execution details
+ */
+export interface TestCaseRunWithDetails extends TestCaseRun {
+    test_case?: FlowTestCase;
+}
+
+/**
  * Flow Test Suite interface based on FlowTestSuiteModel
  */
 export interface FlowTestSuite {
@@ -250,6 +276,7 @@ export interface TestCasePreview {
     description?: string;
     is_active: boolean;
     latest_run_status?: TestCaseRunStatus | null;
+    latest_run?: TestCaseRunWithDetails | null;
 }
 
 /**
