@@ -1,10 +1,10 @@
-import React, { useRef, type KeyboardEvent } from 'react';
+import React, { useRef, useState, type KeyboardEvent } from 'react';
 import type { DraftTestCase, TestCasePreview, FlowTestCase } from '../types';
 import { Card, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { CornerDownLeft, Trash2, Play } from 'lucide-react';
+import { CornerDownLeft, Trash2, Play, ChevronDown } from 'lucide-react';
 import { useConfirmation } from '@/hooks/useConfirmationModal';
 import { useDeleteTestCase, useRunSingleTest } from '../hooks';
 import { useTestCaseStatus } from '../stores/testCaseStatusStore';
@@ -42,6 +42,20 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
     const { confirm, ConfirmationDialog } = useConfirmation();
     const deleteTestCaseMutation = useDeleteTestCase();
     const runSingleTestMutation = useRunSingleTest();
+
+    // State for expanded sections
+    const [expandedSections, setExpandedSections] = useState({
+        error: false,
+        output: false,
+    });
+
+    // Toggle section expansion
+    const toggleSection = (section: 'error' | 'output') => {
+        setExpandedSections(prev => ({
+            ...prev,
+            [section]: !prev[section],
+        }));
+    };
 
     const isDraft = typeof item.id === 'string' && item.id.startsWith('draft-');
 
@@ -192,28 +206,65 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
                         {/* Display error message and chat output if available */}
                         {(testCase.latest_run_error_message ||
                             testCase.latest_run_chat_output) && (
-                            <div className="mt-2 pt-2 border-t border-gray-200">
+                            <div className="mt-3 pt-3 border-t border-gray-200">
                                 {testCase.latest_run_error_message && (
-                                    <div className="mb-2">
-                                        <span className="text-xs font-medium text-red-600">
-                                            Error:
-                                        </span>
-                                        <p className="text-xs text-red-600 mt-1 break-words">
-                                            {testCase.latest_run_error_message}
-                                        </p>
+                                    <div
+                                        className="mb-3 p-2 bg-red-50 rounded-md border border-red-100 cursor-pointer relative"
+                                        onClick={() => toggleSection('error')}
+                                    >
+                                        <div className="flex items-center justify-between mb-1">
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-xs font-semibold text-red-700 uppercase tracking-wide">
+                                                    Error
+                                                </span>
+                                            </div>
+                                            <ChevronDown
+                                                className={`h-3 w-3 text-red-600 transition-transform duration-200 ${expandedSections.error ? 'rotate-180' : ''}`}
+                                            />
+                                        </div>
+                                        <div
+                                            className={`relative ${expandedSections.error ? '' : 'max-h-12 overflow-hidden'}`}
+                                        >
+                                            <p className="text-xs text-red-600 break-words leading-relaxed">
+                                                {
+                                                    testCase.latest_run_error_message
+                                                }
+                                            </p>
+                                            {!expandedSections.error && (
+                                                <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-red-50 to-transparent"></div>
+                                            )}
+                                        </div>
                                     </div>
                                 )}
                                 {testCase.latest_run_chat_output?.content && (
-                                    <div>
-                                        <span className="text-xs font-medium text-gray-600">
-                                            Output:
-                                        </span>
-                                        <p className="text-xs text-gray-600 mt-1 break-words">
-                                            {
-                                                testCase.latest_run_chat_output
-                                                    .content
-                                            }
-                                        </p>
+                                    <div
+                                        className="p-2 bg-gray-50 rounded-md border border-gray-100 cursor-pointer relative"
+                                        onClick={() => toggleSection('output')}
+                                    >
+                                        <div className="flex items-center justify-between mb-1">
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                                                    Output
+                                                </span>
+                                            </div>
+                                            <ChevronDown
+                                                className={`h-3 w-3 text-gray-600 transition-transform duration-200 ${expandedSections.output ? 'rotate-180' : ''}`}
+                                            />
+                                        </div>
+                                        <div
+                                            className={`relative ${expandedSections.output ? '' : 'max-h-12 overflow-hidden'}`}
+                                        >
+                                            <p className="text-xs text-gray-600 break-words leading-relaxed">
+                                                {
+                                                    testCase
+                                                        .latest_run_chat_output
+                                                        .content
+                                                }
+                                            </p>
+                                            {!expandedSections.output && (
+                                                <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-gray-50 to-transparent"></div>
+                                            )}
+                                        </div>
                                     </div>
                                 )}
                             </div>
