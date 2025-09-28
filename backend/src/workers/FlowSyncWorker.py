@@ -1,6 +1,6 @@
 from datetime import datetime
 from time import perf_counter
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import networkx as nx
 from fastapi import HTTPException
@@ -130,7 +130,7 @@ class FlowSyncWorker:
 
         # Load test case and mark QUEUED
         test_case = flow_test_service.get_test_case_by_id(case_id)
-        pass_criteria: str = test_case.pass_criteria
+        pass_criteria: Dict[str, Any] = test_case.pass_criteria
         input_text: str = test_case.input_text
         self._mark_queued(flow_test_service, event_publisher, case_id)
 
@@ -157,7 +157,6 @@ class FlowSyncWorker:
             execution_time_ms: float = (perf_counter() - start_time) / 1000
             flow_test_service.update_test_case_run(
                 run_id=self.task_id,
-                status=TestCaseRunStatus.PASSED,
                 finished_at=datetime.now(),
                 execution_time_ms=execution_time_ms,
                 actual_output=execution_result.model_dump(),
@@ -446,7 +445,7 @@ class FlowSyncWorker:
 
     def _run_pass_criteria(
         self,
-        pass_criteria: str,
+        pass_criteria: Dict[str, Any],
         execution_result: "FlowExecutionResult",
         service: "FlowTestService",
         publisher: "ExecutionEventPublisher",
@@ -457,10 +456,22 @@ class FlowSyncWorker:
         criteria_runner.load(pass_criteria)
         runner_result: "RunnerResult" = criteria_runner.run()
 
+        failed_criteria: List[StepDetail] = runner_result.failed_items
+
+        construct_error_msg: str = ""
+        for item in failed_criteria:
+            construct_error_msg += f"{item.id}: {item.result.reason}\n"
+
         status: TestCaseRunStatus = (
             TestCaseRunStatus.PASSED
             if runner_result.passed
             else TestCaseRunStatus.FAILED
         )
         service.set_test_case_run_status(task_run_id=self.task_id, status=status)
-        self._publish_event(service, publisher, case_id, status)
+        publisher.publish_test_run_event(
+            case_id=case_id,
+            status=status,
+            flow_exec_result=execution_result,
+            test_run_data={},
+            error_message=construct_error_msg if failed_criteria else None,
+        )

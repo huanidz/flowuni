@@ -11,6 +11,10 @@ from src.models.events.RedisEvents import (
     RedisFlowTestRunEvent,
     RedisFlowTestRunEventPayload,
 )
+from src.schemas.flowbuilder.flow_graph_schemas import (
+    FlowChatOutputResult,
+    FlowExecutionResult,
+)
 
 
 class ExecutionControl(BaseModel):
@@ -62,7 +66,9 @@ class ExecutionEventPublisher:
         self,
         case_id: int,
         status: str,
+        flow_exec_result: Optional[FlowExecutionResult] = None,
         test_run_data: Dict[str, Any] = None,
+        error_message: Optional[str] = None,
     ):
         """
         Publish test run event to Redis Stream
@@ -85,12 +91,24 @@ class ExecutionEventPublisher:
         if test_run_data is None:
             test_run_data = {}
 
+        # Data simplifing process.
+        chat_output = None
+        exec_time_ms = None
+        if flow_exec_result is not None:
+            chat_output = flow_exec_result.chat_output
+            exec_time_ms = flow_exec_result.execution_time
+
         test_run_event = RedisFlowTestRunEvent(
             seq=self.seq,
             task_id=self.task_id,
             event_type="TEST_CASE_STATUS_UPDATE",
             payload=RedisFlowTestRunEventPayload(
-                case_id=case_id, status=status, test_run_data=test_run_data
+                case_id=case_id,
+                status=status,
+                test_run_data={},  # May use in the future. Disable for now.
+                chat_output=chat_output,
+                execution_time_ms=exec_time_ms,
+                error_message=error_message,
             ),
         )
 
