@@ -442,24 +442,6 @@ class FlowTestRepository(BaseRepository):
             # 4) Group cases by suite_id
             cases_by_suite = {}
             for r in cases_rows:
-                latest_run = None
-                if r.latest_run_id:
-                    latest_run = {
-                        "id": r.latest_run_id,
-                        "test_case_id": r.id,
-                        "task_run_id": r.latest_run_task_run_id,
-                        "status": r.latest_run_status,
-                        "actual_output": r.latest_run_actual_output,
-                        "error_message": r.latest_run_error_message,
-                        "execution_time_ms": r.latest_run_execution_time_ms,
-                        "run_detail": r.latest_run_run_detail,
-                        "criteria_results": r.latest_run_criteria_results,
-                        "trigger_type": r.latest_run_trigger_type,
-                        "triggered_by": r.latest_run_triggered_by,
-                        "started_at": r.latest_run_started_at,
-                        "finished_at": r.latest_run_finished_at,
-                    }
-
                 cases_by_suite.setdefault(r.suite_id, []).append(
                     {
                         "id": r.id,
@@ -473,7 +455,9 @@ class FlowTestRepository(BaseRepository):
                         "latest_run_error_message": r.latest_run_error_message,
                         "latest_run_chat_output": r.latest_run_actual_output.get(
                             "chat_output"
-                        ),
+                        )
+                        if r.latest_run_actual_output
+                        else {"content": None},
                     }
                 )
 

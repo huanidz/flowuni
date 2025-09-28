@@ -188,6 +188,36 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
                                 {getTestRunStatusBadge(testCaseStatus)}
                             </div>
                         </div>
+
+                        {/* Display error message and chat output if available */}
+                        {(testCase.latest_run_error_message ||
+                            testCase.latest_run_chat_output) && (
+                            <div className="mt-2 pt-2 border-t border-gray-200">
+                                {testCase.latest_run_error_message && (
+                                    <div className="mb-2">
+                                        <span className="text-xs font-medium text-red-600">
+                                            Error:
+                                        </span>
+                                        <p className="text-xs text-red-600 mt-1 break-words">
+                                            {testCase.latest_run_error_message}
+                                        </p>
+                                    </div>
+                                )}
+                                {testCase.latest_run_chat_output?.content && (
+                                    <div>
+                                        <span className="text-xs font-medium text-gray-600">
+                                            Output:
+                                        </span>
+                                        <p className="text-xs text-gray-600 mt-1 break-words">
+                                            {
+                                                testCase.latest_run_chat_output
+                                                    .content
+                                            }
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </CardHeader>
             </Card>
