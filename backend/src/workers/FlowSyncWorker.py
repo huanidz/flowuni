@@ -127,11 +127,6 @@ class FlowSyncWorker:
             redis_client=redis_client,
             is_test=True,
         )
-        if not self.user_id:
-            raise NotEnoughUserInformation(
-                f"User id is not provided for task_id {self.task_id}. "
-                "Can't publish event for test."
-            )
 
         # Load test case and mark QUEUED
         test_case = flow_test_service.get_test_case_by_id(case_id)
