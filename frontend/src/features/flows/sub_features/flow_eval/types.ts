@@ -134,33 +134,6 @@ export interface FlowTestCase {
 }
 
 /**
- * Test Suite with nested test cases
- */
-export interface FlowTestSuiteWithCases extends FlowTestSuite {
-    test_cases: FlowTestCase[];
-}
-
-/**
- * Test execution request interface
- */
-export interface TestExecutionRequest {
-    test_case_ids?: string[];
-    test_suite_ids?: string[];
-    run_type: 'all' | 'failed' | 'selected';
-}
-
-/**
- * Test execution result interface
- */
-export interface TestExecutionResult {
-    test_case_id: string;
-    status: TestCaseRunStatus;
-    execution_time_ms?: number;
-    error_message?: string;
-    actual_output?: TestCaseActualOutput;
-}
-
-/**
  * Test statistics interface
  */
 export interface TestStatistics {

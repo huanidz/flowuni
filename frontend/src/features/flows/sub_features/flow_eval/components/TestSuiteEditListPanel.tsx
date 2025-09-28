@@ -84,12 +84,6 @@ const TestSuiteEditListPanel: React.FC<TestSuiteEditListPanelProps> = ({
                     </div>
                 ) : (
                     <div className="p-4 space-y-2">
-                        <div className="flex items-center gap-2 mb-4 text-xs text-muted-foreground">
-                            <span>TEST CASES</span>
-                            <div className="flex-1 h-px bg-border" />
-                            <span>{allItems.length} items</span>
-                        </div>
-
                         {allItems.map(item => (
                             <TestCaseCard
                                 key={
@@ -102,7 +96,6 @@ const TestSuiteEditListPanel: React.FC<TestSuiteEditListPanelProps> = ({
                                 onTestCaseSelect={onTestCaseSelect}
                                 onTestCaseDelete={onTestCaseDelete}
                                 draft={draft}
-                                setDraft={setDraft}
                                 isCreating={createMutation.isPending}
                                 onCreate={handleCreate}
                                 onCancel={handleCancel}

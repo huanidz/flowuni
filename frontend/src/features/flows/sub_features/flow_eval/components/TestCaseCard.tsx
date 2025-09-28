@@ -17,7 +17,6 @@ interface TestCaseCardProps {
     onTestCaseSelect?: (testCase: TestCasePreview) => void;
     onTestCaseDelete?: (deletedTestCaseId: number) => void;
     draft?: DraftTestCase | null;
-    setDraft?: (draft: DraftTestCase | null) => void;
     isCreating?: boolean;
     onCreate?: () => void;
     onCancel?: () => void;
@@ -32,7 +31,6 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
     onTestCaseSelect,
     onTestCaseDelete,
     draft = null,
-    setDraft,
     isCreating = false,
     onCreate,
     onCancel,
