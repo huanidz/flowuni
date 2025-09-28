@@ -219,10 +219,10 @@ export const useRunSingleTest = () => {
             );
 
             // Invalidate and refetch test suites for this flow
-            queryClient.invalidateQueries({
-                queryKey: ['testSuitesWithCases', variables.flow_id],
-            });
-            toast.success('Test case run initiated successfully');
+            // queryClient.invalidateQueries({
+            //     queryKey: ['testSuitesWithCases', variables.flow_id],
+            // });
+            // toast.success('Test case run initiated successfully');
         },
         onError: error => {
             console.error('Error running test case:', error);
