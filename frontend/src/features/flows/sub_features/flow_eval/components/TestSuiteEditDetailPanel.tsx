@@ -22,7 +22,6 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
     const [description, setDescription] = useState('');
     const [isEditingName, setIsEditingName] = useState(false);
     const [nameDraft, setNameDraft] = useState('');
-    const [errorMessage, setErrorMessage] = useState('asd');
     const partialUpdateTestCase = usePartialUpdateTestCase();
 
     useEffect(() => {
@@ -201,22 +200,6 @@ const TestSuiteEditDetailPanel: React.FC<TestSuiteEditDetailPanelProps> = ({
                     className="w-full h-40 p-3 border rounded-md font-mono text-sm resize-none"
                 />
             </div>
-
-            {/* Error Message Display */}
-            {errorMessage && (
-                <div className="mb-6 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-                    <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                        <span className="text-sm font-medium text-red-800 dark:text-red-200">
-                            Error
-                        </span>
-                    </div>
-                    <p className="mt-1 text-sm text-red-700 dark:text-red-300">
-                        {errorMessage}
-                    </p>
-                </div>
-            )}
-
             {/* Criteria */}
             <div className="mb-6">
                 <label className="block text-sm font-medium mb-3">

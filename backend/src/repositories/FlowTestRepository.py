@@ -470,7 +470,10 @@ class FlowTestRepository(BaseRepository):
                         "is_active": r.is_active,
                         # Ensure the field is always present (None if no runs yet)
                         "latest_run_status": r.latest_run_status,
-                        "latest_run": latest_run,
+                        "latest_run_error_message": r.latest_run_error_message,
+                        "latest_run_chat_output": r.latest_run_actual_output.get(
+                            "chat_output"
+                        ),
                     }
                 )
 

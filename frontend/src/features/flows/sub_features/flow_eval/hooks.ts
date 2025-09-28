@@ -42,6 +42,7 @@ export const useTestSuitesWithCases = (flowId: string) => {
     useEffect(() => {
         if (query.data) {
             // Collect all test case IDs from the new data
+            console.log('query.data: ', query.data);
             const currentTestCaseIds = new Set<string>();
             query.data.test_suites.forEach(suite => {
                 suite.test_cases.forEach(testCase => {

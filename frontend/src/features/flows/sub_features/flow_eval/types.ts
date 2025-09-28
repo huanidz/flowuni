@@ -2,6 +2,7 @@
  * Types for Flow Evaluation functionality
  * Based on backend FlowTestSuiteModel and FlowTestCaseModel
  */
+import type { NodeData, NodeResult } from '@/features/nodes/types';
 
 // Define TestRule types directly to avoid circular imports
 export interface StringRuleConfig {
@@ -96,9 +97,26 @@ export interface TestCasePassCriteria {
     logics: string[]; // List of logic items ('AND' or 'OR')
 }
 
-export interface TestCaseActualOutput {
+// === TestCaseActualOutput Types ===
+
+// the chat_output object
+export interface ChatOutput {
+    content: string;
     [key: string]: any;
 }
+
+export interface TestCaseActualOutput {
+    results: NodeResult[];
+    success: boolean;
+    ancestors: any[];
+    chat_output: ChatOutput;
+    total_nodes: number;
+    total_layers: number;
+    execution_time: number;
+    completed_nodes: number;
+}
+
+// === End of TestCaseActualOutput Types ===
 
 export interface TestRunDetail {
     [key: string]: any;
@@ -126,9 +144,6 @@ export interface TestCaseRun {
 /**
  * Test Case Run interface with execution details
  */
-export interface TestCaseRunWithDetails extends TestCaseRun {
-    test_case?: FlowTestCase;
-}
 
 /**
  * Flow Test Suite interface based on FlowTestSuiteModel
@@ -276,7 +291,8 @@ export interface TestCasePreview {
     description?: string;
     is_active: boolean;
     latest_run_status?: TestCaseRunStatus | null;
-    latest_run?: TestCaseRunWithDetails | null;
+    latest_run_error_message?: string | null;
+    latest_run_chat_output?: Record<string, any> | null;
 }
 
 /**

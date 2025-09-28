@@ -83,6 +83,14 @@ export interface NodeData {
     [key: string]: any;
 }
 
+export interface NodeResult {
+    data: NodeData;
+    error: any;
+    node_id: string;
+    success: boolean;
+    execution_time: number;
+}
+
 export type CustomNodeProps = NodeProps<RFNode<NodeData>>;
 
 export type UpdateNodeInputDataFunction = (

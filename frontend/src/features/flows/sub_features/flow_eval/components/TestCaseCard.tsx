@@ -37,6 +37,7 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
     onDraftNameChange,
     flowId,
 }) => {
+    console.log('Item', item);
     const inputRef = useRef<HTMLInputElement>(null);
     const { confirm, ConfirmationDialog } = useConfirmation();
     const deleteTestCaseMutation = useDeleteTestCase();
