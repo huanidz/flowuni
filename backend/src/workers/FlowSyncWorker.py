@@ -452,7 +452,9 @@ class FlowSyncWorker:
         case_id: int,
     ) -> None:
         """Evaluate pass criteria and update status accordingly."""
-        criteria_runner = PassCriteriaRunner(flow_output=execution_result.chat_output)
+        criteria_runner = PassCriteriaRunner(
+            flow_output=execution_result.chat_output.content
+        )
         criteria_runner.load(pass_criteria)
         runner_result: "RunnerResult" = criteria_runner.run()
 
