@@ -13,7 +13,6 @@ from src.helpers.custom_clients.CustomQdrantClient import (
     CustomQdrantClient,
     Filter,
     PointStruct,
-    ScoredPoint,
 )
 from src.nodes.core.NodeIcon import NodeIconIconify
 from src.nodes.core.NodeInput import NodeInput
@@ -34,6 +33,7 @@ from src.nodes.handles.basics.inputs.KeyValueInputHandle import (
 )
 from src.nodes.handles.basics.outputs.StringOutputHandle import StringOutputHandle
 from src.nodes.NodeBase import Node, NodeSpec
+from src.schemas.nodes.node_data_parsers import BuildToolResult
 
 
 class QdrantDBNode(Node):
@@ -88,6 +88,7 @@ class QdrantDBNode(Node):
                 description="Operation to perform",
                 required=True,
                 allow_incoming_edges=False,
+                enable_as_whole_for_tool=True,
             ),
             NodeInput(
                 name="data",
@@ -145,7 +146,7 @@ class QdrantDBNode(Node):
             )
         ],
         parameters=[],
-        can_be_tool=False,
+        can_be_tool=True,
         group=NODE_GROUP_CONSTS.DATABASE,
         icon=NodeIconIconify(icon_value="mdi:database"),
     )
@@ -246,9 +247,7 @@ class QdrantDBNode(Node):
                 )
 
             else:
-                result = json.dumps(
-                    {"error": f"Unknown operation: {operation}", "status": "failed"}
-                )
+                raise ValueError(f"Unsupported operation: {operation}.")
 
             logger.info(f"Qdrant operation '{operation}' completed successfully")
             return {"result": result}
@@ -256,20 +255,115 @@ class QdrantDBNode(Node):
         except Exception as e:
             logger.error(f"Error in Qdrant operation '{operation}': {str(e)}")
             error_result = json.dumps({"error": str(e), "status": "failed"})
-            return {"result": error_result}
+            raise ValueError(error_result)
 
-    def build_tool(self, inputs_values: Dict[str, Any], tool_configs: Any) -> Any:
+    def build_tool(
+        self, inputs_values: Dict[str, Any], tool_configs: Any
+    ) -> BuildToolResult:
         """Build tool method - not implemented for this node."""
-        raise NotImplementedError("QdrantDBNode does not support tool mode")
+
+        url = inputs_values.get("url")
+        api_key = inputs_values.get("api_key")
+        collection_name = inputs_values.get("collection_name")
+
+        from typing import Literal
+
+        from pydantic import BaseModel, Field
+
+        # Initialize Qdrant client
+        qdrant_client = None
+        try:
+            qdrant_client = CustomQdrantClient(host=url, api_key=api_key, timeout=30)
+            logger.info(f"Connected to Qdrant at: {url}")
+        except Exception as e:
+            logger.error(f"Failed to connect to Qdrant: {str(e)}")
+            raise ValueError(f"Failed to connect to Qdrant at {url}.")
+
+        if not qdrant_client:
+            raise ValueError("Failed to connect to Qdrant.")
+
+        collection_information = qdrant_client.get_collection(
+            collection_name=collection_name
+        )
+        ADDTIONAL_TOOL_DESC = f"""\n\n<collection_information>```json\n{json.dumps(collection_information, indent=2)}\n```\n</collection_information>"""
+
+        DEFAULT_TOOL_DESC = """Tool for querying Qdrant database. (Can perform ops: search, insert, update, delete).
+        """
+        tool_name = (
+            tool_configs.tool_name if tool_configs.tool_name else "qdrant_database_tool"
+        )
+        tool_description = (
+            tool_configs.tool_description
+            if tool_configs.tool_description
+            else DEFAULT_TOOL_DESC
+        ) + ADDTIONAL_TOOL_DESC
+
+        class QdrantData(BaseModel):
+            ids: str = Field(
+                default="",
+                description=(
+                    "Comma-separated IDs of the documents (only required for update, delete, or insert). "
+                    "Example: '123,124,125'. Default = ''."
+                ),
+            )
+            text_query: str = Field(
+                default="",
+                description=(
+                    "Text query for search or text content to insert. "
+                    "Example (search): 'find documents about cats'. "
+                    "Example (insert): 'This is the content of the new doc'. Default = ''."
+                ),
+            )
+            payload: str = Field(
+                default="{}",
+                description=(
+                    "JSON string for the payload (metadata/fields) to insert or update. "
+                    'Must be valid JSON object so later can be loaded with json.loads(). Example: \'{"category": "animal", "source": "wiki"}\'. '
+                    "Default = '{}'."
+                ),
+            )
+            filter: str = Field(
+                default="{}",
+                description=(
+                    "JSON string filter for narrowing search results. Must be valid JSON object following Qdrant filter rules. Later can be loaded with json.loads()"
+                    'Example: \'{"must": [{"key": "category", "match": {"value": "animal"}}]}\'. '
+                    "Default = '{}'."
+                ),
+            )
+            limit: int = Field(
+                default=5,
+                description="Number of results to return. Example: 10. Default = 5.",
+            )
+
+        class QdrantToolSchema(BaseModel):
+            ops: Literal["search", "insert", "update", "delete"]
+            data: QdrantData
+
+        tool_build_config = BuildToolResult(
+            tool_name=tool_name,
+            tool_description=tool_description,
+            tool_schema=QdrantToolSchema,
+        )
+
+        return tool_build_config
 
     def process_tool(
         self,
         inputs_values: Dict[str, Any],
         parameter_values: Dict[str, Any],
         tool_inputs: Dict[str, Any],
-    ) -> Any:
-        """Process tool method - not implemented for this node."""
-        raise NotImplementedError("QdrantDBNode does not support tool mode")
+    ) -> Dict[str, Any]:
+        ops = tool_inputs.get("ops")
+        data = tool_inputs.get("data")
+
+        data["filter"] = json.loads(data["filter"])
+        data["payload"] = json.loads(data["payload"])
+
+        inputs_values["operation"] = ops
+        inputs_values["data"] = data
+
+        processed_result = self.process(inputs_values, parameter_values)
+        return processed_result
 
     def _search_ops(
         self,
