@@ -168,13 +168,7 @@ export const KeyValuePairItem: React.FC<KeyValuePairItemProps> = ({
                         disabled={disabled}
                         placeholder={valuePlaceholder}
                         className="h-8 text-xs border-gray-200 focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
-                        type={
-                            dtype === 'number'
-                                ? 'number'
-                                : dtype === 'boolean'
-                                  ? 'checkbox'
-                                  : 'text'
-                        }
+                        type={dtype === 'boolean' ? 'checkbox' : 'text'}
                     />
                 )}
             </div>
