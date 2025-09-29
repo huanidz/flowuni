@@ -9,18 +9,14 @@ from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.handles.basics.inputs import (
     EmbeddingProviderInputHandle,
-    TableInputHandle,
+    KeyValueInputHandle,
     TextFieldInputHandle,
 )
 from src.nodes.handles.basics.inputs.DropdownInputHandle import (
     DropdownInputHandle,
     DropdownOption,
 )
-from src.nodes.handles.basics.inputs.TableInputHandle import (
-    TableColumn,
-    TableColumnDType,
-    TableInputHandle,
-)
+from src.nodes.handles.basics.inputs.KeyValueInputHandle import KeyValueItem
 from src.nodes.handles.basics.outputs.StringOutputHandle import StringOutputHandle
 from src.nodes.NodeBase import Node, NodeSpec
 
@@ -70,27 +66,29 @@ class QdrantDBNode(Node):
             ),
             NodeInput(
                 name="data",
-                type=TableInputHandle(
-                    columns=[
-                        TableColumn(
-                            name="id",
-                            label="ID",
-                            dtype=TableColumnDType.STRING,
-                            required=True,
+                type=KeyValueInputHandle(
+                    allow_custom_keys=False,
+                    fixed_items=[
+                        KeyValueItem(key="ids", value=""),
+                        KeyValueItem(key="text_query", value=""),
+                        KeyValueItem(
+                            key="payload",
+                            value="",
+                            value_placeholder="{sample_payload}",
+                            multiline=True,
                         ),
-                        TableColumn(
-                            name="vector",
-                            label="Vector",
-                            dtype=TableColumnDType.STRING,
-                            required=True,
+                        KeyValueItem(
+                            key="filter",
+                            value="",
+                            multiline=True,
                         ),
-                        TableColumn(
-                            name="payload",
-                            label="Payload",
-                            dtype=TableColumnDType.STRING,
-                            required=False,
+                        KeyValueItem(
+                            key="limit",
+                            value="",
+                            value_placeholder="5",
+                            multiline=False,
                         ),
-                    ]
+                    ],
                 ),
                 enable_as_whole_for_tool=True,
             ),

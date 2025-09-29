@@ -4,6 +4,7 @@ from .DynamicTypeInputHandle import DynamicTypeInputHandle
 from .EmbeddingProviderInputHandle import EmbeddingProviderInputHandle
 from .FileInputHandle import FileInputHandle
 from .ImageInputInputHandle import ImageInputInputHandle
+from .KeyValueInputHandle import KeyValueInputHandle
 from .LLMInputHandle import LLMProviderInputHandle
 from .NumberInputHandle import NumberInputHandle
 from .SecretTextInputHandle import SecretTextInputHandle
@@ -22,6 +23,7 @@ __all__ = [
     "TableInputHandle",
     "ToolableJsonInputHandle",
     "ImageInputInputHandle",
+    "KeyValueInputHandle",
     "LLMProviderInputHandle",
     "EmbeddingProviderInputHandle",
 ]
@@ -40,5 +42,6 @@ class InputHandleTypeEnum(Enum):
     TABLE = TableInputHandle
     TOOLABLE_JSON = ToolableJsonInputHandle
     IMAGE = ImageInputInputHandle
+    KEY_VALUE = KeyValueInputHandle
     LLM_PROVIDER = LLMProviderInputHandle
     EMBEDDING_PROVIDER = EmbeddingProviderInputHandle
