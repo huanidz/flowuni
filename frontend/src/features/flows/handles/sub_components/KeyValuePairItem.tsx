@@ -88,7 +88,7 @@ export const KeyValuePairItem: React.FC<KeyValuePairItemProps> = ({
                     )}
                     {description && (
                         <div
-                            className="relative"
+                            style={{ position: 'relative' }}
                             onMouseEnter={() => setShowDescriptionTooltip(true)}
                             onMouseLeave={() =>
                                 setShowDescriptionTooltip(false)
@@ -100,13 +100,35 @@ export const KeyValuePairItem: React.FC<KeyValuePairItemProps> = ({
                             />
                             {showDescriptionTooltip && (
                                 <div
-                                    className="absolute left-0 top-5 z-50 bg-gray-800 text-white text-xs rounded-md px-2 py-1.5 whitespace-nowrap max-w-xs"
                                     style={{
+                                        position: 'absolute',
+                                        left: '0',
+                                        top: '20px',
+                                        zIndex: 50,
+                                        backgroundColor: '#374151',
+                                        color: 'white',
+                                        fontSize: '12px',
+                                        borderRadius: '6px',
+                                        padding: '6px 10px',
                                         boxShadow:
                                             '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                                        minWidth: '150px',
+                                        maxWidth: '250px',
+                                        whiteSpace: 'normal',
+                                        pointerEvents: 'none',
                                     }}
                                 >
-                                    <div className="absolute -top-1 left-3 w-2 h-2 bg-gray-800 transform rotate-45"></div>
+                                    <div
+                                        style={{
+                                            position: 'absolute',
+                                            top: '-4px',
+                                            left: '8px',
+                                            width: '8px',
+                                            height: '8px',
+                                            backgroundColor: '#374151',
+                                            transform: 'rotate(45deg)',
+                                        }}
+                                    />
                                     {description}
                                 </div>
                             )}
