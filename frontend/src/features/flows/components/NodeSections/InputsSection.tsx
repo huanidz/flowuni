@@ -15,6 +15,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 const INPUT_TYPE_DEFAULT_COLLAPSE: Record<string, boolean> = {
     [NodeInputType.Table]: false,
     [NodeInputType.DynamicType]: true,
+    [NodeInputType.KeyValue]: false,
     // All other types default to true (not explicitly listed)
 };
 

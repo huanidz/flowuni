@@ -2,6 +2,7 @@ import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { X } from 'lucide-react';
 
 interface KeyValueItem {
     key: string;
@@ -64,14 +65,21 @@ export const KeyValuePairItem: React.FC<KeyValuePairItemProps> = ({
     const valuePlaceholder =
         fixedItem?.value_placeholder || predefinedItem?.value_placeholder || '';
 
+    const canDelete =
+        !disabled &&
+        !isFixed &&
+        !(isRequired && keyValuePairs.length <= min_pairs);
+
     return (
-        <div className="flex gap-2 items-start">
-            <div className="flex-1">
-                <Label className="text-xs">
+        <div className="group flex gap-2 items-start p-3 rounded-lg border border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm transition-all duration-200">
+            <div className="flex-1 space-y-1.5">
+                <Label className="text-xs font-medium text-gray-700 flex items-center gap-1">
                     {key_label}
-                    {isRequired && <span className="text-red-500 ml-1">*</span>}
+                    {isRequired && <span className="text-red-500">*</span>}
                     {isFixed && (
-                        <span className="text-blue-500 ml-1">(Fixed)</span>
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-600 border border-blue-200">
+                            Fixed
+                        </span>
                     )}
                 </Label>
                 <Input
@@ -79,20 +87,23 @@ export const KeyValuePairItem: React.FC<KeyValuePairItemProps> = ({
                     onChange={e => onKeyChange(index, e.target.value, value)}
                     disabled={disabled || !allow_custom_keys || isFixed}
                     placeholder={keyPlaceholder}
-                    className="text-xs"
+                    className="h-8 text-xs border-gray-200 focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
                 />
             </div>
-            <div className="flex-1">
-                <Label className="text-xs">{value_label}</Label>
+
+            <div className="flex-1 space-y-1.5">
+                <Label className="text-xs font-medium text-gray-700">
+                    {value_label}
+                </Label>
                 {isMultiline ? (
                     <textarea
                         value={value}
                         onChange={e =>
                             onKeyChange(index, keyValue, e.target.value)
                         }
-                        disabled={disabled} // Allow editing value even for fixed items
+                        disabled={disabled}
                         placeholder={valuePlaceholder}
-                        className="w-full p-2 border rounded text-xs resize-none min-h-[60px]"
+                        className="w-full px-3 py-1.5 text-xs border border-gray-200 rounded-md focus:border-blue-400 focus:ring-1 focus:ring-blue-400 focus:outline-none resize-none min-h-[64px] disabled:bg-gray-50 disabled:text-gray-500"
                         rows={2}
                     />
                 ) : (
@@ -101,34 +112,33 @@ export const KeyValuePairItem: React.FC<KeyValuePairItemProps> = ({
                         onChange={e =>
                             onKeyChange(index, keyValue, e.target.value)
                         }
-                        disabled={disabled} // Allow editing value even for fixed items
+                        disabled={disabled}
                         placeholder={valuePlaceholder}
-                        className="text-xs"
+                        className="h-8 text-xs border-gray-200 focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
                         type={
-                            (dtype as 'number') === 'number'
+                            dtype === 'number'
                                 ? 'number'
-                                : (dtype as 'boolean') === 'boolean'
+                                : dtype === 'boolean'
                                   ? 'checkbox'
                                   : 'text'
                         }
                     />
                 )}
             </div>
-            <div className="flex items-end">
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onRemove(index)}
-                    disabled={
-                        disabled ||
-                        isFixed || // Keep isFixed to prevent deletion of fixed items
-                        (isRequired && keyValuePairs.length <= min_pairs)
-                    }
-                    className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                >
-                    ×
-                </Button>
-            </div>
+
+            {canDelete && (
+                <div className="flex items-start pt-6">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onRemove(index)}
+                        className="h-7 w-7 p-0 rounded-md transition-all duration-200 opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:text-red-600"
+                        title="Remove item"
+                    >
+                        <X className="h-4 w-4" />
+                    </Button>
+                </div>
+            )}
         </div>
     );
 };
