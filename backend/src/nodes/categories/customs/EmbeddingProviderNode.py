@@ -48,12 +48,8 @@ class EmbeddingProviderNode(Node):
                                 type="static",
                                 options=[
                                     {
-                                        "value": "text-embedding-004",
-                                        "label": "text-embedding-004",
-                                    },
-                                    {
-                                        "value": "embedding-001",
-                                        "label": "embedding-001",
+                                        "value": "gemini-embedding-001",
+                                        "label": "gemini-embedding-001",
                                     },
                                 ],
                             ),

@@ -2,8 +2,13 @@ import json
 from typing import Any, Dict, List, Optional
 
 from loguru import logger
+from src.components.embedding.models.core import EmbeddingInput, EmbeddingResponse
+from src.components.embedding.providers.EmbeddingProviderFactory import (
+    EmbeddingProviderBase,
+    EmbeddingProviderFactory,
+)
 from src.consts.node_consts import NODE_GROUP_CONSTS
-from src.helpers.custom_clients.CustomQdrantClient import CustomQdrantClient
+from src.helpers.custom_clients.CustomQdrantClient import CustomQdrantClient, Filter
 from src.nodes.core.NodeIcon import NodeIconIconify
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
@@ -71,7 +76,6 @@ class QdrantDBNode(Node):
                         DropdownOption(label="Insert", value="insert"),
                         DropdownOption(label="Update", value="update"),
                         DropdownOption(label="Delete", value="delete"),
-                        DropdownOption(label="Get", value="get"),
                     ],
                     searchable=True,
                 ),
@@ -159,6 +163,22 @@ class QdrantDBNode(Node):
         operation = input_values.get("operation")
         embedding_helper = input_values.get("embedding_helper")
 
+        embedding_helper_instance = EmbeddingProviderFactory.get_provider(
+            provider_name=embedding_helper["provider"]
+        )
+
+        embedding_helper_instance.init(
+            model=embedding_helper["model"],
+            api_key=embedding_helper["api_key"],
+        )
+
+        data = input_values.get("data")
+        ids = data.get("ids")
+        text_query = data.get("text_query")
+        payload = data.get("payload")
+        filter = data.get("filter")
+        limit = data.get("limit")
+
         # Validate required inputs
         if not url:
             raise ValueError("Database connection URL is required")
@@ -170,26 +190,28 @@ class QdrantDBNode(Node):
             raise ValueError("Embedding helper is required")
 
         # Initialize Qdrant client
+        qdrant_client = None
         try:
-            client = CustomQdrantClient(host=url, api_key=api_key)
+            qdrant_client = CustomQdrantClient(host=url, api_key=api_key)
             logger.info(f"Connected to Qdrant at: {url}")
         except Exception as e:
             logger.error(f"Failed to connect to Qdrant: {str(e)}")
             raise ValueError(f"Failed to connect to Qdrant at {url}.")
 
+        if not qdrant_client:
+            raise ValueError("Failed to connect to Qdrant.")
+
         try:
             # Handle different operations
             if operation == "search":
-                # For search operation, we would need a query vector
-                # Since we don't have a direct input, we'll return an error message
-                # explaining that this operation requires additional parameters
-                result = json.dumps(
-                    {
-                        "error": "Search operation requires a query vector. Please use the embedding helper to generate one.",
-                        "status": "failed",
-                    }
+                result = self._search_ops(
+                    qdrant_client=qdrant_client,
+                    collection_name=collection_name,
+                    text_query=text_query,
+                    filter_str=filter,
+                    limit=limit,
+                    embedding_helper_instance=embedding_helper_instance,
                 )
-
             elif operation == "insert":
                 # For insert operation, we would need vectors to insert
                 # Since we don't have a direct input, we'll return an error message
@@ -223,33 +245,6 @@ class QdrantDBNode(Node):
                     }
                 )
 
-            elif operation == "get":
-                # Check if collection exists
-                try:
-                    collections = client.get_collections().collections
-                    collection_names = [collection.name for collection in collections]
-
-                    if collection_name not in collection_names:
-                        result = json.dumps(
-                            {
-                                "error": f"Collection '{collection_name}' does not exist",
-                                "status": "failed",
-                            }
-                        )
-                    else:
-                        # Get collection info
-                        collection_info = client.get_collection(collection_name)
-                        result = collection_info.get("result", {})
-                        result["name"] = collection_name
-                        result = json.dumps(result)
-                except Exception as e:
-                    result = json.dumps(
-                        {
-                            "error": f"Error getting collection info: {str(e)}",
-                            "status": "failed",
-                        }
-                    )
-
             else:
                 result = json.dumps(
                     {"error": f"Unknown operation: {operation}", "status": "failed"}
@@ -275,3 +270,94 @@ class QdrantDBNode(Node):
     ) -> Any:
         """Process tool method - not implemented for this node."""
         raise NotImplementedError("QdrantDBNode does not support tool mode")
+
+    def _search_ops(
+        self,
+        qdrant_client: CustomQdrantClient,
+        collection_name: str,
+        text_query: str,
+        filter_str: Optional[str],
+        limit: Optional[str],
+        embedding_helper_instance: EmbeddingProviderBase,
+    ) -> str:
+        """
+        Perform a search operation in Qdrant.
+
+        Args:
+            qdrant_client: The Qdrant client instance.
+            collection_name: Name of the collection to search in.
+            text_query: The text query to embed and search for.
+            filter_str: Optional filter string in JSON format.
+            limit: Optional limit for the number of results.
+            embedding_helper_instance: The embedding provider instance.
+
+        Returns:
+            JSON string containing the search results.
+        """
+        # Validate search-specific inputs
+        if not text_query:
+            raise ValueError("Text query is required for search operation")
+
+        # Generate query vector from text
+        query_vector = self._get_embeddings(
+            text=text_query, embedding_helper_instance=embedding_helper_instance
+        )
+
+        # Parse filter if provided
+        query_filter = None
+        if filter_str:
+            try:
+                filter_dict = json.loads(filter_str)
+                query_filter = Filter(**filter_dict)
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Invalid filter JSON format: {str(e)}")
+            except Exception as e:
+                raise ValueError(f"Invalid filter format: {str(e)}")
+
+        # Parse limit
+        search_limit = int(limit) if limit else 5
+        if search_limit <= 0:
+            raise ValueError("Limit must be a positive number")
+
+        # Perform search
+        search_results = qdrant_client.search(
+            collection_name=collection_name,
+            vector=query_vector,
+            limit=search_limit,
+            query_filter=query_filter,
+        )
+
+        # Convert results to JSON-serializable format
+        results = []
+        for hit in search_results:
+            result_item = {
+                "id": hit.id,
+                "score": hit.score,
+                "payload": hit.payload,
+            }
+            if hit.vector is not None:
+                result_item["vector"] = hit.vector
+            results.append(result_item)
+
+        return json.dumps(
+            {
+                "results": results,
+                "status": "success",
+                "query": text_query,
+                "limit": search_limit,
+            }
+        )
+
+    def _get_embeddings(
+        self, text: str, embedding_helper_instance: EmbeddingProviderBase
+    ) -> List[float]:
+        embed_input = EmbeddingInput(
+            text=text,
+        )
+
+        embed_output: EmbeddingResponse = embedding_helper_instance.get_embeddings(
+            input=embed_input
+        )
+        embeddings = embed_output.embeddings
+
+        return embeddings

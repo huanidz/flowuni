@@ -6,7 +6,7 @@ class EmbeddingProviderConsts:
     # Default models for each provider
     DEFAULT_MODELS = {
         OPENAI: "text-embedding-ada-002",
-        GOOGLE: "models/embedding-001",
+        GOOGLE: "gemini-embedding-001",
         OPENROUTER: "text-embedding-ada-002",
     }
 
