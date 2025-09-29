@@ -16,7 +16,10 @@ from src.nodes.handles.basics.inputs.DropdownInputHandle import (
     DropdownInputHandle,
     DropdownOption,
 )
-from src.nodes.handles.basics.inputs.KeyValueInputHandle import KeyValueItem
+from src.nodes.handles.basics.inputs.KeyValueInputHandle import (
+    KeyValueItem,
+    KVValueDType,
+)
 from src.nodes.handles.basics.outputs.StringOutputHandle import StringOutputHandle
 from src.nodes.NodeBase import Node, NodeSpec
 
@@ -69,28 +72,41 @@ class QdrantDBNode(Node):
                 type=KeyValueInputHandle(
                     allow_custom_keys=False,
                     fixed_items=[
-                        KeyValueItem(key="ids", value=""),
-                        KeyValueItem(key="text_query", value=""),
+                        KeyValueItem(
+                            key="ids",
+                            value="",
+                            description="IDs to work with, separated by commas",
+                        ),
+                        KeyValueItem(
+                            key="text_query",
+                            value="",
+                            description="Text query. This will be embedded to get the vector.",
+                        ),
                         KeyValueItem(
                             key="payload",
                             value="",
                             value_placeholder="{sample_payload}",
                             multiline=True,
+                            description="Payload for the operation. Should be in JSON format.",
                         ),
                         KeyValueItem(
                             key="filter",
                             value="",
                             multiline=True,
+                            description="Filter for the operation. Should be in JSON format.",
                         ),
                         KeyValueItem(
                             key="limit",
                             value="",
                             value_placeholder="5",
                             multiline=False,
+                            dtype=KVValueDType.NUMBER,
                         ),
                     ],
                 ),
+                description="Data for the operation.",
                 enable_as_whole_for_tool=True,
+                allow_incoming_edges=False,
             ),
             NodeInput(
                 name="embedding_helper",

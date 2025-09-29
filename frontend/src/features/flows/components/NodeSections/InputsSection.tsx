@@ -145,9 +145,17 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
                     />
                 )}
 
-                {hasInputComponent && showInputComponent && !hideInputField && (
-                    <div style={nodeStyles.inputComponent}>
-                        <InputComponent {...inputProps} />
+                {hasInputComponent && !hideInputField && (
+                    <div
+                        style={{
+                            ...nodeInputSectionStyles.animatedInputComponent,
+                            ...(showInputComponent &&
+                                nodeInputSectionStyles.animatedInputComponentVisible),
+                        }}
+                    >
+                        <div style={nodeStyles.inputComponent}>
+                            <InputComponent {...inputProps} />
+                        </div>
                     </div>
                 )}
             </div>

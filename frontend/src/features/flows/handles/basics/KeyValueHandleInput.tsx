@@ -8,6 +8,7 @@ interface KeyValueItem {
     value: string;
     dtype: 'string' | 'number' | 'boolean';
     required: boolean;
+    description?: string;
     key_placeholder?: string;
     value_placeholder?: string;
     multiline?: boolean;

@@ -1,14 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { X } from 'lucide-react';
+import { X, HelpCircle } from 'lucide-react';
 
 interface KeyValueItem {
     key: string;
     value: string;
     dtype: 'string' | 'number' | 'boolean';
     required: boolean;
+    description?: string;
     key_placeholder?: string;
     value_placeholder?: string;
     multiline?: boolean;
@@ -60,6 +61,8 @@ export const KeyValuePairItem: React.FC<KeyValuePairItemProps> = ({
     const isMultiline =
         fixedItem?.multiline || predefinedItem?.multiline || false;
     const dtype = fixedItem?.dtype || predefinedItem?.dtype || 'string';
+    const description =
+        fixedItem?.description || predefinedItem?.description || '';
     const keyPlaceholder =
         fixedItem?.key_placeholder || predefinedItem?.key_placeholder || '';
     const valuePlaceholder =
@@ -69,6 +72,8 @@ export const KeyValuePairItem: React.FC<KeyValuePairItemProps> = ({
         !disabled &&
         !isFixed &&
         !(isRequired && keyValuePairs.length <= min_pairs);
+
+    const [showDescriptionTooltip, setShowDescriptionTooltip] = useState(false);
 
     return (
         <div className="group flex gap-2 items-start p-3 rounded-lg border border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm transition-all duration-200">
@@ -80,6 +85,32 @@ export const KeyValuePairItem: React.FC<KeyValuePairItemProps> = ({
                         <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-600 border border-blue-200">
                             Fixed
                         </span>
+                    )}
+                    {description && (
+                        <div
+                            className="relative"
+                            onMouseEnter={() => setShowDescriptionTooltip(true)}
+                            onMouseLeave={() =>
+                                setShowDescriptionTooltip(false)
+                            }
+                        >
+                            <HelpCircle
+                                size={12}
+                                className="text-gray-400 hover:text-gray-600 cursor-help transition-colors"
+                            />
+                            {showDescriptionTooltip && (
+                                <div
+                                    className="absolute left-0 top-5 z-50 bg-gray-800 text-white text-xs rounded-md px-2 py-1.5 whitespace-nowrap max-w-xs"
+                                    style={{
+                                        boxShadow:
+                                            '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                                    }}
+                                >
+                                    <div className="absolute -top-1 left-3 w-2 h-2 bg-gray-800 transform rotate-45"></div>
+                                    {description}
+                                </div>
+                            )}
+                        </div>
                     )}
                 </Label>
                 <Input

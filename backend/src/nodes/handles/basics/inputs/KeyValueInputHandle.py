@@ -19,6 +19,9 @@ class KeyValueItem(BaseModel):
     dtype: KVValueDType = Field(
         default=KVValueDType.STRING, description="Data type for the value"
     )
+    description: str = Field(
+        default="", description="Description for the key-value pair"
+    )
     required: bool = Field(
         default=False, description="Whether this key-value pair is required"
     )
