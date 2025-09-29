@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import type { IOTypeDetail } from '@/features/nodes/types';
+import { KeyValuePairItem } from '../sub_components/KeyValuePairItem';
+import { AddNewPairSection } from '../sub_components/AddNewPairSection';
 
 interface KeyValueItem {
     key: string;
@@ -209,166 +208,38 @@ export const KeyValueHandleInput: React.FC<KeyValueHandleInputProps> = ({
 
             {/* Existing key-value pairs */}
             <div className="space-y-2">
-                {keyValuePairs.map(([key, value], index) => {
-                    // Check if this is a fixed item
-                    const fixedItem = fixed_items.find(
-                        (item: KeyValueItem) => item.key === key
-                    );
-
-                    // Check if this is a predefined item
-                    const predefinedItem = predefined_items.find(
-                        (item: KeyValueItem) => item.key === key
-                    );
-
-                    const isFixed = !!fixedItem;
-                    const isRequired =
-                        fixedItem?.required ||
-                        predefinedItem?.required ||
-                        false;
-                    const isMultiline =
-                        fixedItem?.multiline ||
-                        predefinedItem?.multiline ||
-                        false;
-                    const dtype =
-                        fixedItem?.dtype || predefinedItem?.dtype || 'string';
-                    const keyPlaceholder =
-                        fixedItem?.key_placeholder ||
-                        predefinedItem?.key_placeholder ||
-                        '';
-                    const valuePlaceholder =
-                        fixedItem?.value_placeholder ||
-                        predefinedItem?.value_placeholder ||
-                        '';
-
-                    return (
-                        <div key={index} className="flex gap-2 items-start">
-                            <div className="flex-1">
-                                <Label className="text-xs">
-                                    {key_label}
-                                    {isRequired && (
-                                        <span className="text-red-500 ml-1">
-                                            *
-                                        </span>
-                                    )}
-                                    {isFixed && (
-                                        <span className="text-blue-500 ml-1">
-                                            (Fixed)
-                                        </span>
-                                    )}
-                                </Label>
-                                <Input
-                                    value={key}
-                                    onChange={e =>
-                                        handleUpdatePair(
-                                            index,
-                                            e.target.value,
-                                            value
-                                        )
-                                    }
-                                    disabled={
-                                        disabled ||
-                                        !allow_custom_keys ||
-                                        isFixed
-                                    }
-                                    placeholder={keyPlaceholder}
-                                    className="text-xs"
-                                />
-                            </div>
-                            <div className="flex-1">
-                                <Label className="text-xs">{value_label}</Label>
-                                {isMultiline ? (
-                                    <textarea
-                                        value={value}
-                                        onChange={e =>
-                                            handleUpdatePair(
-                                                index,
-                                                key,
-                                                e.target.value
-                                            )
-                                        }
-                                        disabled={disabled || isFixed}
-                                        placeholder={valuePlaceholder}
-                                        className="w-full p-2 border rounded text-xs resize-none min-h-[60px]"
-                                        rows={2}
-                                    />
-                                ) : (
-                                    <Input
-                                        value={value}
-                                        onChange={e =>
-                                            handleUpdatePair(
-                                                index,
-                                                key,
-                                                e.target.value
-                                            )
-                                        }
-                                        disabled={disabled || isFixed}
-                                        placeholder={valuePlaceholder}
-                                        className="text-xs"
-                                        type={
-                                            (dtype as 'number') === 'number'
-                                                ? 'number'
-                                                : (dtype as 'boolean') ===
-                                                    'boolean'
-                                                  ? 'checkbox'
-                                                  : 'text'
-                                        }
-                                    />
-                                )}
-                            </div>
-                            <div className="flex items-end">
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleRemovePair(index)}
-                                    disabled={
-                                        disabled ||
-                                        isFixed ||
-                                        (isRequired &&
-                                            keyValuePairs.length <= min_pairs)
-                                    }
-                                    className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                                >
-                                    ×
-                                </Button>
-                            </div>
-                        </div>
-                    );
-                })}
+                {keyValuePairs.map(([key, value], index) => (
+                    <KeyValuePairItem
+                        key={index}
+                        key_label={key_label}
+                        value_label={value_label}
+                        keyValue={key}
+                        value={value}
+                        index={index}
+                        fixed_items={fixed_items}
+                        predefined_items={predefined_items}
+                        disabled={disabled}
+                        allow_custom_keys={allow_custom_keys}
+                        keyValuePairs={keyValuePairs}
+                        min_pairs={min_pairs}
+                        onKeyChange={handleUpdatePair}
+                        onRemove={handleRemovePair}
+                    />
+                ))}
             </div>
 
             {/* Add new pair section */}
             {allow_custom_keys && canAddMore && !disabled && (
-                <div className="flex gap-2 items-start border-t pt-4">
-                    <div className="flex-1">
-                        <Label className="text-xs">{key_label}</Label>
-                        <Input
-                            value={newKey}
-                            onChange={e => setNewKey(e.target.value)}
-                            placeholder="Enter key..."
-                            className="text-xs"
-                        />
-                    </div>
-                    <div className="flex-1">
-                        <Label className="text-xs">{value_label}</Label>
-                        <Input
-                            value={newValue}
-                            onChange={e => setNewValue(e.target.value)}
-                            placeholder="Enter value..."
-                            className="text-xs"
-                        />
-                    </div>
-                    <div className="flex items-end">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={handleAddPair}
-                            disabled={!newKey.trim() || !newValue.trim()}
-                            className="h-8 px-3"
-                        >
-                            Add
-                        </Button>
-                    </div>
-                </div>
+                <AddNewPairSection
+                    key_label={key_label}
+                    value_label={value_label}
+                    newKey={newKey}
+                    newValue={newValue}
+                    onKeyChange={setNewKey}
+                    onValueChange={setNewValue}
+                    onAdd={handleAddPair}
+                    disabled={disabled}
+                />
             )}
 
             {/* Validation messages */}
