@@ -8,7 +8,12 @@ from src.components.embedding.providers.EmbeddingProviderFactory import (
     EmbeddingProviderFactory,
 )
 from src.consts.node_consts import NODE_GROUP_CONSTS
-from src.helpers.custom_clients.CustomQdrantClient import CustomQdrantClient, Filter
+from src.helpers.custom_clients.CustomQdrantClient import (
+    CustomQdrantClient,
+    Filter,
+    PointStruct,
+    ScoredPoint,
+)
 from src.nodes.core.NodeIcon import NodeIconIconify
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
@@ -168,7 +173,7 @@ class QdrantDBNode(Node):
         )
 
         embedding_helper_instance.init(
-            model=embedding_helper["model"],
+            model=embedding_helper["embedding_model"],
             api_key=embedding_helper["api_key"],
         )
 
@@ -192,7 +197,7 @@ class QdrantDBNode(Node):
         # Initialize Qdrant client
         qdrant_client = None
         try:
-            qdrant_client = CustomQdrantClient(host=url, api_key=api_key)
+            qdrant_client = CustomQdrantClient(host=url, api_key=api_key, timeout=30)
             logger.info(f"Connected to Qdrant at: {url}")
         except Exception as e:
             logger.error(f"Failed to connect to Qdrant: {str(e)}")
@@ -213,36 +218,30 @@ class QdrantDBNode(Node):
                     embedding_helper_instance=embedding_helper_instance,
                 )
             elif operation == "insert":
-                # For insert operation, we would need vectors to insert
-                # Since we don't have a direct input, we'll return an error message
-                # explaining that this operation requires additional parameters
-                result = json.dumps(
-                    {
-                        "error": "Insert operation requires vectors to insert. Please use the embedding helper to generate them.",
-                        "status": "failed",
-                    }
+                result = self._insert_ops(
+                    qdrant_client=qdrant_client,
+                    collection_name=collection_name,
+                    ids=ids,
+                    text_query=text_query,
+                    payload_str=payload,
+                    embedding_helper_instance=embedding_helper_instance,
                 )
 
             elif operation == "update":
-                # For update operation, we would need vectors to update
-                # Since we don't have a direct input, we'll return an error message
-                # explaining that this operation requires additional parameters
-                result = json.dumps(
-                    {
-                        "error": "Update operation requires vectors to update. Please use the embedding helper to generate them.",
-                        "status": "failed",
-                    }
+                result = self._update_ops(
+                    qdrant_client=qdrant_client,
+                    collection_name=collection_name,
+                    ids=ids,
+                    text_query=text_query,
+                    payload_str=payload,
+                    embedding_helper_instance=embedding_helper_instance,
                 )
 
             elif operation == "delete":
-                # For delete operation, we would need IDs to delete
-                # Since we don't have a direct input, we'll return an error message
-                # explaining that this operation requires additional parameters
-                result = json.dumps(
-                    {
-                        "error": "Delete operation requires IDs to delete. Please provide them through the embedding helper.",
-                        "status": "failed",
-                    }
+                result = self._delete_ops(
+                    qdrant_client=qdrant_client,
+                    collection_name=collection_name,
+                    ids=ids,
                 )
 
             else:
@@ -325,6 +324,8 @@ class QdrantDBNode(Node):
             vector=query_vector,
             limit=search_limit,
             query_filter=query_filter,
+            with_payload=True,
+            with_vector=False,
         )
 
         # Convert results to JSON-serializable format
@@ -333,10 +334,13 @@ class QdrantDBNode(Node):
             result_item = {
                 "id": hit.id,
                 "score": hit.score,
-                "payload": hit.payload,
+                "payload": hit.payload if hit.payload else {},
             }
-            if hit.vector is not None:
-                result_item["vector"] = hit.vector
+
+            # Disable vector in the dict due to too long for payload
+            # May enable (or not)
+            # if hit.vector is not None:
+            #     result_item["vector"] = hit.vector
             results.append(result_item)
 
         return json.dumps(
@@ -347,6 +351,223 @@ class QdrantDBNode(Node):
                 "limit": search_limit,
             }
         )
+
+    def _insert_ops(
+        self,
+        qdrant_client: CustomQdrantClient,
+        collection_name: str,
+        ids: str,
+        text_query: str,
+        payload_str: str,
+        embedding_helper_instance: EmbeddingProviderBase,
+    ) -> str:
+        """
+        Perform an insert operation in Qdrant.
+
+        Args:
+            qdrant_client: The Qdrant client instance.
+            collection_name: Name of the collection to insert into.
+            ids: Comma-separated string of IDs to insert.
+            text_query: The text to embed and insert as vectors.
+            payload_str: JSON string containing payload data.
+            embedding_helper_instance: The embedding provider instance.
+
+        Returns:
+            JSON string containing the insert operation result.
+        """
+        # Validate insert-specific inputs
+        if not ids:
+            raise ValueError("IDs are required for insert operation")
+        if not text_query:
+            raise ValueError(
+                "Text query is required for insert operation to generate vectors"
+            )
+
+        # Parse IDs
+        id_list = [id.strip() for id in ids.split(",") if id.strip()]
+        if not id_list:
+            raise ValueError("No valid IDs provided")
+
+        # Generate vector from text
+        query_vector = self._get_embeddings(
+            text=text_query, embedding_helper_instance=embedding_helper_instance
+        )
+
+        # Parse payload if provided
+        payload_dict = {}
+        if payload_str:
+            try:
+                payload_dict = json.loads(payload_str)
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Invalid payload JSON format: {str(e)}")
+
+        # Create points for insertion
+        points = []
+        for i, point_id in enumerate(id_list):
+            point_payload = payload_dict.copy()
+            # Add metadata about the insertion
+            point_payload["_inserted_text"] = text_query
+            point_payload["_inserted_id"] = point_id
+
+            point = PointStruct(
+                id=point_id,
+                vector=query_vector,
+                payload=point_payload if point_payload else {},
+            )
+            points.append(point)
+
+        # Perform insert operation
+        try:
+            upsert_result = qdrant_client.upsert_points(
+                collection_name=collection_name,
+                points=points,
+            )
+
+            return json.dumps(
+                {
+                    "status": "success",
+                    "inserted_count": len(points),
+                    "ids": id_list,
+                    "message": f"Successfully inserted {len(points)} points into collection '{collection_name}'",
+                    "upsert_result": upsert_result,
+                }
+            )
+
+        except Exception as e:
+            logger.error(f"Error during insert operation: {str(e)}")
+            raise ValueError(f"Failed to insert points: {str(e)}")
+
+    def _update_ops(
+        self,
+        qdrant_client: CustomQdrantClient,
+        collection_name: str,
+        ids: str,
+        text_query: str,
+        payload_str: str,
+        embedding_helper_instance: EmbeddingProviderBase,
+    ) -> str:
+        """
+        Perform an update operation in Qdrant.
+
+        Args:
+            qdrant_client: The Qdrant client instance.
+            collection_name: Name of the collection to update.
+            ids: Comma-separated string of IDs to update.
+            text_query: The text to embed and update as vectors.
+            payload_str: JSON string containing payload data.
+            embedding_helper_instance: The embedding provider instance.
+
+        Returns:
+            JSON string containing the update operation result.
+        """
+        # Validate update-specific inputs
+        if not ids:
+            raise ValueError("IDs are required for update operation")
+        if not text_query:
+            raise ValueError(
+                "Text query is required for update operation to generate vectors"
+            )
+
+        # Parse IDs
+        id_list = [id.strip() for id in ids.split(",") if id.strip()]
+        if not id_list:
+            raise ValueError("No valid IDs provided")
+
+        # Generate vector from text
+        query_vector = self._get_embeddings(
+            text=text_query, embedding_helper_instance=embedding_helper_instance
+        )
+
+        # Parse payload if provided
+        payload_dict = {}
+        if payload_str:
+            try:
+                payload_dict = json.loads(payload_str)
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Invalid payload JSON format: {str(e)}")
+
+        # Create points for update
+        points = []
+        for i, point_id in enumerate(id_list):
+            point_payload = payload_dict.copy()
+            # Add metadata about the update
+            point_payload["_updated_text"] = text_query
+            point_payload["_updated_id"] = point_id
+
+            point = PointStruct(
+                id=point_id,
+                vector=query_vector,
+                payload=point_payload if point_payload else {},
+            )
+            points.append(point)
+
+        # Perform update operation (using upsert to update existing points)
+        try:
+            upsert_result = qdrant_client.upsert_points(
+                collection_name=collection_name,
+                points=points,
+            )
+
+            return json.dumps(
+                {
+                    "status": "success",
+                    "updated_count": len(points),
+                    "ids": id_list,
+                    "message": f"Successfully updated {len(points)} points in collection '{collection_name}'",
+                    "upsert_result": upsert_result,
+                }
+            )
+
+        except Exception as e:
+            logger.error(f"Error during update operation: {str(e)}")
+            raise ValueError(f"Failed to update points: {str(e)}")
+
+    def _delete_ops(
+        self,
+        qdrant_client: CustomQdrantClient,
+        collection_name: str,
+        ids: str,
+    ) -> str:
+        """
+        Perform a delete operation in Qdrant.
+
+        Args:
+            qdrant_client: The Qdrant client instance.
+            collection_name: Name of the collection to delete from.
+            ids: Comma-separated string of IDs to delete.
+
+        Returns:
+            JSON string containing the delete operation result.
+        """
+        # Validate delete-specific inputs
+        if not ids:
+            raise ValueError("IDs are required for delete operation")
+
+        # Parse IDs
+        id_list = [id.strip() for id in ids.split(",") if id.strip()]
+        if not id_list:
+            raise ValueError("No valid IDs provided")
+
+        # Perform delete operation
+        try:
+            delete_result = qdrant_client.delete_points(
+                collection_name=collection_name,
+                points_ids=id_list,
+            )
+
+            return json.dumps(
+                {
+                    "status": "success",
+                    "deleted_count": len(id_list),
+                    "ids": id_list,
+                    "message": f"Successfully deleted {len(id_list)} points from collection '{collection_name}'",
+                    "delete_result": delete_result,
+                }
+            )
+
+        except Exception as e:
+            logger.error(f"Error during delete operation: {str(e)}")
+            raise ValueError(f"Failed to delete points: {str(e)}")
 
     def _get_embeddings(
         self, text: str, embedding_helper_instance: EmbeddingProviderBase
