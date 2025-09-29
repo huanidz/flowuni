@@ -13,6 +13,7 @@ from src.nodes.categories.customs import (
     StringAggregatorNode,
     StringTransformNode,
 )
+from src.nodes.categories.database import PostgresDBNode
 from src.nodes.categories.integrations import TavilySearchNode
 from src.nodes.categories.primitives import (
     ChatInput,
@@ -36,9 +37,17 @@ custom_nodes = [
     EmbeddingProviderNode,
 ]
 
+database_nodes = [PostgresDBNode]
+
 primitives_nodes = [ChatInput, ChatOutput]
 trials_nodes = [TrialTextInputNode, DelayNode]
 
 integrations_nodes = [TavilySearchNode]
 
-__all__ = [*primitives_nodes, *custom_nodes, *trials_nodes, *integrations_nodes]
+__all__ = [
+    *primitives_nodes,
+    *custom_nodes,
+    *trials_nodes,
+    *integrations_nodes,
+    *database_nodes,
+]

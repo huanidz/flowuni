@@ -9,6 +9,7 @@ import { ToolableJsonHandleInput } from './basics/ToolableJsonHandleInput';
 import { NumberHandleInput } from './basics/NumberHandleInput';
 import { BooleanHandleInput } from './basics/BooleanHandleInput';
 import { LLMProviderInputHandle } from './basics/LLMProviderInputHandle';
+import { EmbeddingProviderInputHandle } from './basics/EmbeddingProviderInputHandle';
 
 export type NodeInputType =
     | 'TextFieldInputHandle'
@@ -20,7 +21,8 @@ export type NodeInputType =
     | 'ToolableJsonInputHandle'
     | 'NumberInputHandle'
     | 'BooleanInputHandle'
-    | 'LLMProviderInputHandle' /* etc. */;
+    | 'LLMProviderInputHandle'
+    | 'EmbeddingProviderInputHandle' /* etc. */;
 
 export const NodeInputType = {
     TextField: 'TextFieldInputHandle',
@@ -33,6 +35,7 @@ export const NodeInputType = {
     Number: 'NumberInputHandle',
     Boolean: 'BooleanInputHandle',
     LLMProvider: 'LLMProviderInputHandle',
+    EmbeddingProvider: 'EmbeddingProviderInputHandle',
 } as const;
 
 export const HandleComponentRegistry: {
@@ -48,6 +51,7 @@ export const HandleComponentRegistry: {
     [NodeInputType.Number]: NumberHandleInput,
     [NodeInputType.Boolean]: BooleanHandleInput,
     [NodeInputType.LLMProvider]: LLMProviderInputHandle,
+    [NodeInputType.EmbeddingProvider]: EmbeddingProviderInputHandle,
 };
 
 // ===========================================================================

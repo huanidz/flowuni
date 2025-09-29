@@ -27,6 +27,7 @@ class NODE_GROUP_CONSTS:
     AGENT = "agent"
     GROUP_TEST = "test"
     TRIAL = "trial"
+    DATABASE = "database"
 
 
 class NODE_TAGS_CONSTS:

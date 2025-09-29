@@ -1,6 +1,7 @@
 from .BooleanInputHandle import BooleanInputHandle
 from .DropdownInputHandle import DropdownInputHandle
 from .DynamicTypeInputHandle import DynamicTypeInputHandle
+from .EmbeddingProviderInputHandle import EmbeddingProviderInputHandle
 from .FileInputHandle import FileInputHandle
 from .ImageInputInputHandle import ImageInputInputHandle
 from .LLMInputHandle import LLMProviderInputHandle
@@ -22,6 +23,7 @@ __all__ = [
     "ToolableJsonInputHandle",
     "ImageInputInputHandle",
     "LLMProviderInputHandle",
+    "EmbeddingProviderInputHandle",
 ]
 
 from enum import Enum
@@ -39,3 +41,4 @@ class InputHandleTypeEnum(Enum):
     TOOLABLE_JSON = ToolableJsonInputHandle
     IMAGE = ImageInputInputHandle
     LLM_PROVIDER = LLMProviderInputHandle
+    EMBEDDING_PROVIDER = EmbeddingProviderInputHandle

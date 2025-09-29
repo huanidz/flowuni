@@ -7,7 +7,9 @@ from src.nodes.handles.basics.inputs.DropdownInputHandle import (
     DropdownOption,
 )
 from src.nodes.handles.basics.inputs.SecretTextInputHandle import SecretTextInputHandle
-from src.nodes.handles.basics.outputs.DataOutputHandle import DataOutputHandle
+from src.nodes.handles.basics.outputs.EmbeddingProviderOutputHandle import (
+    EmbeddingProviderOutputHandle,
+)
 from src.nodes.handles.resolvers.basics import (
     ConditionalResolver,
     StaticResolver,
@@ -125,7 +127,7 @@ class EmbeddingProviderNode(Node):
         outputs=[
             NodeOutput(
                 name="embedding_provider",
-                type=DataOutputHandle(),
+                type=EmbeddingProviderOutputHandle(),
                 description="The configured embedding provider.",
             )
         ],
