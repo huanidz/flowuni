@@ -1,5 +1,15 @@
-from .EmbeddingProviderInterface import EmbeddingProviderBase
+from src.components.embedding.providers.adapters.GoogleEmbeddingProvider import (
+    GoogleEmbeddingProvider,
+)
+from src.components.embedding.providers.adapters.OpenAIEmbeddingProvider import (
+    OpenAIEmbeddingProvider,
+)
+from src.components.embedding.providers.adapters.OpenRouterEmbeddingProvider import (
+    OpenRouterEmbeddingProvider,
+)
 
 __all__ = [
-    "EmbeddingProviderBase",
+    "GoogleEmbeddingProvider",
+    "OpenAIEmbeddingProvider",
+    "OpenRouterEmbeddingProvider",
 ]

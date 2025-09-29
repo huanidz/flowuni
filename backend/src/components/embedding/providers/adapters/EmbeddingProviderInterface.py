@@ -15,11 +15,13 @@ class EmbeddingProviderBase(ABC):
         self.api_key = api_key
 
     @abstractmethod
-    def get_embeddings(self, text: str) -> List[float]:
+    def get_embeddings(self, input: EmbeddingInput) -> EmbeddingResponse:
         """Get embeddings for the given text."""
         pass
 
     @abstractmethod
-    def get_batch_embeddings(self, texts: List[str]) -> List[List[float]]:
+    def get_batch_embeddings(
+        self, inputs: List[EmbeddingInput]
+    ) -> List[EmbeddingResponse]:
         """Get embeddings for a batch of texts."""
         pass

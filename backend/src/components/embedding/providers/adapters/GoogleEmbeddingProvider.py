@@ -22,25 +22,27 @@ class GoogleEmbeddingProvider(EmbeddingProviderBase):
                 "Google Generative AI library is not installed. Please install it with: pip install google-generativeai"
             )
 
-    def get_embeddings(self, text: str) -> List[float]:
+    def get_embeddings(self, input: EmbeddingInput) -> EmbeddingResponse:
         """Get embeddings for the given text using Google."""
         if not self.client:
             raise ValueError("Provider not initialized. Call init() first.")
 
         result = self.client.embed_content(
-            model=self.model, content=text, task_type="retrieval_document"
+            model=self.model, content=input.text, task_type="retrieval_document"
         )
-        return result["embedding"]
+        return EmbeddingResponse(embeddings=result["embedding"])
 
-    def get_batch_embeddings(self, texts: List[str]) -> List[List[float]]:
+    def get_batch_embeddings(
+        self, inputs: List[EmbeddingInput]
+    ) -> List[EmbeddingResponse]:
         """Get embeddings for a batch of texts using Google."""
         if not self.client:
             raise ValueError("Provider not initialized. Call init() first.")
 
-        embeddings = []
-        for text in texts:
+        responses = []
+        for input in inputs:
             result = self.client.embed_content(
-                model=self.model, content=text, task_type="retrieval_document"
+                model=self.model, content=input.text, task_type="retrieval_document"
             )
-            embeddings.append(result["embedding"])
-        return embeddings
+            responses.append(EmbeddingResponse(embeddings=result["embedding"]))
+        return responses
