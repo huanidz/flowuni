@@ -13,6 +13,7 @@ watchfiles==1.1.0
 sqlalchemy==2.0.38
 psycopg2-binary==2.9.10
 asyncpg==0.30.0
+pinecone==7.3.0
 
 # Others
 natsort==8.4.0
@@ -21,7 +22,7 @@ fastnanoid==0.4.3
 
 # LLM-related
 instructor[vertexai]
-langfuse==2.44.0
+langfuse==3.4.0
 json-schema-to-pydantic==0.4.1
 
 # Graph and Nodes
