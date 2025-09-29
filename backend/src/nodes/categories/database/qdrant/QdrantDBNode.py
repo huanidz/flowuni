@@ -1,4 +1,5 @@
 import json
+import uuid
 from typing import Any, Dict, List, Optional
 
 from loguru import logger
@@ -352,6 +353,65 @@ class QdrantDBNode(Node):
             }
         )
 
+    def _validate_ids(self, ids: str, operation_name: str) -> List[str]:
+        """
+        Validate that IDs are either unsigned integers or UUIDs.
+
+        Args:
+            ids: Comma-separated string of IDs to validate
+            operation_name: Name of the operation for error messages
+
+        Returns:
+            List of validated IDs
+
+        Raises:
+            ValueError: If any ID is invalid
+        """
+        if not ids:
+            raise ValueError(
+                f"Please input a valid new id for {operation_name} operation"
+            )
+
+        id_list = [id.strip() for id in ids.split(",") if id.strip()]
+        if not id_list:
+            raise ValueError(
+                f"Please input a valid new id for {operation_name} operation"
+            )
+
+        validated_ids = []
+        for id_str in id_list:
+            # Check if it's a valid unsigned integer
+            if id_str.isdigit():
+                # Convert to int to ensure it's not too large
+                try:
+                    int_id = int(id_str)
+                    if int_id < 0:
+                        raise ValueError(
+                            f"ID '{id_str}' is not a valid unsigned integer for {operation_name} operation"
+                        )
+                    validated_ids.append(id_str)
+                except ValueError:
+                    raise ValueError(
+                        f"ID '{id_str}' is not a valid unsigned integer for {operation_name} operation"
+                    )
+            # Check if it's a valid UUID
+            elif self._is_valid_uuid(id_str):
+                validated_ids.append(id_str)
+            else:
+                raise ValueError(
+                    f"ID '{id_str}' is not a valid unsigned integer or UUID for {operation_name} operation"
+                )
+
+        return validated_ids
+
+    def _is_valid_uuid(self, uuid_str: str) -> bool:
+        """Check if a string is a valid UUID."""
+        try:
+            uuid.UUID(uuid_str)
+            return True
+        except ValueError:
+            return False
+
     def _insert_ops(
         self,
         qdrant_client: CustomQdrantClient,
@@ -376,17 +436,13 @@ class QdrantDBNode(Node):
             JSON string containing the insert operation result.
         """
         # Validate insert-specific inputs
-        if not ids:
-            raise ValueError("IDs are required for insert operation")
         if not text_query:
             raise ValueError(
                 "Text query is required for insert operation to generate vectors"
             )
 
-        # Parse IDs
-        id_list = [id.strip() for id in ids.split(",") if id.strip()]
-        if not id_list:
-            raise ValueError("No valid IDs provided")
+        # Validate IDs
+        id_list = self._validate_ids(ids, "insert")
 
         # Generate vector from text
         query_vector = self._get_embeddings(
@@ -461,17 +517,13 @@ class QdrantDBNode(Node):
             JSON string containing the update operation result.
         """
         # Validate update-specific inputs
-        if not ids:
-            raise ValueError("IDs are required for update operation")
         if not text_query:
             raise ValueError(
                 "Text query is required for update operation to generate vectors"
             )
 
-        # Parse IDs
-        id_list = [id.strip() for id in ids.split(",") if id.strip()]
-        if not id_list:
-            raise ValueError("No valid IDs provided")
+        # Validate IDs
+        id_list = self._validate_ids(ids, "update")
 
         # Generate vector from text
         query_vector = self._get_embeddings(
@@ -539,14 +591,8 @@ class QdrantDBNode(Node):
         Returns:
             JSON string containing the delete operation result.
         """
-        # Validate delete-specific inputs
-        if not ids:
-            raise ValueError("IDs are required for delete operation")
-
-        # Parse IDs
-        id_list = [id.strip() for id in ids.split(",") if id.strip()]
-        if not id_list:
-            raise ValueError("No valid IDs provided")
+        # Validate IDs
+        id_list = self._validate_ids(ids, "delete")
 
         # Perform delete operation
         try:
