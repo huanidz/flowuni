@@ -10,6 +10,7 @@ from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.handles.basics.inputs import (
     EmbeddingProviderInputHandle,
     KeyValueInputHandle,
+    SecretTextInputHandle,
     TextFieldInputHandle,
 )
 from src.nodes.handles.basics.inputs.DropdownInputHandle import (
@@ -32,12 +33,23 @@ class QdrantDBNode(Node):
         description="Connect to Qdrant vector database for vector operations.",
         inputs=[
             NodeInput(
-                name="db_connection_url",
+                name="url",
                 type=TextFieldInputHandle(
                     placeholder="http://localhost:6333",
                     multiline=False,
                 ),
-                description="Qdrant server connection URL",
+                description="Qdrant server connection URL/Endpoint. (e.g., https://some-uuid.us-east4-0.gcp.cloud.qdrant.io)",
+                required=True,
+                allow_incoming_edges=False,
+            ),
+            # API
+            NodeInput(
+                name="api_key",
+                type=SecretTextInputHandle(
+                    allow_visible_toggle=True,
+                    multiline=False,
+                ),
+                description="Qdrant API key",
                 required=True,
                 allow_incoming_edges=False,
             ),
@@ -141,13 +153,14 @@ class QdrantDBNode(Node):
         Returns:
             Dictionary with result key containing JSON string of operation results
         """
-        db_connection_url = input_values.get("db_connection_url")
+        url = input_values.get("url")
+        api_key = input_values.get("api_key")
         collection_name = input_values.get("collection_name")
         operation = input_values.get("operation")
         embedding_helper = input_values.get("embedding_helper")
 
         # Validate required inputs
-        if not db_connection_url:
+        if not url:
             raise ValueError("Database connection URL is required")
         if not collection_name:
             raise ValueError("Collection name is required")
@@ -158,25 +171,11 @@ class QdrantDBNode(Node):
 
         # Initialize Qdrant client
         try:
-            # Extract URL and API key from connection string if needed
-            url = db_connection_url
-            api_key = None
-
-            # If connection string contains API key, extract it
-            if "@" in db_connection_url:
-                import re
-
-                match = re.match(r"https?://([^@]+)@(.+)", db_connection_url)
-                if match:
-                    api_key = match.group(1)
-                    url = f"http://{match.group(2)}"
-
             client = CustomQdrantClient(host=url, api_key=api_key)
             logger.info(f"Connected to Qdrant at: {url}")
         except Exception as e:
             logger.error(f"Failed to connect to Qdrant: {str(e)}")
-            error_result = json.dumps({"error": str(e), "status": "failed"})
-            return {"result": error_result}
+            raise ValueError(f"Failed to connect to Qdrant at {url}.")
 
         try:
             # Handle different operations

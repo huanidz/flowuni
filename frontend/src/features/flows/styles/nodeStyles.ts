@@ -119,7 +119,7 @@ export const nodeStyles = {
     },
 
     inputComponent: {
-        marginTop: '4px',
+        // marginTop: '4px',
         textAlign: 'left' as const,
     },
 

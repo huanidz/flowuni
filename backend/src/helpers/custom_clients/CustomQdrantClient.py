@@ -1,8 +1,7 @@
-import json
-import random
 from typing import Any, Dict, List, Literal, Optional
 
 import requests
+from loguru import logger
 from pydantic import BaseModel, Field
 
 # --- Pydantic Data Models for Qdrant API Payloads ---
@@ -115,6 +114,22 @@ class CustomQdrantClient:
             # Authentication header required for Qdrant Cloud
             self.headers["api-key"] = self.api_key
 
+        self._check_connection()
+
+    def _check_connection(self):
+        """Checks the connection to the Qdrant instance."""
+        logger.info(f"Checking connection to Qdrant at {self.host}...")
+        try:
+            # Use a simple, lightweight endpoint to check connection
+            self._request("GET", "/collections")
+            logger.info("Successfully connected to Qdrant.")
+        except requests.exceptions.RequestException as e:
+            logger.info(f"Failed to connect to Qdrant at {self.host}. Error: {e}")
+            raise ValueError(f"Failed to connect to Qdrant at {self.host}.")
+        except Exception as e:
+            logger.info(f"An unexpected error occurred during connection check: {e}")
+            raise ValueError("An unexpected error occurred during connection check.")
+
     def _request(
         self, method: str, path: str, data: Optional[BaseModel] = None
     ) -> dict:
@@ -134,10 +149,13 @@ class CustomQdrantClient:
             response.raise_for_status()
 
             result_data = response.json()
-            if result_data.get("status", {}).get("error"):
-                raise Exception(f"Qdrant API Error: {result_data['status']['error']}")
+            logger.info(f"👉 result_data: {result_data}")
 
-            return result_data
+            status = result_data.get("status")
+            if status == "ok":
+                return result_data
+            else:
+                raise Exception(result_data.get("error", "Unknown error"))
 
         except requests.exceptions.RequestException as e:
             print(f"Request failed to {url}. Error: {e}")
