@@ -28,7 +28,7 @@ class GoogleEmbeddingProvider(EmbeddingProviderBase):
             self.client = model_client
             self.embed_config = types.EmbedContentConfig(
                 task_type="SEMANTIC_SIMILARITY",
-                output_dimensionality=768,
+                output_dimensionality=512,
             )
         except ImportError:
             raise ImportError(
