@@ -24,6 +24,7 @@ from src.models.validators.PassCriteriaRunnerModels import (
 from src.nodes.GraphCompiler import GraphCompiler
 from src.nodes.GraphLoader import GraphLoader
 from src.schemas.flowbuilder.flow_graph_schemas import (
+    ApiFlowRunMessage,
     ApiFlowRunRequest,
     CanvasFlowRunRequest,
     FlowExecutionResult,
@@ -45,10 +46,11 @@ class FlowSyncWorker:
     def run_sync(
         self,
         flow_id: str,
+        flow_run_request: ApiFlowRunRequest,
         session_id: Optional[str],
         flow_graph_request_dict: Dict,
         enable_debug: bool = True,
-    ) -> FlowRunResult:
+    ) -> FlowExecutionResult:
         """
         Execute a flow synchronously.
 
@@ -60,17 +62,31 @@ class FlowSyncWorker:
             is_test: Whether this is a test run
 
         Returns:
-            FlowRunResult: Result of the flow execution
+            FlowExecutionResult: Result of the flow execution
 
         Raises:
             Exception: Re-raises any execution errors for proper error handling
         """
         try:
+            user_inputs: Optional[List[ApiFlowRunMessage]] = flow_run_request.messages
+
+            text_input = None
+            if user_inputs:
+                text_input = "\n\n".join(
+                    [
+                        message.content
+                        for message in user_inputs
+                        if message.type == "text"
+                    ]
+                )
+
             logger.info(f"Starting flow execution for flow_id: {flow_id}")
 
             # Parse and load the flow graph
             flow_graph_request = CanvasFlowRunRequest(**flow_graph_request_dict)
-            graph = GraphLoader.from_request(flow_graph_request)
+            graph = GraphLoader.from_request(
+                flow_graph_request, custom_input_text=text_input
+            )
 
             # Compile execution plan
             compiler = GraphCompiler(graph=graph, remove_standalone=False)
@@ -81,14 +97,17 @@ class FlowSyncWorker:
                 run_id=self.task_id, flow_id=flow_id, session_id=session_id
             )
 
+            exec_control = ExecutionControl(start_node=None, scope="downstream")
+
             # Create and run executor
             logger.info(f"Creating executor with {len(execution_plan)} layers")
             executor = GraphExecutor(
                 graph=graph,
                 execution_plan=execution_plan,
+                execution_control=exec_control,
                 execution_event_publisher=None,
                 execution_context=execution_context,
-                enable_debug=False,
+                enable_debug=enable_debug,
             )
 
             logger.info("Starting graph execution")
@@ -96,7 +115,7 @@ class FlowSyncWorker:
 
             logger.success(f"Flow execution completed for flow_id: {flow_id}")
 
-            return FlowRunResult(**execution_result)
+            return execution_result
 
         except Exception as e:
             logger.error(f"Flow execution failed for flow_id {flow_id}: {str(e)}")
@@ -231,7 +250,7 @@ class FlowSyncWorker:
             )
             raise
 
-    def run_flow_with_validation(
+    def run_flow_from_api(
         self,
         flow_id: str,
         flow_run_request: ApiFlowRunRequest,
@@ -281,9 +300,10 @@ class FlowSyncWorker:
             logger.info(f"Starting validated flow execution for flow_id: {flow_id}")
             result = self.run_sync(
                 flow_id=flow_id,
+                flow_run_request=flow_run_request,
                 session_id=flow_run_request.session_id,
                 flow_graph_request_dict=flow_definition,
-                is_test=is_test,
+                enable_debug=False,
             )
 
             logger.success(f"Validated flow execution completed for flow_id: {flow_id}")
