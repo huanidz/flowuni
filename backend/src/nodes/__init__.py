@@ -1,7 +1,6 @@
 from src.nodes.categories.customs import (
     AgentNode,
     CalculatorNode,
-    ComparisonRouterNode,
     EmbeddingProviderNode,
     FanInNode,
     FanOutNode,
@@ -9,9 +8,6 @@ from src.nodes.categories.customs import (
     LLMProviderNode,
     LLMRouterNode,
     MemoryNode,
-    RouterNode,
-    StringAggregatorNode,
-    StringTransformNode,
 )
 from src.nodes.categories.database import (
     PineconeDBNode,
@@ -29,16 +25,12 @@ from src.nodes.categories.trials import DelayNode, TrialTextInputNode
 custom_nodes = [
     AgentNode,
     CalculatorNode,
-    ComparisonRouterNode,
     FanInNode,
     FanOutNode,
     HttpRequestNode,
     LLMProviderNode,
     LLMRouterNode,
     MemoryNode,
-    RouterNode,
-    StringAggregatorNode,
-    StringTransformNode,
     EmbeddingProviderNode,
 ]
 

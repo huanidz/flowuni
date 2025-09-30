@@ -28,6 +28,7 @@ class NODE_GROUP_CONSTS:
     GROUP_TEST = "test"
     TRIAL = "trial"
     DATABASE = "database"
+    PROVIDER = "provider"
 
 
 class NODE_TAGS_CONSTS:

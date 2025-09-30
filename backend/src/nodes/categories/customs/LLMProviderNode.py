@@ -1,5 +1,6 @@
 from loguru import logger
 from src.components.llm.providers.LLMProviderConsts import LLMProviderName
+from src.consts.node_consts import NODE_GROUP_CONSTS
 from src.models.parsers.LLMProviderParser import LLMProviderParser
 from src.nodes.core.NodeIcon import NodeIconIconify
 from src.nodes.core.NodeInput import NodeInput
@@ -89,6 +90,7 @@ class LLMProviderNode(Node):
         parameters=[],
         can_be_tool=False,
         icon=NodeIconIconify(icon_value="carbon:machine-learning-model"),
+        group=NODE_GROUP_CONSTS.PROVIDER,
     )
 
     def process(self, input_values, parameter_values):

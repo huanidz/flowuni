@@ -1,6 +1,7 @@
 from typing import Any, Dict, Union
 
 from loguru import logger
+from src.nodes.core.NodeIcon import NodeIconIconify
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.handles.basics.inputs.DropdownInputHandle import (
@@ -67,6 +68,7 @@ class ComparisonRouterNode(Node):
         ],
         parameters=[],
         can_be_tool=False,
+        icon=NodeIconIconify(icon_value="tabler:route-alt-right"),
     )
 
     def process(
