@@ -248,3 +248,37 @@ def deep_merge(base_dict, override_dict):
             result[key] = value
 
     return result
+
+
+def merge_headers_or_query_params(base_list, override_dict):
+    """
+    Merge headers or query_params from list format with dictionary format.
+
+    Args:
+        base_list: List of dictionaries in style A format:
+            [{"name":"somename1","value":"somevalue1"}, {"name":"somename2","value":"somevalue2"}]
+        override_dict: Dictionary in style B format:
+            {"the value of name":"the value of value", "the value of name2":"the value of value2"}
+
+    Returns:
+        List of dictionaries in style A format with merged values
+    """
+    if not isinstance(base_list, list):
+        base_list = []
+
+    if not isinstance(override_dict, dict):
+        return base_list
+
+    # Convert base list to dictionary for easier merging
+    base_dict = {}
+    for item in base_list:
+        if isinstance(item, dict) and "name" in item and "value" in item:
+            base_dict[item["name"]] = item["value"]
+
+    # Merge with override dictionary
+    base_dict.update(override_dict)
+
+    # Convert back to list format
+    result = [{"name": name, "value": value} for name, value in base_dict.items()]
+
+    return result
