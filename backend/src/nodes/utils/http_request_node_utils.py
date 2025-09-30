@@ -184,8 +184,8 @@ def build_merged_tool_schema(
     schema_fields = {}
     field_descriptions = {
         "headers": "HTTP headers for the request",
-        "query_params": "Query parameters for the request URL",
-        "body": "JSON body content for the request",
+        "query_params": "HTTP Query parameters for the request URL",
+        "body": "HTTP JSON body content for the request",
     }
 
     # Add schemas if they have valid fields

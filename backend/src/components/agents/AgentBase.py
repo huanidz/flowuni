@@ -6,7 +6,7 @@ and methods that can be extended or overridden by specific agent implementations
 """  # noqa
 
 from abc import ABC
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from loguru import logger
 from src.components.llm.models.core import ChatMessage, ChatResponse
@@ -30,6 +30,7 @@ class Agent(ABC):
         system_prompt (str): The system prompt for the agent
         tools (List[ToolDataParser]): List of available tools for the agent
         tools_map (Dict[str, Dict[str, ToolDataParser]]): Mapping of tool names to tool parsers
+        max_loop_count (int): Maximum number of agent planning/execution loops before stopping
     """  # noqa
 
     def __init__(
@@ -37,6 +38,7 @@ class Agent(ABC):
         llm_provider: LLMProviderBase,
         system_prompt: str = "",
         tools: Optional[List[ToolDataParser]] = None,
+        max_loop_count: int = 3,  # NEW
     ) -> None:
         """
         Initialize the Agent with the given configuration.
@@ -45,11 +47,14 @@ class Agent(ABC):
             llm_provider (LLMProviderBase): The LLM provider adapter
             system_prompt (str, optional): The system prompt. Defaults to "".
             tools (List[ToolDataParser], optional): List of tools. Defaults to None.
+            max_loop_count (int, optional): Maximum number of plan/act loops before we force finalization.
+                Defaults to 3.
         """
         self.llm_provider = llm_provider
         self.system_prompt = system_prompt
         self.tools = tools or []
         self.tools_map = self._build_tools_map()
+        self.max_loop_count = max_loop_count  # NEW
 
     def chat(
         self,
@@ -58,35 +63,106 @@ class Agent(ABC):
         streaming: bool = False,
         max_workers: Optional[int] = None,
     ) -> ChatResponse:
-        """
-        Process a message and return a response.
-
-        Args:
-            message (ChatMessage): The message to process
-            streaming (bool, optional): Whether to use streaming. Defaults to False.
-            max_workers (int, optional): Maximum number of worker threads for parallel tool execution.
-
-        Returns:
-            ChatResponse: The agent's response
-        """  # noqa
         # Setup the conversation
         agent_response_schema, chat_messages = self._setup_agent_conversation(
             message=message, prev_histories=prev_histories
         )
 
-        # Get the agent's initial response
+        # Initial plan
         agent_response = self.llm_provider.structured_completion(
             messages=chat_messages, output_schema=agent_response_schema
         )
         logger.info(f"Agent Response: {agent_response.model_dump_json(indent=2)}")
+        loop_counter = 0
+        self._append_loop_trace(
+            chat_messages, agent_response, loop_counter, phase="plan"
+        )
 
-        # Handle tool execution if needed
-        if agent_response.planned_tool_calls:
-            agent_response = self._handle_tool_execution(
-                agent_response, chat_messages, agent_response_schema
+        # Plan/Act loop
+        while True:
+            logger.info(f"<><><> Chat messages: {chat_messages}")
+
+            # Execute tools if any are planned for this iteration
+            if getattr(agent_response, "planned_tool_calls", None):
+                agent_response = self._handle_tool_execution(
+                    agent_response, chat_messages, agent_response_schema
+                )
+                logger.info(
+                    f"🔁 Post-tool LLM response: {agent_response.model_dump_json(indent=2)}"
+                )
+                # Snapshot after tools
+                self._append_loop_trace(
+                    chat_messages, agent_response, loop_counter, phase="post-tools"
+                )
+
+            # Read the stop/continue signal (default to FINALIZE if missing)
+            next_action = getattr(agent_response, "next_action", "FINALIZE")
+            logger.info(f"⛳ next_action={next_action}, loop={loop_counter}")
+
+            if next_action == "FINALIZE":
+                self._append_loop_trace(
+                    chat_messages,
+                    agent_response,
+                    loop_counter,
+                    phase="stop",
+                    note="finalize",
+                )
+                break
+
+            loop_counter += 1
+            if loop_counter >= self.max_loop_count:
+                logger.info(
+                    f"⏹️ Reached max_loop_count ({self.max_loop_count}). Forcing finalize."
+                )
+                self._append_loop_trace(
+                    chat_messages,
+                    agent_response,
+                    loop_counter,
+                    phase="stop",
+                    note=f"max_loop_count={self.max_loop_count}",
+                )
+                break
+
+            if next_action == "RETRY":
+                # Record the choice to retry before asking for a new plan
+                self._append_loop_trace(
+                    chat_messages,
+                    agent_response,
+                    loop_counter,
+                    phase="retry",
+                    note="retry requested",
+                )
+                agent_response = self.llm_provider.structured_completion(
+                    messages=chat_messages, output_schema=agent_response_schema
+                )
+                logger.info(
+                    f"🔂 Retry-step LLM response: {agent_response.model_dump_json(indent=2)}"
+                )
+                # Capture the new plan after retry decision
+                self._append_loop_trace(
+                    chat_messages,
+                    agent_response,
+                    loop_counter,
+                    phase="plan",
+                    note="post-retry plan",
+                )
+                continue
+
+            # Default path (CONTINUE without explicit retry): ask the LLM for next step
+            agent_response = self.llm_provider.structured_completion(
+                messages=chat_messages, output_schema=agent_response_schema
+            )
+            logger.info(
+                f"🔂 Next-step LLM response: {agent_response.model_dump_json(indent=2)}"
+            )
+            self._append_loop_trace(
+                chat_messages,
+                agent_response,
+                loop_counter,
+                phase="plan",
+                note="continued planning",
             )
 
-        # Return the final response
         logger.info("💬 Returning final response")
         return ChatResponse(content=agent_response.final_response)
 
@@ -287,43 +363,96 @@ class Agent(ABC):
     def _handle_tool_execution(
         self, agent_response, chat_messages: List[ChatMessage], agent_response_schema
     ):
-        """
-        Handle the execution of all planned tool calls and return the final response.
-
-        Args:
-            agent_response: The initial agent response with planned tool calls
-            chat_messages: The conversation history
-            agent_response_schema: The schema for agent responses
-
-        Returns:
-            The result of the tool execution process
-        """
         logger.info(
             f"Agent wants to execute {len(agent_response.planned_tool_calls)} tool(s)"
         )
 
-        processed_result = None
+        all_tool_results = []
+
         for tool_call in agent_response.planned_tool_calls:
-            # Execute the individual tool
             processed_result = self._execute_single_tool(tool_call, chat_messages)
 
             if processed_result is None:
                 continue
 
-            # Append the tool result to the conversation
+            # Collect results for later aggregation
+            all_tool_results.append(
+                {
+                    "tool_name": tool_call.tool_name,
+                    "result": processed_result,
+                }
+            )
+
+            # Append tool result into the conversation (better role assignment)
             tool_result_message = (
                 f"Tool '{tool_call.tool_name}' executed with result: {processed_result}"
             )
             chat_messages.append(
                 ChatMessage(
-                    role=self.llm_provider.roles.USER,
+                    role=self.llm_provider.roles.USER,  # instead of USER
                     content=tool_result_message,
                 )
             )
 
-            # Get the agent's response after tool execution
-            agent_response = self.llm_provider.structured_completion(
+        if not all_tool_results:
+            fallback_msg = ChatMessage(
+                role=self.llm_provider.roles.ASSISTANT,
+                content="I couldn’t execute any of the requested tools. Some error occurred. Please try again.",
+            )
+            chat_messages.append(fallback_msg)
+            return self.llm_provider.structured_completion(
                 messages=chat_messages, output_schema=agent_response_schema
             )
 
+        # Once all tool calls are executed, ask the LLM for a follow-up structured response
+        agent_response = self.llm_provider.structured_completion(
+            messages=chat_messages, output_schema=agent_response_schema
+        )
+
         return agent_response
+
+    def _summarize_planned_tools(self, agent_response: Any) -> str:
+        tools = getattr(agent_response, "planned_tool_calls", None) or []
+        names = []
+        for t in tools:
+            # Support both dict-like and object-like access
+            name = getattr(t, "tool_name", None)
+            if not name and isinstance(t, dict):
+                name = t.get("tool_name")
+            if name:
+                names.append(name)
+        return ", ".join(names) if names else "(none)"
+
+    def _append_loop_trace(
+        self,
+        chat_messages: List[ChatMessage],
+        agent_response: Any,
+        loop_counter: int,
+        phase: str,
+        note: Optional[str] = None,
+    ) -> None:
+        """
+        Append a compact loop-state snapshot so the LLM sees in-between decisions.
+        phase ∈ {"plan", "post-tools", "retry", "stop"}
+        """
+        reasoning = getattr(agent_response, "reasoning", "")
+        next_action = getattr(agent_response, "next_action", "FINALIZE")
+        tools_summary = self._summarize_planned_tools(agent_response)
+
+        parts = [
+            f"[loop:{loop_counter}]",
+            f"[phase:{phase}]",
+            f"[next_action:{next_action}]",
+            f"[planned_tools:{tools_summary}]",
+        ]
+        if note:
+            parts.append(f"[note:{note}]")
+        header = " ".join(parts)
+
+        # Keep it assistant-role so provider context stays consistent
+        chat_messages.append(
+            ChatMessage(
+                role=self.llm_provider.roles.ASSISTANT,
+                content=f"{header}\nReasoning: {reasoning}".strip(),
+            )
+        )
