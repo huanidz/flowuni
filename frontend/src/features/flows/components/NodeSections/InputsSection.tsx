@@ -15,6 +15,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 const INPUT_TYPE_DEFAULT_COLLAPSE: Record<string, boolean> = {
     [NodeInputType.Table]: false,
     [NodeInputType.DynamicType]: true,
+    [NodeInputType.KeyValue]: false,
     // All other types default to true (not explicitly listed)
 };
 
@@ -144,9 +145,17 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
                     />
                 )}
 
-                {hasInputComponent && showInputComponent && !hideInputField && (
-                    <div style={nodeStyles.inputComponent}>
-                        <InputComponent {...inputProps} />
+                {hasInputComponent && !hideInputField && (
+                    <div
+                        style={{
+                            ...nodeInputSectionStyles.animatedInputComponent,
+                            ...(showInputComponent &&
+                                nodeInputSectionStyles.animatedInputComponentVisible),
+                        }}
+                    >
+                        <div style={nodeStyles.inputComponent}>
+                            <InputComponent {...inputProps} />
+                        </div>
                     </div>
                 )}
             </div>

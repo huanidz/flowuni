@@ -2,7 +2,7 @@ import importlib
 import pkgutil
 from typing import Dict, Optional, Type
 
-import src.nodes as nodes_pkg
+import src.nodes.categories as categories_pkg
 from loguru import logger
 from src.nodes.NodeBase import Node, NodeSpec
 
@@ -11,9 +11,10 @@ class NodeRegistry:
     def __init__(self, verbose: bool = False):
         self.verbose = verbose
         self._node_classes: Dict[str, Type[Node]] = {}
-        self._load_nodes_recursively(nodes_pkg)
+        self._load_categories_recursively(categories_pkg)
 
-    def _load_nodes_recursively(self, package):
+    def _load_categories_recursively(self, package):
+        """Load nodes from all category subdirectories."""
         for finder, name, ispkg in pkgutil.walk_packages(
             package.__path__, package.__name__ + "."
         ):

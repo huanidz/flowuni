@@ -1,4 +1,27 @@
-from src.nodes.customs import (
+from src.nodes.categories.customs import (
+    AgentNode,
+    CalculatorNode,
+    ComparisonRouterNode,
+    EmbeddingProviderNode,
+    FanInNode,
+    FanOutNode,
+    HttpRequestNode,
+    LLMProviderNode,
+    LLMRouterNode,
+    MemoryNode,
+    RouterNode,
+    StringAggregatorNode,
+    StringTransformNode,
+)
+from src.nodes.categories.database import PineconeDBNode, PostgresDBNode, QdrantDBNode
+from src.nodes.categories.integrations import TavilySearchNode
+from src.nodes.categories.primitives import (
+    ChatInput,
+    ChatOutput,
+)
+from src.nodes.categories.trials import DelayNode, TrialTextInputNode
+
+custom_nodes = [
     AgentNode,
     CalculatorNode,
     ComparisonRouterNode,
@@ -11,25 +34,20 @@ from src.nodes.customs import (
     RouterNode,
     StringAggregatorNode,
     StringTransformNode,
-)
-from src.nodes.primitives import (
-    ChatInput,
-    ChatOutput,
-)
+    EmbeddingProviderNode,
+]
+
+database_nodes = [PostgresDBNode, QdrantDBNode, PineconeDBNode]
+
+primitives_nodes = [ChatInput, ChatOutput]
+trials_nodes = [TrialTextInputNode, DelayNode]
+
+integrations_nodes = [TavilySearchNode]
 
 __all__ = [
-    ChatInput,
-    ChatOutput,
-    StringTransformNode,
-    AgentNode,
-    CalculatorNode,
-    HttpRequestNode,
-    RouterNode,
-    StringAggregatorNode,
-    ComparisonRouterNode,
-    MemoryNode,
-    LLMProviderNode,
-    LLMRouterNode,
-    FanInNode,
-    FanOutNode,
+    *primitives_nodes,
+    *custom_nodes,
+    *trials_nodes,
+    *integrations_nodes,
+    *database_nodes,
 ]

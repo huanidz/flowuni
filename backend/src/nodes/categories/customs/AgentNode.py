@@ -1,7 +1,6 @@
 import json
 from typing import List
 
-from loguru import logger
 from src.components.agents.AgentBase import Agent
 from src.components.llm.models.core import (
     ChatMessage,

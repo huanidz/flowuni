@@ -645,15 +645,18 @@ class RunFromNodeStrategy:
                 for result in layer_results
             ]
 
-            execute_result = {
-                "success": True,
-                "total_nodes": 1,
-                "completed_nodes": 1,
-                "total_layers": 1,
-                "execution_time": total_time,
-                "results": final_layer_results,
-                "ancestors": [],  # No ancestors for standalone node
-            }
+            execute_result = FlowExecutionResult.model_validate(
+                {
+                    "success": True,
+                    "total_nodes": 1,
+                    "completed_nodes": 1,
+                    "total_layers": 1,
+                    "execution_time": total_time,
+                    "results": final_layer_results,
+                    "ancestors": [],  # No ancestors for standalone node
+                    "chat_output": FlowChatOutputResult(content=None).model_dump(),
+                }
+            )
 
             self.graph_executor.end_event(data=execute_result.model_dump())
 

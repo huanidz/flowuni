@@ -1,6 +1,7 @@
 from .AgentNode import AgentNode
 from .CalculatorNode import CalculatorNode
 from .ComparisonRouterNode import ComparisonRouterNode
+from .EmbeddingProviderNode import EmbeddingProviderNode
 from .FanInNode import FanInNode
 from .FanOutNode import FanOutNode
 from .HttpRequestNode import HttpRequestNode
@@ -12,3 +13,21 @@ from .RouterNode import RouterNode
 from .StringAggregatorNode import StringAggregatorNode
 from .StringTransformNode import StringTransformNode
 from .ToolNode import ToolNode
+
+__all__ = [
+    "AgentNode",
+    "CalculatorNode",
+    "ComparisonRouterNode",
+    "EmbeddingProviderNode",
+    "FanInNode",
+    "FanOutNode",
+    "HttpRequestNode",
+    "LLMProviderNode",
+    "LLMRouterNode",
+    "MemoryNode",
+    "ResolverTestNode",
+    "RouterNode",
+    "StringAggregatorNode",
+    "StringTransformNode",
+    "ToolNode",
+]

@@ -263,6 +263,7 @@ class FlowRepository(BaseRepository):
                 description="",
                 user_id=user_id,
                 flow_definition=flow_definition,
+                is_active=True,
             )
             self.db_session.add(flow)
             self.db_session.commit()
