@@ -634,131 +634,129 @@ class WeaviateDBNode(Node):
         if not filter_dict:
             return None
 
-        def build_tool(
-            self, inputs_values: Dict[str, Any], tool_configs: Any
-        ) -> BuildToolResult:
-            """Build tool method for Weaviate database operations."""
-
-            url = inputs_values.get("url")
-            api_key = inputs_values.get("api_key")
-            class_name = inputs_values.get("class_name")
-
-            from typing import Literal
-
-            from pydantic import BaseModel, Field
-
-            # Validate required inputs
-            if not url:
-                raise ValueError("Weaviate URL is required")
-            if not api_key:
-                raise ValueError("Weaviate API key is required")
-            if not class_name:
-                raise ValueError("Class name is required")
-
-            # Initialize Weaviate client to get collection info
-            try:
-                weaviate_client = weaviate.connect_to_weaviate_cloud(
-                    cluster_url=url,
-                    auth_credentials=AuthApiKey(api_key),
-                )
-                collection = weaviate_client.collections.get(class_name)
-                collection_info = collection.config.get()
-                weaviate_client.close()
-            except Exception as e:
-                logger.error(
-                    f"Failed to connect to Weaviate for tool building: {str(e)}"
-                )
-                collection_info = {"error": "Could not retrieve collection info"}
-
-            ADDITIONAL_TOOL_DESC = f"""\n\n<collection_information>```json\n{json.dumps(collection_info, indent=2)}\n```\n</collection_information>"""
-
-            DEFAULT_TOOL_DESC = """Tool for querying Weaviate database. (Can perform ops: search, insert, update, delete).
-            """
-            tool_name = (
-                tool_configs.tool_name
-                if tool_configs.tool_name
-                else "weaviate_database_tool"
-            )
-            tool_description = (
-                tool_configs.tool_description
-                if tool_configs.tool_description
-                else DEFAULT_TOOL_DESC
-            ) + ADDITIONAL_TOOL_DESC
-
-            class WeaviateData(BaseModel):
-                ids: str = Field(
-                    default="",
-                    description=(
-                        "Comma-separated IDs of the documents (only required for update, delete, or insert). "
-                        "Example: '123e4567-e89b-12d3-a456-426614174000,223e4567-e89b-12d3-a456-426614174001'. Default = ''."
-                    ),
-                )
-                text_query: str = Field(
-                    default="",
-                    description=(
-                        "Text query for search or text content to insert/update. "
-                        "Example (search): 'find documents about cats'. "
-                        "Example (insert): 'This is the content of the new document'. Default = ''."
-                    ),
-                )
-                properties: str = Field(
-                    default="{}",
-                    description=(
-                        "JSON string for the properties (metadata/fields) to insert or update. "
-                        'Must be valid JSON object so later can be loaded with json.loads(). Example: \'{"category": "animal", "source": "wiki"}\'. '
-                        "Default = '{}'."
-                    ),
-                )
-                filter: str = Field(
-                    default="{}",
-                    description=(
-                        "JSON string filter for narrowing search results. Must be valid JSON object following Weaviate filter rules. Later can be loaded with json.loads()"
-                        'Example: \'{"path": ["category"], "operator": "Equal", "valueString": "animal"}\'. '
-                        "Default = '{}'."
-                    ),
-                )
-                top_k: int = Field(
-                    default=5,
-                    description="Number of results to return. Example: 10. Default = 5.",
-                )
-                hybrid_search: bool = Field(
-                    default=False,
-                    description="Whether to use hybrid search (vector + keyword). Example: true. Default = false.",
-                )
-
-            class WeaviateToolSchema(BaseModel):
-                ops: Literal["search", "insert", "update", "delete"]
-                data: WeaviateData
-
-            tool_build_config = BuildToolResult(
-                tool_name=tool_name,
-                tool_description=tool_description,
-                tool_schema=WeaviateToolSchema,
-            )
-
-            return tool_build_config
-
-        def process_tool(
-            self,
-            inputs_values: Dict[str, Any],
-            parameter_values: Dict[str, Any],
-            tool_inputs: Dict[str, Any],
-        ) -> Dict[str, Any]:
-            ops = tool_inputs.get("ops")
-            data = tool_inputs.get("data")
-
-            data["filter"] = json.loads(data["filter"])
-            data["properties"] = json.loads(data["properties"])
-
-            inputs_values["operation"] = ops
-            inputs_values["data"] = data
-
-            processed_result = self.process(inputs_values, parameter_values)
-            return processed_result
-
         # For simplicity, we'll create a filter for the first key-value pair
         # In a real implementation, you'd want to handle more complex filtering
         for key, value in filter_dict.items():
             return Filter.by_property(key).equal(value)
 
         return None
+
+    def build_tool(
+        self, inputs_values: Dict[str, Any], tool_configs: Any
+    ) -> BuildToolResult:
+        """Build tool method for Weaviate database operations."""
+
+        url = inputs_values.get("url")
+        api_key = inputs_values.get("api_key")
+        class_name = inputs_values.get("class_name")
+
+        from typing import Literal
+
+        from pydantic import BaseModel, Field
+
+        # Validate required inputs
+        if not url:
+            raise ValueError("Weaviate URL is required")
+        if not api_key:
+            raise ValueError("Weaviate API key is required")
+        if not class_name:
+            raise ValueError("Class name is required")
+
+        # Initialize Weaviate client to get collection info
+        try:
+            weaviate_client = weaviate.connect_to_weaviate_cloud(
+                cluster_url=url,
+                auth_credentials=AuthApiKey(api_key),
+            )
+            collection = weaviate_client.collections.get(class_name)
+            collection_info = collection.config.get()
+            weaviate_client.close()
+        except Exception as e:
+            logger.error(f"Failed to connect to Weaviate for tool building: {str(e)}")
+            collection_info = {"error": "Could not retrieve collection info"}
+
+        ADDITIONAL_TOOL_DESC = f"""\n\n<collection_information>```json\n{json.dumps(collection_info, indent=2)}\n```\n</collection_information>"""
+
+        DEFAULT_TOOL_DESC = """Tool for querying Weaviate database. (Can perform ops: search, insert, update, delete).
+        """
+        tool_name = (
+            tool_configs.tool_name
+            if tool_configs.tool_name
+            else "weaviate_database_tool"
+        )
+        tool_description = (
+            tool_configs.tool_description
+            if tool_configs.tool_description
+            else DEFAULT_TOOL_DESC
+        ) + ADDITIONAL_TOOL_DESC
+
+        class WeaviateData(BaseModel):
+            ids: str = Field(
+                default="",
+                description=(
+                    "Comma-separated IDs of the documents (only required for update, delete, or insert). "
+                    "Example: '123e4567-e89b-12d3-a456-426614174000,223e4567-e89b-12d3-a456-426614174001'. Default = ''."
+                ),
+            )
+            text_query: str = Field(
+                default="",
+                description=(
+                    "Text query for search or text content to insert/update. "
+                    "Example (search): 'find documents about cats'. "
+                    "Example (insert): 'This is the content of the new document'. Default = ''."
+                ),
+            )
+            properties: str = Field(
+                default="{}",
+                description=(
+                    "JSON string for the properties (metadata/fields) to insert or update. "
+                    'Must be valid JSON object so later can be loaded with json.loads(). Example: \'{"category": "animal", "source": "wiki"}\'. '
+                    "Default = '{}'."
+                ),
+            )
+            filter: str = Field(
+                default="{}",
+                description=(
+                    "JSON string filter for narrowing search results. Must be valid JSON object following Weaviate filter rules. Later can be loaded with json.loads()"
+                    'Example: \'{"path": ["category"], "operator": "Equal", "valueString": "animal"}\'. '
+                    "Default = '{}'."
+                ),
+            )
+            top_k: int = Field(
+                default=5,
+                description="Number of results to return. Example: 10. Default = 5.",
+            )
+            hybrid_search: bool = Field(
+                default=False,
+                description="Whether to use hybrid search (vector + keyword). Example: true. Default = false.",
+            )
+
+        class WeaviateToolSchema(BaseModel):
+            ops: Literal["search", "insert", "update", "delete"]
+            data: WeaviateData
+
+        tool_build_config = BuildToolResult(
+            tool_name=tool_name,
+            tool_description=tool_description,
+            tool_schema=WeaviateToolSchema,
+        )
+
+        return tool_build_config
+
+    def process_tool(
+        self,
+        inputs_values: Dict[str, Any],
+        parameter_values: Dict[str, Any],
+        tool_inputs: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        ops = tool_inputs.get("ops")
+        data = tool_inputs.get("data")
+
+        data["filter"] = json.loads(data["filter"])
+        data["properties"] = json.loads(data["properties"])
+
+        inputs_values["operation"] = ops
+        inputs_values["data"] = data
+
+        processed_result = self.process(inputs_values, parameter_values)
+        return processed_result
