@@ -26,7 +26,9 @@ setup_logger(app_settings.LOG_LEVEL)
 app = FastAPI(title="AI Service", description="AI Service API", version="0.0.1")
 
 origins = [
-    "http://localhost:5173",  # Your frontend's origin
+    "http://localhost:5173",   # dev local
+    "https://flowuni.app",     # production frontend
+    "https://www.flowuni.app"  # nếu dùng cả www
 ]
 
 
