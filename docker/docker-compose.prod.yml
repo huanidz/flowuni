@@ -3,9 +3,12 @@ version: "3.8"
 networks:
   app_network:
     driver: bridge
+  db_network:
+    external: true
+  redis_network:
+    external: true
 
 services:
-  # FastAPI Backend
   app:
     build:
       context: ..
@@ -13,15 +16,15 @@ services:
     env_file:
       - ../.env
     depends_on:
-      - db_service
       - redis-service
     restart: always
     ports:
-      - "5001:5001"   # expose cho nginx proxy
+      - "5001:5001"
     networks:
       - app_network
+      - db_network
+      - redis_network
 
-  # Celery Worker
   celery-worker:
     build:
       context: ..
@@ -29,34 +32,14 @@ services:
     env_file:
       - ../.env
     depends_on:
-      - db_service
       - redis-service
     command: >
       sh -c "celery -A src.celery_worker.celery_worker.celery_app worker --loglevel=info --concurrency=4"
     restart: always
     networks:
       - app_network
-
-  # PostgreSQL Database (internal only)
-  db_service:
-    image: postgres:16
-    env_file:
-      - ../.env
-    volumes:
-      - ./postgres_data:/var/lib/postgresql/data
-    restart: always
-    networks:
-      - app_network
-
-  # Redis (internal only)
-  redis-service:
-    image: redis:7
-    volumes:
-      - ./redis_data:/data
-    restart: always
-    networks:
-      - app_network
+      - db_network
+      - redis_network
 
 volumes:
-  postgres_data:
   redis_data:

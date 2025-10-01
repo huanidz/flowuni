@@ -1,0 +1,15 @@
+version: "3.8"
+
+networks:
+  redis_network:
+    driver: bridge
+
+services:
+  redis_service:
+    image: redis:7
+    container_name: flowuni-redis
+    volumes:
+      - ./redis_data:/data
+    restart: always
+    networks:
+      - redis_network

@@ -1,0 +1,17 @@
+version: "3.8"
+
+networks:
+  db_network:
+    driver: bridge
+
+services:
+  db_service:
+    image: postgres:16
+    container_name: flowuni-db
+    env_file:
+      - ../.env
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+    restart: always
+    networks:
+      - db_network
