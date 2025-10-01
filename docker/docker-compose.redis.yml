@@ -3,6 +3,7 @@ version: "3.8"
 networks:
   redis_network:
     driver: bridge
+    name: redis_network
 
 services:
   redis_service:

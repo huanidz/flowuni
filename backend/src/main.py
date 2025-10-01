@@ -2,7 +2,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from loguru import logger
-from rich.traceback import install
 from src.configs.config import get_settings
 from src.configs.LoggingConfig import setup_logger
 from src.dependencies.redis_dependency import get_redis_client
@@ -19,8 +18,6 @@ from src.routes.node_routes import node_router
 from src.routes.user_event_routes import user_event_router
 from src.routes.user_global_templates_routes import user_global_templates_router
 from src.utils.launch_utils import check_db_connection, check_redis_connection
-
-install(show_locals=True)
 
 # Get application settings and set up logging
 app_settings = get_settings()

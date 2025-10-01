@@ -15,8 +15,8 @@ services:
       dockerfile: docker/Dockerfile.prod.be
     env_file:
       - ../.env
-    depends_on:
-      - flowuni-redis
+    # depends_on:
+    #   - flowuni-redis
     restart: always
     ports:
       - "5001:5001"
@@ -31,8 +31,8 @@ services:
       dockerfile: docker/Dockerfile.prod.be
     env_file:
       - ../.env
-    depends_on:
-      - flowuni-redis
+    # depends_on:
+    #   - flowuni-redis
     command: >
       sh -c "celery -A src.celery_worker.celery_worker.celery_app worker --loglevel=info --concurrency=4"
     restart: always
