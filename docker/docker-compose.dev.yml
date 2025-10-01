@@ -18,24 +18,6 @@ services:
         condition: service_healthy
     # restart: always
 
-  # event-service:
-  #   build:
-  #     context: ..
-  #     dockerfile: docker/Dockerfile.dev.eventservice
-  #   volumes:
-  #     - ../eventservice/src:/app/src
-  #   env_file:
-  #     - ../.env
-  #   ports:
-  #     - "5003:5001"
-  #   depends_on:
-  #     redis-service:
-  #       condition: service_healthy
-  #   command: >
-  #     sh -c "
-  #       watchfiles 'uvicorn src.main:app --host 0.0.0.0 --port 5001' /app/src
-  #     " # ✅ Dùng watchfiles để hot-reload như celery-worker
-
   celery-worker:
     build: 
       context: ..
@@ -58,26 +40,6 @@ services:
       sh -c "
         watchfiles --sigint-timeout 1 --sigkill-timeout 1 --filter python 'celery -A src.celery_worker.celery_worker.celery_app worker --loglevel=info --concurrency=4' /app/src
       "
-    # restart: always
-
-  # flower:
-  #   image: mher/flower:master
-  #   env_file:
-  #     - ../.env
-  #   command: >
-  #     celery
-  #     --broker=${CELERY_BROKER_URL}
-  #     flower
-  #     --port=5555
-  #   ports:
-  #     - "5555:5555"
-  #   depends_on:
-  #     redis-service:
-  #       condition: service_healthy
-  #     celery-worker:
-  #       condition: service_healthy
-    # Add this to command (if needed) to enable basic auth
-    # --basic_auth=admin:secret
 
   db_service:
     image: postgres:16
@@ -107,16 +69,6 @@ services:
     volumes:
       - ./redis_data:/data
     restart: always
-
-  # redisinsight:
-  #   image: redislabs/redisinsight:latest
-  #   ports:
-  #     - "5540:5540"
-  #   depends_on:
-  #     redis-service:
-  #       condition: service_healthy
-  #   volumes:
-  #     - ./redisinsight_data:/db
 
 volumes:
   postgres_data:
