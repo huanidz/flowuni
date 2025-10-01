@@ -19,7 +19,7 @@ api_key_router = APIRouter(
 
 
 @api_key_router.post(
-    "/", response_model=ApiKeyResponse, status_code=status.HTTP_201_CREATED
+    "", response_model=ApiKeyResponse, status_code=status.HTTP_201_CREATED
 )
 async def create_api_key(
     request: CreateApiKeyRequest,
@@ -190,7 +190,7 @@ async def validate_api_key(
 
 
 @api_key_router.get(
-    "/", response_model=ApiKeyListResponse, status_code=status.HTTP_200_OK
+    "", response_model=ApiKeyListResponse, status_code=status.HTTP_200_OK
 )
 async def list_api_keys(
     include_inactive: bool = False,

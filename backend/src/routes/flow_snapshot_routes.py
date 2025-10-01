@@ -45,7 +45,7 @@ def get_flow_snapshot_service(
     return FlowSnapshotService(snapshot_repository=flow_snapshot_repository)
 
 
-@flow_snapshot_router.post("/", response_model=FlowSnapshotResponse)
+@flow_snapshot_router.post("", response_model=FlowSnapshotResponse)
 async def create_flow_snapshot(
     request: FlowSnapshotCreateRequest,
     flow_snapshot_service: FlowSnapshotService = Depends(get_flow_snapshot_service),
@@ -87,7 +87,7 @@ async def create_flow_snapshot(
         )
 
 
-@flow_snapshot_router.get("/", response_model=FlowSnapshotListResponse)
+@flow_snapshot_router.get("", response_model=FlowSnapshotListResponse)
 async def get_flow_snapshots(
     flow_id: str = Query(..., description="Flow ID"),
     page: int = Query(1, description="Page number", ge=1),

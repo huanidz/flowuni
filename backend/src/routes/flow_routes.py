@@ -29,7 +29,7 @@ flow_router = APIRouter(
 )
 
 
-@flow_router.post("/", response_model=FlowCreateResponse)
+@flow_router.post("", response_model=FlowCreateResponse)
 async def create_flow(
     request: FlowCreateRequest = None,
     flow_service: FlowService = Depends(get_flow_service),
@@ -74,7 +74,7 @@ async def create_flow(
         )
 
 
-@flow_router.get("/", response_model=GetFlowResponse)
+@flow_router.get("", response_model=GetFlowResponse)
 async def get_by_user_id(
     user_id: int = Query(..., description="User ID"),
     page: int = Query(1, description="Page number", ge=1),

@@ -34,7 +34,7 @@ flow_test_run_router = APIRouter(
 )
 
 
-@flow_test_run_router.post("/", response_model=FlowTestRunResponse)
+@flow_test_run_router.post("", response_model=FlowTestRunResponse)
 async def run_single_test(
     request: FlowTestRunRequest,
     flow_test_service: FlowTestService = Depends(get_flow_test_service),
