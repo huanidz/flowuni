@@ -105,6 +105,7 @@ class FlowService(FlowServiceInterface):
                     name=flow.name,
                     description=flow.description,
                     is_active=flow.is_active,
+                    created_at=flow.created_at,
                 )
                 for flow in flows
             ]

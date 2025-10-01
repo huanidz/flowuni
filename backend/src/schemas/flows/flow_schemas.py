@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
@@ -14,6 +15,7 @@ class GetFlowResponseItem(BaseModel):
     name: str = Field(..., description="Flow name")
     description: str = Field("", description="Flow description")
     is_active: bool = Field(..., description="Flow status")
+    created_at: datetime = Field(..., description="Flow creation date")
 
 
 class Pagination(BaseModel):

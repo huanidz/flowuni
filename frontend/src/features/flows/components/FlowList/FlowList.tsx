@@ -89,7 +89,7 @@ const FlowList: React.FC<FlowListProps> = ({
                         <TableHead>Description</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Created</TableHead>
-                        <TableHead>Node Count</TableHead>
+                        <TableHead className="w-[120px]">Builder</TableHead>
                         <TableHead className="w-[100px]">Actions</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -114,12 +114,17 @@ const FlowList: React.FC<FlowListProps> = ({
                                 </span>
                             </TableCell>
                             <TableCell className="text-sm text-gray-600">
-                                {formatDate(flow.created_at as string)}
+                                {flow.created_at as string}
                             </TableCell>
-                            <TableCell className="text-sm text-gray-600">
-                                {flow.node_count !== undefined
-                                    ? flow.node_count
-                                    : 'No nodes'}
+                            <TableCell>
+                                <Button
+                                    onClick={() => handleFlowClick(flow)}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white font-medium"
+                                    size="sm"
+                                >
+                                    <Play className="h-4 w-4 mr-2" />
+                                    Builder
+                                </Button>
                             </TableCell>
                             <TableCell>
                                 <DropdownMenu>
@@ -133,14 +138,6 @@ const FlowList: React.FC<FlowListProps> = ({
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
-                                        <DropdownMenuItem
-                                            onClick={() =>
-                                                handleFlowClick(flow)
-                                            }
-                                        >
-                                            <Play className="h-4 w-4 mr-2" />
-                                            Builder
-                                        </DropdownMenuItem>
                                         {flow.is_active ? (
                                             <DropdownMenuItem
                                                 onClick={() =>
