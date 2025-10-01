@@ -1,5 +1,13 @@
-import React from 'react';
-import { MoreHorizontal, Trash2, Power, PowerOff, Play } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+    MoreHorizontal,
+    Trash2,
+    Power,
+    PowerOff,
+    Play,
+    Copy,
+    Check,
+} from 'lucide-react';
 import {
     Table,
     TableBody,
@@ -19,6 +27,7 @@ import type { Flow, Pagination } from '@/features/flows/types';
 import { useNavigate } from 'react-router-dom';
 import { useDeleteFlow, useActivateFlow } from '@/features/flows/hooks';
 import { toast } from 'sonner';
+import { useConfirmation } from '@/hooks/useConfirmationModal';
 
 interface FlowListProps {
     flows: Flow[];
@@ -40,18 +49,40 @@ const FlowList: React.FC<FlowListProps> = ({
     const { mutate: deleteFlow } = useDeleteFlow();
     const { mutate: activateFlow, isPending: isActivatePending } =
         useActivateFlow();
-
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString();
-    };
+    const { confirm, ConfirmationDialog } = useConfirmation();
+    const [copiedFlowId, setCopiedFlowId] = useState<string | null>(null);
 
     const handleFlowClick = (flow: Flow) => {
         navigate(`/flow/${flow.flow_id}`);
     };
 
-    const handleDeleteFlow = (flowId: string, _flowName: string) => {
-        deleteFlow(flowId);
-        toast.success('Flow đã được xóa thành công');
+    const handleDeleteFlow = (flowId: string, flowName: string) => {
+        confirm({
+            title: 'Delete Flow',
+            description: `Are you sure you want to delete "${flowName}"? This action cannot be undone.`,
+            confirmText: 'Delete',
+            cancelText: 'Cancel',
+            variant: 'destructive',
+            onConfirm: async () => {
+                deleteFlow(flowId);
+                toast.success('Flow đã được xóa thành công');
+            },
+        });
+    };
+
+    const handleCopyFlowId = async (flowId: string) => {
+        try {
+            await navigator.clipboard.writeText(flowId);
+            setCopiedFlowId(flowId);
+            toast.success('Flow ID copied to clipboard');
+
+            // Reset the copied state after 2 seconds
+            setTimeout(() => {
+                setCopiedFlowId(null);
+            }, 2000);
+        } catch (error) {
+            toast.error('Failed to copy Flow ID');
+        }
     };
 
     const handleToggleActivation = (flow: Flow) => {
@@ -85,6 +116,7 @@ const FlowList: React.FC<FlowListProps> = ({
             <Table>
                 <TableHeader>
                     <TableRow>
+                        <TableHead className="w-[250px]">Flow ID</TableHead>
                         <TableHead>Name</TableHead>
                         <TableHead>Description</TableHead>
                         <TableHead>Status</TableHead>
@@ -96,6 +128,28 @@ const FlowList: React.FC<FlowListProps> = ({
                 <TableBody>
                     {flows.map(flow => (
                         <TableRow key={flow.flow_id}>
+                            <TableCell>
+                                <div className="flex items-center space-x-2">
+                                    <span className="text-sm text-gray-600 font-mono truncate max-w-[150px]">
+                                        {flow.flow_id}
+                                    </span>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6"
+                                        onClick={() =>
+                                            handleCopyFlowId(flow.flow_id)
+                                        }
+                                        title="Copy Flow ID"
+                                    >
+                                        {copiedFlowId === flow.flow_id ? (
+                                            <Check className="h-3 w-3 text-green-600" />
+                                        ) : (
+                                            <Copy className="h-3 w-3" />
+                                        )}
+                                    </Button>
+                                </div>
+                            </TableCell>
                             <TableCell className="font-medium">
                                 {flow.name}
                             </TableCell>
@@ -227,6 +281,8 @@ const FlowList: React.FC<FlowListProps> = ({
                     </Button>
                 </div>
             )}
+
+            <ConfirmationDialog />
         </div>
     );
 };
