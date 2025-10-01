@@ -17,7 +17,6 @@ import type {
     CreateLLMJudgeRequest,
     UpdateLLMJudgeRequest,
     LLMProviderParser,
-    LLMProvider,
     LLMSupportConfig,
 } from '../types';
 import { getLLMConfig } from '../api';
@@ -45,8 +44,6 @@ const LLMJudgeForm: React.FC<LLMJudgeFormProps> = ({
     const [maxOutputTokens, setMaxOutputTokens] = useState<number>(1024);
     const [llmConfig, setLLMConfig] = useState<LLMSupportConfig | null>(null);
     const [availableModels, setAvailableModels] = useState<string[]>([]);
-    const [selectedProvider, setSelectedProvider] =
-        useState<LLMProvider | null>(null);
     const [isLoadingConfig, setIsLoadingConfig] = useState(false);
     const [providerSearchTerm, setProviderSearchTerm] = useState('');
     const [modelSearchTerm, setModelSearchTerm] = useState('');
@@ -88,7 +85,6 @@ const LLMJudgeForm: React.FC<LLMJudgeFormProps> = ({
             const selectedProvider = llmConfig.supported_providers.find(
                 p => p.provider_name === provider
             );
-            setSelectedProvider(selectedProvider || null);
 
             if (selectedProvider) {
                 if (selectedProvider.type === 'predefined') {

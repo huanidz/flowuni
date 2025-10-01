@@ -57,7 +57,7 @@ const initialState = {
 
 export const usePlaygroundStore = create<PlaygroundState>()(
     devtools(
-        (set, get) => ({
+        (set, _get) => ({
             ...initialState,
 
             // Session actions

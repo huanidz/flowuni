@@ -2,79 +2,90 @@ import { create } from 'zustand';
 import { type NodeSpec } from './types';
 
 export interface NodeStore {
-  nodes: NodeSpec[];
-  loaded: boolean;
-  setNodes: (nodes: NodeSpec[]) => void;
-  setLoaded: (loaded: boolean) => void;
-  getNodeSpecByRFNodeType: (nodeName: string) => NodeSpec | undefined;
-  getAllNodeSpecs: () => NodeSpec[];
-  getNodeNames: () => string[];
-  getInputPorts: (nodeName: string) => string[];
-  getOutputPorts: (nodeName: string) => string[];
-  getParameters: (nodeName: string) => Record<string, any>;
-  canConnect: (
-    sourceNodeName: string,
-    sourcePort: string,
-    targetNodeName: string,
-    targetPort: string
-  ) => boolean;
+    nodes: NodeSpec[];
+    loaded: boolean;
+    setNodes: (nodes: NodeSpec[]) => void;
+    setLoaded: (loaded: boolean) => void;
+    getNodeSpecByRFNodeType: (nodeName: string) => NodeSpec | undefined;
+    getAllNodeSpecs: () => NodeSpec[];
+    getNodeNames: () => string[];
+    getInputPorts: (nodeName: string) => string[];
+    getOutputPorts: (nodeName: string) => string[];
+    getParameters: (nodeName: string) => Record<string, any>;
+    canConnect: (
+        sourceNodeName: string,
+        sourcePort: string,
+        targetNodeName: string,
+        targetPort: string
+    ) => boolean;
 }
 
 const useNodeStore = create<NodeStore>((set, get) => ({
-  nodes: [],
-  loaded: false,
+    nodes: [],
+    loaded: false,
 
-  setNodes: (nodes: NodeSpec[]) => set({ nodes }),
-  
-  setLoaded: (loaded: boolean) => set({ loaded }),
+    setNodes: (nodes: NodeSpec[]) => set({ nodes }),
 
-  getNodeSpecByRFNodeType: (nodeName: string) => {
-    const { nodes } = get();
-    return nodes.find(node => node.name === nodeName);
-  },
+    setLoaded: (loaded: boolean) => set({ loaded }),
 
-  getAllNodeSpecs: () => {
-    const { nodes } = get();
-    return nodes;
-  },
+    getNodeSpecByRFNodeType: (nodeName: string) => {
+        const { nodes } = get();
+        return nodes.find(node => node.name === nodeName);
+    },
 
-  getNodeNames: () => {
-    const { nodes } = get();
-    return nodes.map(node => node.name);
-  },
+    getAllNodeSpecs: () => {
+        const { nodes } = get();
+        return nodes;
+    },
 
-  getInputPorts: (nodeName: string) => {
-    const node = get().getNodeSpecByRFNodeType(nodeName);
-    return node ? Object.keys(node.inputs) : [];
-  },
+    getNodeNames: () => {
+        const { nodes } = get();
+        return nodes.map(node => node.name);
+    },
 
-  getOutputPorts: (nodeName: string) => {
-    const node = get().getNodeSpecByRFNodeType(nodeName);
-    return node ? Object.keys(node.outputs) : [];
-  },
+    getInputPorts: (nodeName: string) => {
+        const node = get().getNodeSpecByRFNodeType(nodeName);
+        return node ? Object.keys(node.inputs) : [];
+    },
 
-  getParameters: (nodeName: string) => {
-    const node = get().getNodeSpecByRFNodeType(nodeName);
-    return node ? node.parameters : {};
-  },
+    getOutputPorts: (nodeName: string) => {
+        const node = get().getNodeSpecByRFNodeType(nodeName);
+        return node ? Object.keys(node.outputs) : [];
+    },
 
-  canConnect: (
-    sourceNodeName: string,
-    sourcePort: string,
-    targetNodeName: string,
-    targetPort: string
-  ) => {
-    const { getNodeSpecByRFNodeType } = get();
-    const sourceNode = getNodeSpecByRFNodeType(sourceNodeName);
-    const targetNode = getNodeSpecByRFNodeType(targetNodeName);
+    getParameters: (nodeName: string) => {
+        const node = get().getNodeSpecByRFNodeType(nodeName);
+        return node ? node.parameters : {};
+    },
 
-    if (!sourceNode || !targetNode) return false;
+    canConnect: (
+        sourceNodeName: string,
+        sourcePort: string,
+        targetNodeName: string,
+        targetPort: string
+    ) => {
+        const { getNodeSpecByRFNodeType } = get();
+        const sourceNode = getNodeSpecByRFNodeType(sourceNodeName);
+        const targetNode = getNodeSpecByRFNodeType(targetNodeName);
 
-    const sourceType = sourceNode.outputs[sourcePort];
-    const targetType = targetNode.inputs[targetPort];
+        if (!sourceNode || !targetNode) return false;
 
-    return sourceType === targetType;
-  },
+        // Find the specific output and input by name in their respective arrays
+        const sourceOutput = sourceNode.outputs.find(
+            output => output.name === sourcePort
+        );
+        const targetInput = targetNode.inputs.find(
+            input => input.name === targetPort
+        );
+
+        if (!sourceOutput || !targetInput) return false;
+
+        // Compare the types from the type_detail
+        const sourceType = sourceOutput.type_detail.type;
+        const targetType = targetInput.type_detail.type;
+
+        return sourceType === targetType;
+    },
 }));
 
 export default useNodeStore;

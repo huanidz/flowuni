@@ -15,9 +15,7 @@ import type {
     GetSessionsWithLastMessageResponse,
     AddChatMessageRequest,
     ChatMessageResponse,
-    GetChatHistoryRequest,
     GetChatHistoryResponse,
-    UpdateSessionMetadataRequest,
     UpdateSessionMetadataResponse,
 } from './types';
 

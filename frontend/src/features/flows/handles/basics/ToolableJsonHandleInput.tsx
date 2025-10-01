@@ -468,10 +468,7 @@ export const ToolableJsonHandleInput: React.FC<
                             </span>
                             <input
                                 type="text"
-                                value={formatDefaultValue(
-                                    node.defaultValue,
-                                    node.type
-                                )}
+                                value={formatDefaultValue(node.defaultValue)}
                                 onChange={e => {
                                     let val: any = e.target.value;
                                     if (node.type === 'number')
