@@ -34,7 +34,7 @@ const PublishButton: React.FC<PublishButtonProps> = ({ onPublish }) => {
                         publishButton.backgroundColor;
                 }}
             >
-                Publish
+                API Usage
             </button>
             <LifecycleModal
                 open={isOpen}

@@ -1,8 +1,7 @@
 // sse.ts
 import { ACCESS_TOKEN_KEY } from '@/features/auth/consts';
 
-const baseURL =
-    import.meta.env.VITE_API_BASE_URL || 'http://localhost:5002/api';
+const baseURL = import.meta.env.VITE_API_BASE_URL;
 
 const VALID_ID_RE = /^\d+-\d+$/;
 const normalizeSinceId = (val?: string) => {

@@ -1,8 +1,7 @@
 // src/api/sse.ts
 import { ACCESS_TOKEN_KEY } from '@/features/auth/consts';
 
-const baseURL =
-    import.meta.env.VITE_API_BASE_URL || 'http://localhost:5002/api';
+const baseURL = import.meta.env.VITE_API_BASE_URL;
 
 export const watchFlowExecution = (
     taskId: string,

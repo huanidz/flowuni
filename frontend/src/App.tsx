@@ -47,7 +47,7 @@ function App() {
                     <Route path="/" element={<Navigate to="/dashboard" />} />
                 </Routes>
             </Router>
-            <Toaster closeButton={true} duration={1000} visibleToasts={1} />
+            <Toaster closeButton={true} duration={2000} visibleToasts={1} />
         </>
     );
 }
