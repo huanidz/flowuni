@@ -1,4 +1,4 @@
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from loguru import logger
@@ -32,3 +32,26 @@ class TimeHelper:
                 "Unexpected error happen when converting iso to unix timestamp"
             )
             return None
+
+    @staticmethod
+    def get_current_time_str(utc_offset: int = 0) -> str:
+        """
+        Get the current time string with a fixed UTC offset.
+
+        Args:
+            utc_offset (int): Timezone offset from UTC in hours (e.g., +7, -5).
+
+        Returns:
+            str: Formatted current time string like "Current time (YYYY/MM/dd HH/mm/ss): 2025/10/01 12:32:14"
+        """
+        try:
+            # Create timezone with the specified offset
+            tz = timezone(timedelta(hours=utc_offset))
+            # Get current time in the specified timezone
+            current_time = datetime.now(tz)
+            # Format as YYYY/MM/dd HH:mm:ss
+            formatted_time = current_time.strftime("%Y/%m/%d %H:%M:%S")
+            return f"Current time (UTC+{utc_offset}) (YYYY/MM/dd HH/mm/ss): {formatted_time}"
+        except Exception:
+            logger.error("Unexpected error happen when getting current time string")
+            return "Current time (YYYY/MM/dd HH/mm/ss): Error getting time"
