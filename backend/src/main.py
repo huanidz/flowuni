@@ -23,7 +23,7 @@ from src.utils.launch_utils import check_db_connection, check_redis_connection
 app_settings = get_settings()
 setup_logger(app_settings.LOG_LEVEL)
 
-app = FastAPI(title="AI Service", description="AI Service API", version="0.0.1")
+app = FastAPI(title="AI Service", description="AI Service API", version="0.0.1", redirect_slashes=False)
 
 origins = [
     "http://localhost:5173",   # dev local

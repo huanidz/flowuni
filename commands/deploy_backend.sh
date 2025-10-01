@@ -13,8 +13,8 @@ echo "=================================================="
 cd "$APP_DIR"
 
 echo "📥 Pulling latest code from main..."
-git fetch origin main
-git reset --hard origin/main
+# git fetch origin main
+# git reset --hard origin/main
 
 echo "🔧 Building and restarting backend & worker services..."
 docker compose -f "$COMPOSE_FILE" -p "$PROJECT_NAME" up -d --build app celery-worker
