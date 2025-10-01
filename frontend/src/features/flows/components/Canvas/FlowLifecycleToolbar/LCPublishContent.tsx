@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Copy, Check } from 'lucide-react';
+import { Copy, Check, Code, Zap, Shield } from 'lucide-react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import useFlowStore from '@/features/flows/stores/flow_stores';
@@ -270,6 +270,7 @@ const LCPublishContent: React.FC = () => {
         'curl' | 'js' | 'python' | 'java' | 'csharp' | 'go' | 'ruby' | 'php'
     >('curl');
     const [copied, setCopied] = useState(false);
+    const [flowIdCopied, setFlowIdCopied] = useState(false);
 
     // Process code examples to replace flow_id placeholder
     const getProcessedCode = (code: string): string => {
@@ -285,16 +286,69 @@ const LCPublishContent: React.FC = () => {
         setTimeout(() => setCopied(false), 2000);
     };
 
+    const handleFlowIdCopy = async () => {
+        if (flow_id) {
+            await navigator.clipboard.writeText(flow_id);
+            setFlowIdCopied(true);
+            setTimeout(() => setFlowIdCopied(false), 2000);
+        }
+    };
+
     return (
         <div className="w-full h-full flex flex-col bg-white">
             {/* Header */}
-            <div className="px-6 py-4 border-b border-gray-200 sticky top-0 bg-white z-10">
-                <h3 className="text-lg font-semibold text-gray-900">
-                    API Usage
-                </h3>
-                <p className="text-sm text-gray-600 mt-1">
-                    Execute your published flow using the API endpoint
-                </p>
+            <div className="px-6 py-6 border-b border-gray-100 sticky top-0 bg-gradient-to-r from-white via-blue-50/30 to-white z-10 shadow-sm">
+                <div className="flex items-start justify-between">
+                    <div className="flex items-start space-x-3">
+                        <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-lg border border-blue-200">
+                            <Code className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <div>
+                            <div className="flex items-center space-x-2 mb-1">
+                                <h3 className="text-xl font-bold text-gray-900">
+                                    API Usage
+                                </h3>
+                                <div className="flex items-center space-x-1 px-2 py-1 bg-green-100 rounded-full border border-green-200">
+                                    <Zap className="w-3 h-3 text-green-600" />
+                                    <span className="text-xs font-medium text-green-700">
+                                        Ready
+                                    </span>
+                                </div>
+                            </div>
+                            <p className="text-sm text-gray-600 leading-relaxed max-w-2xl">
+                                Execute your published flow using our RESTful
+                                API endpoint.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                {flow_id && (
+                    <div className="mt-4 flex items-center space-x-2 text-xs text-gray-500">
+                        <span>Flow ID:</span>
+                        <div className="flex items-center space-x-1">
+                            <code className="px-2 py-1 bg-gray-100 rounded border border-gray-200 font-mono text-gray-700">
+                                {flow_id}
+                            </code>
+                            <button
+                                onClick={handleFlowIdCopy}
+                                className={`p-1 transition-colors ${
+                                    flowIdCopied
+                                        ? 'text-green-600'
+                                        : 'text-gray-400 hover:text-gray-600'
+                                }`}
+                                title={
+                                    flowIdCopied ? 'Copied!' : 'Copy Flow ID'
+                                }
+                            >
+                                {flowIdCopied ? (
+                                    <Check size={12} />
+                                ) : (
+                                    <Copy size={12} />
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             <div className="flex-1 px-6 py-4 overflow-y-auto">
