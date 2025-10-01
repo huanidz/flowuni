@@ -18,6 +18,7 @@ class DropdownInputHandle(InputHandleTypeBase):
     """Handle for dropdown/select inputs"""
 
     options: List[DropdownOption] = Field(default_factory=list)
+    sort_options: bool = False
     multiple: bool = False
     searchable: bool = False
 

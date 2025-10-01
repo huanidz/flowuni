@@ -9,7 +9,7 @@ interface ExecutionStore {
     setSessionEnabled: (enabled: boolean) => void;
 }
 
-const useExecutionStore = create<ExecutionStore>((set, get) => ({
+const useExecutionStore = create<ExecutionStore>((set, _get) => ({
     sessionId: uuidv4(),
     isSessionEnabled: false,
 

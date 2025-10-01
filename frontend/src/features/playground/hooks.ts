@@ -19,7 +19,7 @@ export const useCreatePlaygroundSession = () => {
     return useMutation({
         mutationFn: (request: CreatePlaygroundSessionRequest) =>
             createPlaygroundSession(request),
-        onSuccess: (data, variables) => {
+        onSuccess: (_data, variables) => {
             // Invalidate playground sessions query for the specific flow
             queryClient.invalidateQueries({
                 queryKey: ['playground-sessions', variables.flow_id],
@@ -56,7 +56,7 @@ export const useAddChatMessage = () => {
 
     return useMutation({
         mutationFn: (request: AddChatMessageRequest) => addChatMessage(request),
-        onSuccess: (data, variables) => {
+        onSuccess: (_data, variables) => {
             // Invalidate chat history for the session
             queryClient.invalidateQueries({
                 queryKey: ['chat-history', variables.session_id],

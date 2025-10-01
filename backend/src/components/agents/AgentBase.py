@@ -6,6 +6,7 @@ and methods that can be extended or overridden by specific agent implementations
 """  # noqa
 
 from abc import ABC
+from datetime import timezone
 from typing import Any, Dict, List, Optional
 
 from loguru import logger
@@ -13,6 +14,7 @@ from src.components.llm.models.core import ChatMessage, ChatResponse
 from src.components.llm.providers.adapters.LLMProviderInterface import LLMProviderBase
 from src.helpers.PydanticChatSchemaConstructor import PydanticChatSchemaConstructor
 from src.helpers.PydanticSchemaConverter import PydanticSchemaConverter
+from src.helpers.TimeHelper import TimeHelper
 from src.helpers.ToolHelper import ToolHelper
 from src.nodes.NodeRegistry import NodeRegistry
 from src.schemas.nodes.node_data_parsers import ToolDataParser
@@ -227,8 +229,13 @@ class Agent(ABC):
         # Get a formatted string representation of all available tools
         tools_description = ToolHelper.get_tools_string_representation(tools=self.tools)
 
+        # Current time helper
+        current_time_str = TimeHelper.get_current_time_str(utc_offset=7)
+
         # Combine the base prompt with tool descriptions
-        full_system_prompt = f"{self.system_prompt}\n\n{tools_description}"
+        full_system_prompt = (
+            f"{self.system_prompt}\n\n{tools_description}\n\n{current_time_str}"
+        )
         return full_system_prompt
 
     def _initialize_llm_provider(self, system_prompt: str) -> None:

@@ -1,11 +1,10 @@
 import React, { useMemo } from 'react';
-import { Handle, Position, useEdges } from '@xyflow/react';
+import { useEdges } from '@xyflow/react';
 import {
     HandleComponentRegistry,
     NodeInputType,
 } from '@/features/flows/handles/HandleComponentRegistry';
 import { sidebarStyles } from '@/features/flows/styles/sidebarStyles';
-import { nodeStyles } from '@/features/flows/styles/nodeStyles';
 import type { NodeInput } from '@/features/nodes/types';
 import { HandleInfo } from '../NodeUI/HandleInfo';
 import { NODE_DATA_MODE } from '@/features/flows/consts';

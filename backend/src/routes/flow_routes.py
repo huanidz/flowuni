@@ -29,46 +29,29 @@ flow_router = APIRouter(
 )
 
 
-@flow_router.post("/", response_model=EmptyFlowCreateResponse)
-async def create_empty_flow(
+@flow_router.post("/", response_model=FlowCreateResponse)
+async def create_flow(
+    request: FlowCreateRequest = None,
     flow_service: FlowService = Depends(get_flow_service),
     auth_user_id: int = Depends(get_current_user),
 ):
     """
-    Receives, validates, and queues a flow graph compilation task.
+    Create a flow with optional name, description, and flow definition.
+    If no data is provided, creates an empty flow.
     """
     try:
-        flow_id = flow_service.create_empty_flow(user_id=auth_user_id)
-        response = EmptyFlowCreateResponse(flow_id=flow_id)
-
-        return response
-
-    except HTTPException as http_exc:
-        raise http_exc  # Re-raise known HTTP exceptions
-
-    except Exception as e:
-        logger.error(
-            f"Error queuing compilation task: {e}. traceback: {traceback.format_exc()}"
-        )
-        raise HTTPException(
-            status_code=500,
-            detail="An error occurred while queuing the compilation task.",
-        )
-
-
-@flow_router.post("/with-data", response_model=FlowCreateResponse)
-async def create_flow_with_data(
-    request: FlowCreateRequest,
-    flow_service: FlowService = Depends(get_flow_service),
-    auth_user_id: int = Depends(get_current_user),
-):
-    """
-    Create a flow with optional name and flow definition
-    """
-    try:
-        flow = flow_service.create_flow_with_data(
-            user_id=auth_user_id, flow_request=request
-        )
+        # If no request body or all fields are empty/None, create empty flow
+        if request is None or (
+            not request.name and not request.description and not request.flow_definition
+        ):
+            flow_id = flow_service.create_empty_flow(user_id=auth_user_id)
+            # Get the created flow to return full response
+            flow = flow_service.get_flow_detail_by_id(flow_id=flow_id)
+        else:
+            # Create flow with data
+            flow = flow_service.create_flow_with_data(
+                user_id=auth_user_id, flow_request=request
+            )
 
         response = FlowCreateResponse(
             flow_id=flow.flow_id,
@@ -84,12 +67,10 @@ async def create_flow_with_data(
         raise http_exc  # Re-raise known HTTP exceptions
 
     except Exception as e:
-        logger.error(
-            f"Error creating flow with data: {e}. traceback: {traceback.format_exc()}"
-        )
+        logger.error(f"Error creating flow: {e}. traceback: {traceback.format_exc()}")
         raise HTTPException(
             status_code=500,
-            detail="An error occurred while creating the flow with data.",
+            detail="An error occurred while creating the flow.",
         )
 
 

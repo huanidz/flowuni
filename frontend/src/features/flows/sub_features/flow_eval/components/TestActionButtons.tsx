@@ -4,9 +4,11 @@ import type { TestStatistics } from '../types';
 interface TestActionButtonsProps {
     statistics: TestStatistics;
     selectedCount: number;
+    runningCount: number;
     onRunAll: () => void;
     onRunFailed: () => void;
     onRunSelected: () => void;
+    onCancelRunning: () => void;
 }
 
 /**
@@ -15,12 +17,15 @@ interface TestActionButtonsProps {
 const TestActionButtons: React.FC<TestActionButtonsProps> = ({
     statistics,
     selectedCount,
+    runningCount,
     onRunAll,
     onRunFailed,
     onRunSelected,
+    onCancelRunning,
 }) => {
     const hasFailedTests = statistics.failed > 0;
     const hasSelectedTests = selectedCount > 0;
+    const hasRunningTests = runningCount > 0;
 
     return (
         <div className="flex flex-wrap gap-2 p-2 bg-gray-50 border-t">
@@ -109,6 +114,35 @@ const TestActionButtons: React.FC<TestActionButtonsProps> = ({
                     />
                 </svg>
                 {`Run Selected (${selectedCount})`}
+            </button>
+
+            {/* Cancel Running Tests Button */}
+            <button
+                onClick={onCancelRunning}
+                disabled={!hasRunningTests}
+                className={`
+          flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors
+          ${
+              !hasRunningTests
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'bg-red-600 text-white hover:bg-red-700 active:bg-red-800'
+          }
+        `}
+            >
+                <svg
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                    />
+                </svg>
+                {`Cancel Running (${runningCount})`}
             </button>
         </div>
     );

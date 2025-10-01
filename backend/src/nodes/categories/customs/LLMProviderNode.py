@@ -67,6 +67,7 @@ class LLMProviderNode(Node):
                         },
                     ),
                     searchable=True,
+                    sort_options=True,
                 ),
                 description="LLM model",
                 allow_incoming_edges=False,

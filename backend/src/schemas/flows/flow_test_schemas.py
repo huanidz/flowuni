@@ -253,3 +253,50 @@ class FlowTestRunResponse(BaseModel):
     message: str = Field(..., description="Message about the test run")
     case_id: int = Field(..., description="Test case ID")
     flow_id: str = Field(..., description="Flow ID")
+
+
+class FlowTestCancelRequest(BaseModel):
+    """
+    Request model for cancelling a flow test
+    """
+
+    task_id: str = Field(..., description="Celery task ID to cancel")
+
+
+class FlowTestCancelResponse(BaseModel):
+    """
+    Response model for flow test cancellation
+    """
+
+    status: str = Field(..., description="Status of the test run after cancellation")
+    task_id: str = Field(..., description="Celery task ID that was cancelled")
+    message: str = Field(..., description="Message about the cancellation")
+    cancelled: bool = Field(
+        ..., description="Whether the test was successfully cancelled"
+    )
+
+
+class FlowBatchTestCancelRequest(BaseModel):
+    """
+    Request model for cancelling multiple flow tests
+    """
+
+    task_ids: List[str] = Field(..., description="List of Celery task IDs to cancel")
+
+
+class FlowBatchTestCancelResponse(BaseModel):
+    """
+    Response model for batch flow test cancellation
+    """
+
+    cancelled_task_ids: List[str] = Field(
+        ..., description="List of task IDs that were successfully cancelled"
+    )
+    failed_task_ids: List[str] = Field(
+        ..., description="List of task IDs that failed to cancel"
+    )
+    message: str = Field(..., description="Message about the batch cancellation")
+    total_cancelled: int = Field(..., description="Total number of tests cancelled")
+    total_failed: int = Field(
+        ..., description="Total number of tests that failed to cancel"
+    )

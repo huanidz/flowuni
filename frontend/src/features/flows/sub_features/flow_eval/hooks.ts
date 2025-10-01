@@ -4,6 +4,8 @@ import { useEffect } from 'react';
 import { TestCaseRunStatus } from './types';
 
 import {
+    cancelBatchTest,
+    cancelSingleTest,
     createTestSuite,
     createTestCase,
     deleteTestSuite,
@@ -15,13 +17,14 @@ import {
     runSingleTest,
 } from './api';
 import type {
+    FlowBatchTestCancelRequest,
     FlowBatchTestRunRequest,
+    FlowTestCancelRequest,
     FlowTestRunRequest,
     TestCaseCreateRequest,
     TestCasePartialUpdateRequest,
     TestSuiteCreateRequest,
     TestSuitePartialUpdateRequest,
-    TestSuitesWithCasePreviewsResponse,
 } from './types';
 import { useTestCaseStatusStore } from './stores/testCaseStatusStore';
 
@@ -29,7 +32,7 @@ import { useTestCaseStatusStore } from './stores/testCaseStatusStore';
  * Hook for fetching test suites with cases for a specific flow
  */
 export const useTestSuitesWithCases = (flowId: string) => {
-    const { updateTestCaseStatus, resetAllStatuses } = useTestCaseStatusStore();
+    const { updateTestCaseStatus } = useTestCaseStatusStore();
 
     const query = useQuery({
         queryKey: ['testSuitesWithCases', flowId],
@@ -82,7 +85,7 @@ export const useCreateTestSuite = () => {
     return useMutation({
         mutationFn: (request: TestSuiteCreateRequest) =>
             createTestSuite(request),
-        onSuccess: (data, variables) => {
+        onSuccess: (_data, variables) => {
             // Invalidate and refetch test suites for this flow
             queryClient.invalidateQueries({
                 queryKey: ['testSuitesWithCases', variables.flow_id],
@@ -104,7 +107,7 @@ export const useCreateTestCase = () => {
 
     return useMutation({
         mutationFn: (request: TestCaseCreateRequest) => createTestCase(request),
-        onSuccess: (data, variables) => {
+        onSuccess: (_data, _variables) => {
             // Invalidate and refetch test suites for this flow
             queryClient.invalidateQueries({
                 queryKey: ['testSuitesWithCases'],
@@ -178,7 +181,6 @@ export const usePartialUpdateTestSuite = () => {
         mutationFn: ({
             suiteId,
             request,
-            flowId,
         }: {
             suiteId: number;
             request: TestSuitePartialUpdateRequest;
@@ -202,7 +204,6 @@ export const usePartialUpdateTestSuite = () => {
  * Hook for running a single test case
  */
 export const useRunSingleTest = () => {
-    const queryClient = useQueryClient();
     const { setTaskTestCaseMapping, updateTestCaseStatus } =
         useTestCaseStatusStore();
 
@@ -292,19 +293,92 @@ export const useRunBatchTest = () => {
 };
 
 /**
+ * Hook for cancelling a single test case
+ */
+export const useCancelSingleTest = () => {
+    const { updateTestCaseStatus } = useTestCaseStatusStore();
+
+    return useMutation({
+        mutationFn: (request: FlowTestCancelRequest) =>
+            cancelSingleTest(request),
+        onSuccess: (data, variables) => {
+            if (data.cancelled) {
+                // Find the test case ID by checking all task mappings
+                const { taskToTestCaseMap } = useTestCaseStatusStore.getState();
+                const testCaseId = taskToTestCaseMap[variables.task_id];
+
+                if (testCaseId) {
+                    updateTestCaseStatus(
+                        testCaseId,
+                        TestCaseRunStatus.CANCELLED
+                    );
+                }
+
+                toast.success('Test cancelled successfully');
+            } else {
+                toast.info(data.message || 'Test could not be cancelled');
+            }
+        },
+        onError: error => {
+            console.error('Error cancelling test case:', error);
+            toast.error('Failed to cancel test case');
+        },
+    });
+};
+
+/**
+ * Hook for cancelling a batch of test cases
+ */
+export const useCancelBatchTest = () => {
+    const { updateTestCaseStatus } = useTestCaseStatusStore();
+
+    return useMutation({
+        mutationFn: (request: FlowBatchTestCancelRequest) =>
+            cancelBatchTest(request),
+        onSuccess: (data, _variables) => {
+            // Update the status of successfully cancelled test cases
+            const { taskToTestCaseMap } = useTestCaseStatusStore.getState();
+
+            data.cancelled_task_ids.forEach(taskId => {
+                const testCaseId = taskToTestCaseMap[taskId];
+                if (testCaseId) {
+                    updateTestCaseStatus(
+                        testCaseId,
+                        TestCaseRunStatus.CANCELLED
+                    );
+                }
+            });
+
+            if (data.total_cancelled > 0) {
+                if (data.total_failed > 0) {
+                    toast.warning(
+                        `Cancelled ${data.total_cancelled} tests. ${data.total_failed} tests failed to cancel.`
+                    );
+                } else {
+                    toast.success(
+                        `Cancelled ${data.total_cancelled} tests successfully`
+                    );
+                }
+            } else {
+                toast.error('No tests could be cancelled');
+            }
+        },
+        onError: error => {
+            console.error('Error cancelling batch tests:', error);
+            toast.error('Failed to cancel batch tests');
+        },
+    });
+};
+
+/**
  * Hook for deleting a test suite
  */
 export const useDeleteTestSuite = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({
-            suiteId,
-            flowId,
-        }: {
-            suiteId: number;
-            flowId: string;
-        }) => deleteTestSuite(suiteId),
+        mutationFn: ({ suiteId }: { suiteId: number; flowId: string }) =>
+            deleteTestSuite(suiteId),
         onSuccess: (_, variables) => {
             // Invalidate and refetch test suites for this flow
             queryClient.invalidateQueries({

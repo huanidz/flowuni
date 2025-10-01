@@ -13,22 +13,8 @@ interface EmbeddingProviderInputHandleProps {
 
 export const EmbeddingProviderInputHandle: React.FC<
     EmbeddingProviderInputHandleProps
-> = ({
-    label,
-    description,
-    value,
-    onChange,
-    type_detail,
-    disabled = true,
-    isWholeAsToolMode = false,
-}) => {
+> = ({ description, type_detail }) => {
     const hidden = type_detail?.defaults?.hidden ?? false;
-
-    const handleChange = (newValue: any) => {
-        if (onChange && !disabled) {
-            onChange(newValue);
-        }
-    };
 
     return (
         <div style={hidden ? { display: 'none' } : undefined}>

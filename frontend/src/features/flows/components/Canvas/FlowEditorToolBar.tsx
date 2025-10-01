@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
     toolbarContainer,
     toolbarWrapper,
@@ -6,7 +6,7 @@ import {
     secondRowContainer,
 } from '@/features/flows/styles/flowEditorToolBarStyles';
 import RunButton from './FlowEditorToolBarComponents/RunButton';
-import CompileButton from './FlowEditorToolBarComponents/CompileButton';
+// import CompileButton from './FlowEditorToolBarComponents/CompileButton';
 import SaveButton from './FlowEditorToolBarComponents/SaveButton';
 import PlaygroundButton from './FlowEditorToolBarComponents/PlaygroundButton';
 import ClearButton from './FlowEditorToolBarComponents/ClearButton';
@@ -35,7 +35,7 @@ const FlowEditorToolBar: React.FC<FlowEditorToolBarProps> = ({
     onClear,
     onResetAllData,
     onResetExecutionData,
-    onCompile,
+    // onCompile,
     onSave,
     onPlayground,
     nodes,

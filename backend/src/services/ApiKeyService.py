@@ -41,6 +41,13 @@ class ApiKeyServiceInterface(ABC):
         pass
 
     @abstractmethod
+    def activate_key(self, key_id: str) -> bool:
+        """
+        Activate an API key by key_id
+        """
+        pass
+
+    @abstractmethod
     def validate_key(self, api_key_value: str) -> Optional[ApiKeyModel]:
         """
         Validate an API key and return the key model if valid
@@ -134,6 +141,23 @@ class ApiKeyService(ApiKeyServiceInterface):
             return success
         except Exception as e:
             logger.error(f"Error deactivating API key with key_id {key_id}: {str(e)}")
+            raise
+
+    def activate_key(self, key_id: str) -> bool:
+        """
+        Activate an API key by key_id
+        """
+        try:
+            success = self.api_key_repository.activate_api_key(key_id)
+            if success:
+                logger.info(f"Successfully activated API key with key_id: {key_id}")
+            else:
+                logger.warning(
+                    f"Failed to activate API key with key_id: {key_id} (key not found)"
+                )
+            return success
+        except Exception as e:
+            logger.error(f"Error activating API key with key_id {key_id}: {str(e)}")
             raise
 
     def validate_key(self, api_key_value: str) -> Optional[ApiKeyModel]:

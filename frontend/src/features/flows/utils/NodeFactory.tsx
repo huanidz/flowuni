@@ -48,9 +48,9 @@ class NodeFactoryClass {
         updateNodeInputData?: UpdateNodeInputDataFunction,
         updateNodeModeData?: UpdateNodeModeDataFunction,
         updateNodeParameter?: UpdateNodeParameterFunction,
-        updateNodeToolConfig?: UpdateNodeToolConfigFunction,
-        updateNodeExecutionResult?: UpdateNodeExecutionResultFunction,
-        updateNodeExecutionStatus?: UpdateNodeExecutionStatusFunction
+        _updateNodeToolConfig?: UpdateNodeToolConfigFunction,
+        _updateNodeExecutionResult?: UpdateNodeExecutionResultFunction,
+        _updateNodeExecutionStatus?: UpdateNodeExecutionStatusFunction
     ): React.FC<CustomNodeProps> | null {
         if (!nodeSpec) {
             console.error(`Node type "${nodeSpec}" not found in registry`);

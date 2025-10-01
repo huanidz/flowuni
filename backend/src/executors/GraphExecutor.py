@@ -128,7 +128,7 @@ class GraphExecutor:
         # Otherwise, execute from the beginning
         return self._run_full_strategy.execute()
 
-    def _execute_layer_parallel(
+    def _execute_layer_parallel(  # noqa
         self, executor: ThreadPoolExecutor, layer_nodes: List[str], layer_index: int
     ) -> List[NodeExecutionResult]:
         """
@@ -304,7 +304,9 @@ class GraphExecutor:
 
             # Execute the node
             executed_data: NodeData = node_instance.run(
-                node_data=node_data, exec_context=self.execution_context
+                node_id=node_id,
+                node_data=node_data,
+                exec_context=self.execution_context,
             )
             self.push_event(
                 node_id=node_id,
@@ -414,9 +416,7 @@ class GraphExecutor:
                             continue
 
                         source_handle = edge_data.get("source_handle", "")
-                        logger.info(f"👉 source_handle: {source_handle}")
                         target_handle = edge_data.get("target_handle", "")
-                        logger.info(f"👉 target_handle: {target_handle}")
 
                         # Handle the -index splitting (same as old version)
                         if source_handle and "-index" in source_handle:
@@ -484,13 +484,10 @@ class GraphExecutor:
         """
 
         try:
-            current_node_label: str = executed_data.node_type
-
             # Get edge data using the utility function
             edge_data = MultiDiGraphUtils.get_edge_data_by_key(
                 self.graph, node_id, successor_node_id, edge_key
             )
-            logger.info(f"👉 edge_data ZXC: {edge_data}")
 
             if not edge_data:
                 logger.warning(
@@ -498,9 +495,7 @@ class GraphExecutor:
                 )
                 return
 
-            edge_id = edge_data.get("id")
             edge_label = edge_data.get("data", {}).get("text", "")
-            logger.info(f"👉 edge_id: {edge_id}")
 
             # Step 0: Retrieve the current_node from the graph
             current_graph_node = self.graph.nodes.get(node_id)
@@ -579,7 +574,6 @@ class GraphExecutor:
                 source_handle
             ]
 
-            logger.info(f"👉 current_node_label: {current_node_label}")
             currnet_node_spec = self.graph.nodes[node_id].get("spec", None)
             current_node_tags = currnet_node_spec.tags if currnet_node_spec else []
             if NODE_TAGS_CONSTS.ROUTING in current_node_tags:
@@ -593,8 +587,6 @@ class GraphExecutor:
                 )
 
                 # If the edge_id is not in the label decisons, then the exec_status of that succesor node will be set to SKIPPED. # noqa E501
-                logger.info(f"👉 route_label_decisons: {route_label_decisons}")
-                logger.info(f"👉 edge_label: {edge_label}")
                 if edge_label not in route_label_decisons:
                     successor_node_data.execution_status = NODE_EXECUTION_STATUS.SKIPPED
                     self.graph.nodes[successor_node_id]["data"] = successor_node_data

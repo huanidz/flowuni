@@ -251,6 +251,32 @@ class FlowTestServiceInterface(ABC):
         """
         pass
 
+    @abstractmethod
+    def cancel_test_case_run(self, task_run_id: str) -> bool:
+        """
+        Cancel a test case run by its task run ID.
+
+        Args:
+            task_run_id: The task run ID of the test case run to cancel
+
+        Returns:
+            bool: True if the test was successfully cancelled, False otherwise
+        """
+        pass
+
+    @abstractmethod
+    def cancel_test_case_runs(self, task_run_ids: list[str]) -> dict[str, bool]:
+        """
+        Cancel multiple test case runs by their task run IDs.
+
+        Args:
+            task_run_ids: List of task run IDs to cancel
+
+        Returns:
+            dict[str, bool]: Dictionary mapping task run IDs to their cancellation status
+        """
+        pass
+
 
 class FlowTestService(FlowTestServiceInterface):
     """
@@ -763,4 +789,94 @@ class FlowTestService(FlowTestServiceInterface):
             logger.error(
                 f"Error retrieving pass criteria for test case with ID {test_case_id}: {str(e)}"
             )
+            raise
+
+    def cancel_test_case_run(self, task_run_id: str) -> bool:
+        """
+        Cancel a test case run by its task run ID.
+
+        Args:
+            task_run_id: The task run ID of the test case run to cancel
+
+        Returns:
+            bool: True if the test was successfully cancelled, False otherwise
+        """
+        try:
+            # Get the test case run to check its current status
+            test_case_run = self.test_repository.get_test_case_run_by_task_id(
+                task_run_id=task_run_id
+            )
+
+            if not test_case_run:
+                logger.warning(
+                    f"Test case run with task_run_id {task_run_id} not found"
+                )
+                return False
+
+            current_status = str(test_case_run.status)
+
+            # Check if the test can be cancelled
+            if current_status in [
+                TestCaseRunStatus.PASSED.value,
+                TestCaseRunStatus.FAILED.value,
+                TestCaseRunStatus.CANCELLED.value,
+                TestCaseRunStatus.SYSTEM_ERROR.value,
+            ]:
+                logger.info(
+                    f"Test case run with task_run_id {task_run_id} is already in terminal status: {current_status}"
+                )
+                return False
+
+            # Update the status to CANCELLED
+            self.test_repository.set_test_case_run_status(
+                task_run_id=task_run_id, status=TestCaseRunStatus.CANCELLED.value
+            )
+
+            logger.info(
+                f"Successfully cancelled test case run with task_run_id {task_run_id}"
+            )
+            return True
+
+        except Exception as e:
+            logger.error(
+                f"Error cancelling test case run with task_run_id {task_run_id}: {str(e)}"
+            )
+            raise
+
+    def cancel_test_case_runs(self, task_run_ids: list[str]) -> dict[str, bool]:
+        """
+        Cancel multiple test case runs by their task run IDs.
+
+        Args:
+            task_run_ids: List of task run IDs to cancel
+
+        Returns:
+            dict[str, bool]: Dictionary mapping task run IDs to their cancellation status
+        """
+        try:
+            if not task_run_ids:
+                logger.warning("No task run IDs provided for cancellation")
+                return {}
+
+            results = {}
+
+            for task_run_id in task_run_ids:
+                try:
+                    success = self.cancel_test_case_run(task_run_id=task_run_id)
+                    results[task_run_id] = success
+                except Exception as e:
+                    logger.error(
+                        f"Failed to cancel test case run with task_run_id {task_run_id}: {str(e)}"
+                    )
+                    results[task_run_id] = False
+
+            successful_cancellations = sum(1 for success in results.values() if success)
+            logger.info(
+                f"Cancelled {successful_cancellations} out of {len(task_run_ids)} test case runs"
+            )
+
+            return results
+
+        except Exception as e:
+            logger.error(f"Error cancelling test case runs: {str(e)}")
             raise

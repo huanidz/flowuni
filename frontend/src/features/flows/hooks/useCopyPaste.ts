@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { Node } from '@xyflow/react';
-import { Position } from '@xyflow/react';
 import { useKeyboardControl } from './useKeyboardControl';
 import { nanoid } from 'nanoid';
 

@@ -13,13 +13,11 @@ interface BooleanHandleInputProps {
 }
 
 export const BooleanHandleInput: React.FC<BooleanHandleInputProps> = ({
-    label,
     description,
     value,
     onChange,
     type_detail,
     disabled = true,
-    isWholeAsToolMode = false,
 }) => {
     const { hidden = false } = type_detail.defaults || {};
 

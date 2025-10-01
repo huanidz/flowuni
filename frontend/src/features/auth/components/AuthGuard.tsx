@@ -3,7 +3,6 @@ import { useEffect } from 'react';
 import useAuthStore from '../store';
 import { useNavigate } from 'react-router-dom';
 import { type ReactElement } from 'react';
-import { Loader2 } from 'lucide-react';
 
 interface AuthGuardProps {
     children: ReactElement;
@@ -16,7 +15,7 @@ interface AuthGuardProps {
 // );
 
 export const AuthGuard = ({ children }: AuthGuardProps) => {
-    const { isAuthenticated, isValidating, checkAuth } = useAuthStore();
+    const { checkAuth } = useAuthStore();
     const navigate = useNavigate();
 
     useEffect(() => {

@@ -142,7 +142,7 @@ export const executeFlowWithSSE = ({
                 const { event, data } = parsed;
                 const node_id = parsed.node_id;
                 const event_status = event;
-                const { input_values, output_values } = data || {};
+                const { output_values } = data || {};
 
                 console.log(
                     `${SSE_LOG_PREFIX} Flow watch enabled, updating node:`,

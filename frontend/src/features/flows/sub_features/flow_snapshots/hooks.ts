@@ -63,7 +63,7 @@ export const useCreateFlowSnapshot = () => {
         CreateFlowSnapshotRequest
     >({
         mutationFn: createFlowSnapshot,
-        onSuccess: (data, variables) => {
+        onSuccess: (_data, _variables) => {
             // Invalidate the list query for this flow
             queryClient.invalidateQueries({
                 queryKey: FLOW_SNAPSHOTS_QUERY_KEYS.lists(),
@@ -85,7 +85,7 @@ export const useUpdateFlowSnapshot = () => {
     >({
         mutationFn: ({ snapshotId, data }) =>
             updateFlowSnapshot(snapshotId, data),
-        onSuccess: (data, variables) => {
+        onSuccess: (_data, variables) => {
             // Invalidate the detail query for this snapshot
             queryClient.invalidateQueries({
                 queryKey: FLOW_SNAPSHOTS_QUERY_KEYS.detail(

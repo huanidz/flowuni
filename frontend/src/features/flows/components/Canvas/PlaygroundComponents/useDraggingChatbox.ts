@@ -9,7 +9,6 @@ interface UseDraggingChatboxProps {
 
 export const useDraggingChatbox = ({
     chatBoxRef,
-    position,
     onPositionChange,
 }: UseDraggingChatboxProps) => {
     const [isDragging, setIsDragging] = useState(false);

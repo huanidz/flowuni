@@ -131,12 +131,24 @@ export const useTestCaseStatusStore = create<TestCaseStatusState>(
         },
 
         setTaskTestCaseMapping: (taskId: string, testCaseId: string) => {
-            set(state => ({
-                taskToTestCaseMap: {
-                    ...state.taskToTestCaseMap,
-                    [taskId]: testCaseId,
-                },
-            }));
+            set(state => {
+                // Remove any existing task mappings for this test case
+                const newTaskMap = { ...state.taskToTestCaseMap };
+                Object.entries(newTaskMap).forEach(
+                    ([existingTaskId, mappedTestCaseId]) => {
+                        if (mappedTestCaseId === testCaseId) {
+                            delete newTaskMap[existingTaskId];
+                        }
+                    }
+                );
+
+                // Add the new task mapping
+                newTaskMap[taskId] = testCaseId;
+
+                return {
+                    taskToTestCaseMap: newTaskMap,
+                };
+            });
         },
 
         resetAllStatuses: () => {
@@ -187,7 +199,12 @@ export const useTestCaseStatus = (testCaseId: string) =>
     useTestCaseStatusStore(state => state.getTestCaseStatus(testCaseId));
 
 export const useTaskIdForTestCase = (testCaseId: string) =>
-    useTestCaseStatusStore(state => state.getTaskIdForTestCase(testCaseId));
+    useTestCaseStatusStore(state => {
+        // Find the task ID for this test case by checking all task mappings
+        return Object.entries(state.taskToTestCaseMap).find(
+            ([_, mappedTestCaseId]) => mappedTestCaseId === testCaseId
+        )?.[0];
+    });
 
 export const useAllTestCaseStatuses = () =>
     useTestCaseStatusStore(state => state.testCaseStatuses);

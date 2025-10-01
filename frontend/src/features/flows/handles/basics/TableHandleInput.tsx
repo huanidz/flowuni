@@ -114,7 +114,7 @@ export const TableHandleInput: React.FC<TableHandleInputProps> = ({
 
     const [tableRows, setTableRows] = useState<any[][]>([]);
     const [columnWidths, setColumnWidths] = useState<number[]>([]);
-    const [resizingColumn, setResizingColumn] = useState<number | null>(null);
+    // const [resizingColumn, setResizingColumn] = useState<number | null>(null);
     const [focusedInput, setFocusedInput] = useState<{
         rowIndex: number;
         colIndex: number;
@@ -156,7 +156,7 @@ export const TableHandleInput: React.FC<TableHandleInputProps> = ({
     const handleResizeMouseDown = (colIndex: number, e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        setResizingColumn(colIndex);
+        // setResizingColumn(colIndex);
 
         const startX = e.clientX;
         const startWidth = columnWidths[colIndex];
@@ -164,7 +164,7 @@ export const TableHandleInput: React.FC<TableHandleInputProps> = ({
         const handleMouseMove = (moveEvent: MouseEvent) => {
             if (!tableRef.current) return;
 
-            const tableRect = tableRef.current.getBoundingClientRect();
+            // const tableRect = tableRef.current.getBoundingClientRect();
             const newWidth = Math.max(
                 MIN_COLUMN_WIDTH,
                 startWidth + (moveEvent.clientX - startX)
@@ -180,7 +180,7 @@ export const TableHandleInput: React.FC<TableHandleInputProps> = ({
         const handleMouseUp = () => {
             document.removeEventListener('mousemove', handleMouseMove);
             document.removeEventListener('mouseup', handleMouseUp);
-            setResizingColumn(null);
+            // setResizingColumn(null);
         };
 
         document.addEventListener('mousemove', handleMouseMove);

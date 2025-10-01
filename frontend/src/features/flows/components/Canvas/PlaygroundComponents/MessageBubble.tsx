@@ -1,4 +1,5 @@
 import React from 'react';
+import ReactMarkdown from 'react-markdown';
 import type { PGMessage } from '../../../types';
 
 interface MessageBubbleProps {
@@ -18,7 +19,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
                     }
                 `}
             >
-                {message.message}
+                <ReactMarkdown>{message.message}</ReactMarkdown>
             </div>
             <div className="text-xs text-muted-foreground mt-1">
                 {message.timestamp.toLocaleTimeString([], {

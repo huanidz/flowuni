@@ -6,7 +6,6 @@ import type {
     CreateLLMJudgeRequest,
     UpdateLLMJudgeRequest,
     LLMSupportConfig,
-    LLMProvider,
 } from './types';
 
 export const getLLMJudges = async (): Promise<LLMJudgeListResponse> => {

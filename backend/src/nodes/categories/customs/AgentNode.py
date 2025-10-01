@@ -1,6 +1,8 @@
 import json
-from typing import List
+from typing import Any, Dict, List
 
+from loguru import logger
+from pydantic import BaseModel, Field
 from src.components.agents.AgentBase import Agent
 from src.components.llm.models.core import (
     ChatMessage,
@@ -20,12 +22,13 @@ from src.nodes.core.NodeParameterSpec import ParameterSpec
 from src.nodes.handles.agents.AgentToolInputHandle import AgentToolInputHandle
 from src.nodes.handles.basics.inputs import (
     LLMProviderInputHandle,
+    NumberInputHandle,
     TextFieldInputHandle,
 )
-from src.nodes.handles.basics.inputs.BooleanInputHandle import BooleanInputHandle
 from src.nodes.handles.basics.outputs.DataOutputHandle import DataOutputHandle
 from src.nodes.NodeBase import Node, NodeSpec
-from src.schemas.nodes.node_data_parsers import ToolDataParser
+from src.schemas.flowbuilder.flow_graph_schemas import ToolConfig
+from src.schemas.nodes.node_data_parsers import BuildToolResult, ToolDataParser
 
 
 class AgentNode(Node):
@@ -50,6 +53,7 @@ class AgentNode(Node):
                 type=TextFieldInputHandle(),
                 description="The message to be processed by agent.",
                 required=True,
+                enable_as_whole_for_tool=True,
             ),
             NodeInput(
                 name="system_instruction",
@@ -70,25 +74,21 @@ class AgentNode(Node):
                 name="response",
                 type=DataOutputHandle(),
                 description="The response from agent.",
+                enable_for_tool=True,
             )
         ],
         parameters=[
             ParameterSpec(
-                name="streaming",
-                type=BooleanInputHandle(),
-                description="Whether to stream the response.",
-                default=False,
-                allow_incoming_edges=False,
-            ),
-            ParameterSpec(
-                name="enable_memory",
-                type=BooleanInputHandle(),
-                description="Whether to enable memory (chat history) for the agent.",
-                default=True,
+                name="max_loop",
+                type=NumberInputHandle(
+                    min_value=1, max_value=10, integer_only=True, step=1
+                ),
+                description="Max loop of the Agent. Leave -1 as no-limit. We will have a hard limit within to avoid stuck.",
+                default=3,
                 allow_incoming_edges=False,
             ),
         ],
-        can_be_tool=False,
+        can_be_tool=True,
         group=NODE_GROUP_CONSTS.AGENT,
         icon=NodeIconIconify(icon_value="mage:robot-happy"),
     )
@@ -97,6 +97,12 @@ class AgentNode(Node):
         llm_provider = input_values["llm_provider"]
         system_prompt = input_values["system_instruction"]
         input_message = input_values["input_message"]
+
+        agent_max_loop = parameter_values["max_loop"]
+        if int(agent_max_loop) == -1:
+            agent_max_loop == 10
+        else:
+            agent_max_loop = int(agent_max_loop)
 
         if not llm_provider:
             raise ValueError(
@@ -111,7 +117,10 @@ class AgentNode(Node):
             chat_history_list = SessionChatHistoryListParser.model_validate_json(
                 chat_history
             )
-            prev_histories: List[ChatMessage] = chat_history_list.to_chat_messages()
+            # Access all elements except the last due to first item is inserted in the chat/ (user message) # noqa
+            prev_histories: List[ChatMessage] = chat_history_list.to_chat_messages()[
+                ::-1
+            ]
 
         tools = []
         tools_value = input_values["tools"]
@@ -133,17 +142,53 @@ class AgentNode(Node):
             llm_provider=llm_provider_instance,
             system_prompt=system_prompt,
             tools=tools,
+            max_loop_count=agent_max_loop,
         )
 
-        chat_message = ChatMessage(role="user", content=input_message)
+        chat_message = ChatMessage(
+            role=llm_provider_instance.roles.USER, content=input_message
+        )
         chat_response: ChatResponse = agent.chat(
             message=chat_message, prev_histories=prev_histories
         )
 
         return {"response": chat_response.content}
 
-    def build_tool(self):
-        raise NotImplementedError("Subclasses must override build_tool")
+    def build_tool(
+        self, inputs_values: Dict[str, Any], tool_configs: ToolConfig
+    ) -> BuildToolResult:
+        tool_name = (
+            tool_configs.tool_name
+            if tool_configs.tool_name
+            else f"agent_tool_{self.id}"
+        )
+        tool_description = (
+            tool_configs.tool_description
+            if tool_configs.tool_description
+            else f"Agent id=({self.id}) will perform a task."
+        )
 
-    def process_tool(self):
-        raise NotImplementedError("Subclasses must override process_tool")
+        class AgentAsToolSchema(BaseModel):
+            message_to_agent: str = Field(
+                ..., description="Message send to agent to perform task."
+            )
+
+        return BuildToolResult(
+            tool_name=tool_name,
+            tool_description=tool_description,
+            tool_schema=AgentAsToolSchema,
+        )
+
+    def process_tool(
+        self,
+        inputs_values: Dict[str, Any],
+        parameter_values: Dict[str, Any],
+        tool_inputs: Dict[str, Any],
+    ) -> Any:
+        input_message = tool_inputs.get("message_to_agent", "")
+
+        # Override the inputs_values with the tool inputs
+        inputs_values["input_message"] = input_message
+
+        processed_result = self.process(inputs_values, parameter_values)
+        return processed_result

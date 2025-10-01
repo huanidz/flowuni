@@ -1,7 +1,11 @@
 import api from '@/api/secureClient';
 import type {
+    FlowBatchTestCancelRequest,
+    FlowBatchTestCancelResponse,
     FlowBatchTestRunRequest,
     FlowBatchTestRunResponse,
+    FlowTestCancelRequest,
+    FlowTestCancelResponse,
     FlowTestRunRequest,
     FlowTestRunResponse,
     TestCaseCreateRequest,
@@ -113,5 +117,27 @@ export const runBatchTest = async (
     request: FlowBatchTestRunRequest
 ): Promise<FlowBatchTestRunResponse> => {
     const { data } = await api.post('/flow-test-runs/batch', request);
+    return data;
+};
+
+// ======== TEST CANCEL ========
+
+/**
+ * Cancel a single flow test
+ */
+export const cancelSingleTest = async (
+    request: FlowTestCancelRequest
+): Promise<FlowTestCancelResponse> => {
+    const { data } = await api.post('/flow-test-runs/cancel', request);
+    return data;
+};
+
+/**
+ * Cancel a batch of flow tests
+ */
+export const cancelBatchTest = async (
+    request: FlowBatchTestCancelRequest
+): Promise<FlowBatchTestCancelResponse> => {
+    const { data } = await api.post('/flow-test-runs/batch/cancel', request);
     return data;
 };

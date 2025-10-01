@@ -4,6 +4,7 @@ import {
     LIST_API_KEY_ENDPOINT,
     DELETE_API_KEY_ENDPOINT,
     DEACTIVATE_API_KEY_ENDPOINT,
+    ACTIVATE_API_KEY_ENDPOINT,
     VALIDATE_API_KEY_ENDPOINT,
 } from './consts';
 import {
@@ -12,7 +13,6 @@ import {
     type ApiKeyListResponse,
     type ValidateApiKeyRequest,
     type ValidateApiKeyResponse,
-    type ApiKeyError,
 } from './types';
 
 export const createApiKey = async (
@@ -74,6 +74,22 @@ export const deactivateApiKey = async (
         console.error('Failed to deactivate API key:', error);
         throw new Error(
             error.response?.data?.detail || 'Failed to deactivate API key'
+        );
+    }
+};
+
+export const activateApiKey = async (
+    keyId: string
+): Promise<{ message: string }> => {
+    try {
+        const { data } = await apiClient.patch<{ message: string }>(
+            ACTIVATE_API_KEY_ENDPOINT(keyId)
+        );
+        return data;
+    } catch (error: any) {
+        console.error('Failed to activate API key:', error);
+        throw new Error(
+            error.response?.data?.detail || 'Failed to activate API key'
         );
     }
 };

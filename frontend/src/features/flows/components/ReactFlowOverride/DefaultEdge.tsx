@@ -3,7 +3,6 @@ import React from 'react';
 import type { CSSProperties } from 'react';
 
 function DefaultEdge({
-    id,
     sourceX,
     sourceY,
     targetX,

@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Minimize2, Maximize2 } from 'lucide-react';
+import { X } from 'lucide-react';
 import { sidebarStyles } from '@/features/flows/styles/sidebarStyles';
 
 interface SidebarHeaderProps {
@@ -11,8 +11,6 @@ interface SidebarHeaderProps {
 
 export const SidebarHeader: React.FC<SidebarHeaderProps> = ({
     title,
-    isCollapsed,
-    onToggleCollapse,
     onClose,
 }) => {
     return (

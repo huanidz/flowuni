@@ -25,13 +25,13 @@ interface ToolableJsonHandleInputProps {
 export const ToolableJsonHandleInput: React.FC<
     ToolableJsonHandleInputProps
 > = ({
-    label,
+    // label,
     description,
     value,
     onChange,
     type_detail,
     disabled = true,
-    isWholeAsToolMode = false,
+    // isWholeAsToolMode = false,
 }) => {
     const hidden = (type_detail as any)?.defaults?.hidden ?? false;
     const [jsonInput, setJsonInput] = useState('');
@@ -376,7 +376,7 @@ export const ToolableJsonHandleInput: React.FC<
     };
 
     // Format default value based on type
-    const formatDefaultValue = (value: any, type: string): string => {
+    const formatDefaultValue = (value: any): string => {
         if (typeof value === 'string') {
             return value;
         }
@@ -468,10 +468,7 @@ export const ToolableJsonHandleInput: React.FC<
                             </span>
                             <input
                                 type="text"
-                                value={formatDefaultValue(
-                                    node.defaultValue,
-                                    node.type
-                                )}
+                                value={formatDefaultValue(node.defaultValue)}
                                 onChange={e => {
                                     let val: any = e.target.value;
                                     if (node.type === 'number')

@@ -4,11 +4,19 @@ import { Card, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { CornerDownLeft, Trash2, Play, ChevronDown } from 'lucide-react';
+import { CornerDownLeft, Trash2, Play, ChevronDown, X } from 'lucide-react';
 import { useConfirmation } from '@/hooks/useConfirmationModal';
-import { useDeleteTestCase, useRunSingleTest } from '../hooks';
-import { useTestCaseStatus } from '../stores/testCaseStatusStore';
+import {
+    useDeleteTestCase,
+    useRunSingleTest,
+    useCancelSingleTest,
+} from '../hooks';
+import {
+    useTestCaseStatus,
+    useTaskIdForTestCase,
+} from '../stores/testCaseStatusStore';
 import { getTestRunStatusBadge } from '../utils';
+import { TestCaseRunStatus } from '../types';
 
 interface TestCaseCardProps {
     item: TestCasePreview | DraftTestCase;
@@ -26,7 +34,6 @@ interface TestCaseCardProps {
 
 const TestCaseCard: React.FC<TestCaseCardProps> = ({
     item,
-    isSelected = false,
     selectedTestCase = null,
     onTestCaseSelect,
     onTestCaseDelete,
@@ -42,6 +49,7 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
     const { confirm, ConfirmationDialog } = useConfirmation();
     const deleteTestCaseMutation = useDeleteTestCase();
     const runSingleTestMutation = useRunSingleTest();
+    const cancelSingleTestMutation = useCancelSingleTest();
 
     // State for expanded sections
     const [expandedSections, setExpandedSections] = useState({
@@ -93,7 +101,28 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
                 flow_id: flowId,
             },
             {
-                onSuccess: data => {},
+                onSuccess: _data => {},
+                onError: error => {
+                    console.error(error);
+                },
+            }
+        );
+    };
+
+    const handleCancelTest = (e: React.MouseEvent) => {
+        e.stopPropagation(); // Prevent card selection when clicking cancel
+
+        if (!taskId) {
+            console.error('No task ID found for test case', testCase.id);
+            return;
+        }
+
+        cancelSingleTestMutation.mutate(
+            {
+                task_id: taskId,
+            },
+            {
+                onSuccess: _data => {},
                 onError: error => {
                     console.error(error);
                 },
@@ -157,6 +186,14 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
     const storeStatus = useTestCaseStatus(String(testCase.id));
     const testCaseStatus = testCase.latest_run_status || storeStatus;
 
+    // Get the task ID for this test case to use for cancellation
+    const taskId = useTaskIdForTestCase(String(testCase.id));
+
+    // Check if the test case is in a state that can be cancelled
+    const isCancellable =
+        testCaseStatus === TestCaseRunStatus.QUEUED ||
+        testCaseStatus === TestCaseRunStatus.RUNNING;
+
     return (
         <>
             <Card
@@ -178,15 +215,31 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
                                 </h4>
                             </div>
                             <div className="flex items-center gap-2">
-                                <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-7 w-7 p-0 text-muted-foreground hover:text-green-600"
-                                    onClick={handleRunTest}
-                                    disabled={runSingleTestMutation.isPending}
-                                >
-                                    <Play className="h-3 w-3" />
-                                </Button>
+                                {isCancellable ? (
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-7 w-7 p-0 text-muted-foreground hover:text-red-600"
+                                        onClick={handleCancelTest}
+                                        disabled={
+                                            cancelSingleTestMutation.isPending
+                                        }
+                                    >
+                                        <X className="h-3 w-3" />
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-7 w-7 p-0 text-muted-foreground hover:text-green-600"
+                                        onClick={handleRunTest}
+                                        disabled={
+                                            runSingleTestMutation.isPending
+                                        }
+                                    >
+                                        <Play className="h-3 w-3" />
+                                    </Button>
+                                )}
                                 <Button
                                     size="sm"
                                     variant="ghost"

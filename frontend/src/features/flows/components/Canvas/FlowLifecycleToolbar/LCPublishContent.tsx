@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Copy, Check } from 'lucide-react';
+import { Copy, Check, Code, Zap } from 'lucide-react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import useFlowStore from '@/features/flows/stores/flow_stores';
 
 const examples: Record<string, { code: string; lang: string; label: string }> =
     {
@@ -262,29 +263,92 @@ const TabButton = ({
 );
 
 const LCPublishContent: React.FC = () => {
+    const { current_flow } = useFlowStore();
+    const flow_id = current_flow?.flow_id;
+
     const [activeTab, setActiveTab] = useState<
         'curl' | 'js' | 'python' | 'java' | 'csharp' | 'go' | 'ruby' | 'php'
     >('curl');
     const [copied, setCopied] = useState(false);
+    const [flowIdCopied, setFlowIdCopied] = useState(false);
+
+    // Process code examples to replace flow_id placeholder
+    const getProcessedCode = (code: string): string => {
+        return flow_id ? code.replace(/<YOUR_FLOW_ID>/g, flow_id) : code;
+    };
 
     const { code, lang, label } = examples[activeTab];
+    const processedCode = getProcessedCode(code);
 
     const handleCopy = async () => {
-        await navigator.clipboard.writeText(code);
+        await navigator.clipboard.writeText(processedCode);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
+    };
+
+    const handleFlowIdCopy = async () => {
+        if (flow_id) {
+            await navigator.clipboard.writeText(flow_id);
+            setFlowIdCopied(true);
+            setTimeout(() => setFlowIdCopied(false), 2000);
+        }
     };
 
     return (
         <div className="w-full h-full flex flex-col bg-white">
             {/* Header */}
-            <div className="px-6 py-4 border-b border-gray-200 sticky top-0 bg-white z-10">
-                <h3 className="text-lg font-semibold text-gray-900">
-                    API Usage
-                </h3>
-                <p className="text-sm text-gray-600 mt-1">
-                    Execute your published flow using the API endpoint
-                </p>
+            <div className="px-6 py-6 border-b border-gray-100 sticky top-0 bg-gradient-to-r from-white via-blue-50/30 to-white z-10 shadow-sm">
+                <div className="flex items-start justify-between">
+                    <div className="flex items-start space-x-3">
+                        <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-lg border border-blue-200">
+                            <Code className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <div>
+                            <div className="flex items-center space-x-2 mb-1">
+                                <h3 className="text-xl font-bold text-gray-900">
+                                    API Usage
+                                </h3>
+                                <div className="flex items-center space-x-1 px-2 py-1 bg-green-100 rounded-full border border-green-200">
+                                    <Zap className="w-3 h-3 text-green-600" />
+                                    <span className="text-xs font-medium text-green-700">
+                                        Ready
+                                    </span>
+                                </div>
+                            </div>
+                            <p className="text-sm text-gray-600 leading-relaxed max-w-2xl">
+                                Execute your published flow using our RESTful
+                                API endpoint.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                {flow_id && (
+                    <div className="mt-4 flex items-center space-x-2 text-xs text-gray-500">
+                        <span>Flow ID:</span>
+                        <div className="flex items-center space-x-1">
+                            <code className="px-2 py-1 bg-gray-100 rounded border border-gray-200 font-mono text-gray-700">
+                                {flow_id}
+                            </code>
+                            <button
+                                onClick={handleFlowIdCopy}
+                                className={`p-1 transition-colors ${
+                                    flowIdCopied
+                                        ? 'text-green-600'
+                                        : 'text-gray-400 hover:text-gray-600'
+                                }`}
+                                title={
+                                    flowIdCopied ? 'Copied!' : 'Copy Flow ID'
+                                }
+                            >
+                                {flowIdCopied ? (
+                                    <Check size={12} />
+                                ) : (
+                                    <Copy size={12} />
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             <div className="flex-1 px-6 py-4 overflow-y-auto">
@@ -359,45 +423,110 @@ const LCPublishContent: React.FC = () => {
                                 <span>{copied ? 'Copied!' : 'Copy'}</span>
                             </button>
                         </div>
-                        <div className="p-4 overflow-x-auto">
+                        <div className="p-2 overflow-x-auto">
                             <SyntaxHighlighter
                                 language={lang}
                                 style={tomorrow}
                                 customStyle={{
                                     margin: 0,
                                     background: 'transparent',
+                                    fontSize: '12px',
                                 }}
                             >
-                                {code}
+                                {processedCode}
                             </SyntaxHighlighter>
                         </div>
                     </div>
                 </div>
 
-                {/* Parameters */}
+                {/* Response Example */}
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <h4 className="font-semibold text-gray-900 mb-3">
-                        Parameters
+                        Response Example
                     </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {[
-                            ['flow_id', "Your flow's unique identifier"],
-                            ['messages', 'Array of message objects'],
-                            ['session_id', 'Optional session identifier'],
-                            [
-                                'Authorization',
-                                'Bearer token for authentication',
-                            ],
-                        ].map(([name, desc]) => (
-                            <div key={name} className="flex flex-col">
-                                <code className="text-sm font-mono text-blue-600 font-semibold">
-                                    {name}
-                                </code>
-                                <span className="text-xs text-gray-600 mt-1">
-                                    {desc}
-                                </span>
+
+                    <div className="mb-4">
+                        <h5 className="font-medium text-gray-800 mb-2">
+                            Request:
+                        </h5>
+                        <div className="bg-gray-900 rounded-lg overflow-hidden">
+                            <div className="p-2 overflow-x-auto">
+                                <SyntaxHighlighter
+                                    language="json"
+                                    style={tomorrow}
+                                    customStyle={{
+                                        margin: 0,
+                                        background: 'transparent',
+                                        fontSize: '12px',
+                                    }}
+                                >
+                                    {`{
+    "messages": [
+        {
+            "type": "text",
+            "content": "hi"
+        }
+    ],
+    "session_id": null
+}`}
+                                </SyntaxHighlighter>
                             </div>
-                        ))}
+                        </div>
+                    </div>
+
+                    <div className="mb-4">
+                        <h5 className="font-medium text-gray-800 mb-2">
+                            Response:
+                        </h5>
+                        <div className="bg-gray-900 rounded-lg overflow-hidden">
+                            <div className="p-2 overflow-x-auto">
+                                <SyntaxHighlighter
+                                    language="json"
+                                    style={tomorrow}
+                                    customStyle={{
+                                        margin: 0,
+                                        background: 'transparent',
+                                        fontSize: '12px',
+                                    }}
+                                >
+                                    {`{
+    "success": true,
+    "total_nodes": 2,
+    "completed_nodes": 2,
+    "total_layers": 2,
+    "execution_time": 0.0038433074951171875,
+    "results": [
+        {
+            "node_id": "ZW72wHzsrz",
+            "success": true,
+            "data": {
+                "label": "Chat Output",
+                "node_type": "Chat Output",
+                "input_values": {
+                    "message_in": "hi"
+                },
+                "output_values": {},
+                "parameter_values": {},
+                "mode": "NormalMode",
+                "tool_configs": {
+                    "tool_name": null,
+                    "tool_description": null
+                },
+                "execution_result": null,
+                "execution_status": "completed"
+            },
+            "error": null,
+            "execution_time": 0.00046443939208984375
+        }
+    ],
+    "chat_output": {
+        "content": "hi"
+    },
+    "ancestors": []
+}`}
+                                </SyntaxHighlighter>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

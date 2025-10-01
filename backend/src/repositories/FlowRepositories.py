@@ -210,10 +210,14 @@ class FlowRepository(BaseRepository):
             raise e
 
     def create_flow_with_data(
-        self, user_id: int, name: str = None, flow_definition: dict = None
+        self,
+        user_id: int,
+        name: str = None,
+        description: str = None,
+        flow_definition: dict = None,
     ) -> FlowModel:
         """
-        Create a new flow with optional name and flow definition.
+        Create a new flow with optional name, description, and flow definition.
         If name is not provided, it will auto-increment like 'New Flow', 'New Flow (1)', etc.
         """
         try:
@@ -255,12 +259,16 @@ class FlowRepository(BaseRepository):
                 else:
                     name = f"{base_name} ({next_number})"
 
+            # If no description provided, use empty string
+            if description is None:
+                description = ""
+
             # Create the flow
             flow_id = str(uuid4())
             flow = FlowModel(
                 flow_id=flow_id,
                 name=name,
-                description="",
+                description=description,
                 user_id=user_id,
                 flow_definition=flow_definition,
                 is_active=True,

@@ -22,7 +22,7 @@ import {
 // LCVersionContent component with "Create Snapshot" button and list of FlowSnapshotItems
 const LCVersionContent: React.FC<{ flowId: string }> = ({ flowId }) => {
     const { setNodes, setEdges, getEdges, getNodes } = useReactFlow();
-    const [page, setPage] = useState(1);
+    const [page] = useState(1);
     const [perPage] = useState(10);
     const [isCreateSnapshotDialogOpen, setIsCreateSnapshotDialogOpen] =
         useState(false);

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import type { IOTypeDetail } from '@/features/nodes/types';
 import { secretTextHandleStyles } from '../../styles/handleStyles';
 
@@ -16,7 +15,7 @@ interface SecretTextHandleInputProps {
 }
 
 export const SecretTextHandleInput: React.FC<SecretTextHandleInputProps> = ({
-    label,
+    // label,
     description,
     value,
     onChange,

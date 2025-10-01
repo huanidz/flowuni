@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
 import type { TestCasePreview } from '../types';
-import { useTestCaseStatus } from '../stores/testCaseStatusStore';
+import {
+    useTestCaseStatus,
+    useTaskIdForTestCase,
+} from '../stores/testCaseStatusStore';
 import { getTestRunStatusBadge } from '../utils';
 import { Button } from '@/components/ui/button';
-import { Play, ChevronDown } from 'lucide-react';
-import { useRunSingleTest } from '../hooks';
+import { Play, ChevronDown, Square } from 'lucide-react';
+import { useRunSingleTest, useCancelSingleTest } from '../hooks';
+import { TestCaseRunStatus } from '../types';
 
 interface TestCasePreviewItemProps {
     testCase: TestCasePreview;
@@ -34,6 +38,15 @@ const TestCasePreviewItem: React.FC<TestCasePreviewItemProps> = ({
             ? storeStatus
             : testCase.latest_run_status || 'PENDING';
     const runSingleTestMutation = useRunSingleTest();
+    const cancelSingleTestMutation = useCancelSingleTest();
+
+    // Get the task ID for this test case to use for cancellation
+    const taskId = useTaskIdForTestCase(String(testCase.id));
+
+    // Check if the test case is in a state that can be cancelled
+    const isCancellable =
+        testCaseStatus === TestCaseRunStatus.QUEUED ||
+        testCaseStatus === TestCaseRunStatus.RUNNING;
 
     // State for expanded sections
     const [expandedSections, setExpandedSections] = useState({
@@ -74,7 +87,28 @@ const TestCasePreviewItem: React.FC<TestCasePreviewItemProps> = ({
                 flow_id: flowId,
             },
             {
-                onSuccess: data => {},
+                onSuccess: _data => {},
+                onError: error => {
+                    console.error(error);
+                },
+            }
+        );
+    };
+
+    const handleCancelTest = (e: React.MouseEvent) => {
+        e.stopPropagation(); // Prevent card selection when clicking cancel
+
+        if (!taskId) {
+            console.error('No task ID found for test case', testCase.id);
+            return;
+        }
+
+        cancelSingleTestMutation.mutate(
+            {
+                task_id: taskId,
+            },
+            {
+                onSuccess: _data => {},
                 onError: error => {
                     console.error(error);
                 },
@@ -138,15 +172,31 @@ const TestCasePreviewItem: React.FC<TestCasePreviewItemProps> = ({
                                 </span>
                             </div>
                             <div className="flex items-center gap-2">
-                                <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-6 w-6 p-0 text-muted-foreground hover:text-green-600"
-                                    onClick={handleRunTest}
-                                    disabled={runSingleTestMutation.isPending}
-                                >
-                                    <Play className="h-3 w-3" />
-                                </Button>
+                                {isCancellable ? (
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-6 w-6 p-0 text-muted-foreground hover:text-red-600"
+                                        onClick={handleCancelTest}
+                                        disabled={
+                                            cancelSingleTestMutation.isPending
+                                        }
+                                    >
+                                        <Square className="h-3 w-3" />
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-6 w-6 p-0 text-muted-foreground hover:text-green-600"
+                                        onClick={handleRunTest}
+                                        disabled={
+                                            runSingleTestMutation.isPending
+                                        }
+                                    >
+                                        <Play className="h-3 w-3" />
+                                    </Button>
+                                )}
                                 {getTestRunStatusBadge(testCaseStatus)}
                             </div>
                         </div>

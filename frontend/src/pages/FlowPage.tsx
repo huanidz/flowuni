@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import FlowList from '@/features/flows/components/FlowList/FlowList';
 import { useFlows } from '@/features/flows/hooks';
@@ -13,7 +14,7 @@ const FlowPage: React.FC = () => {
     const {
         data: flowsData,
         isLoading,
-        isError,
+        error,
     } = useFlows({ userId: user_id as number, page: currentPage, pageSize });
     const queryClient = useQueryClient();
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -29,47 +30,30 @@ const FlowPage: React.FC = () => {
 
     return (
         <>
-            <div className="flex-1 p-4 h-screen flex flex-col">
-                <div className="flex justify-between items-center mb-3">
+            <div className="flex-1 p-8">
+                <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-xl font-bold">Flow Dashboard</h1>
-                        <p className="text-sm text-gray-600 mt-1">
-                            Manage your flows
+                        <h1 className="text-2xl font-bold">Flow Dashboard</h1>
+                        <p className="mt-2 text-gray-600">
+                            Manage your flows here.
                         </p>
                     </div>
-                    <Button
-                        onClick={() => setIsCreateModalOpen(true)}
-                        className="bg-gradient-to-r from-purple-500 to-blue-500 text-white active:scale-95 transform transition-transform duration-150 h-9 px-4 text-sm"
-                    >
-                        + Create
+                    <Button onClick={() => setIsCreateModalOpen(true)}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add New Flow
                     </Button>
                 </div>
-                <div className="mb-4">
-                    <div className="flex items-center border rounded-md px-3 py-1.5 w-64">
-                        <span className="text-gray-500 mr-2 text-sm">🔍</span>
-                        <input
-                            type="text"
-                            placeholder="Search flows..."
-                            className="focus:outline-none bg-transparent text-sm w-full"
-                        />
-                    </div>
-                </div>
 
-                {/* Display loading, error, or the flow list */}
-                {isLoading ? (
-                    <p>Loading flows...</p>
-                ) : isError ? (
-                    <p>Error loading flows. Please try again.</p>
-                ) : (
-                    <div className="flex-1 overflow-auto">
-                        <FlowList
-                            flows={flowsData?.data || []}
-                            pagination={flowsData?.pagination}
-                            onPageChange={handlePageChange}
-                            currentPage={currentPage}
-                        />
-                    </div>
-                )}
+                <div className="flex-1 overflow-auto">
+                    <FlowList
+                        flows={flowsData?.data || []}
+                        pagination={flowsData?.pagination}
+                        onPageChange={handlePageChange}
+                        currentPage={currentPage}
+                        isLoading={isLoading}
+                        error={error}
+                    />
+                </div>
             </div>
 
             <CreateFlowModal

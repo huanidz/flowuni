@@ -16,17 +16,16 @@ interface NumberHandleInputProps {
 }
 
 export const NumberHandleInput: React.FC<NumberHandleInputProps> = ({
-    label,
+    // label,
     description,
     value,
     onChange,
     type_detail,
     disabled = true,
-    isWholeAsToolMode = false,
+    // isWholeAsToolMode = false,
     debounceMs = 300,
 }) => {
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-    const [isFocused, setIsFocused] = useState(false);
     const {
         min_value: defaultMinValue,
         max_value: defaultMaxValue,
@@ -171,13 +170,10 @@ export const NumberHandleInput: React.FC<NumberHandleInputProps> = ({
     const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
         if (!disabled) {
             e.target.select();
-            setIsFocused(true);
         }
     };
 
     const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-        setIsFocused(false);
-
         // Clear any existing timeout and immediately process the value
         if (timeoutRef.current) {
             clearTimeout(timeoutRef.current);

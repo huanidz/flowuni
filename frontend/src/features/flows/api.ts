@@ -31,21 +31,29 @@ export const getFlows = async ({
     return data;
 };
 
-export const createEmtpyFlow = async (): Promise<CreateFlowResponse> => {
-    const { data } = await apiClient.post(FLOWS_ENDPOINT);
+export const createFlow = async (
+    request?: CreateFlowWithDataRequest
+): Promise<CreateFlowWithDataResponse> => {
+    // If no request provided, create empty flow
+    if (!request) {
+        const { data } = await apiClient.post(FLOWS_ENDPOINT);
+        return data;
+    }
 
+    // Create flow with data
+    const { data } = await apiClient.post(FLOWS_ENDPOINT, request);
     return data;
+};
+
+// Keep the old functions for backward compatibility
+export const createEmtpyFlow = async (): Promise<CreateFlowResponse> => {
+    return createFlow();
 };
 
 export const createFlowWithData = async (
     request: CreateFlowWithDataRequest
 ): Promise<CreateFlowWithDataResponse> => {
-    const { data } = await apiClient.post(
-        `${FLOWS_ENDPOINT}/with-data`,
-        request
-    );
-
-    return data;
+    return createFlow(request);
 };
 
 export const getFlowDetail = async ({

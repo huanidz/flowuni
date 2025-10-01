@@ -11,12 +11,12 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { JSONPath } from 'jsonpath-plus';
+import { Search } from 'lucide-react';
 import type {
     LLMJudge,
     CreateLLMJudgeRequest,
     UpdateLLMJudgeRequest,
     LLMProviderParser,
-    LLMProvider,
     LLMSupportConfig,
 } from '../types';
 import { getLLMConfig } from '../api';
@@ -44,9 +44,9 @@ const LLMJudgeForm: React.FC<LLMJudgeFormProps> = ({
     const [maxOutputTokens, setMaxOutputTokens] = useState<number>(1024);
     const [llmConfig, setLLMConfig] = useState<LLMSupportConfig | null>(null);
     const [availableModels, setAvailableModels] = useState<string[]>([]);
-    const [selectedProvider, setSelectedProvider] =
-        useState<LLMProvider | null>(null);
     const [isLoadingConfig, setIsLoadingConfig] = useState(false);
+    const [providerSearchTerm, setProviderSearchTerm] = useState('');
+    const [modelSearchTerm, setModelSearchTerm] = useState('');
 
     useEffect(() => {
         const fetchLLMConfig = async () => {
@@ -85,7 +85,6 @@ const LLMJudgeForm: React.FC<LLMJudgeFormProps> = ({
             const selectedProvider = llmConfig.supported_providers.find(
                 p => p.provider_name === provider
             );
-            setSelectedProvider(selectedProvider || null);
 
             if (selectedProvider) {
                 if (selectedProvider.type === 'predefined') {
@@ -233,22 +232,48 @@ const LLMJudgeForm: React.FC<LLMJudgeFormProps> = ({
                                 <SelectValue placeholder="Select a provider" />
                             </SelectTrigger>
                             <SelectContent>
+                                <div className="p-2">
+                                    <div className="relative">
+                                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                                        <Input
+                                            placeholder="Search providers..."
+                                            value={providerSearchTerm}
+                                            onChange={e =>
+                                                setProviderSearchTerm(
+                                                    e.target.value
+                                                )
+                                            }
+                                            onKeyDown={e => {
+                                                // Prevent Select component's keyboard navigation
+                                                // when typing in the search input
+                                                e.stopPropagation();
+                                            }}
+                                            className="pl-8 h-8 text-sm"
+                                        />
+                                    </div>
+                                </div>
                                 {isLoadingConfig ? (
                                     <SelectItem value="loading" disabled>
                                         Loading providers...
                                     </SelectItem>
                                 ) : llmConfig &&
                                   llmConfig.supported_providers.length > 0 ? (
-                                    llmConfig.supported_providers.map(
-                                        provider => (
+                                    llmConfig.supported_providers
+                                        .filter(provider =>
+                                            provider.provider_name
+                                                .toLowerCase()
+                                                .includes(
+                                                    providerSearchTerm.toLowerCase()
+                                                )
+                                        )
+                                        .map(provider => (
                                             <SelectItem
                                                 key={provider.provider_name}
                                                 value={provider.provider_name}
                                             >
                                                 {provider.provider_name}
                                             </SelectItem>
-                                        )
-                                    )
+                                        ))
                                 ) : (
                                     <SelectItem value="none" disabled>
                                         No providers available
@@ -275,12 +300,43 @@ const LLMJudgeForm: React.FC<LLMJudgeFormProps> = ({
                                 <SelectValue placeholder="Select a model" />
                             </SelectTrigger>
                             <SelectContent>
+                                <div className="p-2">
+                                    <div className="relative">
+                                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                                        <Input
+                                            placeholder="Search models..."
+                                            value={modelSearchTerm}
+                                            onChange={e =>
+                                                setModelSearchTerm(
+                                                    e.target.value
+                                                )
+                                            }
+                                            onKeyDown={e => {
+                                                // Prevent Select component's keyboard navigation
+                                                // when typing in the search input
+                                                e.stopPropagation();
+                                            }}
+                                            className="pl-8 h-8 text-sm"
+                                        />
+                                    </div>
+                                </div>
                                 {provider && availableModels.length > 0 ? (
-                                    availableModels.map(model => (
-                                        <SelectItem key={model} value={model}>
-                                            {model}
-                                        </SelectItem>
-                                    ))
+                                    availableModels
+                                        .filter(model =>
+                                            model
+                                                .toLowerCase()
+                                                .includes(
+                                                    modelSearchTerm.toLowerCase()
+                                                )
+                                        )
+                                        .map(model => (
+                                            <SelectItem
+                                                key={model}
+                                                value={model}
+                                            >
+                                                {model}
+                                            </SelectItem>
+                                        ))
                                 ) : (
                                     <SelectItem value="none" disabled>
                                         {provider

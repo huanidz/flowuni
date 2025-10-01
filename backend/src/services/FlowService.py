@@ -37,7 +37,7 @@ class FlowServiceInterface(ABC):
         self, user_id: int, flow_request: FlowCreateRequest
     ) -> FlowModel:
         """
-        Create a flow with optional name and flow definition
+        Create a flow with optional name, description, and flow definition
         """
         pass
 
@@ -105,6 +105,7 @@ class FlowService(FlowServiceInterface):
                     name=flow.name,
                     description=flow.description,
                     is_active=flow.is_active,
+                    created_at=flow.created_at,
                 )
                 for flow in flows
             ]
@@ -127,7 +128,7 @@ class FlowService(FlowServiceInterface):
         self, user_id: int, flow_request: FlowCreateRequest
     ) -> FlowModel:
         """
-        Create a flow with optional name and flow definition
+        Create a flow with optional name, description, and flow definition
         """
         try:
             # Validate flow definition if provided
@@ -137,6 +138,7 @@ class FlowService(FlowServiceInterface):
             flow = self.flow_repository.create_flow_with_data(
                 user_id=user_id,
                 name=flow_request.name,
+                description=flow_request.description,
                 flow_definition=flow_request.flow_definition,
             )
             logger.info(f"Successfully created flow with data for user {user_id}")
