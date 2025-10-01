@@ -227,6 +227,11 @@ export const DropdownHandleInput: React.FC<DropdownHandleInputProps> = ({
                                         onChange={e =>
                                             setSearchTerm(e.target.value)
                                         }
+                                        onKeyDown={e => {
+                                            // Prevent Select component's keyboard navigation
+                                            // when typing in the search input
+                                            e.stopPropagation();
+                                        }}
                                         className="pl-8 h-8 text-xs"
                                     />
                                 </div>
@@ -289,6 +294,10 @@ export const DropdownHandleInput: React.FC<DropdownHandleInputProps> = ({
                                     onChange={e =>
                                         setSearchTerm(e.target.value)
                                     }
+                                    onKeyDown={e => {
+                                        // Prevent keyboard navigation when typing in search
+                                        e.stopPropagation();
+                                    }}
                                     className="pl-7 h-7 text-xs border-gray-200"
                                     onClick={e => e.stopPropagation()}
                                 />
