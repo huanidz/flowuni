@@ -34,7 +34,7 @@ const VersionButton: React.FC<VersionButtonProps> = ({ onVersion }) => {
                         versionButton.backgroundColor;
                 }}
             >
-                Version
+                Snapshots
             </button>
             <LifecycleModal
                 open={isOpen}

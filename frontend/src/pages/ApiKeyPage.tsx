@@ -152,14 +152,17 @@ const ApiKeyPage: React.FC = () => {
 
     return (
         <div className="flex-1 p-8">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold">API Keys</h1>
-                    <p className="mt-2 text-gray-600">
+            <div className="flex items-center justify-between p-6 mb-6 bg-gradient-to-r from-[#644CEA] to-[#7B68EE] rounded-lg shadow-sm">
+                <div className="text-white">
+                    <h1 className="text-2xl font-bold text-white">API Keys</h1>
+                    <p className="mt-2 text-white/80">
                         Manage your API keys here.
                     </p>
                 </div>
-                <Button onClick={() => setShowCreateForm(!showCreateForm)}>
+                <Button
+                    onClick={() => setShowCreateForm(!showCreateForm)}
+                    className="bg-white text-[#644CEA] hover:bg-gray-50 border-0"
+                >
                     <Plus className="h-4 w-4 mr-2" />
                     {showCreateForm ? 'Cancel' : 'Add New API Key'}
                 </Button>

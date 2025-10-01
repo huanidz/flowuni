@@ -8,7 +8,7 @@ const MAX_RETRY_ATTEMPTS = 1;
 const RETRY_DELAY_MS = 1000;
 
 const apiClient = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5002/api',
+    baseURL: import.meta.env.VITE_API_BASE_URL,
     headers: {
         'Content-Type': 'application/json',
     },
