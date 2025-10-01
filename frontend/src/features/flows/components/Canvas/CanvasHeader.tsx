@@ -51,7 +51,18 @@ export const CanvasHeader: React.FC<HeaderProps> = React.memo(
                             {currentFlow ? currentFlow.name : title}
                         </h2>
                         {currentFlow && (
-                            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-sm shadow-emerald-200/50"></div>
+                            <div
+                                className={`w-2 h-2 rounded-full shadow-sm ${
+                                    currentFlow.is_active
+                                        ? 'bg-emerald-400 animate-pulse shadow-emerald-200/50'
+                                        : 'bg-gray-400 shadow-gray-200/50'
+                                }`}
+                                title={
+                                    currentFlow.is_active
+                                        ? 'Current active flow'
+                                        : 'Inactive flow'
+                                }
+                            ></div>
                         )}
                     </div>
                     {currentFlow && (
