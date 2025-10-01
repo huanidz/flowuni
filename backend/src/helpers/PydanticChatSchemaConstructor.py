@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Literal  # NEW
 
 from pydantic import BaseModel, Field, create_model
 
@@ -9,17 +9,27 @@ class ToolUsed(BaseModel):
 
 class SchemaFieldDescriptions:
     reasoning = (
-        "The agent's internal reasoning about whether a tool is needed and which tool(s) "
-        "would be most effective for the current user query. This should consider the context "
-        "of the query and any recent tool usage."
+        "Short internal reasoning that: (1) justifies the tool choice(s), "
+        "(2) VALIDATES whether the latest tool result matches the user's request, and "
+        "(3) decides the next step (RETRY vs CONTINUE vs FINALIZE). "
+        "If the tool result is irrelevant/incomplete/mismatched, "
+        "you MUST prefer RETRY over FINALIZE and explain the adjustment you will make."
     )
-    planned_tool_calls = "A list of tool calls the agent plans to use."
+    planned_tool_calls = (
+        "A list of tool calls you plan to execute next. "
+        "If next_action is CONTINUE or RETRY, this list MUST NOT be empty."
+    )
+    next_action = (
+        "Loop control. "
+        "Use 'CONTINUE' when you have more tool calls to execute in this iteration. "
+        "Use 'RETRY' when the last tool attempt produced irrelevant, incorrect, or incomplete results, "
+        "and you will try a different query, parameters, or approach. "
+        "Use 'FINALIZE' ONLY when the final_response is ready AND the latest tool result (if any) "
+        "is relevant and directly addresses the user's request."
+    )
     final_response = (
-        "The final user-facing response. This should clearly communicate the outcome, "
-        "including a summary of the tool selection process if relevant. "
-        "If tool usage is involved, the response should indicate to the user that you "
-        "are performing an internal action or retrieving necessary information, "
-        "without revealing the specific tool name or implementation details."
+        "The final user-facing response. Only non-empty when next_action is FINALIZE. "
+        "Do not apologize and finalize if a retry is viable."
     )
 
 
@@ -54,6 +64,12 @@ class PydanticChatSchemaConstructor:
                 Field(description=(SchemaFieldDescriptions.planned_tool_calls)),
             )
 
+        # NEW: Always include next_action to control loop
+        fields["next_action"] = (
+            Literal["CONTINUE", "FINALIZE", "RETRY"],
+            Field(description=(SchemaFieldDescriptions.next_action)),
+        )
+
         # Trường final_response luôn được bao gồm
         fields["final_response"] = (
             str,
@@ -62,5 +78,3 @@ class PydanticChatSchemaConstructor:
 
         # Tạo model động sử dụng create_model
         return create_model("AgentResponse", __base__=BaseModel, **fields)
-
-    # def

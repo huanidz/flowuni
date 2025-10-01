@@ -14,6 +14,7 @@ sqlalchemy==2.0.38
 psycopg2-binary==2.9.10
 asyncpg==0.30.0
 pinecone==7.3.0
+weaviate-client==4.17.0
 
 # Others
 natsort==8.4.0

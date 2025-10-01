@@ -87,13 +87,13 @@ class CanvasFlowRunRequest(BaseModel):
 
 
 class ApiFlowRunMessage(BaseModel):
-    type: str
+    type: Literal["text"]  # Will support 'image' in future
     content: str
 
 
 class ApiFlowRunRequest(BaseModel):
     messages: Optional[List[ApiFlowRunMessage]] = Field(
-        default_factory=list,
+        default_factory=None,
         description="List of messages to be sent to the flow run.",
     )
     session_id: Optional[str] = None

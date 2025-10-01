@@ -1,4 +1,5 @@
 from loguru import logger
+from src.consts.node_consts import NODE_GROUP_CONSTS
 from src.nodes.core.NodeIcon import NodeIconIconify
 from src.nodes.core.NodeInput import NodeInput
 from src.nodes.core.NodeOutput import NodeOutput
@@ -130,6 +131,7 @@ class EmbeddingProviderNode(Node):
         parameters=[],
         can_be_tool=False,
         icon=NodeIconIconify(icon_value="carbon:machine-learning-model"),
+        group=NODE_GROUP_CONSTS.PROVIDER,
     )
 
     def process(self, input_values, parameter_values):

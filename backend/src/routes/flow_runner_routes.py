@@ -3,7 +3,7 @@ import json
 import traceback
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import JSONResponse, StreamingResponse
 from loguru import logger
 from redis import Redis
@@ -196,28 +196,74 @@ async def run_flow_endpoint(
     """
     Execute a flow with proper validation and error handling.
     """
-    # Parse request JSON
-    request_json = await request.json()
-    flow_run_request = ApiFlowRunRequest(**request_json)
+    try:
+        # Parse request JSON
+        try:
+            request_json = await request.json()
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in request body: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid JSON in request body.",
+            )
+        except Exception as e:
+            logger.error(f"Error parsing request body: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Error parsing request body.",
+            )
 
-    # Extract API key from Authorization header
-    headers = request.headers
-    authorization_header = headers.get("Authorization")
-    request_api_key = (
-        authorization_header.split(" ")[1] if authorization_header else None
-    )
+        # Validate request schema
+        try:
+            flow_run_request = ApiFlowRunRequest(**request_json)
+        except Exception as e:
+            logger.error(f"Request validation failed: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid request format: {str(e)}",
+            )
 
-    # Create FlowSyncWorker and execute with validation
-    flow_sync_worker = FlowSyncWorker()
-    execution_result = flow_sync_worker.run_flow_with_validation(
-        flow_id=flow_id,
-        request_api_key=request_api_key,
-        api_key_service=api_key_service,
-        flow_service=flow_service,
-        stream=stream,
-    )
+        # Extract API key from Authorization header
+        headers = request.headers
+        authorization_header = headers.get("Authorization")
+        request_api_key = None
+        if authorization_header:
+            try:
+                scheme, api_key = authorization_header.split(" ", 1)
+                if scheme.lower() == "bearer":
+                    request_api_key = api_key
+            except ValueError:
+                logger.warning("Invalid authorization header format")
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid authorization header format.",
+                )
 
-    return JSONResponse(
-        status_code=200,
-        content=execution_result.model_dump(),
-    )
+        # Create FlowSyncWorker and execute with validation
+        flow_sync_worker = FlowSyncWorker()
+        execution_result = flow_sync_worker.run_flow_from_api(
+            flow_id=flow_id,
+            flow_run_request=flow_run_request,
+            request_api_key=request_api_key,
+            api_key_service=api_key_service,
+            flow_service=flow_service,
+            stream=stream,
+        )
+
+        return JSONResponse(
+            status_code=200,
+            content=execution_result.model_dump(),
+        )
+
+    except HTTPException:
+        # Re-raise HTTP exceptions to preserve their status codes and details
+        raise
+    except Exception as e:
+        logger.error(
+            f"Unexpected error in flow execution for flow_id {flow_id}: {str(e)}. "
+            f"traceback: {traceback.format_exc()}"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred during flow execution.",
+        )

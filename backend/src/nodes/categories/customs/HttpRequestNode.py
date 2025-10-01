@@ -32,6 +32,7 @@ from src.nodes.utils.http_request_node_utils import (
     create_pydantic_model_from_table_data,
     deep_merge,
     extract_toolable_items,
+    merge_headers_or_query_params,
 )
 from src.schemas.flowbuilder.flow_graph_schemas import ToolConfig
 from src.schemas.nodes.node_data_parsers import BuildToolResult
@@ -259,6 +260,7 @@ class HttpRequestNode(Node):
                 "params": params_dict if params_dict else None,
                 "timeout": 30,  # 30 second timeout
             }
+            logger.info(f"👉 request_kwargs: {request_kwargs}")
 
             # Add body for methods that support it
             if method in ["POST", "PUT", "PATCH"] and body_data is not None:
@@ -363,17 +365,19 @@ class HttpRequestNode(Node):
         # Get the tools input data
         headers = tool_inputs.get("headers", [])
         query_params = tool_inputs.get("query_params", [])
+        logger.info(f"👉 inputs_values: {inputs_values}")
+        logger.info(f"👉 query_params: {query_params}")
         body = tool_inputs.get("body", {})
 
-        # Deep merge the inputs_values with the tool inputs
+        # Merge the inputs_values with the tool inputs
         if headers:
-            inputs_values["headers"] = deep_merge(
-                inputs_values.get("headers", {}), headers
+            inputs_values["headers"] = merge_headers_or_query_params(
+                inputs_values.get("headers", []), headers
             )
 
         if query_params:
-            inputs_values["query_params"] = deep_merge(
-                inputs_values.get("query_params", {}), query_params
+            inputs_values["query_params"] = merge_headers_or_query_params(
+                inputs_values.get("query_params", []), query_params
             )
 
         if body:

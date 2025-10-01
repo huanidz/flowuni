@@ -368,9 +368,9 @@ class GraphExecutor:
         specialized functions based on the connection type and mode.
         """
 
-        logger.debug(
-            f"Updating successors for node {node_id}, with data: {executed_data}"
-        )
+        # logger.debug(
+        #     f"Updating successors for node {node_id}, with data: {executed_data}"
+        # )
 
         if not executed_data or not executed_data.output_values:
             # TODO: Careful in the future if a node is only is in Tool mode and not support normal mode # noqa
