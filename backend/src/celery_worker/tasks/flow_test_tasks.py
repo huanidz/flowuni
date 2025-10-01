@@ -1,7 +1,10 @@
 import random
+import signal
+import sys
 import time
-from typing import Any, Dict, Optional
+from datetime import datetime
 
+from celery.exceptions import SoftTimeLimitExceeded
 from loguru import logger
 from src.celery_worker.BaseTask import BaseTask
 from src.celery_worker.celery_worker import celery_app
@@ -16,7 +19,7 @@ from src.services.FlowTestService import FlowTestService
 from src.workers.FlowSyncWorker import FlowSyncWorker
 
 
-@celery_app.task(bind=True, max_retries=None)
+@celery_app.task(bind=True, max_retries=None, time_limit=3600)
 def dispatch_run_test(
     self, generated_task_id: str, user_id: int, flow_id: str, case_id: int
 ):
@@ -72,28 +75,67 @@ def dispatch_run_test(
             app_db_session.close()
 
 
-@celery_app.task(bind=True, base=BaseTask)
+@celery_app.task(bind=True, base=BaseTask, time_limit=3600, soft_time_limit=3540)
 def run_flow_test(
     self,
     task_id: str,
     user_id: int,
     flow_id: str,
     case_id: int,
-    input_text: Optional[str] = None,
-    input_metadata: Optional[Dict[str, Any]] = None,
 ):
     """
     Celery task that runs a flow test.
 
     Args:
         case_id: Test case ID
-        input_text: Input text for the test
-        input_metadata: Input metadata for the test
 
     Returns:
         Dictionary with test execution results
     """
     app_db_session = None
+    cleanup_done = False
+
+    def emergency_cleanup(signum, frame):
+        """Runs when SIGTERM is received"""
+        nonlocal app_db_session, cleanup_done
+
+        if cleanup_done:
+            return
+
+        logger.warning(f"Task {task_id} received termination signal, cleaning up...")
+
+        try:
+            # Update status to CANCELLED
+            if app_db_session:
+                repositories = RepositoriesContainer.auto_init_all(
+                    db_session=app_db_session
+                )
+                repositories.flow_test_repository.update_test_case_run(
+                    run_id=task_id,
+                    status=TestCaseRunStatus.CANCELLED,
+                    finished_at=datetime.now(),
+                )
+                app_db_session.commit()
+                app_db_session.close()
+
+        except Exception as e:
+            logger.error(f"Error in emergency cleanup: {e}")
+        finally:
+            release_user_slot_sync(user_id)
+
+        try:
+            release_user_slot_sync(user_id)
+        except Exception as e:
+            logger.error(f"Error releasing user slot: {e}")
+
+        cleanup_done = True
+        logger.info(f"Emergency cleanup completed for task {task_id}")
+
+        # Exit immediately
+        sys.exit(0)
+
+    # Register signal handler
+    signal.signal(signal.SIGTERM, emergency_cleanup)
 
     try:
         logger.info(f"Starting flow test task for case_id: {case_id}")
@@ -131,7 +173,15 @@ def run_flow_test(
             countdown=2,
             max_retries=0,  # Disables retry
         )
-
+    except SoftTimeLimitExceeded:
+        logger.warning(
+            f"Task {task_id} approaching time limit, attempting graceful shutdown"
+        )
+        # Do quick cleanup
+        raise
+    except SystemExit:
+        # Let the signal handler's sys.exit() work
+        raise
     except Exception as e:
         logger.error(f"Flow test failed for case_id {case_id}: {str(e)}")
         # Re-raise the exception so Celery marks the task as failed

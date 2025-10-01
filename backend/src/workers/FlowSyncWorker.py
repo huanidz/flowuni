@@ -155,12 +155,17 @@ class FlowSyncWorker:
 
         start_time: float = perf_counter()
 
+        if self._is_cancelled(case_id, flow_test_service):
+            return
+
         # Compile flow graph
         graph, execution_plan = self._compile_execution_plan(
             flow_graph_request_dict, input_text
         )
 
         try:
+            if self._is_cancelled(case_id, flow_test_service):
+                return
             # Execute flow
             execution_result: FlowExecutionResult = self._execute_flow(
                 graph,
@@ -180,6 +185,9 @@ class FlowSyncWorker:
                 execution_time_ms=execution_time_ms,
                 actual_output=execution_result.model_dump(),
             )
+
+            if self._is_cancelled(case_id, flow_test_service):
+                return
 
             # Run pass criteria
             self._run_pass_criteria(
@@ -501,3 +509,11 @@ class FlowSyncWorker:
             test_run_data={},
             error_message=construct_error_msg if failed_criteria else None,
         )
+
+    def _is_cancelled(self, test_case_id: int, service: FlowTestService) -> bool:
+        """Check if task was cancelled"""
+        status = service.get_latest_test_case_run_status(test_case_id=test_case_id)
+        if status == TestCaseRunStatus.CANCELLED:
+            logger.info(f"Test case {test_case_id} was cancelled, stopping execution")
+            return True
+        return False
