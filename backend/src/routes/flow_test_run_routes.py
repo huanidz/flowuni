@@ -4,6 +4,7 @@ import time
 import traceback
 from uuid import uuid4
 
+from celery import current_app
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from loguru import logger
@@ -16,8 +17,12 @@ from src.dependencies.flow_test_dep import get_flow_test_service
 from src.dependencies.redis_dependency import get_redis_client
 from src.models.alchemy.flows.FlowTestCaseRunModel import TestCaseRunStatus
 from src.schemas.flows.flow_test_schemas import (
+    FlowBatchTestCancelRequest,
+    FlowBatchTestCancelResponse,
     FlowBatchTestRunRequest,
     FlowBatchTestRunResponse,
+    FlowTestCancelRequest,
+    FlowTestCancelResponse,
     FlowTestRunRequest,
     FlowTestRunResponse,
 )
@@ -271,3 +276,180 @@ async def stream_events(
                             return
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
+@flow_test_run_router.post("/cancel", response_model=FlowTestCancelResponse)
+async def cancel_single_test(
+    request: FlowTestCancelRequest,
+    flow_test_service: FlowTestService = Depends(get_flow_test_service),
+    auth_user_id: int = Depends(get_current_user),
+):
+    """
+    Cancel a running flow test by revoking its Celery task and updating the database status
+    """
+    try:
+        # Get the test case run to verify it exists and check its current status
+        test_case_run = flow_test_service.get_test_case_run_by_task_id(
+            task_run_id=request.task_id
+        )
+
+        if not test_case_run:
+            logger.warning(f"Test case run with task_id {request.task_id} not found")
+            raise HTTPException(
+                status_code=404,
+                detail="Test case run not found",
+            )
+
+        current_status = str(test_case_run.status)
+
+        # Check if the test can be cancelled
+        if current_status in [
+            TestCaseRunStatus.PASSED.value,
+            TestCaseRunStatus.FAILED.value,
+            TestCaseRunStatus.CANCELLED.value,
+            TestCaseRunStatus.SYSTEM_ERROR.value,
+        ]:
+            logger.info(
+                f"Test case run with task_id {request.task_id} is already in terminal status: {current_status}"
+            )
+            return FlowTestCancelResponse(
+                status=current_status,
+                task_id=request.task_id,
+                message=f"Test is already {current_status.lower()} and cannot be cancelled.",
+                cancelled=False,
+            )
+
+        # Revoke the Celery task
+        try:
+            current_app.control.revoke(request.task_id, terminate=True)
+            logger.info(f"Revoked Celery task {request.task_id}")
+        except Exception as e:
+            logger.error(f"Failed to revoke Celery task {request.task_id}: {e}")
+            # Continue with database update even if Celery revocation fails
+
+        # Update the database status to CANCELLED
+        cancelled = flow_test_service.cancel_test_case_run(task_run_id=request.task_id)
+
+        if cancelled:
+            logger.info(
+                f"Successfully cancelled test case run with task_id {request.task_id} (user: {auth_user_id})"
+            )
+            return FlowTestCancelResponse(
+                status=TestCaseRunStatus.CANCELLED.value,
+                task_id=request.task_id,
+                message="Test has been successfully cancelled.",
+                cancelled=True,
+            )
+        else:
+            logger.warning(
+                f"Failed to cancel test case run with task_id {request.task_id}"
+            )
+            return FlowTestCancelResponse(
+                status=current_status,
+                task_id=request.task_id,
+                message="Failed to cancel test. It may have already completed.",
+                cancelled=False,
+            )
+
+    except HTTPException as http_exc:
+        raise http_exc  # Re-raise known HTTP exceptions
+
+    except Exception as e:
+        logger.error(
+            f"Error cancelling test case run with task_id {request.task_id}: {e}. traceback: {traceback.format_exc()}"
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="An error occurred while cancelling the test.",
+        )
+
+
+@flow_test_run_router.post("/batch/cancel", response_model=FlowBatchTestCancelResponse)
+async def cancel_batch_tests(
+    request: FlowBatchTestCancelRequest,
+    flow_test_service: FlowTestService = Depends(get_flow_test_service),
+    auth_user_id: int = Depends(get_current_user),
+):
+    """
+    Cancel multiple running flow tests by revoking their Celery tasks and updating database status
+    """
+    try:
+        if not request.task_ids:
+            logger.warning("No task IDs provided for batch cancellation")
+            return FlowBatchTestCancelResponse(
+                cancelled_task_ids=[],
+                failed_task_ids=[],
+                message="No task IDs provided for cancellation.",
+                total_cancelled=0,
+                total_failed=0,
+            )
+
+        # Get all test case runs to verify they exist
+        test_case_runs = (
+            flow_test_service.test_repository.get_test_case_runs_by_task_ids(
+                task_run_ids=request.task_ids
+            )
+        )
+
+        # Separate valid and invalid task IDs
+        valid_task_ids = []
+        invalid_task_ids = []
+
+        for task_id in request.task_ids:
+            if task_id in test_case_runs:
+                valid_task_ids.append(task_id)
+            else:
+                invalid_task_ids.append(task_id)
+                logger.warning(f"Test case run with task_id {task_id} not found")
+
+        # Cancel valid test case runs
+        cancellation_results = flow_test_service.cancel_test_case_runs(
+            task_run_ids=valid_task_ids
+        )
+
+        # Revoke Celery tasks for successfully cancelled tests
+        cancelled_task_ids = []
+        failed_task_ids = []
+
+        for task_id, success in cancellation_results.items():
+            if success:
+                try:
+                    current_app.control.revoke(task_id, terminate=True)
+                    cancelled_task_ids.append(task_id)
+                    logger.info(f"Successfully cancelled test with task_id {task_id}")
+                except Exception as e:
+                    logger.error(f"Failed to revoke Celery task {task_id}: {e}")
+                    failed_task_ids.append(task_id)
+            else:
+                failed_task_ids.append(task_id)
+                logger.warning(f"Failed to cancel test with task_id {task_id}")
+
+        # Add invalid task IDs to failed list
+        failed_task_ids.extend(invalid_task_ids)
+
+        total_cancelled = len(cancelled_task_ids)
+        total_failed = len(failed_task_ids)
+
+        logger.info(
+            f"Batch cancellation completed. Cancelled: {total_cancelled}, Failed: {total_failed} (user: {auth_user_id})"
+        )
+
+        return FlowBatchTestCancelResponse(
+            cancelled_task_ids=cancelled_task_ids,
+            failed_task_ids=failed_task_ids,
+            message=f"Batch cancellation completed. {total_cancelled} tests cancelled, {total_failed} failed.",
+            total_cancelled=total_cancelled,
+            total_failed=total_failed,
+        )
+
+    except HTTPException as http_exc:
+        raise http_exc  # Re-raise known HTTP exceptions
+
+    except Exception as e:
+        logger.error(
+            f"Error during batch cancellation: {e}. traceback: {traceback.format_exc()}"
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="An error occurred during batch cancellation.",
+        )

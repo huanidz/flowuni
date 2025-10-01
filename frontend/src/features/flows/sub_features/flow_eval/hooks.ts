@@ -4,6 +4,8 @@ import { useEffect } from 'react';
 import { TestCaseRunStatus } from './types';
 
 import {
+    cancelBatchTest,
+    cancelSingleTest,
     createTestSuite,
     createTestCase,
     deleteTestSuite,
@@ -15,7 +17,9 @@ import {
     runSingleTest,
 } from './api';
 import type {
+    FlowBatchTestCancelRequest,
     FlowBatchTestRunRequest,
+    FlowTestCancelRequest,
     FlowTestRunRequest,
     TestCaseCreateRequest,
     TestCasePartialUpdateRequest,
@@ -287,6 +291,88 @@ export const useRunBatchTest = () => {
         onError: error => {
             console.error('Error running batch test:', error);
             toast.error('Failed to run batch test');
+        },
+    });
+};
+
+/**
+ * Hook for cancelling a single test case
+ */
+export const useCancelSingleTest = () => {
+    const { updateTestCaseStatus } = useTestCaseStatusStore();
+
+    return useMutation({
+        mutationFn: (request: FlowTestCancelRequest) =>
+            cancelSingleTest(request),
+        onSuccess: (data, variables) => {
+            if (data.cancelled) {
+                // Update the test case status to CANCELLED
+                const { getTaskIdForTestCase } =
+                    useTestCaseStatusStore.getState();
+
+                // Find the test case ID by checking all task mappings
+                const { taskToTestCaseMap } = useTestCaseStatusStore.getState();
+                const testCaseId = taskToTestCaseMap[variables.task_id];
+
+                if (testCaseId) {
+                    updateTestCaseStatus(
+                        testCaseId,
+                        TestCaseRunStatus.CANCELLED
+                    );
+                }
+
+                toast.success('Test cancelled successfully');
+            } else {
+                toast.info(data.message || 'Test could not be cancelled');
+            }
+        },
+        onError: error => {
+            console.error('Error cancelling test case:', error);
+            toast.error('Failed to cancel test case');
+        },
+    });
+};
+
+/**
+ * Hook for cancelling a batch of test cases
+ */
+export const useCancelBatchTest = () => {
+    const { updateTestCaseStatus } = useTestCaseStatusStore();
+
+    return useMutation({
+        mutationFn: (request: FlowBatchTestCancelRequest) =>
+            cancelBatchTest(request),
+        onSuccess: (data, variables) => {
+            // Update the status of successfully cancelled test cases
+            const { taskToTestCaseMap } = useTestCaseStatusStore.getState();
+
+            data.cancelled_task_ids.forEach(taskId => {
+                const testCaseId = taskToTestCaseMap[taskId];
+                if (testCaseId) {
+                    updateTestCaseStatus(
+                        testCaseId,
+                        TestCaseRunStatus.CANCELLED
+                    );
+                }
+            });
+
+            if (data.total_cancelled > 0) {
+                if (data.total_failed > 0) {
+                    toast.warning(
+                        `Cancelled ${data.total_cancelled} tests. ${data.total_failed} tests failed to cancel.`
+                    );
+                } else {
+                    toast.success(
+                        `Cancelled ${data.total_cancelled} tests successfully`
+                    );
+                }
+            } else {
+                toast.error('No tests could be cancelled');
+            }
+        },
+        onError: error => {
+            console.error('Error cancelling batch tests:', error);
+            toast.error('Failed to cancel batch tests');
         },
     });
 };

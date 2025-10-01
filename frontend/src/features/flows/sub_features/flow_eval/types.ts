@@ -402,3 +402,38 @@ export interface FlowBatchTestRunResponse {
     input_text?: string;
     input_metadata?: Record<string, any>;
 }
+
+/**
+ * Flow test cancel request interface based on backend FlowTestCancelRequest
+ */
+export interface FlowTestCancelRequest {
+    task_id: string;
+}
+
+/**
+ * Flow test cancel response interface based on backend FlowTestCancelResponse
+ */
+export interface FlowTestCancelResponse {
+    status: TestCaseRunStatus;
+    task_id: string;
+    message: string;
+    cancelled: boolean;
+}
+
+/**
+ * Flow batch test cancel request interface based on backend FlowBatchTestCancelRequest
+ */
+export interface FlowBatchTestCancelRequest {
+    task_ids: string[];
+}
+
+/**
+ * Flow batch test cancel response interface based on backend FlowBatchTestCancelResponse
+ */
+export interface FlowBatchTestCancelResponse {
+    cancelled_task_ids: string[];
+    failed_task_ids: string[];
+    message: string;
+    total_cancelled: number;
+    total_failed: number;
+}

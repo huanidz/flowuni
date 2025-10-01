@@ -15,9 +15,13 @@ import {
     useTestSuitesWithCases,
     useRunSingleTest,
     useRunBatchTest,
+    useCancelBatchTest,
 } from '../../../sub_features/flow_eval/hooks';
 import { useGlobalSSEConnection } from '../../../sub_features/flow_eval/sseConnectionManager';
-import { useAllTestCaseStatuses } from '../../../sub_features/flow_eval/stores/testCaseStatusStore';
+import {
+    useAllTestCaseStatuses,
+    useTestCaseStatusStore,
+} from '../../../sub_features/flow_eval/stores/testCaseStatusStore';
 import useFlowStore from '@/features/flows/stores/flow_stores';
 
 /**
@@ -65,6 +69,7 @@ const LCEvalContent: React.FC = () => {
     // Test running hooks
     const runSingleTest = useRunSingleTest();
     const runBatchTest = useRunBatchTest();
+    const cancelBatchTest = useCancelBatchTest();
 
     // Extract the test suites array from the response
     const testSuites: TestSuiteWithCasePreviews[] =
@@ -226,6 +231,28 @@ const LCEvalContent: React.FC = () => {
         }
     };
 
+    const handleCancelRunning = () => {
+        // Get task IDs for all running and queued tests
+        const { taskToTestCaseMap } = useTestCaseStatusStore.getState();
+        const runningTaskIds: string[] = [];
+
+        Object.entries(taskToTestCaseMap).forEach(([taskId, testCaseId]) => {
+            const status = allTestCaseStatuses[testCaseId];
+            if (status === 'RUNNING' || status === 'QUEUED') {
+                runningTaskIds.push(taskId);
+            }
+        });
+
+        if (runningTaskIds.length === 0) {
+            return;
+        }
+
+        // Cancel all running/queued tests
+        cancelBatchTest.mutate({
+            task_ids: runningTaskIds,
+        });
+    };
+
     React.useEffect(() => {
         if (testSuites) {
             const allSuiteIds = new Set(
@@ -314,9 +341,11 @@ const LCEvalContent: React.FC = () => {
             <TestActionButtons
                 statistics={statistics}
                 selectedCount={selectedTestCases.size}
+                runningCount={statistics.running}
                 onRunAll={handleRunAll}
                 onRunFailed={handleRunFailed}
                 onRunSelected={handleRunSelected}
+                onCancelRunning={handleCancelRunning}
             />
         </div>
     );

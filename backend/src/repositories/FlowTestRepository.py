@@ -799,3 +799,39 @@ class FlowTestRepository(BaseRepository):
             )
             self.db_session.rollback()
             raise e
+
+    def get_test_case_runs_by_task_ids(
+        self, task_run_ids: list[str]
+    ) -> dict[str, FlowTestCaseRunModel]:
+        """
+        Get multiple test case runs by their task run IDs.
+
+        Args:
+            task_run_ids: List of task run IDs
+
+        Returns:
+            dict[str, FlowTestCaseRunModel]: Dictionary mapping task run IDs to test case run models
+        """
+        try:
+            if not task_run_ids:
+                return {}
+
+            test_case_runs = (
+                self.db_session.query(FlowTestCaseRunModel)
+                .filter(FlowTestCaseRunModel.task_run_id.in_(task_run_ids))
+                .all()
+            )
+
+            result = {}
+            for run in test_case_runs:
+                result[run.task_run_id] = run
+
+            logger.info(
+                f"Retrieved {len(result)} test case runs out of {len(task_run_ids)} requested"
+            )
+            return result
+
+        except Exception as e:
+            logger.error(f"Error retrieving test case runs by task_run_ids: {e}")
+            self.db_session.rollback()
+            raise e
