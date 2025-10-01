@@ -47,11 +47,14 @@ def dispatch_run_test(
             # Có slot, gọi task xử lý thật
             # Dùng .delay() hoặc .apply_async() để không block dispatcher
             # Sử dụng task_id của dispatcher task cho task 'run_flow_test'
-            run_flow_test.delay(
-                task_id=generated_task_id,
-                user_id=user_id,
-                case_id=case_id,
-                flow_id=flow_id,
+            run_flow_test.apply_async(
+                kwargs={
+                    "task_id": generated_task_id,
+                    "user_id": user_id,
+                    "case_id": case_id,
+                    "flow_id": flow_id,
+                },
+                task_id=generated_task_id,  # Force Celery to use your generated_task_id
             )
             return
         else:
