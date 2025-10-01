@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Copy, Check } from 'lucide-react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import useFlowStore from '@/features/flows/stores/flow_stores';
 
 const examples: Record<string, { code: string; lang: string; label: string }> =
     {
@@ -262,15 +263,24 @@ const TabButton = ({
 );
 
 const LCPublishContent: React.FC = () => {
+    const { current_flow } = useFlowStore();
+    const flow_id = current_flow?.flow_id;
+
     const [activeTab, setActiveTab] = useState<
         'curl' | 'js' | 'python' | 'java' | 'csharp' | 'go' | 'ruby' | 'php'
     >('curl');
     const [copied, setCopied] = useState(false);
 
+    // Process code examples to replace flow_id placeholder
+    const getProcessedCode = (code: string): string => {
+        return flow_id ? code.replace(/<YOUR_FLOW_ID>/g, flow_id) : code;
+    };
+
     const { code, lang, label } = examples[activeTab];
+    const processedCode = getProcessedCode(code);
 
     const handleCopy = async () => {
-        await navigator.clipboard.writeText(code);
+        await navigator.clipboard.writeText(processedCode);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
@@ -359,45 +369,110 @@ const LCPublishContent: React.FC = () => {
                                 <span>{copied ? 'Copied!' : 'Copy'}</span>
                             </button>
                         </div>
-                        <div className="p-4 overflow-x-auto">
+                        <div className="p-2 overflow-x-auto">
                             <SyntaxHighlighter
                                 language={lang}
                                 style={tomorrow}
                                 customStyle={{
                                     margin: 0,
                                     background: 'transparent',
+                                    fontSize: '12px',
                                 }}
                             >
-                                {code}
+                                {processedCode}
                             </SyntaxHighlighter>
                         </div>
                     </div>
                 </div>
 
-                {/* Parameters */}
+                {/* Response Example */}
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <h4 className="font-semibold text-gray-900 mb-3">
-                        Parameters
+                        Response Example
                     </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {[
-                            ['flow_id', "Your flow's unique identifier"],
-                            ['messages', 'Array of message objects'],
-                            ['session_id', 'Optional session identifier'],
-                            [
-                                'Authorization',
-                                'Bearer token for authentication',
-                            ],
-                        ].map(([name, desc]) => (
-                            <div key={name} className="flex flex-col">
-                                <code className="text-sm font-mono text-blue-600 font-semibold">
-                                    {name}
-                                </code>
-                                <span className="text-xs text-gray-600 mt-1">
-                                    {desc}
-                                </span>
+
+                    <div className="mb-4">
+                        <h5 className="font-medium text-gray-800 mb-2">
+                            Request:
+                        </h5>
+                        <div className="bg-gray-900 rounded-lg overflow-hidden">
+                            <div className="p-2 overflow-x-auto">
+                                <SyntaxHighlighter
+                                    language="json"
+                                    style={tomorrow}
+                                    customStyle={{
+                                        margin: 0,
+                                        background: 'transparent',
+                                        fontSize: '12px',
+                                    }}
+                                >
+                                    {`{
+    "messages": [
+        {
+            "type": "text",
+            "content": "hi"
+        }
+    ],
+    "session_id": null
+}`}
+                                </SyntaxHighlighter>
                             </div>
-                        ))}
+                        </div>
+                    </div>
+
+                    <div className="mb-4">
+                        <h5 className="font-medium text-gray-800 mb-2">
+                            Response:
+                        </h5>
+                        <div className="bg-gray-900 rounded-lg overflow-hidden">
+                            <div className="p-2 overflow-x-auto">
+                                <SyntaxHighlighter
+                                    language="json"
+                                    style={tomorrow}
+                                    customStyle={{
+                                        margin: 0,
+                                        background: 'transparent',
+                                        fontSize: '12px',
+                                    }}
+                                >
+                                    {`{
+    "success": true,
+    "total_nodes": 2,
+    "completed_nodes": 2,
+    "total_layers": 2,
+    "execution_time": 0.0038433074951171875,
+    "results": [
+        {
+            "node_id": "ZW72wHzsrz",
+            "success": true,
+            "data": {
+                "label": "Chat Output",
+                "node_type": "Chat Output",
+                "input_values": {
+                    "message_in": "hi"
+                },
+                "output_values": {},
+                "parameter_values": {},
+                "mode": "NormalMode",
+                "tool_configs": {
+                    "tool_name": null,
+                    "tool_description": null
+                },
+                "execution_result": null,
+                "execution_status": "completed"
+            },
+            "error": null,
+            "execution_time": 0.00046443939208984375
+        }
+    ],
+    "chat_output": {
+        "content": "hi"
+    },
+    "ancestors": []
+}`}
+                                </SyntaxHighlighter>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
