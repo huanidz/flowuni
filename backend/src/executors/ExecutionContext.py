@@ -22,6 +22,9 @@ class ExecutionContext(BaseModel):
     repositories: RepositoriesContainer = RepositoriesContainer()
     services: ServicesContainer = ServicesContainer()
 
+    # Node-level context
+    node_id: Optional[str] = None
+
     class Config:
         arbitrary_types_allowed = True
 

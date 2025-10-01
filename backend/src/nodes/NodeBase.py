@@ -25,6 +25,7 @@ from src.schemas.nodes.node_schemas import (
 class Node(ABC):
     """Abstract base class for all nodes in the processing graph."""
 
+    id: Optional[str] = None  # Late initialization (When graph is run)
     spec: NodeSpec
     context: Optional[ExecutionContext] = None
 
@@ -544,8 +545,12 @@ class Node(ABC):
         return self._build_output_mapping(result)
 
     def run(
-        self, node_data: "NodeData", exec_context: Optional[ExecutionContext] = None
+        self,
+        node_id: str,
+        node_data: "NodeData",
+        exec_context: Optional[ExecutionContext] = None,
     ) -> "NodeData":
         """Deprecated: Use execute instead."""
+        self.id = node_id
         self.bind_context(exec_context)
         return self.execute(node_data)

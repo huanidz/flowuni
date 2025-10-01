@@ -1,5 +1,6 @@
 import { watchFlowExecution } from '@/api/sse';
 import { toast } from 'sonner';
+import { nanoid, customAlphabet } from 'nanoid';
 
 /**
  * Creates and returns a function that handles SSE events for flow execution
@@ -120,3 +121,7 @@ export const handleFlowExecutionError = (error: any, context: string) => {
         description: errorMessage,
     });
 };
+
+export const nodeid_nanoid = customAlphabet(
+    '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+);

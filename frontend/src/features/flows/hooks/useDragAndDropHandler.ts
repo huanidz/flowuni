@@ -1,11 +1,11 @@
-import { useCallback, memo } from 'react';
+import { useCallback } from 'react';
 import type { Node, ReactFlowInstance } from '@xyflow/react';
 import { Position } from '@xyflow/react';
 import { useNodeRegistry } from '@/features/nodes';
 import React from 'react';
 import { toast } from 'sonner';
 import { NODE_DATA_MODE, NODE_EXECUTION_STATE } from '../consts';
-import { nanoid } from 'nanoid';
+import { nodeid_nanoid } from '../utils/FlowActionUtils';
 
 export const useDragDropHandler = (
     reactFlowInstance: ReactFlowInstance | null,
@@ -94,7 +94,7 @@ export const useDragDropHandler = (
             );
 
             const customNode: Node = {
-                id: nanoid(10),
+                id: nodeid_nanoid(10),
                 type,
                 position,
                 data: {

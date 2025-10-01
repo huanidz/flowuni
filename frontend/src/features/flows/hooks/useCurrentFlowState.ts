@@ -46,6 +46,15 @@ export const useCurrentFlowState = (flow_id: string) => {
     const initializeFlow = useCallback(() => {
         setNodes(initialNodes);
         setEdges(initialEdges);
+
+        // Set dragHandle for all nodes (This prevent dragHandle clear when initialize from save)
+        setNodes(nodes =>
+            nodes.map(node => ({
+                ...node,
+                dragHandle: '.node-drag-handle',
+            }))
+        );
+
         setSaved(true); // Mark as saved after initialization
     }, [initialNodes, initialEdges, setNodes, setEdges]);
 

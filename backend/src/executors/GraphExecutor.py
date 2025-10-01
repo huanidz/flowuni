@@ -128,7 +128,7 @@ class GraphExecutor:
         # Otherwise, execute from the beginning
         return self._run_full_strategy.execute()
 
-    def _execute_layer_parallel(
+    def _execute_layer_parallel(  # noqa
         self, executor: ThreadPoolExecutor, layer_nodes: List[str], layer_index: int
     ) -> List[NodeExecutionResult]:
         """
@@ -304,7 +304,9 @@ class GraphExecutor:
 
             # Execute the node
             executed_data: NodeData = node_instance.run(
-                node_data=node_data, exec_context=self.execution_context
+                node_id=node_id,
+                node_data=node_data,
+                exec_context=self.execution_context,
             )
             self.push_event(
                 node_id=node_id,
