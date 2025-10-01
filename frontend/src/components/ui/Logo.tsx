@@ -6,7 +6,7 @@ export const Logo = () => {
                 alt="Flowuni Logo"
                 className="h-14 w-14 mr-3"
             />
-            <div className="text-3xl font-bold text-purple-600">Flowuni</div>
+            <div className="text-3xl font-bold text-[#644CEA]">Flowuni</div>
         </div>
     );
 };
