@@ -11,10 +11,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import {
-    useCreateFlowWithData,
-    useCreateEmptyFlow,
-} from '@/features/flows/hooks';
+import { useCreateFlow } from '@/features/flows/hooks';
 import { toast } from 'sonner';
 import { CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
@@ -30,13 +27,13 @@ const CreateFlowModal: React.FC<CreateFlowModalProps> = ({
     onSuccess,
 }) => {
     const [flowName, setFlowName] = useState('');
+    const [flowDescription, setFlowDescription] = useState('');
     const [flowDefinition, setFlowDefinition] = useState('');
     const [isUploading, setIsUploading] = useState(false);
     const [isValidJson, setIsValidJson] = useState<boolean | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const createFlowWithDataMutation = useCreateFlowWithData();
-    const createEmptyFlowMutation = useCreateEmptyFlow();
+    const createFlowMutation = useCreateFlow();
 
     const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -106,16 +103,22 @@ const CreateFlowModal: React.FC<CreateFlowModalProps> = ({
 
     const handleCreateFlow = async () => {
         try {
-            // If no name and no definition, create empty flow
-            if (!flowName.trim() && !flowDefinition.trim()) {
-                const { flow_id } = await createEmptyFlowMutation.mutateAsync();
+            // If no name, no description, and no definition, create empty flow
+            if (
+                !flowName.trim() &&
+                !flowDescription.trim() &&
+                !flowDefinition.trim()
+            ) {
+                const flow = await createFlowMutation.mutateAsync(undefined);
+                const { flow_id } = flow;
                 toast('Flow Created', {
                     description: `Flow created successfully.`,
                 });
                 onSuccess(flow_id);
 
-                // Clear flow name and definition
+                // Clear flow name, description, and definition
                 setFlowName('');
+                setFlowDescription('');
                 setFlowDefinition('');
 
                 onClose();
@@ -126,6 +129,9 @@ const CreateFlowModal: React.FC<CreateFlowModalProps> = ({
             const flowData: any = {};
             if (flowName.trim()) {
                 flowData.name = flowName.trim();
+            }
+            if (flowDescription.trim()) {
+                flowData.description = flowDescription.trim();
             }
             if (flowDefinition.trim()) {
                 try {
@@ -138,13 +144,14 @@ const CreateFlowModal: React.FC<CreateFlowModalProps> = ({
                 }
             }
 
-            const flow = await createFlowWithDataMutation.mutateAsync(flowData);
+            const flow = await createFlowMutation.mutateAsync(flowData);
             toast('Flow Created', {
                 description: `Flow "${flow.name}" created successfully.`,
             });
             onSuccess(flow.flow_id);
-            // Clear flow name and definition
+            // Clear flow name, description, and definition
             setFlowName('');
+            setFlowDescription('');
             setFlowDefinition('');
             onClose();
         } catch (error) {
@@ -188,6 +195,27 @@ const CreateFlowModal: React.FC<CreateFlowModalProps> = ({
                         />
                         <p className="text-xs text-muted-foreground">
                             Optional: Give your flow a descriptive name
+                        </p>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label
+                            htmlFor="flowDescription"
+                            className="text-sm font-medium"
+                        >
+                            Description
+                        </Label>
+                        <Textarea
+                            id="flowDescription"
+                            value={flowDescription}
+                            onChange={e => setFlowDescription(e.target.value)}
+                            placeholder="Enter a description for your flow (optional)"
+                            rows={3}
+                            className="resize-y max-h-32 overflow-y-auto"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                            Optional: Provide a description to help others
+                            understand what this flow does
                         </p>
                     </div>
 
@@ -260,14 +288,10 @@ const CreateFlowModal: React.FC<CreateFlowModalProps> = ({
                     </Button>
                     <Button
                         onClick={handleCreateFlow}
-                        disabled={
-                            createFlowWithDataMutation.isPending ||
-                            createEmptyFlowMutation.isPending
-                        }
+                        disabled={createFlowMutation.isPending}
                         className="h-10 min-w-[100px]"
                     >
-                        {createFlowWithDataMutation.isPending ||
-                        createEmptyFlowMutation.isPending
+                        {createFlowMutation.isPending
                             ? 'Creating...'
                             : 'Create Flow'}
                     </Button>

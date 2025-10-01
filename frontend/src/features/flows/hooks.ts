@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useMutation } from '@tanstack/react-query';
 import {
     getFlows,
+    createFlow,
     createEmtpyFlow,
     getFlowDetail,
     deleteFlow,
@@ -39,6 +40,16 @@ export const useFlows = ({
         queryFn: () => getFlows({ userId, page, pageSize }),
         placeholderData: keepPreviousData,
         enabled: !!userId,
+    });
+};
+
+export const useCreateFlow = () => {
+    return useMutation<
+        CreateFlowWithDataResponse,
+        Error,
+        CreateFlowWithDataRequest | undefined
+    >({
+        mutationFn: createFlow,
     });
 };
 

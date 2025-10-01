@@ -32,6 +32,7 @@ export interface CreateFlowResponse {
 
 export interface CreateFlowWithDataRequest {
     name?: string;
+    description?: string;
     flow_definition?: any;
 }
 
