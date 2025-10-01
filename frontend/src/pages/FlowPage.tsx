@@ -13,7 +13,7 @@ const FlowPage: React.FC = () => {
     const {
         data: flowsData,
         isLoading,
-        isError,
+        error,
     } = useFlows({ userId: user_id as number, page: currentPage, pageSize });
     const queryClient = useQueryClient();
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -55,21 +55,16 @@ const FlowPage: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Display loading, error, or the flow list */}
-                {isLoading ? (
-                    <p>Loading flows...</p>
-                ) : isError ? (
-                    <p>Error loading flows. Please try again.</p>
-                ) : (
-                    <div className="flex-1 overflow-auto">
-                        <FlowList
-                            flows={flowsData?.data || []}
-                            pagination={flowsData?.pagination}
-                            onPageChange={handlePageChange}
-                            currentPage={currentPage}
-                        />
-                    </div>
-                )}
+                <div className="flex-1 overflow-auto">
+                    <FlowList
+                        flows={flowsData?.data || []}
+                        pagination={flowsData?.pagination}
+                        onPageChange={handlePageChange}
+                        currentPage={currentPage}
+                        isLoading={isLoading}
+                        error={error}
+                    />
+                </div>
             </div>
 
             <CreateFlowModal
