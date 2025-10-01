@@ -6,6 +6,8 @@ export const DELETE_API_KEY_ENDPOINT = (keyId: string) =>
     `${API_KEYS_BASE_ENDPOINT}/${keyId}`;
 export const DEACTIVATE_API_KEY_ENDPOINT = (keyId: string) =>
     `${API_KEYS_BASE_ENDPOINT}/${keyId}/deactivate`;
+export const ACTIVATE_API_KEY_ENDPOINT = (keyId: string) =>
+    `${API_KEYS_BASE_ENDPOINT}/${keyId}/activate`;
 export const VALIDATE_API_KEY_ENDPOINT = `${API_KEYS_BASE_ENDPOINT}/validate`;
 
 // Other constants

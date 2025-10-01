@@ -180,6 +180,30 @@ class ApiKeyRepository(BaseRepository[ApiKeyModel]):
             self.db_session.rollback()
             raise e
 
+    def activate_api_key(self, key_id: str) -> bool:
+        """
+        Activate an API key by key_id
+        """
+        try:
+            api_key = (
+                self.db_session.query(ApiKeyModel).filter_by(key_id=key_id).first()
+            )
+            if not api_key:
+                logger.warning(
+                    f"Attempted to activate non-existent API key with key_id: {key_id}"
+                )
+                return False
+
+            api_key.is_active = True
+            self.update(api_key)
+            logger.info(f"Activated API key with key_id: {key_id}")
+            return True
+
+        except Exception as e:
+            logger.error(f"Error activating API key with key_id {key_id}: {e}")
+            self.db_session.rollback()
+            raise e
+
     def delete_api_key(self, key_id: str) -> bool:
         """
         Delete an API key by key_id

@@ -120,6 +120,37 @@ async def deactivate_api_key(
         ) from e
 
 
+@api_key_router.patch("/{key_id}/activate", status_code=status.HTTP_200_OK)
+async def activate_api_key(
+    key_id: str,
+    api_key_service: ApiKeyService = Depends(get_api_key_service),
+    auth_user_id: int = Depends(get_current_user),
+):
+    """
+    Activate an API key by key_id
+    """
+    try:
+        success = api_key_service.activate_key(key_id)
+
+        if not success:
+            logger.warning(f"API key with key_id {key_id} not found for activation")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="API key not found.",
+            )
+
+        return {"message": "API key activated successfully."}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error activating API key {key_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to activate API key.",
+        ) from e
+
+
 @api_key_router.post(
     "/validate", response_model=ValidateApiKeyResponse, status_code=status.HTTP_200_OK
 )

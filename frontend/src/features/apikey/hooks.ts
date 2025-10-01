@@ -4,6 +4,7 @@ import {
     listApiKeys,
     deleteApiKey,
     deactivateApiKey,
+    activateApiKey,
     validateApiKey,
 } from './api';
 import type {
@@ -58,6 +59,20 @@ export const useDeactivateApiKey = () => {
 
     return useMutation<{ message: string }, Error, string>({
         mutationFn: deactivateApiKey,
+        onSuccess: () => {
+            // Invalidate and refetch API key lists
+            queryClient.invalidateQueries({
+                queryKey: API_KEY_QUERY_KEYS.lists(),
+            });
+        },
+    });
+};
+
+export const useActivateApiKey = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation<{ message: string }, Error, string>({
+        mutationFn: activateApiKey,
         onSuccess: () => {
             // Invalidate and refetch API key lists
             queryClient.invalidateQueries({
