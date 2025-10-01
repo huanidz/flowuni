@@ -2,7 +2,7 @@
  * Types for Flow Evaluation functionality
  * Based on backend FlowTestSuiteModel and FlowTestCaseModel
  */
-import type { NodeData, NodeResult } from '@/features/nodes/types';
+import type { NodeResult } from '@/features/nodes/types';
 
 // Define TestRule types directly to avoid circular imports
 export interface StringRuleConfig {

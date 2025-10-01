@@ -17,7 +17,7 @@ interface TextFieldHandleInputProps {
 }
 
 export const TextFieldHandleInput: React.FC<TextFieldHandleInputProps> = ({
-    label,
+    // label,
     description,
     value,
     onChange,

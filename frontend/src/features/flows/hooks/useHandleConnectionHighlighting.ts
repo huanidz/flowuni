@@ -301,7 +301,7 @@ export const useConnectionHighlighting = ({
     // Main handler for connection start - highlights compatible handles
     const handleConnectionStart = useCallback(
         (
-            event: MouseEvent | TouchEvent,
+            _event: MouseEvent | TouchEvent,
             {
                 nodeId,
                 handleId,

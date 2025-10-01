@@ -12,21 +12,21 @@ interface LLMProviderInputHandleProps {
 }
 
 export const LLMProviderInputHandle: React.FC<LLMProviderInputHandleProps> = ({
-    label,
+    // label,
     description,
-    value,
-    onChange,
+    // value,
+    // onChange,
     type_detail,
-    disabled = true,
-    isWholeAsToolMode = false,
+    // disabled = true,
+    // isWholeAsToolMode = false,
 }) => {
     const hidden = type_detail?.defaults?.hidden ?? false;
 
-    const handleChange = (newValue: any) => {
-        if (onChange && !disabled) {
-            onChange(newValue);
-        }
-    };
+    // const handleChange = (newValue: any) => {
+    //     if (onChange && !disabled) {
+    //         onChange(newValue);
+    //     }
+    // };
 
     return (
         <div style={hidden ? { display: 'none' } : undefined}>

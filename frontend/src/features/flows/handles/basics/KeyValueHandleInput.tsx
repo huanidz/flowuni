@@ -25,13 +25,13 @@ interface KeyValueHandleInputProps {
 }
 
 export const KeyValueHandleInput: React.FC<KeyValueHandleInputProps> = ({
-    label,
+    // label,
     description,
     value,
     onChange,
     type_detail,
     disabled = true,
-    isWholeAsToolMode = false,
+    // isWholeAsToolMode = false,
 }) => {
     const {
         key_label = 'Key',

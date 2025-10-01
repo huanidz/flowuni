@@ -4,8 +4,8 @@ import { SidebarSection } from './SidebarSection';
 import { SidebarInputsSection } from './SidebarInputsSection';
 import { SidebarParametersSection } from './SidebarParametersSection';
 import { SidebarToolConfigSection } from './SidebarToolConfigSection';
-import { SidebarOutputsSection } from './SidebarOutputsSection';
-import { SidebarExecutionResultSection } from './SidebarExecutionResultSection';
+// import { SidebarOutputsSection } from './SidebarOutputsSection';
+// import { SidebarExecutionResultSection } from './SidebarExecutionResultSection';
 import { sidebarStyles } from '@/features/flows/styles/sidebarStyles';
 import { nodeStyles } from '@/features/flows/styles/nodeStyles';
 import { getStatusBadgeStyles } from '@/features/flows/styles/nodeExecutionStatusHelper';
@@ -45,10 +45,10 @@ export const NodeConfigSidebar: React.FC<NodeConfigSidebarProps> = ({
         data: {
             input_values = {} as Record<string, any>,
             parameter_values = {} as Record<string, any>,
-            output_values = {} as Record<string, any>,
+            // output_values = {} as Record<string, any>,
             tool_configs = {} as Record<string, any>,
             mode = NODE_DATA_MODE.NORMAL,
-            execution_result = null as string | null,
+            // execution_result = null as string | null,
             execution_status = undefined as string | undefined,
         },
     } = selectedNode;
@@ -152,36 +152,36 @@ export const NodeConfigSidebar: React.FC<NodeConfigSidebarProps> = ({
         );
     };
 
-    const renderOutputsSection = () => {
-        if (nodeSpec.outputs.length === 0 && mode !== NODE_DATA_MODE.TOOL) {
-            return <div style={sidebarStyles.emptyStateText}>No outputs</div>;
-        }
+    // const renderOutputsSection = () => {
+    //     if (nodeSpec.outputs.length === 0 && mode !== NODE_DATA_MODE.TOOL) {
+    //         return <div style={sidebarStyles.emptyStateText}>No outputs</div>;
+    //     }
 
-        return (
-            <SidebarOutputsSection
-                spec_outputs={nodeSpec.outputs}
-                node_mode={mode}
-                output_values={output_values}
-            />
-        );
-    };
+    //     return (
+    //         <SidebarOutputsSection
+    //             spec_outputs={nodeSpec.outputs}
+    //             node_mode={mode}
+    //             output_values={output_values}
+    //         />
+    //     );
+    // };
 
-    const renderExecutionResultsSection = () => {
-        if (!execution_result && !execution_status) {
-            return (
-                <div style={sidebarStyles.emptyStateText}>
-                    No execution results
-                </div>
-            );
-        }
+    // const renderExecutionResultsSection = () => {
+    //     if (!execution_result && !execution_status) {
+    //         return (
+    //             <div style={sidebarStyles.emptyStateText}>
+    //                 No execution results
+    //             </div>
+    //         );
+    //     }
 
-        return (
-            <SidebarExecutionResultSection
-                result={execution_result}
-                status={execution_status || 'unknown'}
-            />
-        );
-    };
+    //     return (
+    //         <SidebarExecutionResultSection
+    //             result={execution_result}
+    //             status={execution_status || 'unknown'}
+    //         />
+    //     );
+    // };
 
     return (
         <div

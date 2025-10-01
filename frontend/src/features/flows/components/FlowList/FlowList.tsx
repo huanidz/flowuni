@@ -46,7 +46,6 @@ const FlowList: React.FC<FlowListProps> = ({
     flows,
     pagination,
     onPageChange,
-    currentPage = 1,
 }) => {
     const navigate = useNavigate();
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());

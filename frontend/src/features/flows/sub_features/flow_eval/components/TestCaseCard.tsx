@@ -34,7 +34,6 @@ interface TestCaseCardProps {
 
 const TestCaseCard: React.FC<TestCaseCardProps> = ({
     item,
-    isSelected = false,
     selectedTestCase = null,
     onTestCaseSelect,
     onTestCaseDelete,
@@ -102,7 +101,7 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
                 flow_id: flowId,
             },
             {
-                onSuccess: data => {},
+                onSuccess: _data => {},
                 onError: error => {
                     console.error(error);
                 },
@@ -123,7 +122,7 @@ const TestCaseCard: React.FC<TestCaseCardProps> = ({
                 task_id: taskId,
             },
             {
-                onSuccess: data => {},
+                onSuccess: _data => {},
                 onError: error => {
                     console.error(error);
                 },

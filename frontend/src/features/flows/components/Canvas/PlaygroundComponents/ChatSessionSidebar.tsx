@@ -69,11 +69,10 @@ const ChatSessionSidebar: React.FC<ChatSessionSidebarProps> = ({
     } = usePlaygroundStore();
 
     // Hook to fetch chat history
-    const { data: chatHistoryData, isLoading: isChatHistoryLoading } =
-        useChatHistory(
-            currentSession?.user_defined_session_id || '',
-            50 // Number of messages to fetch
-        );
+    const { data: chatHistoryData } = useChatHistory(
+        currentSession?.user_defined_session_id || '',
+        50 // Number of messages to fetch
+    );
 
     const deleteSessionMutation = useDeletePlaygroundSession();
     // Handle session deletion with current session check

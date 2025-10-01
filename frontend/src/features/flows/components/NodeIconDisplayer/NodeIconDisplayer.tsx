@@ -106,54 +106,6 @@ export const NodeIconDisplayer: React.FC<NodeIconDisplayerProps> = ({
                 </span>
             );
 
-        case 'material':
-            // Using MUI Material Icons
-            // Convert icon name to PascalCase for Material Icons
-            const iconName = icon_value
-                .split('_')
-                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                .join('');
-
-            // Get the icon component from Material Icons
-            const MaterialIconComponent = (MaterialIcons as any)[iconName];
-
-            if (MaterialIconComponent) {
-                return (
-                    <div
-                        className={cn(
-                            'flex items-center justify-center',
-                            className
-                        )}
-                        style={style}
-                        title={`Material: ${icon_value}`}
-                    >
-                        <MaterialIconComponent
-                            style={{
-                                color: color || undefined,
-                                fontSize:
-                                    typeof size === 'number'
-                                        ? `${size}px`
-                                        : size,
-                            }}
-                        />
-                    </div>
-                );
-            }
-
-            // Fallback if icon not found
-            return (
-                <div
-                    className={cn(
-                        'flex items-center justify-center',
-                        className
-                    )}
-                    style={style}
-                    title={`Material: ${icon_value} (not found)`}
-                >
-                    <span>📦</span>
-                </div>
-            );
-
         case 'iconify':
             // Using Iconify for icons
             return (

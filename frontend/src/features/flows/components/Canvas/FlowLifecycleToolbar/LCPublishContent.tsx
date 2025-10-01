@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Copy, Check, Code, Zap, Shield } from 'lucide-react';
+import { Copy, Check, Code, Zap } from 'lucide-react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import useFlowStore from '@/features/flows/stores/flow_stores';

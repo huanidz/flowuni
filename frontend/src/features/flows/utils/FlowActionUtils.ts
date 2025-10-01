@@ -1,6 +1,6 @@
 import { watchFlowExecution } from '@/api/sse';
 import { toast } from 'sonner';
-import { nanoid, customAlphabet } from 'nanoid';
+import { customAlphabet } from 'nanoid';
 
 /**
  * Creates and returns a function that handles SSE events for flow execution
@@ -38,7 +38,7 @@ export const createSSEEventHandler = (nodeUpdateHandlers: any) => {
 
             const node_id = parsed?.node_id;
             const event_status = parsed?.event;
-            const { input_values, output_values } = data;
+            const { output_values } = data;
             // console.log(
             //     '[SSE] Updating node:',
             //     node_id,

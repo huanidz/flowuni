@@ -235,7 +235,7 @@ export class ConnectionValidator {
     }
 
     private canRouterOutputConnectToTarget(
-        sourceNodeId: string,
+        _sourceNodeId: string,
         targetNodeId: string
     ): boolean {
         // Check if there's already a connection from any RouterOutputHandle to this target node

@@ -71,7 +71,7 @@ export const useDragDropHandler = (
 
             // Initialize parameters with default values as a simple key-value dictionary
             const initialParameters = Object.fromEntries(
-                Object.entries(nodeSpec.parameters).map(([key, paramSpec]) => [
+                Object.entries(nodeSpec.parameters).map(([, paramSpec]) => [
                     (paramSpec as any).name,
                     (paramSpec as any).default || '',
                 ])
@@ -79,7 +79,7 @@ export const useDragDropHandler = (
 
             // Initialize input values with default values as a simple key-value dictionary
             const initialInputValues = Object.fromEntries(
-                Object.entries(nodeSpec.inputs).map(([key, inputSpec]) => [
+                Object.entries(nodeSpec.inputs).map(([, inputSpec]) => [
                     (inputSpec as any).name,
                     (inputSpec as any).default || '',
                 ])
@@ -87,7 +87,7 @@ export const useDragDropHandler = (
 
             // Initialize output values with default values as a simple key-value dictionary
             const initialOutputValues = Object.fromEntries(
-                Object.entries(nodeSpec.outputs).map(([key, outputSpec]) => [
+                Object.entries(nodeSpec.outputs).map(([, outputSpec]) => [
                     (outputSpec as any).name,
                     (outputSpec as any).default || '',
                 ])

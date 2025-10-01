@@ -13,7 +13,6 @@ import {
     type ApiKeyListResponse,
     type ValidateApiKeyRequest,
     type ValidateApiKeyResponse,
-    type ApiKeyError,
 } from './types';
 
 export const createApiKey = async (

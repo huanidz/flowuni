@@ -12,20 +12,10 @@ interface AgentToolHandleInputProps {
 }
 
 export const AgentToolHandleInput: React.FC<AgentToolHandleInputProps> = ({
-    label,
     description,
-    value,
-    onChange,
     type_detail,
-    disabled = true,
 }) => {
     const hidden = type_detail?.defaults?.hidden ?? false;
-
-    const handleChange = (newValue: string) => {
-        if (onChange && !disabled) {
-            onChange(newValue);
-        }
-    };
 
     return (
         <div style={hidden ? { display: 'none' } : undefined}>

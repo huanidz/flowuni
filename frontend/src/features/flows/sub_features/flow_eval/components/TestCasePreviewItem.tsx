@@ -87,7 +87,7 @@ const TestCasePreviewItem: React.FC<TestCasePreviewItemProps> = ({
                 flow_id: flowId,
             },
             {
-                onSuccess: data => {},
+                onSuccess: _data => {},
                 onError: error => {
                     console.error(error);
                 },
@@ -108,7 +108,7 @@ const TestCasePreviewItem: React.FC<TestCasePreviewItemProps> = ({
                 task_id: taskId,
             },
             {
-                onSuccess: data => {},
+                onSuccess: _data => {},
                 onError: error => {
                     console.error(error);
                 },
