@@ -112,7 +112,10 @@ class AgentNode(Node):
             chat_history_list = SessionChatHistoryListParser.model_validate_json(
                 chat_history
             )
-            prev_histories: List[ChatMessage] = chat_history_list.to_chat_messages()
+            # Access all elements except the last due to first item is inserted in the chat/ (user message) # noqa
+            prev_histories: List[ChatMessage] = chat_history_list.to_chat_messages()[
+                ::-1
+            ]
 
         tools = []
         tools_value = input_values["tools"]

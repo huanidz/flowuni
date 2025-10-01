@@ -8,9 +8,9 @@ class Settings(BaseSettings):
     """Configuration settings for the application."""
 
     # Application settings
-    APP_NAME: str = "MyFastAPI"
+    APP_NAME: str = "Flowuni"
     DEBUG: bool = False
-    VERSION: str = "1.0.0"
+    VERSION: str = "0.0.1"
 
     # Environment configuration
     ENVIRONMENT: str = Field(default="development")
@@ -19,9 +19,6 @@ class Settings(BaseSettings):
     DATABASE_URL: str
 
     AUTH_SECRET: str
-    # VERTEX_AI_SERVICE_PROJECT_ID: str
-    # VERTEX_AI_SERVICE_LOCATION: str
-    # VERTEX_AI_SERVICE_ACCOUNT_CREDENTIALS: str
 
     REDIS_HOST: str
     REDIS_PORT: str
@@ -60,12 +57,6 @@ class Settings(BaseSettings):
         if v not in allowed:
             raise ValueError(f"Environment must be one of {allowed}")
         return v
-
-    # @field_validator("VERTEX_AI_SERVICE_ACCOUNT_CREDENTIALS")
-    # def validate_credentials_path(cls, v):
-    #     if not os.path.exists(v):
-    #         raise ValueError(f"Credentials file not found at: {v}")
-    #     return v
 
     class Config:
         """Pydantic configuration for environment variables."""
