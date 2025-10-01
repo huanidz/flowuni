@@ -32,6 +32,7 @@ interface DropdownHandleInputProps {
             client_resolver?: any;
             multiple?: boolean;
             searchable?: boolean;
+            sort_options?: boolean;
             options?: Array<{ label: string; value: string }>;
             hidden?: boolean;
         };
@@ -58,6 +59,7 @@ export const DropdownHandleInput: React.FC<DropdownHandleInputProps> = ({
     const {
         multiple: defaultMultiple = false,
         searchable: defaultSearchable = false,
+        sort_options: defaultSortOptions = false,
         options: defaultOptions = [],
         hidden: defaultHidden = false,
     } = type_detail.defaults || {};
@@ -141,8 +143,25 @@ export const DropdownHandleInput: React.FC<DropdownHandleInputProps> = ({
         fetchResolvedOptions();
     }, [JSON.stringify(dependencyValues)]);
 
-    const optionsToUse =
-        resolvedOptions.length > 0 ? resolvedOptions : defaultOptions || [];
+    // Natural sort function for strings
+    const naturalSort = (a: string, b: string) => {
+        return a.localeCompare(b, undefined, {
+            numeric: true,
+            sensitivity: 'base',
+        });
+    };
+
+    // Apply sorting to options if sort_options is enabled
+    const optionsToUse = useMemo(() => {
+        const options =
+            resolvedOptions.length > 0 ? resolvedOptions : defaultOptions || [];
+
+        if (defaultSortOptions && options.length > 0) {
+            return [...options].sort((a, b) => naturalSort(a.label, b.label));
+        }
+
+        return options;
+    }, [resolvedOptions, defaultOptions, defaultSortOptions]);
 
     // === HANDLE CHANGE LOGIC ===
     const handleChange = (newValue: string | string[]) => {
