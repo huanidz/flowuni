@@ -20,9 +20,9 @@ from src.nodes.core.NodeParameterSpec import ParameterSpec
 from src.nodes.handles.agents.AgentToolInputHandle import AgentToolInputHandle
 from src.nodes.handles.basics.inputs import (
     LLMProviderInputHandle,
+    NumberInputHandle,
     TextFieldInputHandle,
 )
-from src.nodes.handles.basics.inputs.BooleanInputHandle import BooleanInputHandle
 from src.nodes.handles.basics.outputs.DataOutputHandle import DataOutputHandle
 from src.nodes.NodeBase import Node, NodeSpec
 from src.schemas.nodes.node_data_parsers import ToolDataParser
@@ -74,17 +74,12 @@ class AgentNode(Node):
         ],
         parameters=[
             ParameterSpec(
-                name="streaming",
-                type=BooleanInputHandle(),
-                description="Whether to stream the response.",
-                default=False,
-                allow_incoming_edges=False,
-            ),
-            ParameterSpec(
-                name="enable_memory",
-                type=BooleanInputHandle(),
-                description="Whether to enable memory (chat history) for the agent.",
-                default=True,
+                name="max_loop",
+                type=NumberInputHandle(
+                    min_value=1, max_value=10, integer_only=True, step=1
+                ),
+                description="Max loop of the Agent. Leave -1 as no-limit. We will have a hard limit within to avoid stuck.",
+                default=3,
                 allow_incoming_edges=False,
             ),
         ],
@@ -97,6 +92,12 @@ class AgentNode(Node):
         llm_provider = input_values["llm_provider"]
         system_prompt = input_values["system_instruction"]
         input_message = input_values["input_message"]
+
+        agent_max_loop = parameter_values["max_loop"]
+        if int(agent_max_loop) == -1:
+            agent_max_loop == 10
+        else:
+            agent_max_loop = int(agent_max_loop)
 
         if not llm_provider:
             raise ValueError(
@@ -133,6 +134,7 @@ class AgentNode(Node):
             llm_provider=llm_provider_instance,
             system_prompt=system_prompt,
             tools=tools,
+            max_loop_count=agent_max_loop,
         )
 
         chat_message = ChatMessage(role="user", content=input_message)
