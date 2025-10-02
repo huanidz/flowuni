@@ -1,5 +1,5 @@
 // hooks/useConfirmation.tsx
-import { useState, useCallback, type ReactNode } from 'react';
+import { useState, useCallback, useEffect, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -37,31 +37,66 @@ export const useConfirmation = () => {
         try {
             await options.onConfirm();
             setIsOpen(false);
-            setOptions(null);
         } catch (error) {
             console.error('Confirmation action failed:', error);
-            // Keep dialog open on error so user can retry
         } finally {
             setIsLoading(false);
         }
     }, [options]);
 
-    const handleClose = useCallback(() => {
-        if (isLoading) return; // Prevent closing during loading
+    const handleCancel = useCallback(() => {
+        if (isLoading) return;
 
-        setIsOpen(false);
-        setOptions(null);
-        setIsLoading(false);
-
-        // Call onCancel if provided
         options?.onCancel?.();
+        setIsOpen(false);
     }, [isLoading, options]);
+
+    // Clear options when dialog closes
+    useEffect(() => {
+        if (!isOpen && options) {
+            const timer = setTimeout(() => {
+                setOptions(null);
+            }, 300); // Match dialog animation duration
+            return () => clearTimeout(timer);
+        }
+    }, [isOpen, options]);
+
+    // Force cleanup of any stuck overlays
+    useEffect(() => {
+        if (!isOpen) {
+            // Small delay to ensure Dialog has finished its cleanup
+            const timer = setTimeout(() => {
+                // Remove any stuck Radix overlays
+                const overlays = document.querySelectorAll(
+                    '[data-radix-dialog-overlay]'
+                );
+                overlays.forEach(overlay => {
+                    if (overlay.parentNode) {
+                        overlay.parentNode.removeChild(overlay);
+                    }
+                });
+
+                // Reset body styles that might be stuck
+                document.body.style.pointerEvents = '';
+                document.body.style.overflow = '';
+            }, 350);
+
+            return () => clearTimeout(timer);
+        }
+    }, [isOpen]);
 
     const ConfirmationDialog = useCallback(() => {
         if (!options) return null;
 
         return (
-            <Dialog open={isOpen} onOpenChange={handleClose}>
+            <Dialog
+                open={isOpen}
+                onOpenChange={open => {
+                    if (!open && !isLoading) {
+                        handleCancel();
+                    }
+                }}
+            >
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>{options.title}</DialogTitle>
@@ -72,7 +107,7 @@ export const useConfirmation = () => {
                     <DialogFooter>
                         <Button
                             variant="outline"
-                            onClick={handleClose}
+                            onClick={handleCancel}
                             disabled={isLoading}
                         >
                             {options.cancelText || 'Cancel'}
@@ -90,7 +125,7 @@ export const useConfirmation = () => {
                 </DialogContent>
             </Dialog>
         );
-    }, [options, isOpen, isLoading, handleConfirm, handleClose]);
+    }, [options, isOpen, isLoading, handleConfirm, handleCancel]);
 
     return {
         confirm,
