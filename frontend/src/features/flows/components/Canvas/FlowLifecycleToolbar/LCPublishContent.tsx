@@ -9,7 +9,7 @@ const examples: Record<string, { code: string; lang: string; label: string }> =
         curl: {
             label: 'Bash',
             lang: 'bash',
-            code: `curl -X POST 'http://localhost:5002/api/exec/<YOUR_FLOW_ID>' \\
+            code: `curl -X POST 'http://flowuni.app/api/exec/<YOUR_FLOW_ID>' \\
   -H 'Content-Type: application/json' \\
   -H 'Authorization: Bearer <YOUR_API_KEY>' \\
   -d '{
@@ -20,7 +20,7 @@ const examples: Record<string, { code: string; lang: string; label: string }> =
         js: {
             label: 'JavaScript',
             lang: 'javascript',
-            code: `const response = await fetch('http://localhost:5002/api/exec/<YOUR_FLOW_ID>', {
+            code: `const response = await fetch('http://flowuni.app/api/exec/<YOUR_FLOW_ID>', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -41,7 +41,7 @@ console.log(result);`,
             code: `import requests
 import json
 
-url = 'http://localhost:5002/api/exec/<YOUR_FLOW_ID>'
+url = 'http://flowuni.app/api/exec/<YOUR_FLOW_ID>'
 headers = {
     'Content-Type': 'application/json',
     'Authorization': 'Bearer <YOUR_API_KEY>'
@@ -66,7 +66,7 @@ import java.util.Scanner;
 
 public class ApiExample {
     public static void main(String[] args) throws Exception {
-        URL url = new URL("http://localhost:5002/api/exec/<YOUR_FLOW_ID>");
+        URL url = new URL("http://flowuni.app/api/exec/<YOUR_FLOW_ID>");
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("POST");
         conn.setRequestProperty("Content-Type", "application/json");
@@ -116,7 +116,7 @@ class Program
             );
             
             var response = await client.PostAsync(
-                "http://localhost:5002/api/exec/<YOUR_FLOW_ID>",
+                "http://flowuni.app/api/exec/<YOUR_FLOW_ID>",
                 content
             );
             
@@ -150,7 +150,7 @@ type RequestBody struct {
 }
 
 func main() {
-    url := "http://localhost:5002/api/exec/<YOUR_FLOW_ID>"
+    url := "http://flowuni.app/api/exec/<YOUR_FLOW_ID>"
     
     requestBody := RequestBody{
         Messages: []Message{
@@ -194,7 +194,7 @@ func main() {
 require 'uri'
 require 'json'
 
-uri = URI.parse('http://localhost:5002/api/exec/<YOUR_FLOW_ID>')
+uri = URI.parse('http://flowuni.app/api/exec/<YOUR_FLOW_ID>')
 request = Net::HTTP::Post.new(uri)
 request.content_type = 'application/json'
 request['Authorization'] = 'Bearer <YOUR_API_KEY>'
@@ -214,7 +214,7 @@ puts response.body`,
             label: 'PHP',
             lang: 'php',
             code: `<?php
-$url = 'http://localhost:5002/api/exec/<YOUR_FLOW_ID>';
+$url = 'http://flowuni.app/api/exec/<YOUR_FLOW_ID>';
 $data = [
     'messages' => [
         ['type' => 'text', 'content' => 'hello']
