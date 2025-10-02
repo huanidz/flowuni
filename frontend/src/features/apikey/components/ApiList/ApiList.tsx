@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { API_KEY_DISPLAY_LENGTH, API_KEY_PREFIX } from '@/features/apikey';
 import { type ApiKeyInfoResponse } from '@/features/apikey';
+import { useConfirmation } from '@/hooks/useConfirmationModal';
 
 interface ApiListProps {
     apiKeys: ApiKeyInfoResponse[];
@@ -41,6 +42,7 @@ const ApiList: React.FC<ApiListProps> = ({
     isDeactivatePending,
     isActivatePending,
 }) => {
+    const { confirm, ConfirmationDialog } = useConfirmation();
     const formatKeyId = (keyId: string) => {
         return `${API_KEY_PREFIX}${keyId.slice(0, API_KEY_DISPLAY_LENGTH)}...`;
     };
@@ -135,12 +137,20 @@ const ApiList: React.FC<ApiListProps> = ({
                                         )}
                                         <DropdownMenuItem
                                             variant="destructive"
-                                            onClick={() =>
-                                                onDelete(
-                                                    apiKey.key_id,
-                                                    apiKey.name
-                                                )
-                                            }
+                                            onClick={() => {
+                                                confirm({
+                                                    title: 'Delete API Key',
+                                                    description: `Are you sure you want to delete the API key "${apiKey.name}"? This action cannot be undone.`,
+                                                    confirmText: 'Delete',
+                                                    cancelText: 'Cancel',
+                                                    variant: 'destructive',
+                                                    onConfirm: () =>
+                                                        onDelete(
+                                                            apiKey.key_id,
+                                                            apiKey.name
+                                                        ),
+                                                });
+                                            }}
                                             disabled={isDeletePending}
                                         >
                                             <Trash2 className="h-4 w-4 mr-2" />
@@ -176,6 +186,7 @@ const ApiList: React.FC<ApiListProps> = ({
                     </p>
                 </div>
             )}
+            <ConfirmationDialog />
         </div>
     );
 };
