@@ -30,8 +30,8 @@ from src.nodes.utils.http_request_node_utils import (
     build_merged_tool_schema,
     create_body_schema_from_toolable_json,
     create_pydantic_model_from_table_data,
-    deep_merge,
     extract_toolable_items,
+    merge_bodies,
     merge_headers_or_query_params,
 )
 from src.schemas.flowbuilder.flow_graph_schemas import ToolConfig
@@ -260,7 +260,6 @@ class HttpRequestNode(Node):
                 "params": params_dict if params_dict else None,
                 "timeout": 30,  # 30 second timeout
             }
-            logger.info(f"👉 request_kwargs: {request_kwargs}")
 
             # Add body for methods that support it
             if method in ["POST", "PUT", "PATCH"] and body_data is not None:
@@ -365,23 +364,28 @@ class HttpRequestNode(Node):
         # Get the tools input data
         headers = tool_inputs.get("headers", [])
         query_params = tool_inputs.get("query_params", [])
-        logger.info(f"👉 inputs_values: {inputs_values}")
-        logger.info(f"👉 query_params: {query_params}")
-        body = tool_inputs.get("body", {})
+        body_override = tool_inputs.get("body", {})
 
-        # Merge the inputs_values with the tool inputs
+        # Extract example_json as base body
+        type_values = inputs_values.get("body", {}).get("type_values", {})
+        toolable_json = type_values.get("ToolableJsonInputHandle")
+        base_body = toolable_json.get("example_json", {}) if toolable_json else {}
+
+        # Merge: tool_inputs["body"] overrides base_body
+        final_body = merge_bodies(base_body, body_override)
+        inputs_values["body"] = final_body
+
+        # Merge headers
         if headers:
             inputs_values["headers"] = merge_headers_or_query_params(
                 inputs_values.get("headers", []), headers
             )
 
+        # Merge query params
         if query_params:
             inputs_values["query_params"] = merge_headers_or_query_params(
                 inputs_values.get("query_params", []), query_params
             )
-
-        if body:
-            inputs_values["body"] = deep_merge(inputs_values.get("body", {}), body)
 
         res = self.process(inputs_values, parameter_values)
         return res

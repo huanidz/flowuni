@@ -250,6 +250,22 @@ def deep_merge(base_dict, override_dict):
     return result
 
 
+def merge_bodies(base: dict, override: dict) -> dict:
+    """
+    Merge two dictionaries where override takes precedence.
+    Deep merge is only applied for nested dicts.
+    """
+    if not isinstance(base, dict):
+        return override
+    merged = dict(base)  # start with base
+    for k, v in override.items():
+        if k in merged and isinstance(merged[k], dict) and isinstance(v, dict):
+            merged[k] = merge_bodies(merged[k], v)
+        else:
+            merged[k] = v
+    return merged
+
+
 def merge_headers_or_query_params(base_list, override_dict):
     """
     Merge headers or query_params from list format with dictionary format.
