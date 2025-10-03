@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Eye, EyeOff } from 'lucide-react';
 import type { IOTypeDetail } from '@/features/nodes/types';
 import { secretTextHandleStyles } from '../../styles/handleStyles';
 
@@ -15,7 +16,6 @@ interface SecretTextHandleInputProps {
 }
 
 export const SecretTextHandleInput: React.FC<SecretTextHandleInputProps> = ({
-    // label,
     description,
     value,
     onChange,
@@ -27,7 +27,6 @@ export const SecretTextHandleInput: React.FC<SecretTextHandleInputProps> = ({
 
     const { multiline = false, allow_visible_toggle = false } =
         type_detail.defaults;
-
     const [isVisible, setIsVisible] = useState(false);
 
     const handleChange = (newValue: string) => {
@@ -62,7 +61,7 @@ export const SecretTextHandleInput: React.FC<SecretTextHandleInputProps> = ({
             return {
                 ...baseStyles,
                 opacity: 0.9,
-                cursor: 'default',
+                cursor: 'not-allowed',
                 backgroundColor: '#f5f5f5',
             };
         }
@@ -71,28 +70,32 @@ export const SecretTextHandleInput: React.FC<SecretTextHandleInputProps> = ({
     };
 
     const displayValue = disabled ? '' : value || '';
-    const maskedValue = disabled ? '' : '•'.repeat(displayValue.length || 1);
+    const maskedValue = disabled ? '' : '•'.repeat(displayValue.length || 8);
 
     return (
-        <div
-            style={
-                (type_detail as any)?.defaults?.hidden
-                    ? { display: 'none' }
-                    : secretTextHandleStyles.container
-            }
-        >
+        <div style={secretTextHandleStyles.container}>
             {description && (
-                <span
+                <label
                     style={{
                         ...secretTextHandleStyles.description,
-                        opacity: disabled ? 0.5 : 1,
+                        opacity: disabled ? 0.6 : 1,
+                        display: 'block',
+                        marginBottom: '0.5rem',
+                        fontSize: '0.875rem',
+                        fontWeight: 500,
+                        color: disabled ? '#6b7280' : '#374151',
                     }}
                 >
                     {description}
-                </span>
+                </label>
             )}
 
-            <div style={secretTextHandleStyles.inputContainer}>
+            <div
+                style={{
+                    ...secretTextHandleStyles.inputContainer,
+                    position: 'relative',
+                }}
+            >
                 {multiline ? (
                     <Textarea
                         value={isVisible ? displayValue : maskedValue}
@@ -102,6 +105,7 @@ export const SecretTextHandleInput: React.FC<SecretTextHandleInputProps> = ({
                         style={getInputStyles()}
                         onFocus={handleFocus}
                         onBlur={handleBlur}
+                        placeholder={disabled ? '' : 'Enter secret text...'}
                     />
                 ) : (
                     <Input
@@ -110,19 +114,50 @@ export const SecretTextHandleInput: React.FC<SecretTextHandleInputProps> = ({
                         onChange={e => handleChange(e.target.value)}
                         disabled={disabled}
                         className="nodrag"
-                        style={getInputStyles()}
+                        style={{
+                            ...getInputStyles(),
+                            paddingRight:
+                                allow_visible_toggle && !disabled
+                                    ? '2.5rem'
+                                    : undefined,
+                        }}
                         onFocus={handleFocus}
                         onBlur={handleBlur}
+                        placeholder={disabled ? '' : 'Enter secret text...'}
                     />
                 )}
 
                 {allow_visible_toggle && !disabled && (
                     <button
                         type="button"
-                        style={secretTextHandleStyles.toggleButton}
                         onClick={() => setIsVisible(!isVisible)}
+                        style={{
+                            position: 'absolute',
+                            right: '0.5rem',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            padding: '0.25rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#6b7280',
+                            transition: 'color 0.2s',
+                        }}
+                        onMouseEnter={e => {
+                            e.currentTarget.style.color = '#374151';
+                        }}
+                        onMouseLeave={e => {
+                            e.currentTarget.style.color = '#6b7280';
+                        }}
+                        aria-label={
+                            isVisible ? 'Hide password' : 'Show password'
+                        }
+                        tabIndex={-1}
                     >
-                        {isVisible ? '👁️' : '🔒'}
+                        {isVisible ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                 )}
             </div>
