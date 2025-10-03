@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronRight, ChevronDown, AlertTriangle } from 'lucide-react';
-import type { IOTypeDetail } from '@/features/nodes/types';
+import {
+    ChevronRight,
+    ChevronDown,
+    AlertTriangle,
+    CheckCircle2,
+} from 'lucide-react';
 
 interface FieldNode {
     path: string;
@@ -17,22 +21,14 @@ interface ToolableJsonHandleInputProps {
     description?: string;
     value: any;
     onChange?: (value: { example_json: any; toolable_config: any }) => void;
-    type_detail: IOTypeDetail;
+    type_detail: any;
     disabled: boolean;
     isWholeAsToolMode?: boolean;
 }
 
 export const ToolableJsonHandleInput: React.FC<
     ToolableJsonHandleInputProps
-> = ({
-    // label,
-    description,
-    value,
-    onChange,
-    type_detail,
-    disabled = true,
-    // isWholeAsToolMode = false,
-}) => {
+> = ({ description, value, onChange, type_detail, disabled = false }) => {
     const hidden = (type_detail as any)?.defaults?.hidden ?? false;
     const [jsonInput, setJsonInput] = useState('');
     const [fields, setFields] = useState<FieldNode[]>([]);
@@ -43,7 +39,6 @@ export const ToolableJsonHandleInput: React.FC<
     // Initialize from value prop
     useEffect(() => {
         if (value && value.example_json !== undefined) {
-            // Handle all types of data, not just valid JSON
             if (typeof value.example_json === 'string') {
                 setJsonInput(value.example_json);
             } else {
@@ -53,7 +48,6 @@ export const ToolableJsonHandleInput: React.FC<
                     setJsonInput(String(value.example_json));
                 }
             }
-            // Try to parse the JSON to update the fields
             try {
                 const parsed =
                     typeof value.example_json === 'string'
@@ -64,7 +58,6 @@ export const ToolableJsonHandleInput: React.FC<
                 setErrors(errors);
                 setIsParsed(true);
 
-                // Apply toolable_config if it exists
                 if (value.toolable_config) {
                     applyToolableConfig(nodes, value.toolable_config);
                 }
@@ -76,7 +69,6 @@ export const ToolableJsonHandleInput: React.FC<
         }
     }, [value]);
 
-    // Apply toolable_config to field nodes
     const applyToolableConfig = (nodes: FieldNode[], toolableConfig: any) => {
         const applyConfig = (nodes: FieldNode[]): FieldNode[] => {
             return nodes.map(node => {
@@ -103,7 +95,6 @@ export const ToolableJsonHandleInput: React.FC<
         setFields(updatedNodes);
     };
 
-    // Merge all array items into single schema
     const mergeArraySchema = (arr: any[]): any => {
         if (!arr.length) return null;
         const merged: any = {};
@@ -127,7 +118,6 @@ export const ToolableJsonHandleInput: React.FC<
         return merged;
     };
 
-    // Validate array consistency
     const validateArray = (arr: any[], path: string): string[] => {
         if (!arr.length) return [];
 
@@ -153,7 +143,6 @@ export const ToolableJsonHandleInput: React.FC<
         return errors;
     };
 
-    // Parse JSON to tree structure
     const parseToTree = (
         obj: any,
         path = '',
@@ -220,16 +209,13 @@ export const ToolableJsonHandleInput: React.FC<
         return { nodes, errors };
     };
 
-    // Handle JSON input change with debouncing
     const handleJsonInputChange = (newJsonInput: string) => {
         setJsonInput(newJsonInput);
 
-        // Clear any existing timeout
         if (parseTimeoutRef.current) {
             clearTimeout(parseTimeoutRef.current);
         }
 
-        // Update the parent component immediately with the raw input for mirroring
         const { success, data: parsed } = safeParse(newJsonInput);
         if (onChange) {
             onChange({
@@ -238,7 +224,6 @@ export const ToolableJsonHandleInput: React.FC<
             });
         }
 
-        // Set up debounced parsing
         parseTimeoutRef.current = setTimeout(() => {
             if (success) {
                 const { nodes, errors } = parseToTree(parsed);
@@ -247,13 +232,11 @@ export const ToolableJsonHandleInput: React.FC<
                 setIsParsed(true);
                 notifyParent(parsed, nodes);
             } else {
-                // Don't update fields on invalid JSON
                 setIsParsed(false);
             }
-        }, 1000); // Wait 1 second after no changes
+        }, 1000);
     };
 
-    // Generic function to update nodes at a specific path
     const updateNodeAtPath = (
         nodes: FieldNode[],
         path: string,
@@ -264,14 +247,13 @@ export const ToolableJsonHandleInput: React.FC<
             if (node.path === path) {
                 const updatedNode = updateFn(node);
 
-                // If includeChildren is true and the node has children, apply the update to all children
                 if (includeChildren && updatedNode.children) {
                     const updateAllChildren = (
                         children: FieldNode[]
                     ): FieldNode[] =>
                         children.map(child => ({
                             ...child,
-                            ...updateFn(child), // Apply the same update to children
+                            ...updateFn(child),
                             children: child.children
                                 ? updateAllChildren(child.children)
                                 : child.children,
@@ -298,7 +280,6 @@ export const ToolableJsonHandleInput: React.FC<
         });
     };
 
-    // Update field toolability (with optional children update)
     const updateToolable = (
         path: string,
         isToolable: boolean,
@@ -312,7 +293,6 @@ export const ToolableJsonHandleInput: React.FC<
         );
         setFields(updatedFields);
 
-        // Update the toolable_config in the parent component
         if (onChange && isParsed) {
             const { success, data: exampleJson } = safeParse(jsonInput);
             if (success) {
@@ -328,7 +308,6 @@ export const ToolableJsonHandleInput: React.FC<
         }));
         setFields(updatedFields);
 
-        // Update the toolable_config in the parent component
         if (onChange && isParsed) {
             const { success, data: exampleJson } = safeParse(jsonInput);
             if (success) {
@@ -346,7 +325,6 @@ export const ToolableJsonHandleInput: React.FC<
         );
     };
 
-    // Check if all children are toolable
     const allChildrenToolable = (node: FieldNode): boolean => {
         if (!node.children?.length) return node.isToolable;
         return node.children.every(child =>
@@ -354,7 +332,6 @@ export const ToolableJsonHandleInput: React.FC<
         );
     };
 
-    // Safe JSON parsing with error handling
     const safeParse = (jsonString: string): { success: boolean; data: any } => {
         try {
             const parsed = JSON.parse(jsonString);
@@ -364,7 +341,6 @@ export const ToolableJsonHandleInput: React.FC<
         }
     };
 
-    // Notify parent component of changes
     const notifyParent = (parsedJson: any, fields: FieldNode[]) => {
         if (onChange) {
             const toolableConfig = generateMappingFromFields(fields);
@@ -375,7 +351,6 @@ export const ToolableJsonHandleInput: React.FC<
         }
     };
 
-    // Format default value based on type
     const formatDefaultValue = (value: any): string => {
         if (typeof value === 'string') {
             return value;
@@ -383,7 +358,6 @@ export const ToolableJsonHandleInput: React.FC<
         return JSON.stringify(value);
     };
 
-    // Generate parameter mapping from provided fields
     const generateMappingFromFields = (fieldNodes: FieldNode[]) => {
         const mapping: any = {};
         const collect = (nodes: FieldNode[]) => {
@@ -403,26 +377,47 @@ export const ToolableJsonHandleInput: React.FC<
         return mapping;
     };
 
-    // Render field node
+    const getTypeColor = (type: string) => {
+        const colors: Record<string, string> = {
+            string: 'bg-blue-100 text-blue-700',
+            number: 'bg-green-100 text-green-700',
+            boolean: 'bg-purple-100 text-purple-700',
+            array: 'bg-orange-100 text-orange-700',
+            object: 'bg-gray-100 text-gray-700',
+            null: 'bg-gray-100 text-gray-500',
+        };
+        return colors[type] || 'bg-gray-100 text-gray-600';
+    };
+
     const renderNode = (node: FieldNode, depth = 0) => {
         const hasChildren = node.children && node.children.length > 0;
         const allSelected = hasChildren ? allChildrenToolable(node) : false;
+        const indent = depth * 24;
 
         return (
-            <div key={node.path} className="mb-1">
+            <div key={node.path} className="border-l-2 border-gray-200">
                 <div
-                    className={`flex items-center gap-2 py-1 px-2 hover:bg-gray-50 rounded ml-${depth * 4}`}
+                    className={`flex items-center gap-3 py-2.5 px-3 hover:bg-blue-50 transition-colors duration-150 ${
+                        node.isToolable ? 'bg-blue-50/50' : ''
+                    }`}
+                    style={{ marginLeft: `${indent}px` }}
                 >
                     {hasChildren ? (
                         <button
                             onClick={() => toggleExpanded(node.path)}
-                            className="w-4 h-4 flex items-center justify-center"
+                            className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded hover:bg-gray-200 transition-colors"
                             disabled={disabled}
                         >
                             {node.isExpanded ? (
-                                <ChevronDown size={14} />
+                                <ChevronDown
+                                    size={16}
+                                    className="text-gray-600"
+                                />
                             ) : (
-                                <ChevronRight size={14} />
+                                <ChevronRight
+                                    size={16}
+                                    className="text-gray-600"
+                                />
                             )}
                         </button>
                     ) : (
@@ -432,40 +427,52 @@ export const ToolableJsonHandleInput: React.FC<
                             onChange={e =>
                                 updateToolable(node.path, e.target.checked)
                             }
-                            className="w-3 h-3"
+                            className="flex-shrink-0 w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                             disabled={disabled}
                         />
                     )}
 
-                    <span className="font-mono text-sm font-medium">
-                        {hasChildren ? `[-] ${node.key}` : `[ ] ${node.key}`}
+                    <span className="font-mono text-sm font-semibold text-gray-800 flex-shrink-0">
+                        {node.key}
+                    </span>
+
+                    <span
+                        className={`text-xs font-medium px-2 py-0.5 rounded-full ${getTypeColor(
+                            node.type
+                        )}`}
+                    >
+                        {node.type}
                     </span>
 
                     {hasChildren ? (
-                        <div className="flex items-center gap-1 ml-2">
-                            <input
-                                type="checkbox"
-                                checked={allSelected}
-                                onChange={e =>
-                                    updateToolable(
-                                        node.path,
-                                        e.target.checked,
-                                        true
-                                    )
-                                }
-                                className="w-3 h-3"
-                                disabled={disabled}
-                            />
-                            <span className="text-xs text-gray-500">all</span>
+                        <div className="flex items-center gap-2 ml-auto">
+                            <label className="flex items-center gap-1.5 cursor-pointer hover:bg-white rounded px-2 py-1 transition-colors">
+                                <input
+                                    type="checkbox"
+                                    checked={allSelected}
+                                    onChange={e =>
+                                        updateToolable(
+                                            node.path,
+                                            e.target.checked,
+                                            true
+                                        )
+                                    }
+                                    className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled={disabled}
+                                />
+                                <span className="text-xs font-medium text-gray-600">
+                                    Select all
+                                </span>
+                            </label>
                         </div>
                     ) : (
-                        <div className="flex items-center gap-2 ml-auto">
-                            <span className="text-xs bg-gray-100 px-1 rounded">
-                                {node.type}
-                            </span>
-                            <span className="text-xs">
-                                {node.isToolable ? '☑' : '☐'}
-                            </span>
+                        <div className="flex items-center gap-3 ml-auto">
+                            {node.isToolable && (
+                                <CheckCircle2
+                                    size={14}
+                                    className="text-blue-600"
+                                />
+                            )}
                             <input
                                 type="text"
                                 value={formatDefaultValue(node.defaultValue)}
@@ -477,7 +484,8 @@ export const ToolableJsonHandleInput: React.FC<
                                         val = val.toLowerCase() === 'true';
                                     updateDefault(node.path, val);
                                 }}
-                                className="text-xs border border-gray-300 rounded px-1 py-0.5 w-20"
+                                placeholder="Default value"
+                                className="text-xs border border-gray-300 rounded-md px-2.5 py-1.5 w-32 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
                                 disabled={disabled}
                             />
                         </div>
@@ -485,7 +493,7 @@ export const ToolableJsonHandleInput: React.FC<
                 </div>
 
                 {hasChildren && node.isExpanded && (
-                    <div>
+                    <div className="bg-gray-50/50">
                         {node.children!.map(child =>
                             renderNode(child, depth + 1)
                         )}
@@ -495,21 +503,25 @@ export const ToolableJsonHandleInput: React.FC<
         );
     };
 
+    if (hidden) return null;
+
     return (
-        <div
-            style={hidden ? { display: 'none' } : { display: 'block' }}
-            className="flex flex-col space-y-4 w-full"
-        >
+        <div className="flex flex-col space-y-6 w-full">
             {description && (
-                <span className="text-xs text-gray-600">{description}</span>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <p className="text-sm text-blue-800">{description}</p>
+                </div>
             )}
 
-            <div className="space-y-2">
+            <div className="space-y-3">
+                <label className="block text-sm font-semibold text-gray-700">
+                    JSON Input
+                </label>
                 <textarea
                     value={jsonInput}
                     onChange={e => handleJsonInputChange(e.target.value)}
-                    placeholder={`{\n  "users": [{"name": "John", "age": 30}],\n  "settings": {"theme": "dark"}\n}`}
-                    className="w-full h-32 p-3 border rounded-lg font-mono text-sm resize-none"
+                    placeholder='{\n  "users": [{"name": "John", "age": 30}],\n  "settings": {"theme": "dark"}\n}'
+                    className="w-full h-40 p-4 border-2 border-gray-300 rounded-lg font-mono text-sm resize-y focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed transition-all"
                     disabled={disabled}
                 />
 
@@ -518,19 +530,22 @@ export const ToolableJsonHandleInput: React.FC<
                         {errors.map((error, i) => (
                             <div
                                 key={i}
-                                className="bg-yellow-50 border border-yellow-200 rounded p-3"
+                                className="bg-amber-50 border-l-4 border-amber-400 rounded-r-lg p-4 shadow-sm"
                             >
-                                <div className="flex items-start gap-2">
+                                <div className="flex items-start gap-3">
                                     <AlertTriangle
-                                        className="text-yellow-600 mt-0.5"
-                                        size={16}
+                                        className="text-amber-600 flex-shrink-0 mt-0.5"
+                                        size={18}
                                     />
-                                    <div className="text-yellow-800 text-sm">
-                                        {error}
+                                    <div className="flex-1">
+                                        <p className="text-amber-900 text-sm font-medium">
+                                            {error}
+                                        </p>
                                         {error.includes('missing') && (
-                                            <div className="text-xs mt-1 italic">
-                                                Use null for missing fields
-                                            </div>
+                                            <p className="text-xs text-amber-700 mt-1.5 italic">
+                                                💡 Tip: Use null for missing
+                                                fields to maintain consistency
+                                            </p>
                                         )}
                                     </div>
                                 </div>
@@ -541,34 +556,45 @@ export const ToolableJsonHandleInput: React.FC<
             </div>
 
             {isParsed && (
-                <div className="space-y-2">
-                    <label className="text-sm font-medium">
+                <div className="space-y-3">
+                    <label className="block text-sm font-semibold text-gray-700">
                         Extracted Fields
                     </label>
-                    <div className="border rounded-lg p-4 bg-gray-50 min-h-32 max-h-64 overflow-y-auto">
-                        {fields.length > 0 ? (
-                            <div>{fields.map(field => renderNode(field))}</div>
-                        ) : (
-                            <div className="text-gray-500 text-center py-4">
-                                No fields found
-                            </div>
-                        )}
+                    <div className="border-2 border-gray-300 rounded-lg bg-white overflow-hidden shadow-sm">
+                        <div className="max-h-96 overflow-y-auto">
+                            {fields.length > 0 ? (
+                                <div className="divide-y divide-gray-200">
+                                    {fields.map(field => renderNode(field))}
+                                </div>
+                            ) : (
+                                <div className="text-gray-400 text-center py-12">
+                                    <p className="text-sm font-medium">
+                                        No fields found
+                                    </p>
+                                    <p className="text-xs mt-1">
+                                        Enter valid JSON to see extracted fields
+                                    </p>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}
 
             {isParsed && fields.length > 0 && (
-                <div className="mt-4">
-                    <h3 className="text-sm font-medium mb-2">
+                <div className="space-y-3">
+                    <label className="block text-sm font-semibold text-gray-700">
                         Parameter Mapping
-                    </h3>
-                    <pre className="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto text-xs">
-                        {JSON.stringify(
-                            generateMappingFromFields(fields),
-                            null,
-                            2
-                        )}
-                    </pre>
+                    </label>
+                    <div className="bg-gray-900 rounded-lg overflow-hidden shadow-lg">
+                        <pre className="text-green-400 p-5 overflow-x-auto text-xs leading-relaxed">
+                            {JSON.stringify(
+                                generateMappingFromFields(fields),
+                                null,
+                                2
+                            )}
+                        </pre>
+                    </div>
                 </div>
             )}
         </div>

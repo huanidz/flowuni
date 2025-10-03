@@ -117,7 +117,7 @@ export const InputsSection: React.FC<InputsSectionProps> = ({
                             allow_multiple_incoming_edges
                         }
                     />
-                    {showToggleButton && (
+                    {!hideInputField && showToggleButton && (
                         <button
                             onClick={toggleInputComponent}
                             style={nodeInputSectionStyles.toggleButton}
