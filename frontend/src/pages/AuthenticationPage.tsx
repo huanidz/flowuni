@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -8,7 +8,6 @@ import {
     CardContent,
     CardDescription,
     CardHeader,
-    CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -53,6 +52,23 @@ const AuthenticationPage = () => {
     const loginMutation = useLogin();
     const navigate = useNavigate();
     const authStore = useAuthStore();
+
+    // Check if user is already authenticated and redirect to dashboard
+    useEffect(() => {
+        const checkExistingAuth = async () => {
+            try {
+                await authStore.checkAuth();
+                if (authStore.isAuthenticated) {
+                    navigate('/dashboard');
+                }
+            } catch (error) {
+                // User is not authenticated, stay on auth page
+                console.log('User not authenticated, showing login page');
+            }
+        };
+
+        checkExistingAuth();
+    }, [authStore, navigate]);
 
     const form = useForm<LoginFormData | RegisterFormData>({
         resolver: zodResolver(isLogin ? loginSchema : registerSchema),
