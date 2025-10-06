@@ -21,7 +21,7 @@ services:
     env_file:
       - ../.env
     command: >
-      sh -c "celery -A src.celery_worker.celery_worker.celery_app worker --loglevel=info --concurrency=4"
+      sh -c "celery -A src.celery_worker.celery_worker.celery_app worker --loglevel=info --concurrency=2"
     restart: always
     networks:
       - app_network
@@ -51,10 +51,18 @@ services:
     env_file:
       - ../.env
     command: >
-      sh -c "celery -A src.celery_worker.celery_worker.celery_app worker --loglevel=info --concurrency=4"
+      sh -c "celery -A src.celery_worker.celery_worker.celery_app worker --loglevel=info --concurrency=2"
     restart: always
     networks:
       - app_network
       - db_network
       - redis_network
     container_name: flowuni_celery_green
+
+networks:
+  app_network:
+    external: true
+  db_network:
+    external: true
+  redis_network:
+    external: true
