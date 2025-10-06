@@ -38,7 +38,7 @@ services:
         condition: service_healthy
     command: >
       sh -c "
-        watchfiles --sigint-timeout 1 --sigkill-timeout 1 --filter python 'celery -A src.celery_worker.celery_worker.celery_app worker --loglevel=info --concurrency=2 --max-tasks-per-child=100' /app/src
+        watchfiles --sigint-timeout 1 --sigkill-timeout 1 --filter python 'celery -A src.celery_worker.celery_worker.celery_app worker --loglevel=info --pool=gevent --concurrency=20 --max-tasks-per-child=100' /app/src
       "
 
   db_service:

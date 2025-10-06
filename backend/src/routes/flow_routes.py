@@ -179,7 +179,6 @@ async def update_flow_by_id(
     Update flow by id
     """
     try:
-        logger.info(f"Update flow by id: {request}")
         flow = flow_service.save_flow_detail(flow_request=request, user_id=auth_user_id)
 
         if not flow:

@@ -241,7 +241,8 @@ async def run_flow_endpoint(
 
         # Create FlowSyncWorker and execute with validation
         flow_sync_worker = FlowSyncWorker()
-        execution_result = flow_sync_worker.run_flow_from_api(
+        execution_result = await asyncio.to_thread(
+            flow_sync_worker.run_flow_from_api,
             flow_id=flow_id,
             flow_run_request=flow_run_request,
             request_api_key=request_api_key,

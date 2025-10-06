@@ -268,7 +268,7 @@ class GraphExecutor:
             if node_data is None:
                 # Sync mode: fetch from graph and do detailed logging
                 node_data = g_node.get("data", NodeData())
-                logger.info(f"NodeData: {node_data.model_dump_json(indent=2)}")
+                # logger.info(f"NodeData: {node_data.model_dump_json(indent=2)}")
 
             # Check for skipping
             if node_data.execution_status == NODE_EXECUTION_STATUS.SKIPPED:

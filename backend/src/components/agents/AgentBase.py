@@ -82,7 +82,7 @@ class Agent(ABC):
 
         # Plan/Act loop
         while True:
-            logger.info(f"<><><> Chat messages: {chat_messages}")
+            # logger.info(f"<><><> Chat messages: {chat_messages}")
 
             # Execute tools if any are planned for this iteration
             if getattr(agent_response, "planned_tool_calls", None):
@@ -99,7 +99,7 @@ class Agent(ABC):
 
             # Read the stop/continue signal (default to FINALIZE if missing)
             next_action = getattr(agent_response, "next_action", "FINALIZE")
-            logger.info(f"⛳ next_action={next_action}, loop={loop_counter}")
+            # logger.info(f"⛳ next_action={next_action}, loop={loop_counter}")
 
             if next_action == "FINALIZE":
                 self._append_loop_trace(
@@ -113,9 +113,9 @@ class Agent(ABC):
 
             loop_counter += 1
             if loop_counter >= self.max_loop_count:
-                logger.info(
-                    f"⏹️ Reached max_loop_count ({self.max_loop_count}). Forcing finalize."
-                )
+                # logger.info(
+                #     f"⏹️ Reached max_loop_count ({self.max_loop_count}). Forcing finalize."
+                # )
                 self._append_loop_trace(
                     chat_messages,
                     agent_response,

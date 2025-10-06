@@ -21,6 +21,7 @@ natsort==8.4.0
 rich==14.0.0
 fastnanoid==0.4.3
 psutil==7.1.0
+gevent==25.9.1
 
 # LLM-related
 instructor[vertexai]
