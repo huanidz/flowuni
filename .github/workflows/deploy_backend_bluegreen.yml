@@ -1,0 +1,35 @@
+name: 🚀 Deploy Backend (Blue-Green)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - 'docker/**'
+      - 'commands/deploy_backend_bluegreen.sh'
+      - '.github/workflows/deploy_backend_bluegreen.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📦 Checkout repository
+        uses: actions/checkout@v3
+
+      - name: 🔐 Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: 🚀 Deploy Backend via Blue-Green
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "cd ~/deployment/flowuni && ./commands/deploy_backend_bluegreen.sh"
+          
+      - name: 🩺 Health Check
+        run: |
+          sleep 10
+          curl -f https://api.flowuni.app/docs > /dev/null && echo "✅ Backend healthy!" || (echo "❌ Health check failed" && exit 1)

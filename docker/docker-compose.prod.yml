@@ -1,38 +1,25 @@
-version: "3.8"
-
-networks:
-  app_network:
-    driver: bridge
-  db_network:
-    external: true
-  redis_network:
-    external: true
-
 services:
-  app:
+  app_blue:
     build:
       context: ..
       dockerfile: docker/Dockerfile.prod.be
     env_file:
       - ../.env
-    # depends_on:
-    #   - flowuni-redis
     restart: always
-    ports:
-      - "5001:5001"
     networks:
       - app_network
       - db_network
       - redis_network
+    container_name: flowuni_app_blue
+    ports:
+      - "5001:5001"
 
-  celery-worker:
+  celery-worker_blue:
     build:
       context: ..
       dockerfile: docker/Dockerfile.prod.be
     env_file:
       - ../.env
-    # depends_on:
-    #   - flowuni-redis
     command: >
       sh -c "celery -A src.celery_worker.celery_worker.celery_app worker --loglevel=info --concurrency=4"
     restart: always
@@ -40,6 +27,34 @@ services:
       - app_network
       - db_network
       - redis_network
+    container_name: flowuni_celery_blue
 
-volumes:
-  redis_data:
+  app_green:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.prod.be
+    env_file:
+      - ../.env
+    restart: always
+    networks:
+      - app_network
+      - db_network
+      - redis_network
+    container_name: flowuni_app_green
+    ports:
+      - "5002:5001"
+
+  celery-worker_green:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.prod.be
+    env_file:
+      - ../.env
+    command: >
+      sh -c "celery -A src.celery_worker.celery_worker.celery_app worker --loglevel=info --concurrency=4"
+    restart: always
+    networks:
+      - app_network
+      - db_network
+      - redis_network
+    container_name: flowuni_celery_green
