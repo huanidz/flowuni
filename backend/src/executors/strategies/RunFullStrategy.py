@@ -1,5 +1,4 @@
 import time
-from concurrent.futures import ThreadPoolExecutor
 from typing import TYPE_CHECKING
 
 from loguru import logger
@@ -53,46 +52,41 @@ class RunFullStrategy:
                 )
 
         try:
-            # Use ThreadPoolExecutor for parallel execution within layers
-            with ThreadPoolExecutor(
-                max_workers=self.graph_executor.max_workers
-            ) as executor:
-                for layer_index, layer_nodes in enumerate(
-                    self.graph_executor.execution_plan, 1
-                ):
-                    layer_start_time = time.time()
+            # Execute layers sequentially with parallel execution within each layer
+            for layer_index, layer_nodes in enumerate(
+                self.graph_executor.execution_plan, 1
+            ):
+                layer_start_time = time.time()
 
-                    # Execute all nodes in this layer in parallel
-                    layer_results = await self.graph_executor._execute_layer_parallel(
-                        executor, layer_nodes, layer_index
-                    )
+                # Execute all nodes in this layer in parallel
+                layer_results = await self.graph_executor._execute_layer_parallel(
+                    layer_nodes, layer_index
+                )
 
-                    layer_execution_time = time.time() - layer_start_time
+                layer_execution_time = time.time() - layer_start_time
 
-                    # Check for failures
-                    failed_nodes = [r for r in layer_results if not r.success]
-                    successful_nodes = [r for r in layer_results if r.success]
+                # Check for failures
+                failed_nodes = [r for r in layer_results if not r.success]
+                successful_nodes = [r for r in layer_results if r.success]
 
-                    if failed_nodes:
-                        error_msg = f"Layer {layer_index} execution failed. Failed nodes: {[r.node_id for r in failed_nodes]}"  # noqa: E501
-                        logger.error(error_msg)
+                if failed_nodes:
+                    error_msg = f"Layer {layer_index} execution failed. Failed nodes: {[r.node_id for r in failed_nodes]}"  # noqa: E501
+                    logger.error(error_msg)
 
-                        for result in failed_nodes:
-                            logger.error(
-                                f"Node {result.node_id} failed: {result.error}"
-                            )
+                    for result in failed_nodes:
+                        logger.error(f"Node {result.node_id} failed: {result.error}")
 
-                        raise GraphExecutorError(error_msg)
+                    raise GraphExecutorError(error_msg)
 
-                    logger.success(
-                        f"Layer {layer_index} completed successfully in {layer_execution_time:.3f}s. "  # noqa: E501
-                        f"Processed {len(successful_nodes)} nodes."
-                    )
+                logger.success(
+                    f"Layer {layer_index} completed successfully in {layer_execution_time:.3f}s. "  # noqa: E501
+                    f"Processed {len(successful_nodes)} nodes."
+                )
 
-                    completed_nodes += len(successful_nodes)
+                completed_nodes += len(successful_nodes)
 
-                    # Update successors for all successful nodes
-                    self.graph_executor._update_all_successors(successful_nodes)
+                # Update successors for all successful nodes
+                self.graph_executor._update_all_successors(successful_nodes)
 
             total_time = time.time() - start_time
 
