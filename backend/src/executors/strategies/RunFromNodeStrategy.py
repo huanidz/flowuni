@@ -25,14 +25,14 @@ class RunFromNodeStrategy:
     necessary ancestors first and then proceeding with the modified execution plan.
     """
 
-    def __init__(self, graph_executor: GraphExecutor):
+    def __init__(self, graph_executor: "GraphExecutor"):
         """
         Initialize the RunFromNodeStrategy.
 
         Args:
             graph_executor: The GraphExecutor instance that owns this strategy
         """
-        self.graph_executor: GraphExecutor = graph_executor
+        self.graph_executor: "GraphExecutor" = graph_executor
 
     async def execute(self, start_node: str) -> Dict[str, Any]:
         """

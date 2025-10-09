@@ -1,3 +1,4 @@
+import asyncio
 import time
 from typing import Any, Dict
 
@@ -51,7 +52,7 @@ class DelayNode(Node):
 
         # Simulate delay/sleep
         if delay_seconds > 0:
-            time.sleep(delay_seconds)
+            await asyncio.sleep(delay_seconds)
 
         return {"text_output": text_input}
 

@@ -21,7 +21,7 @@ from src.schemas.flowbuilder.flow_graph_schemas import (
 )
 from src.services.ApiKeyService import ApiKeyService
 from src.services.FlowService import FlowService
-from src.workers.FlowSyncWorker import FlowSyncWorker
+from src.workers.FlowAsyncWorker import FlowAsyncWorker
 
 flow_execution_router = APIRouter(
     prefix="/api/exec",
@@ -240,8 +240,8 @@ async def run_flow_endpoint(
                 )
 
         # Create FlowSyncWorker and execute with validation
-        flow_sync_worker = FlowSyncWorker()
-        execution_result = flow_sync_worker.run_flow_from_api(
+        flow_sync_worker = FlowAsyncWorker()
+        execution_result = await flow_sync_worker.run_flow_from_api(
             flow_id=flow_id,
             flow_run_request=flow_run_request,
             request_api_key=request_api_key,

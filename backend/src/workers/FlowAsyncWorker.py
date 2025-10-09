@@ -96,7 +96,7 @@ class FlowAsyncWorker:
             )
 
             logger.info("Starting graph execution")
-            execution_result = executor.execute()
+            execution_result = await executor.execute()
 
             logger.success(f"Flow execution completed for flow_id: {flow_id}")
 
@@ -106,7 +106,7 @@ class FlowAsyncWorker:
             logger.error(f"Flow execution failed for flow_id {flow_id}: {str(e)}")
             raise
 
-    def run_flow_from_api(
+    async def run_flow_from_api(
         self,
         flow_id: str,
         flow_run_request: ApiFlowRunRequest,
@@ -154,7 +154,7 @@ class FlowAsyncWorker:
 
             # Execute the flow
             logger.info(f"Starting validated flow execution for flow_id: {flow_id}")
-            result = self.run_sync(
+            result = await self.run_async(
                 flow_id=flow_id,
                 flow_run_request=flow_run_request,
                 session_id=flow_run_request.session_id,

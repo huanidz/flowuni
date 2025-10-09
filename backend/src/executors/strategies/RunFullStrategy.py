@@ -22,14 +22,14 @@ class RunFullStrategy:
     are executed concurrently before proceeding to the next layer.
     """
 
-    def __init__(self, graph_executor: GraphExecutor):
+    def __init__(self, graph_executor: "GraphExecutor"):
         """
         Initialize the RunFullStrategy.
 
         Args:
-            graph_executor: The GraphExecutor instance that owns this strategy
+            graph_executor: The "GraphExecutor" instance that owns this strategy
         """
-        self.graph_executor: GraphExecutor = graph_executor
+        self.graph_executor: "GraphExecutor" = graph_executor
 
     async def execute(self) -> FlowExecutionResult:  # noqa
         """
