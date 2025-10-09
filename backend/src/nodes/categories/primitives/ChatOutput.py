@@ -20,7 +20,7 @@ class ChatOutput(Node):
         icon=NodeIconIconify(icon_value="material-symbols:output"),
     )
 
-    def process(self, inputs, parameters):
+    async def process(self, inputs, parameters):
         return super().process(inputs, parameters)
 
     def build_tool(self, inputs_values, tool_configs):

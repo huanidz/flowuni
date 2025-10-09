@@ -86,25 +86,25 @@ class GraphExecutor:
         self._run_full_strategy = RunFullStrategy(self)
         self._run_from_node_strategy = RunFromNodeStrategy(self)
 
-    def push_event(self, node_id: str, event: str, data: Any = {}):
+    async def push_event(self, node_id: str, event: str, data: Any = {}):
         # Publish node event to Redis
         if self.execution_event_publisher and self.enable_debug:
             self.execution_event_publisher.publish_node_event(
                 node_id=node_id, event=event, data=data
             )
 
-    def end_event(self, data: Dict = {}):
+    async def end_event(self, data: Dict = {}):
         # Publish DONE event to Redis
         if self.execution_event_publisher and self.enable_debug:
             self.execution_event_publisher.end(data=data)
 
-    def execute(self) -> FlowExecutionResult:
+    async def execute(self) -> FlowExecutionResult:
         """
         Execute the graph with parallel processing within layers.
 
         This is the synchronous version that matches your old working code structure.
         Checks the execution control to determine if execution should start from a specific node.
-        """
+        """  # noqa
 
         if len(self.execution_plan) == 0:
             execute_result = FlowExecutionResult(
@@ -121,14 +121,14 @@ class GraphExecutor:
 
         # Check if we should start execution from a specific node
         if self.execution_control.start_node is not None:
-            return self._run_from_node_strategy.execute(
+            return await self._run_from_node_strategy.execute(
                 self.execution_control.start_node
             )
 
         # Otherwise, execute from the beginning
-        return self._run_full_strategy.execute()
+        return await self._run_full_strategy.execute()
 
-    def _execute_layer_parallel(  # noqa
+    async def _execute_layer_parallel(  # noqa
         self, executor: ThreadPoolExecutor, layer_nodes: List[str], layer_index: int
     ) -> List[NodeExecutionResult]:
         """
@@ -150,7 +150,7 @@ class GraphExecutor:
             else:
                 # Create a skipped result for this node
                 node_data = self.graph.nodes[node_id].get("data", NodeData())
-                self.push_event(
+                await self.push_event(
                     node_id=node_id,
                     event=NODE_EXECUTION_STATUS.SKIPPED,
                     data={},
@@ -164,7 +164,7 @@ class GraphExecutor:
                 )
 
         logger.info(
-            f"Layer {layer_index}: {len(executable_nodes)} executable, {len(skipped_results)} skipped"
+            f"Layer {layer_index}: {len(executable_nodes)} executable, {len(skipped_results)} skipped"  # noqa
         )
 
         if not executable_nodes:
@@ -178,7 +178,7 @@ class GraphExecutor:
             execution_results = [self._execute_single_node(node_id, layer_index)]
         else:
             logger.info(
-                f"Executing {len(executable_nodes)} nodes in parallel for layer {layer_index}"
+                f"Executing {len(executable_nodes)} nodes in parallel for layer {layer_index}"  # noqa
             )
 
             # Submit all executable nodes to thread pool
@@ -213,7 +213,7 @@ class GraphExecutor:
 
                         if result.success:
                             logger.debug(
-                                f"Node {node_id} completed successfully in {result.execution_time:.3f}s"
+                                f"Node {node_id} completed successfully in {result.execution_time:.3f}s"  # noqa
                             )
                         else:
                             logger.error(f"Node {node_id} failed: {result.error}")
@@ -239,7 +239,7 @@ class GraphExecutor:
         all_results = execution_results + skipped_results
         return all_results
 
-    def _execute_single_node(
+    async def _execute_single_node(
         self, node_id: str, layer_index: int, node_data: Optional[NodeData] = None
     ) -> NodeExecutionResult:
         """
@@ -253,7 +253,7 @@ class GraphExecutor:
         start_time = time.time()
 
         try:
-            self.push_event(
+            await self.push_event(
                 node_id=node_id, event=NODE_EXECUTION_STATUS.RUNNING, data={}
             )
 
@@ -273,7 +273,7 @@ class GraphExecutor:
             # Check for skipping
             if node_data.execution_status == NODE_EXECUTION_STATUS.SKIPPED:
                 logger.info(f"Node {node_id} is skipped")
-                self.push_event(
+                await self.push_event(
                     node_id=node_id,
                     event=NODE_EXECUTION_STATUS.SKIPPED,
                     data=node_data.model_dump(),
@@ -303,12 +303,12 @@ class GraphExecutor:
             logger.info(f"Executing node [{layer_index}]: {node_spec.name}")
 
             # Execute the node
-            executed_data: NodeData = node_instance.run(
+            executed_data: NodeData = await node_instance.run(
                 node_id=node_id,
                 node_data=node_data,
                 exec_context=self.execution_context,
             )
-            self.push_event(
+            await self.push_event(
                 node_id=node_id,
                 event=NODE_EXECUTION_STATUS.COMPLETED,
                 data=executed_data.model_dump(),
@@ -330,7 +330,7 @@ class GraphExecutor:
                 f"❌ Node {node_id} execution failed 🛑: {str(e)}\n🔍 Trace: {trace}"
             )
 
-            self.push_event(
+            await self.push_event(
                 node_id=node_id,
                 event=NODE_EXECUTION_STATUS.FAILED,
                 data={"error": str(e)},
@@ -360,7 +360,7 @@ class GraphExecutor:
                     f"Failed to update successors for node {result.node_id}: {str(e)}"
                 )
 
-    def _update_successors(
+    def _update_successors(  # noqa
         self, node_id: str, successors: List[str], executed_data: NodeData
     ):
         """
@@ -405,7 +405,7 @@ class GraphExecutor:
                             "data"
                         )
 
-                        # If successor node's exec state is in SKIPPED, then skip this node.
+                        # If successor node's exec state is in SKIPPED, then skip this node.  # noqa
                         if (
                             successor_node_data.execution_status
                             == NODE_EXECUTION_STATUS.SKIPPED
@@ -455,7 +455,7 @@ class GraphExecutor:
                         f"Failed to update successor {successor_node_id}: {str(e)}"
                     )
 
-    def _update_normal_mode_successor(
+    def _update_normal_mode_successor(  # noqa
         self,
         node_id: str,
         successor_node_id: str,
@@ -491,7 +491,7 @@ class GraphExecutor:
 
             if not edge_data:
                 logger.warning(
-                    f"No edge data between {node_id} and {successor_node_id} with key {edge_key}"
+                    f"No edge data between {node_id} and {successor_node_id} with key {edge_key}"  # noqa
                 )
                 return
 

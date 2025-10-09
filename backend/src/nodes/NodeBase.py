@@ -204,7 +204,7 @@ class Node(ABC):
     # ============================================================================
 
     @abstractmethod
-    def process(
+    async def process(
         self,
         inputs_values: Dict[str, Any],
         parameter_values: Dict[str, Any],
@@ -223,7 +223,7 @@ class Node(ABC):
         pass
 
     @abstractmethod
-    def process_tool(
+    async def process_tool(
         self,
         inputs_values: Dict[str, Any],
         parameter_values: Dict[str, Any],
@@ -245,7 +245,7 @@ class Node(ABC):
         pass
 
     @abstractmethod
-    def build_tool(
+    async def build_tool(
         self, inputs_values: Dict[str, Any], tool_configs: ToolConfig
     ) -> BuildToolResult:
         """
@@ -261,7 +261,7 @@ class Node(ABC):
         """
         pass
 
-    def execute(self, node_data: "NodeData") -> "NodeData":
+    async def execute(self, node_data: "NodeData") -> "NodeData":
         """
         Execute the node with given data and return updated node data.
 
@@ -275,9 +275,7 @@ class Node(ABC):
         if node_data.mode == NODE_DATA_MODE.NORMAL:
             input_values = self._extract_input_values(node_data)
             parameter_values = self._extract_parameter_values(node_data)
-
-            output_results = self.process(input_values, parameter_values)
-
+            output_results = await self.process(input_values, parameter_values)
             output_values = self._build_output_mapping(output_results)
 
             return self._create_result_node_data(
@@ -286,7 +284,9 @@ class Node(ABC):
         else:
             input_values = self._extract_input_values(node_data)
             tool_configs: ToolConfig = self._extract_tool_configs(node_data)
-            built_tool: BuildToolResult = self.build_tool(input_values, tool_configs)
+            built_tool: BuildToolResult = await self.build_tool(
+                input_values, tool_configs
+            )
             tool_serialized_schemas = PydanticSchemaConverter.serialize(
                 model_cls=built_tool.tool_schema
             )
@@ -544,7 +544,7 @@ class Node(ABC):
         """Deprecated: Use _build_output_mapping instead."""
         return self._build_output_mapping(result)
 
-    def run(
+    async def run(
         self,
         node_id: str,
         node_data: "NodeData",
@@ -553,4 +553,4 @@ class Node(ABC):
         """Deprecated: Use execute instead."""
         self.id = node_id
         self.bind_context(exec_context)
-        return self.execute(node_data)
+        return await self.execute(node_data)

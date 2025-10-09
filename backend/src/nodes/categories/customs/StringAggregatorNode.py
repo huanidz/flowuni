@@ -64,7 +64,7 @@ class StringAggregatorNode(Node):
         icon=NodeIconIconify(icon_value="carbon:aggregator-recalculation"),
     )
 
-    def process(
+    async def process(
         self, inputs: Dict[str, Any], parameters: Dict[str, Any]
     ) -> Dict[str, Union[str]]:
         """

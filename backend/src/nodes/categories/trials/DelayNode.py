@@ -42,7 +42,7 @@ class DelayNode(Node):
         tags=["delay", "sleep", "text", "trial"],
     )
 
-    def process(
+    async def process(
         self, inputs: Dict[str, Any], parameters: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Process the inputs with a delay and return the text as output."""

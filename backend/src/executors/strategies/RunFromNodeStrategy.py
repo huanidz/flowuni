@@ -32,7 +32,7 @@ class RunFromNodeStrategy:
         """
         self.graph_executor = graph_executor
 
-    def execute(self, start_node: str) -> Dict[str, Any]:
+    async def execute(self, start_node: str) -> Dict[str, Any]:
         """
         Execute the graph starting from a specific node.
 

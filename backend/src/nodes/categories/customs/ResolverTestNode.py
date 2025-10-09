@@ -73,7 +73,7 @@ class ResolverTestNode(Node):
         parameters=[],
     )
 
-    def process(self, input_values, parameter_values):
+    async def process(self, input_values, parameter_values):
         provider = input_values["provider"]
         model = input_values["model"]
 

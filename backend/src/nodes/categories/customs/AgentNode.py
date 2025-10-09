@@ -121,7 +121,7 @@ class AgentNode(Node):
         icon=NodeIconIconify(icon_value="mage:robot-happy"),
     )
 
-    def process(self, input_values, parameter_values):
+    async def process(self, input_values, parameter_values):
         llm_provider = input_values["llm_provider"]
         system_prompt = input_values["system_instruction"]
         input_message = input_values["input_message"]
@@ -176,13 +176,13 @@ class AgentNode(Node):
         chat_message = ChatMessage(
             role=llm_provider_instance.roles.USER, content=input_message
         )
-        chat_response: ChatResponse = agent.chat(
+        chat_response: ChatResponse = await agent.chat(
             message=chat_message, prev_histories=prev_histories
         )
 
         return {"response": chat_response.content}
 
-    def build_tool(
+    async def build_tool(
         self, inputs_values: Dict[str, Any], tool_configs: ToolConfig
     ) -> BuildToolResult:
         tool_name = (
@@ -207,7 +207,7 @@ class AgentNode(Node):
             tool_schema=AgentAsToolSchema,
         )
 
-    def process_tool(
+    async def process_tool(
         self,
         inputs_values: Dict[str, Any],
         parameter_values: Dict[str, Any],

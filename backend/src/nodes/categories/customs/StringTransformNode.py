@@ -42,7 +42,7 @@ class StringTransformNode(Node):
         can_be_tool=False,
     )
 
-    def process(self, input_values, parameter_values):
+    async def process(self, input_values, parameter_values):
         input_string = input_values["input"]
         number_input = input_values.get("num_input", 0)
 

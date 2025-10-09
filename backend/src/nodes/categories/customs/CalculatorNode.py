@@ -39,7 +39,7 @@ class CalculatorNode(Node):
         icon=NodeIconIconify(icon_value="lucide:calculator"),
     )
 
-    def process(
+    async def process(
         self, inputs: Dict[str, Any], parameters: Dict[str, Any]
     ) -> Dict[str, Union[float, int, str]]:
         """

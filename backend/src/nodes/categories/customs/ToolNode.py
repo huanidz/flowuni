@@ -39,7 +39,7 @@ class ToolNode(Node):
         can_be_tool=True,
     )
 
-    def process(self, inputs, parameters):
+    async def process(self, inputs, parameters):
         # return {"tool_result": inputs["input_message"], "tool_result2": "hello"}
         return {"tool_result": inputs["input_message"]}
 

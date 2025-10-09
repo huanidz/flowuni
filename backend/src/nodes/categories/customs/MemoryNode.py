@@ -46,7 +46,7 @@ class MemoryNode(Node):
         icon=NodeIconIconify(icon_value="material-symbols:memory"),
     )
 
-    def process(
+    async def process(
         self, inputs: Dict[str, Any], parameters: Dict[str, Any]
     ) -> Dict[str, Union[str]]:
         """

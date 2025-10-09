@@ -27,7 +27,7 @@ class ChatInput(Node):
         icon=NodeIconIconify(icon_value="material-symbols:input"),
     )
 
-    def process(self, inputs, parameters):
+    async def process(self, inputs, parameters):
         return {"user_message": inputs["message_in"]}
 
     def build_tool(self, inputs_values, tool_configs):

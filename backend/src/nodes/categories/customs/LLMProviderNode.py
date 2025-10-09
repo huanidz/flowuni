@@ -94,7 +94,7 @@ class LLMProviderNode(Node):
         group=NODE_GROUP_CONSTS.PROVIDER,
     )
 
-    def process(self, input_values, parameter_values):
+    async def process(self, input_values, parameter_values):
         provider = input_values["provider"]
         model = input_values["model"]
         api_key = input_values["API Key"]

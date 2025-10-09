@@ -50,7 +50,7 @@ class TavilySearchNode(Node):
         icon=NodeIconIconify(icon_value="hugeicons:global-search"),
     )
 
-    def process(  # noqa
+    async def process(  # noqa
         self, inputs: Dict[str, Any], parameters: Dict[str, Any]
     ) -> Dict[str, str]:
         """

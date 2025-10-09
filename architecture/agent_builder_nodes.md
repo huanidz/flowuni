@@ -86,7 +86,7 @@ class RouterNode(Node):
                 return str(raw)
         return str(raw)
 
-    def process(self, inputs: Dict[str, Any], parameters: Dict[str, Any]) -> Dict[str, Any]:
+    async def process(self, inputs: Dict[str, Any], parameters: Dict[str, Any]) -> Dict[str, Any]:
         payload = inputs.get("payload")
         rules: List[Dict[str, Any]] = inputs.get("rules") or []
         stringify = parameters.get("stringify_json", True)
@@ -230,7 +230,7 @@ class AggregatorNode(Node):
             return v
         return [v]
 
-    def process(self, inputs: Dict[str, Any], parameters: Dict[str, Any]) -> Dict[str, Any]:
+    async def process(self, inputs: Dict[str, Any], parameters: Dict[str, Any]) -> Dict[str, Any]:
         items = self._normalize_list(inputs.get("candidates"))
         strategy = (inputs.get("strategy") or "first").strip()
         score_expr = (inputs.get("score_expr") or "").strip()

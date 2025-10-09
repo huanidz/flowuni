@@ -29,7 +29,7 @@ class RunFullStrategy:
         """
         self.graph_executor = graph_executor
 
-    def execute(self) -> FlowExecutionResult:  # noqa
+    async def execute(self) -> FlowExecutionResult:  # noqa
         """
         Execute the full graph from the beginning.
         """

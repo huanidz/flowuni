@@ -134,7 +134,7 @@ class EmbeddingProviderNode(Node):
         group=NODE_GROUP_CONSTS.PROVIDER,
     )
 
-    def process(self, input_values, parameter_values):
+    async def process(self, input_values, parameter_values):
         provider = input_values["provider"]
         embedding_model = input_values["embedding_model"]
         api_key = input_values["api_key"]
