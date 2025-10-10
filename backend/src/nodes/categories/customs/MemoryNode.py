@@ -2,6 +2,12 @@ from typing import TYPE_CHECKING, Any, Dict, List, Union
 
 from loguru import logger
 from src.consts.node_consts import NODE_GROUP_CONSTS, NODE_TAGS_CONSTS
+from src.dependencies.db_dependency import AsyncSessionLocal
+from src.dependencies.playground_dependency import (
+    get_flow_repository,
+    get_flow_session_repository,
+    get_playground_service,
+)
 from src.models.parsers.SessionChatHistoryParser import (
     SessionChatHistoryListParser,
     SessionChatHistoryParser,
@@ -61,8 +67,6 @@ class MemoryNode(Node):
         """
         recent_messages_count = inputs.get("recent_messages", None)
 
-        session_repo = self.context.repositories.session_repository
-
         session_id = self.context.session_id
 
         # If no session_id, construct a dummy chat_history_list and return empty messages
@@ -76,10 +80,19 @@ class MemoryNode(Node):
 
         logger.info(f"Context: {self.context.to_dict()}")
 
-        messages: List[SessionChatHistoryModel] = session_repo.get_chat_history(
-            session_id=session_id,
-            num_messages=recent_messages_count,
-        )
+        # Properly manage database session to avoid resource leaks
+        async with AsyncSessionLocal() as db_session:
+            playground_service = get_playground_service(
+                flow_repository=get_flow_repository(),
+                flow_session_repository=get_flow_session_repository(),
+            )
+            messages: List[
+                SessionChatHistoryModel
+            ] = await playground_service.get_chat_history(
+                session=db_session,
+                session_id=session_id,
+                num_messages=recent_messages_count,
+            )
 
         chat_histories = [
             SessionChatHistoryParser.model_validate(chat_history)

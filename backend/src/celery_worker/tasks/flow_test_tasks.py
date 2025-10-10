@@ -76,7 +76,7 @@ def dispatch_run_test(
 
 
 @celery_app.task(bind=True, base=BaseTask, time_limit=3600, soft_time_limit=3540)
-def run_flow_test(
+def run_flow_test(  # noqa: C901
     self,
     task_id: str,
     user_id: int,

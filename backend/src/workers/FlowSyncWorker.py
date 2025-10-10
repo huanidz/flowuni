@@ -7,7 +7,6 @@ from fastapi import HTTPException
 from loguru import logger
 from src.dependencies.redis_dependency import get_redis_client
 from src.exceptions.auth_exceptions import UNAUTHORIZED_EXCEPTION
-from src.exceptions.execution_exceptions import NotEnoughUserInformation
 from src.exceptions.graph_exceptions import GraphCompilerError
 from src.executors.ExecutionContext import ExecutionContext
 from src.executors.ExecutionEventPublisher import (
@@ -17,7 +16,6 @@ from src.executors.ExecutionEventPublisher import (
 from src.executors.GraphExecutor import GraphExecutor
 from src.models.alchemy.flows.FlowTestCaseRunModel import TestCaseRunStatus
 from src.models.validators.PassCriteriaRunnerModels import (
-    CheckResult,
     RunnerResult,
     StepDetail,
 )

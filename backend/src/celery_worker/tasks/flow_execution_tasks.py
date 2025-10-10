@@ -4,7 +4,7 @@ from loguru import logger
 from redis import Redis
 from src.celery_worker.celery_worker import celery_app
 from src.configs.config import get_app_settings
-from src.dependencies.db_dependency import get_db
+from src.dependencies.db_dependency import AsyncSessionLocal, get_db
 from src.executors.ExecutionContext import ExecutionContext
 from src.executors.ExecutionEventPublisher import (
     ExecutionControl,
@@ -47,15 +47,8 @@ def run_flow(
         Dictionary with execution results
     """
 
-    app_db_session = None  # Get a DB session for this task
-
     try:
         app_settings = get_app_settings()
-
-        # Get DB session
-        app_db_session = next(get_db())
-        repositories = RepositoriesContainer.auto_init_all(db_session=app_db_session)
-
         logger.info(f"Starting flow execution task for flow_id: {flow_id}")
 
         # Parse the request
@@ -90,7 +83,6 @@ def run_flow(
             session_id=flow_graph_request.session_id,
             user_id=None,
             metadata={},
-            repositories=repositories,
         )
         exe_control = ExecutionControl(
             start_node=flow_graph_request.start_node, scope=flow_graph_request.scope
@@ -123,6 +115,3 @@ def run_flow(
         logger.error(f"Flow execution failed for flow_id {flow_id}: {str(e)}")
         # Re-raise the exception so Celery marks the task as failed
         raise
-    finally:
-        if app_db_session:
-            app_db_session.close()

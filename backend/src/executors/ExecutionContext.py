@@ -1,8 +1,6 @@
 from typing import Any, Dict, Optional
 
 from pydantic import BaseModel
-from src.repositories.RepositoriesContainer import RepositoriesContainer
-from src.services.ServicesContainer import ServicesContainer
 
 
 class ExecutionContext(BaseModel):
@@ -17,10 +15,6 @@ class ExecutionContext(BaseModel):
 
     # Small metadata to carry around (safe to serialize if needed)
     metadata: Dict[str, Any] = {}
-
-    # Shared repos and services
-    repositories: RepositoriesContainer = RepositoriesContainer()
-    services: ServicesContainer = ServicesContainer()
 
     # Node-level context
     node_id: Optional[str] = None
