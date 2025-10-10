@@ -3,11 +3,6 @@ from typing import TYPE_CHECKING, Any, Dict, List, Union
 from loguru import logger
 from src.consts.node_consts import NODE_GROUP_CONSTS, NODE_TAGS_CONSTS
 from src.dependencies.db_dependency import AsyncSessionLocal
-from src.dependencies.playground_dependency import (
-    get_flow_repository,
-    get_flow_session_repository,
-    get_playground_service,
-)
 from src.models.parsers.SessionChatHistoryParser import (
     SessionChatHistoryListParser,
     SessionChatHistoryParser,
@@ -18,6 +13,8 @@ from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.handles.basics.inputs.NumberInputHandle import NumberInputHandle
 from src.nodes.handles.basics.outputs.StringOutputHandle import StringOutputHandle
 from src.nodes.NodeBase import Node, NodeSpec
+from src.repositories import FlowRepositories, SessionRepository
+from src.services.PlaygroundService import PlaygroundService
 
 if TYPE_CHECKING:
     from src.models.alchemy.session.SessionChatHistoryModel import (
@@ -82,9 +79,9 @@ class MemoryNode(Node):
 
         # Properly manage database session to avoid resource leaks
         async with AsyncSessionLocal() as db_session:
-            playground_service = get_playground_service(
-                flow_repository=get_flow_repository(),
-                flow_session_repository=get_flow_session_repository(),
+            playground_service = PlaygroundService(
+                flow_repository=FlowRepositories(),
+                flow_session_repository=SessionRepository(),
             )
             messages: List[
                 SessionChatHistoryModel

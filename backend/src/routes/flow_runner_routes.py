@@ -47,7 +47,9 @@ async def compile_flow_endpoint(
         flow_graph_request = CanvasFlowRunRequest(**request_json)
 
         # Submit compile task to Celery
-        task = compile_flow.delay("flow-compile", flow_graph_request.model_dump())
+        task = compile_flow.apply_async(
+            args=["flow-compile", flow_graph_request.model_dump()]
+        )
 
         logger.info(
             f"Compilation task submitted to Celery. (submitted_by u_id: {_auth_user_id})"
@@ -91,7 +93,13 @@ async def execute_flow_endpoint(
 
         # Submit run task to Celery
         flow_id = flow_graph_request.flow_id
-        task = run_flow.delay(_auth_user_id, flow_id, flow_graph_request.model_dump())
+        task = run_flow.apply_async(
+            kwargs={
+                "user_id": _auth_user_id,
+                "flow_id": flow_id,
+                "flow_graph_request_dict": flow_graph_request.model_dump(),
+            }
+        )
 
         logger.info(
             f"Execution task submitted to Celery. (submitted_by u_id: {_auth_user_id}). Task ID: {task.id}"  # noqa: E501

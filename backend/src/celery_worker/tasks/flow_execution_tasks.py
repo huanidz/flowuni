@@ -1,10 +1,10 @@
+import asyncio
 from typing import Dict
 
 from loguru import logger
 from redis import Redis
 from src.celery_worker.celery_worker import celery_app
 from src.configs.config import get_app_settings
-from src.dependencies.db_dependency import AsyncSessionLocal, get_db
 from src.executors.ExecutionContext import ExecutionContext
 from src.executors.ExecutionEventPublisher import (
     ExecutionControl,
@@ -13,19 +13,39 @@ from src.executors.ExecutionEventPublisher import (
 from src.executors.GraphExecutor import GraphExecutor
 from src.nodes.GraphCompiler import GraphCompiler
 from src.nodes.GraphLoader import GraphLoader
-from src.repositories.RepositoriesContainer import RepositoriesContainer
 from src.schemas.flowbuilder.flow_graph_schemas import CanvasFlowRunRequest
 
 
 @celery_app.task
 def compile_flow(flow_id: str, flow_graph_request_dict: Dict):
-    flow_graph_request = CanvasFlowRunRequest(**flow_graph_request_dict)
-    G = GraphLoader.from_request(flow_graph_request)
+    """
+    Synchronous Celery task that compiles a flow graph.
 
-    compiler = GraphCompiler(graph=G)
-    compiler.compile()
+    Args:
+        flow_id: Unique identifier for the flow
+        flow_graph_request_dict: Serialized flow graph request
 
-    return {"status": "compiled", "flow_id": flow_id}
+    Returns:
+        Dictionary with compilation status
+    """
+    try:
+        flow_graph_request = CanvasFlowRunRequest(**flow_graph_request_dict)
+        G = GraphLoader.from_request(flow_graph_request)
+
+        compiler = GraphCompiler(graph=G)
+
+        # Run the async compile function in an event loop
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            loop.run_until_complete(compiler.async_compile())
+        finally:
+            loop.close()
+
+        return {"status": "compiled", "flow_id": flow_id}
+    except Exception as e:
+        logger.error(f"Error in compile_flow task: {str(e)}")
+        raise
 
 
 @celery_app.task(bind=True)
@@ -47,6 +67,16 @@ def run_flow(
         Dictionary with execution results
     """
 
+    """
+    Synchronous Celery task that runs graph execution.
+
+    Args:
+        flow_id: Unique identifier for the flow
+        flow_graph_request_dict: Serialized flow graph request
+
+    Returns:
+        Dictionary with execution results
+    """
     try:
         app_settings = get_app_settings()
         logger.info(f"Starting flow execution task for flow_id: {flow_id}")
@@ -63,7 +93,14 @@ def run_flow(
         compiler = GraphCompiler(
             graph=G, remove_standalone=False
         )  # Keep standalone nodes
-        execution_plan = compiler.compile()
+
+        # Run the async compile in an event loop
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            execution_plan = loop.run_until_complete(compiler.async_compile())
+        finally:
+            loop.close()
 
         # Create executor
         redis_client = Redis(
@@ -97,18 +134,25 @@ def run_flow(
             enable_debug=enable_debug,
         )
 
-        # Run the SYNCHRONOUS execution - NO asyncio needed
+        # Run the async execution in an event loop
         logger.info("Starting graph execution")
 
-        # Since executor.execute() is now synchronous, call it directly
-        execution_result = executor.execute()
+        # Create a new event loop and run the async executor
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            execution_result = loop.run_until_complete(executor.execute())
+        finally:
+            loop.close()
 
         logger.success(f"Flow execution completed successfully for flow_id: {flow_id}")
 
         return {
             "status": "executed",
             "flow_id": flow_id,
-            "execution_stats": execution_result,
+            "execution_stats": execution_result.model_dump()
+            if hasattr(execution_result, "model_dump")
+            else execution_result,
         }
 
     except Exception as e:
