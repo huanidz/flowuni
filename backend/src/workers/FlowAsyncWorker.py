@@ -1,16 +1,30 @@
-from typing import Dict, List, Optional
+from datetime import datetime
+from time import perf_counter
+from typing import Any, Dict, List, Optional, Tuple
 
+import networkx as nx
 from fastapi import HTTPException
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
+from src.dependencies.db_dependency import AsyncSessionLocal
+from src.dependencies.redis_dependency import get_redis_client
 from src.exceptions.auth_exceptions import UNAUTHORIZED_EXCEPTION
+from src.exceptions.graph_exceptions import GraphCompilerError
 from src.executors.ExecutionContext import ExecutionContext
 from src.executors.ExecutionEventPublisher import (
     ExecutionControl,
+    ExecutionEventPublisher,
 )
 from src.executors.GraphExecutor import GraphExecutor
+from src.models.alchemy.flows.FlowTestCaseRunModel import TestCaseRunStatus
+from src.models.validators.PassCriteriaRunnerModels import (
+    RunnerResult,
+    StepDetail,
+)
 from src.nodes.GraphCompiler import GraphCompiler
 from src.nodes.GraphLoader import GraphLoader
+from src.repositories.FlowRepositories import FlowRepository
+from src.repositories.FlowTestRepository import FlowTestRepository
 from src.schemas.flowbuilder.flow_graph_schemas import (
     ApiFlowRunMessage,
     ApiFlowRunRequest,
@@ -20,6 +34,8 @@ from src.schemas.flowbuilder.flow_graph_schemas import (
 from src.schemas.flows.flow_schemas import FlowRunResult
 from src.services.ApiKeyService import ApiKeyService
 from src.services.FlowService import FlowService
+from src.services.FlowTestService import FlowTestService
+from src.workers.PassCriteriaRunner import PassCriteriaRunner
 
 
 class FlowAsyncWorker:
@@ -242,3 +258,307 @@ class FlowAsyncWorker:
             raise HTTPException(status_code=400, detail="Flow has no definition")
 
         return flow.flow_definition
+
+    async def run_test_async(
+        self,
+        case_id: int,
+        flow_id: str,
+        flow_graph_request_dict: Dict,
+        session_id: Optional[str] = None,
+        flow_test_service: Optional["FlowTestService"] = None,
+        session: Optional[AsyncSession] = None,
+    ) -> None:
+        """
+        Run a flow test asynchronously.
+
+        Steps:
+            1. Load test case and mark as QUEUED.
+            2. Compile the flow graph.
+            3. Execute the flow.
+            4. Save result and run pass criteria.
+            5. Update status and publish events.
+        """
+        redis_client = get_redis_client()
+        event_publisher = ExecutionEventPublisher(
+            user_id=self.user_id,
+            task_id=self.task_id,
+            redis_client=redis_client,
+            is_test=True,
+        )
+
+        # Load test case and mark QUEUED
+        test_case = await flow_test_service.get_test_case_by_id(case_id, session)
+        pass_criteria: Dict[str, Any] = test_case.pass_criteria
+        input_text: str = test_case.input_text
+        await self._mark_queued(flow_test_service, event_publisher, case_id, session)
+
+        start_time: float = perf_counter()
+
+        if await self._is_cancelled(case_id, flow_test_service, session):
+            return
+
+        # Compile flow graph
+        graph, execution_plan = await self._compile_execution_plan(
+            flow_graph_request_dict, input_text
+        )
+
+        try:
+            if await self._is_cancelled(case_id, flow_test_service, session):
+                return
+            # Execute flow
+            execution_result: FlowExecutionResult = await self._execute_flow(
+                graph,
+                execution_plan,
+                flow_id,
+                session_id,
+                flow_test_service,
+                event_publisher,
+                case_id,
+                session,
+            )
+
+            # Save result
+            execution_time_ms: float = (perf_counter() - start_time) / 1000
+            await flow_test_service.update_test_case_run(
+                run_id=self.task_id,
+                finished_at=datetime.now(),
+                execution_time_ms=execution_time_ms,
+                actual_output=execution_result.model_dump(),
+                session=session,
+            )
+
+            if await self._is_cancelled(case_id, flow_test_service, session):
+                return
+
+            # Run pass criteria
+            await self._run_pass_criteria(
+                pass_criteria,
+                execution_result,
+                flow_test_service,
+                event_publisher,
+                case_id,
+                session,
+            )
+
+            logger.success(
+                f"(TEST RUN) Flow execution completed for flow_id: {flow_id}"
+            )
+
+        except GraphCompilerError as e:
+            await self._mark_failed(
+                flow_test_service, event_publisher, case_id, session
+            )
+            logger.error(
+                f"(TEST RUN) Flow compilation failed for flow_id {flow_id}: {e}"
+            )
+
+        except Exception as e:
+            await flow_test_service.update_test_case_run(
+                run_id=self.task_id,
+                status=TestCaseRunStatus.SYSTEM_ERROR,
+                error_message=str(e),
+                finished_at=datetime.now(),
+                session=session,
+            )
+            await self._publish_event(
+                flow_test_service,
+                event_publisher,
+                case_id,
+                TestCaseRunStatus.SYSTEM_ERROR,
+                session,
+            )
+            logger.error(f"(TEST RUN) Flow execution failed for flow_id {flow_id}: {e}")
+            raise
+
+    async def run_flow_test(
+        self,
+        flow_id: str,
+        case_id: int,
+        flow_service: FlowService,
+        flow_test_service: FlowTestService,
+        session: AsyncSession,
+        session_id: Optional[str] = None,
+    ) -> None:
+        try:
+            logger.info(f"Starting validated flow execution for flow_id: {flow_id}")
+
+            # Retrieve and validate flow
+            flow_definition = await self._get_validated_flow(
+                flow_id, flow_service, session
+            )
+
+            # Execute the flow
+            await self.run_test_async(
+                case_id=case_id,
+                flow_id=flow_id,
+                flow_graph_request_dict=flow_definition,
+                session_id=session_id,
+                flow_test_service=flow_test_service,
+                session=session,
+            )
+
+            logger.success(f"Validated flow execution completed for flow_id: {flow_id}")
+            return
+
+        except HTTPException:
+            raise  # Preserve HTTP exceptions for proper API responses
+        except Exception as e:
+            logger.error(
+                f"Flow execution with validation failed for flow_id {flow_id}: {str(e)}"
+            )
+            raise
+
+    # --- FOR TEST ASYNC FLOW ---
+
+    async def _mark_queued(
+        self,
+        service: "FlowTestService",
+        publisher: "ExecutionEventPublisher",
+        case_id: int,
+        session: AsyncSession,
+    ) -> None:
+        """Mark run as QUEUED and publish event."""
+        await service.update_test_case_run(
+            run_id=self.task_id,
+            status=TestCaseRunStatus.QUEUED,
+            started_at=datetime.now(),
+            session=session,
+        )
+        await self._publish_event(
+            service, publisher, case_id, TestCaseRunStatus.QUEUED, session
+        )
+
+    async def _mark_failed(
+        self,
+        service: "FlowTestService",
+        publisher: "ExecutionEventPublisher",
+        case_id: int,
+        session: AsyncSession,
+    ) -> None:
+        """Mark run as FAILED and publish event."""
+        await service.set_test_case_run_status(
+            task_run_id=self.task_id, status=TestCaseRunStatus.FAILED, session=session
+        )
+        await self._publish_event(
+            service, publisher, case_id, TestCaseRunStatus.FAILED, session
+        )
+
+    async def _publish_event(
+        self,
+        service: "FlowTestService",
+        publisher: "ExecutionEventPublisher",
+        case_id: int,
+        status: "TestCaseRunStatus",
+        session: AsyncSession,
+    ) -> None:
+        """Publish the latest run event with fresh test_run_data."""
+        test_case_run = await service.get_test_case_run_by_task_id(
+            task_run_id=self.task_id, session=session
+        )
+        test_run_data: Dict = test_case_run.to_dict() if test_case_run else {}
+        publisher.publish_test_run_event(
+            case_id=case_id, status=status, test_run_data=test_run_data
+        )
+
+    async def _compile_execution_plan(
+        self, flow_graph_request_dict: Dict, input_text: str
+    ) -> Tuple[nx.MultiDiGraph, List]:
+        """Parse and compile the flow graph into an execution plan."""
+        logger.info("(TEST RUN) Parsing and compiling flow graph")
+        flow_graph_request = CanvasFlowRunRequest(**flow_graph_request_dict)
+        graph = GraphLoader.from_request(
+            flow_graph_request, custom_input_text=input_text
+        )
+        compiler = GraphCompiler(graph=graph, remove_standalone=False)
+        execution_plan: List[List[str]] = await compiler.async_compile()
+        return graph, execution_plan
+
+    async def _execute_flow(
+        self,
+        graph: nx.MultiDiGraph,
+        execution_plan: List[List[str]],
+        flow_id: str,
+        session_id: Optional[str],
+        service: "FlowTestService",
+        publisher: "ExecutionEventPublisher",
+        case_id: int,
+        session: AsyncSession,
+    ) -> "FlowExecutionResult":
+        """Execute the compiled graph and return the execution result."""
+        execution_context = ExecutionContext(
+            run_id=self.task_id, flow_id=flow_id, session_id=session_id
+        )
+        execution_control = ExecutionControl(start_node=None, scope="downstream")
+
+        logger.info(f"(TEST RUN) Creating executor with {len(execution_plan)} layers")
+        executor = GraphExecutor(
+            graph=graph,
+            execution_plan=execution_plan,
+            execution_event_publisher=publisher,
+            execution_context=execution_context,
+            execution_control=execution_control,
+            enable_debug=False,
+        )
+
+        logger.info("(TEST RUN) Starting graph execution")
+        await service.set_test_case_run_status(
+            task_run_id=self.task_id, status=TestCaseRunStatus.RUNNING, session=session
+        )
+        await self._publish_event(
+            service, publisher, case_id, TestCaseRunStatus.RUNNING, session
+        )
+
+        return await executor.execute()
+
+    async def _run_pass_criteria(
+        self,
+        pass_criteria: Dict[str, Any],
+        execution_result: "FlowExecutionResult",
+        service: "FlowTestService",
+        publisher: "ExecutionEventPublisher",
+        case_id: int,
+        session: AsyncSession,
+    ) -> None:
+        """Evaluate pass criteria and update status accordingly."""
+        criteria_runner = PassCriteriaRunner(
+            flow_output=execution_result.chat_output.content
+        )
+        criteria_runner.load(pass_criteria)
+        runner_result: "RunnerResult" = criteria_runner.run()
+
+        failed_criteria: List[StepDetail] = runner_result.failed_items
+
+        construct_error_msg: str = ""
+        for item in failed_criteria:
+            construct_error_msg += f"Criteria-{item.id}: {item.result.reason}\n"
+
+        status: TestCaseRunStatus = (
+            TestCaseRunStatus.PASSED
+            if runner_result.passed
+            else TestCaseRunStatus.FAILED
+        )
+        await service.update_test_case_run(
+            run_id=self.task_id,
+            status=status,
+            error_message=construct_error_msg if failed_criteria else None,
+            session=session,
+        )
+        publisher.publish_test_run_event(
+            case_id=case_id,
+            status=status,
+            flow_exec_result=execution_result,
+            test_run_data={},
+            error_message=construct_error_msg if failed_criteria else None,
+        )
+
+    async def _is_cancelled(
+        self, test_case_id: int, service: FlowTestService, session: AsyncSession
+    ) -> bool:
+        """Check if task was cancelled"""
+        status = await service.get_latest_test_case_run_status(
+            test_case_id=test_case_id, session=session
+        )
+        if status == TestCaseRunStatus.CANCELLED:
+            logger.info(f"Test case {test_case_id} was cancelled, stopping execution")
+            return True
+        return False

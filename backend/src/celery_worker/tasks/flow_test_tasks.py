@@ -17,7 +17,7 @@ from src.repositories.FlowTestRepository import FlowTestRepository
 from src.repositories.RepositoriesContainer import RepositoriesContainer
 from src.services.FlowService import FlowService
 from src.services.FlowTestService import FlowTestService
-from src.workers.FlowSyncWorker import FlowSyncWorker
+from src.workers.FlowAsyncWorker import FlowAsyncWorker
 
 
 @celery_app.task(bind=True, max_retries=None, time_limit=3600)
@@ -30,7 +30,7 @@ async def dispatch_run_test(
     """
 
     try:
-        with AsyncSessionLocal() as db_session:
+        async with AsyncSessionLocal() as db_session:
             flow_test_service = FlowTestService(
                 test_repository=FlowTestRepository(),
             )
@@ -102,7 +102,7 @@ async def run_flow_test(  # noqa: C901
         logger.warning(f"Task {task_id} received termination signal, cleaning up...")
 
         try:
-            with AsyncSessionLocal() as db_session:
+            async with AsyncSessionLocal() as db_session:
                 flow_test_service = FlowTestService(
                     test_repository=FlowTestRepository(),
                 )
@@ -135,22 +135,13 @@ async def run_flow_test(  # noqa: C901
     try:
         logger.info(f"Starting flow test task for case_id: {case_id}")
 
-        # Initialize services
-        flow_test_service = FlowTestService(
-            test_repository=FlowTestRepository(),
-            redis_client=None,
-        )
+        flow_async_worker = FlowAsyncWorker(user_id=user_id, task_id=task_id)
 
-        flow_service = FlowService(
-            flow_repository=FlowRepository(),
-        )
-        flow_sync_worker = FlowSyncWorker(user_id=user_id, task_id=task_id)
-        flow_sync_worker.run_flow_test(
+        # The worker now handles session management internally
+        await flow_async_worker.run_flow_test(
             flow_id=flow_id,
             case_id=case_id,
-            flow_service=flow_service,
             session_id=None,
-            flow_test_service=flow_test_service,
         )
 
         return
