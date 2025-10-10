@@ -28,7 +28,7 @@ def get_auth_service(redis_client=Depends(get_redis_client)):
     return AuthService(redis_client=redis_client, secret_key=auth_secret)
 
 
-def auth_through_url_param(
+async def auth_through_url_param(
     request: Request, auth_service: AuthService = Depends(get_auth_service)
 ) -> int:
     """
@@ -49,10 +49,10 @@ def auth_through_url_param(
             raise credentials_exception
 
         # Verify token (this raises if invalid/expired)
-        user_id = auth_service.verify_token(token)
+        user_id = await auth_service.verify_token(token)
 
         # Check if blacklisted
-        if auth_service.is_token_blacklisted(token):
+        if await auth_service.is_token_blacklisted(token):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token has been revoked (logged out)",
@@ -68,7 +68,7 @@ def auth_through_url_param(
         raise credentials_exception
 
 
-def get_current_user(
+async def get_current_user(
     request: Request, auth_service: AuthService = Depends(get_auth_service)
 ) -> int:
     """
@@ -93,10 +93,10 @@ def get_current_user(
             raise credentials_exception
 
         # Verify token (this raises if invalid/expired)
-        user_id = auth_service.verify_token(token)
+        user_id = await auth_service.verify_token(token)
 
         # Check if blacklisted
-        if auth_service.is_token_blacklisted(token):
+        if await auth_service.is_token_blacklisted(token):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token has been revoked (logged out)",
@@ -109,45 +109,4 @@ def get_current_user(
         raise credentials_exception
     except Exception as e:
         logger.error(f"Unexpected error during auth: {e}")
-        raise credentials_exception
-
-
-# ================================================================================
-
-
-# WEBSOCKET AUTH
-async def get_current_socket_user(
-    websocket: WebSocket, auth_service: AuthService = Depends(get_auth_service)
-) -> int:
-    """
-    Dependency that extracts and validates JWT from WebSocket query parameters.
-    Returns user_id if valid and not blacklisted.
-    Raises 401 otherwise.
-    """
-    credentials_exception = WebSocketException(
-        code=status.WS_1008_POLICY_VIOLATION, reason="Could not validate credentials"
-    )
-
-    try:
-        # Extract token from WebSocket query parameters
-        token = websocket.query_params.get("token")
-        if not token:
-            raise credentials_exception
-
-        # Verify token (this raises if invalid/expired)
-        user_id = auth_service.verify_token(token)
-
-        # Check if blacklisted
-        if auth_service.is_token_blacklisted(token):
-            raise WebSocketException(
-                code=status.WS_1008_POLICY_VIOLATION,
-                reason="Token has been revoked (logged out)",
-            )
-
-        return user_id  # Can be used in route
-
-    except TokenInvalidError:
-        raise credentials_exception
-    except Exception as e:
-        logger.error(f"Unexpected error during WebSocket auth: {e}")
         raise credentials_exception
