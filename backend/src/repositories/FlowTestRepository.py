@@ -2,9 +2,9 @@ from datetime import datetime
 from typing import Any, Dict, Optional
 
 from loguru import logger
-from sqlalchemy import and_, desc, func
+from sqlalchemy import and_, delete, desc, func, select, update
 from sqlalchemy.exc import IntegrityError, NoResultFound
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.models.alchemy.flows.FlowTestCaseModel import FlowTestCaseModel
 from src.models.alchemy.flows.FlowTestCaseRunModel import (
     FlowTestCaseRunModel,
@@ -19,13 +19,16 @@ class FlowTestRepository(BaseRepository):
     Flow test repository for managing test suites and test cases.
     """
 
-    def __init__(self, db_session: Session):
-        super().__init__(db_session=db_session)
-        self.model = FlowTestSuiteModel
+    def __init__(self):
+        super().__init__(model=FlowTestSuiteModel)
         logger.info("FlowTestRepository initialized.")
 
-    def create_test_suite(
-        self, flow_id: str, name: str, description: Optional[str] = None
+    async def create_test_suite(
+        self,
+        session: AsyncSession,
+        flow_id: str,
+        name: str,
+        description: Optional[str] = None,
     ) -> FlowTestSuiteModel:
         """
         Create a new test suite for a flow.
@@ -37,15 +40,14 @@ class FlowTestRepository(BaseRepository):
                 description=description,
                 is_active=True,
             )
-            self.db_session.add(test_suite)
-            self.db_session.commit()
-            self.db_session.refresh(test_suite)
+            session.add(test_suite)
+            await session.flush()
+            await session.refresh(test_suite)
 
             logger.info(f"Created new test suite '{name}' for flow {flow_id}")
             return test_suite
 
         except IntegrityError as e:
-            self.db_session.rollback()
             logger.error(
                 f"Integrity error when creating test suite for flow {flow_id}: {e}"
             )
@@ -53,20 +55,20 @@ class FlowTestRepository(BaseRepository):
                 "Failed to create test suite due to database integrity error."
             ) from e
         except Exception as e:
-            self.db_session.rollback()
             logger.error(f"Error creating test suite for flow {flow_id}: {e}")
             raise e
 
-    def get_test_suite_by_id(self, suite_id: int) -> Optional[FlowTestSuiteModel]:
+    async def get_test_suite_by_id(
+        self, session: AsyncSession, suite_id: int
+    ) -> Optional[FlowTestSuiteModel]:
         """
         Get a test suite by its ID.
         """
         try:
-            test_suite = (
-                self.db_session.query(FlowTestSuiteModel)
-                .filter_by(id=suite_id)
-                .one_or_none()
+            result = await session.execute(
+                select(FlowTestSuiteModel).where(FlowTestSuiteModel.id == suite_id)
             )
+            test_suite = result.scalar_one_or_none()
             if test_suite:
                 logger.info(f"Retrieved test suite with ID: {suite_id}")
             else:
@@ -74,40 +76,39 @@ class FlowTestRepository(BaseRepository):
             return test_suite
         except Exception as e:
             logger.error(f"Error retrieving test suite by ID {suite_id}: {e}")
-            self.db_session.rollback()
             raise e
 
-    def delete_test_suite(self, suite_id: int) -> None:
+    async def delete_test_suite(self, session: AsyncSession, suite_id: int) -> None:
         """
         Delete a test suite by its ID.
         """
         try:
-            test_suite = (
-                self.db_session.query(FlowTestSuiteModel).filter_by(id=suite_id).first()
+            result = await session.execute(
+                select(FlowTestSuiteModel).where(FlowTestSuiteModel.id == suite_id)
             )
+            test_suite = result.scalar_one_or_none()
             if not test_suite:
                 logger.warning(
                     f"Attempted to delete non-existent test suite with ID: {suite_id}"
                 )
                 raise NoResultFound(f"Test suite with ID {suite_id} not found.")
 
-            self.db_session.delete(test_suite)
-            self.db_session.commit()
+            await session.delete(test_suite)
+            await session.flush()
             logger.info(f"Deleted test suite with ID: {suite_id}")
 
         except NoResultFound as e:
-            self.db_session.rollback()
             logger.error(
                 f"NoResultFound error when deleting test suite with ID {suite_id}: {e}"
             )
             raise e
         except Exception as e:
-            self.db_session.rollback()
             logger.error(f"Error deleting test suite with ID {suite_id}: {e}")
             raise e
 
-    def update_test_suite(
+    async def update_test_suite(
         self,
+        session: AsyncSession,
         suite_id: int,
         flow_id: Optional[str] = None,
         name: Optional[str] = None,
@@ -132,9 +133,10 @@ class FlowTestRepository(BaseRepository):
         """
         try:
             # Get the test suite to update
-            test_suite = (
-                self.db_session.query(FlowTestSuiteModel).filter_by(id=suite_id).first()
+            result = await session.execute(
+                select(FlowTestSuiteModel).where(FlowTestSuiteModel.id == suite_id)
             )
+            test_suite = result.scalar_one_or_none()
             if not test_suite:
                 logger.warning(
                     f"Attempted to update non-existent test suite with ID: {suite_id}"
@@ -151,49 +153,48 @@ class FlowTestRepository(BaseRepository):
             if is_active is not None:
                 test_suite.is_active = is_active
 
-            self.db_session.commit()
-            self.db_session.refresh(test_suite)
+            await session.flush()
+            await session.refresh(test_suite)
             logger.info(f"Updated test suite with ID: {suite_id}")
             return test_suite
 
         except NoResultFound as e:
-            self.db_session.rollback()
             logger.error(
                 f"NoResultFound error when updating test suite with ID {suite_id}: {e}"
             )
             raise e
         except Exception as e:
-            self.db_session.rollback()
             logger.error(f"Error updating test suite with ID {suite_id}: {e}")
             raise e
 
-    def get_test_suites_by_flow_id(self, flow_id: str) -> list[FlowTestSuiteModel]:
+    async def get_test_suites_by_flow_id(
+        self, session: AsyncSession, flow_id: str
+    ) -> list[FlowTestSuiteModel]:
         """
         Get all test suites for a specific flow.
         """
         try:
-            test_suites = (
-                self.db_session.query(FlowTestSuiteModel)
-                .filter_by(flow_id=flow_id)
-                .all()
+            result = await session.execute(
+                select(FlowTestSuiteModel).where(FlowTestSuiteModel.flow_id == flow_id)
             )
+            test_suites = result.scalars().all()
             logger.info(f"Retrieved {len(test_suites)} test suites for flow {flow_id}")
             return test_suites
         except Exception as e:
             logger.error(f"Error retrieving test suites for flow {flow_id}: {e}")
-            self.db_session.rollback()
             raise e
 
-    def get_test_case_by_id(self, case_id: int) -> Optional[FlowTestCaseModel]:
+    async def get_test_case_by_id(
+        self, session: AsyncSession, case_id: int
+    ) -> Optional[FlowTestCaseModel]:
         """
         Get a test case by its ID.
         """
         try:
-            test_case = (
-                self.db_session.query(FlowTestCaseModel)
-                .filter_by(id=case_id)
-                .one_or_none()
+            result = await session.execute(
+                select(FlowTestCaseModel).where(FlowTestCaseModel.id == case_id)
             )
+            test_case = result.scalar_one_or_none()
             if test_case:
                 logger.info(f"Retrieved test case with ID: {case_id}")
             else:
@@ -201,11 +202,11 @@ class FlowTestRepository(BaseRepository):
             return test_case
         except Exception as e:
             logger.error(f"Error retrieving test case by ID {case_id}: {e}")
-            self.db_session.rollback()
             raise e
 
-    def create_empty_test_case(
+    async def create_empty_test_case(
         self,
+        session: AsyncSession,
         suite_id: int,
         name: str,
         desc: Optional[str] = None,
@@ -220,15 +221,14 @@ class FlowTestRepository(BaseRepository):
                 description=desc,
                 is_active=True,
             )
-            self.db_session.add(test_case)
-            self.db_session.commit()
-            self.db_session.refresh(test_case)
+            session.add(test_case)
+            await session.flush()
+            await session.refresh(test_case)
 
             logger.info(f"Created new test case '{name}' for suite {suite_id}")
             return test_case
 
         except IntegrityError as e:
-            self.db_session.rollback()
             logger.error(
                 f"Integrity error when creating test case for suite {suite_id}: {e}"
             )
@@ -236,41 +236,40 @@ class FlowTestRepository(BaseRepository):
                 "Failed to create test case due to database integrity error."
             ) from e
         except Exception as e:
-            self.db_session.rollback()
             logger.error(f"Error creating test case for suite {suite_id}: {e}")
             raise e
 
-    def delete_test_case(self, case_id: int) -> None:
+    async def delete_test_case(self, session: AsyncSession, case_id: int) -> None:
         """
         Delete a test case by its ID.
         """
         try:
-            test_case = (
-                self.db_session.query(FlowTestCaseModel).filter_by(id=case_id).first()
+            result = await session.execute(
+                select(FlowTestCaseModel).where(FlowTestCaseModel.id == case_id)
             )
+            test_case = result.scalar_one_or_none()
             if not test_case:
                 logger.warning(
                     f"Attempted to delete non-existent test case with ID: {case_id}"
                 )
                 raise NoResultFound(f"Test case with ID {case_id} not found.")
 
-            self.db_session.delete(test_case)
-            self.db_session.commit()
+            await session.delete(test_case)
+            await session.flush()
             logger.info(f"Deleted test case with ID: {case_id}")
 
         except NoResultFound as e:
-            self.db_session.rollback()
             logger.error(
                 f"NoResultFound error when deleting test case with ID {case_id}: {e}"
             )
             raise e
         except Exception as e:
-            self.db_session.rollback()
             logger.error(f"Error deleting test case with ID {case_id}: {e}")
             raise e
 
-    def update_test_case(  # noqa
+    async def update_test_case(  # noqa
         self,
+        session: AsyncSession,
         case_id: int,
         suite_id: Optional[int] = None,
         name: Optional[str] = None,
@@ -303,9 +302,10 @@ class FlowTestRepository(BaseRepository):
         """
         try:
             # Get the test case to update
-            test_case = (
-                self.db_session.query(FlowTestCaseModel).filter_by(id=case_id).first()
+            result = await session.execute(
+                select(FlowTestCaseModel).where(FlowTestCaseModel.id == case_id)
             )
+            test_case = result.scalar_one_or_none()
             if not test_case:
                 logger.warning(
                     f"Attempted to update non-existent test case with ID: {case_id}"
@@ -330,43 +330,40 @@ class FlowTestRepository(BaseRepository):
             if timeout_ms is not None:
                 test_case.timeout_ms = timeout_ms
 
-            self.db_session.commit()
-            self.db_session.refresh(test_case)
+            await session.flush()
+            await session.refresh(test_case)
             logger.info(f"Updated test case with ID: {case_id}")
             return test_case
 
         except NoResultFound as e:
-            self.db_session.rollback()
             logger.error(
                 f"NoResultFound error when updating test case with ID {case_id}: {e}"
             )
             raise e
         except Exception as e:
-            self.db_session.rollback()
             logger.error(f"Error updating test case with ID {case_id}: {e}")
             raise e
 
-    def get_test_suites_with_case_previews(self, flow_id: str) -> list[dict]:
+    async def get_test_suites_with_case_previews(
+        self, session: AsyncSession, flow_id: str
+    ) -> list[dict]:
         """
         Get all test suites for a flow with case previews + latest run status.
         Single round-trip for suites, single round-trip for cases+runs.
         """
         try:
-            s = self.db_session
-
             # 1) Fetch suites (only fields we need)
-            suites = (
-                s.query(
+            result = await session.execute(
+                select(
                     FlowTestSuiteModel.id,
                     FlowTestSuiteModel.simple_id,
                     FlowTestSuiteModel.flow_id,
                     FlowTestSuiteModel.name,
                     FlowTestSuiteModel.description,
                     FlowTestSuiteModel.is_active,
-                )
-                .filter(FlowTestSuiteModel.flow_id == flow_id)
-                .all()
+                ).filter(FlowTestSuiteModel.flow_id == flow_id)
             )
+            suites = result.all()
 
             if not suites:
                 logger.info(f"Retrieved 0 test suites for flow {flow_id}")
@@ -376,7 +373,7 @@ class FlowTestRepository(BaseRepository):
 
             # 2) Build a subquery that picks the latest run per test_case using a window function
             #    ROW_NUMBER() OVER (PARTITION BY test_case_id ORDER BY created_at DESC) = 1
-            latest_runs_sq = s.query(
+            latest_runs_sq = select(
                 FlowTestCaseRunModel.test_case_id.label("case_id"),
                 FlowTestCaseRunModel.id.label("run_id"),
                 FlowTestCaseRunModel.task_run_id.label("task_run_id"),
@@ -401,8 +398,8 @@ class FlowTestRepository(BaseRepository):
 
             # 3) Fetch all cases for all suites in one go, left-joining the "rn=1" row for latest status
             #    Note: put rn=1 in the join condition to keep it an OUTER join.
-            cases_rows = (
-                s.query(
+            cases_result = await session.execute(
+                select(
                     FlowTestCaseModel.id.label("id"),
                     FlowTestCaseModel.simple_id.label("simple_id"),
                     FlowTestCaseModel.suite_id.label("suite_id"),
@@ -436,8 +433,8 @@ class FlowTestRepository(BaseRepository):
                     ),
                 )
                 .order_by(FlowTestCaseModel.id)  # Consistent ordering by ID
-                .all()
             )
+            cases_rows = cases_result.all()
 
             # 4) Group cases by suite_id
             cases_by_suite = {}
@@ -485,10 +482,11 @@ class FlowTestRepository(BaseRepository):
             logger.error(
                 f"Error retrieving test suites with case previews for flow {flow_id}: {e}"
             )
-            self.db_session.rollback()
             raise
 
-    def get_test_case_run_status(self, task_run_id: str) -> Optional[str]:
+    async def get_test_case_run_status(
+        self, session: AsyncSession, task_run_id: str
+    ) -> Optional[str]:
         """
         Get the status of a test case run by its ID.
 
@@ -502,11 +500,14 @@ class FlowTestRepository(BaseRepository):
             NoResultFound: If test case run with given ID is not found
         """
         try:
-            test_case_run = (
-                self.db_session.query(FlowTestCaseRunModel)
-                .filter_by(task_run_id=task_run_id)
-                .one_or_none()
+            result = await session.execute(
+                select(FlowTestCaseRunModel).where(
+                    FlowTestCaseRunModel.task_run_id == task_run_id
+                )
             )
+            test_case_run = result.scalar_one_or_none()
+            if not test_case_run:
+                return None
             status = str(test_case_run.status)
             logger.info(
                 f"Retrieved status '{status}' for test case run with ID: {task_run_id}"
@@ -517,10 +518,11 @@ class FlowTestRepository(BaseRepository):
             logger.error(
                 f"Error getting status for test case run with ID {task_run_id}: {e}"
             )
-            self.db_session.rollback()
             raise e
 
-    def queue_a_test_case_run(self, test_case_id: int, task_run_id: str) -> None:
+    async def queue_a_test_case_run(
+        self, session: AsyncSession, test_case_id: int, task_run_id: str
+    ) -> None:
         """
         Create new TestCaseRunModel and set status to QUEUED
         """
@@ -530,8 +532,8 @@ class FlowTestRepository(BaseRepository):
                 test_case_id=test_case_id,
                 status=TestCaseRunStatus.QUEUED,
             )
-            self.db_session.add(test_case_run)
-            self.db_session.commit()
+            session.add(test_case_run)
+            await session.flush()
             logger.info(
                 f"Successfully queued test case with ID {test_case_id} for execution"
             )
@@ -541,7 +543,9 @@ class FlowTestRepository(BaseRepository):
             )
             raise
 
-    def set_test_case_run_status(self, task_run_id: str, status: str) -> None:
+    async def set_test_case_run_status(
+        self, session: AsyncSession, task_run_id: str, status: str
+    ) -> None:
         """
         Set the status of a test case run by its ID.
 
@@ -553,11 +557,12 @@ class FlowTestRepository(BaseRepository):
             NoResultFound: If test case run with given ID is not found
         """
         try:
-            test_case_run = (
-                self.db_session.query(FlowTestCaseRunModel)
-                .filter_by(task_run_id=task_run_id)
-                .one_or_none()
+            result = await session.execute(
+                select(FlowTestCaseRunModel).where(
+                    FlowTestCaseRunModel.task_run_id == task_run_id
+                )
             )
+            test_case_run = result.scalar_one_or_none()
 
             if not test_case_run:
                 logger.warning(
@@ -568,7 +573,7 @@ class FlowTestRepository(BaseRepository):
                 )
 
             test_case_run.status = status
-            self.db_session.commit()
+            await session.flush()
             logger.info(
                 f"Updated status to '{status}' for test case run with task_run ID: {task_run_id}"
             )
@@ -582,12 +587,12 @@ class FlowTestRepository(BaseRepository):
             logger.error(
                 f"Error setting status for test case run with task_run ID {task_run_id}: {e}"
             )
-            self.db_session.rollback()
             raise e
 
-    def update_test_case_run(  # noqa
+    async def update_test_case_run(  # noqa
         self,
-        run_id: int,  # Task_Run_ID
+        session: AsyncSession,
+        run_id: str,  # Task_Run_ID
         status: Optional[TestCaseRunStatus] = None,
         actual_output: Optional[Dict[str, Any]] = None,
         error_message: Optional[str] = None,
@@ -619,11 +624,12 @@ class FlowTestRepository(BaseRepository):
         """
         try:
             # Get the test case run to update
-            test_case_run = (
-                self.db_session.query(FlowTestCaseRunModel)
-                .filter_by(task_run_id=run_id)
-                .first()
+            result = await session.execute(
+                select(FlowTestCaseRunModel).where(
+                    FlowTestCaseRunModel.task_run_id == run_id
+                )
             )
+            test_case_run = result.scalar_one_or_none()
             if not test_case_run:
                 logger.warning(
                     f"Attempted to update non-existent test case run with Task_Run_ID: {run_id}"
@@ -650,24 +656,22 @@ class FlowTestRepository(BaseRepository):
             if finished_at is not None:
                 test_case_run.finished_at = finished_at
 
-            self.db_session.commit()
-            self.db_session.refresh(test_case_run)
+            await session.flush()
+            await session.refresh(test_case_run)
             logger.info(f"Updated test case run with Task_Run_ID: {run_id}")
             return test_case_run
 
         except NoResultFound as e:
-            self.db_session.rollback()
             logger.error(
                 f"NoResultFound error when updating test case run with Task_Run_ID {run_id}: {e}"
             )
             raise e
         except Exception as e:
-            self.db_session.rollback()
             logger.error(f"Error updating test case run with Task_Run_ID {run_id}: {e}")
             raise e
 
-    def get_latest_test_cases_run_status(
-        self, test_case_ids: list[int]
+    async def get_latest_test_cases_run_status(
+        self, session: AsyncSession, test_case_ids: list[int]
     ) -> dict[int, str]:
         """
         Get the status of the latest test case run for multiple test case IDs.
@@ -686,7 +690,7 @@ class FlowTestRepository(BaseRepository):
             # Query to get the latest run for each test case
             # Subquery to get the latest created_at for each test case
             latest_run_subquery = (
-                self.db_session.query(
+                select(
                     FlowTestCaseRunModel.test_case_id,
                     func.max(FlowTestCaseRunModel.created_at).label("max_created_at"),
                 )
@@ -696,12 +700,11 @@ class FlowTestRepository(BaseRepository):
             )
 
             # Query to get the status of the latest run for each test case
-            latest_run_query = (
-                self.db_session.query(
+            latest_run_query = await session.execute(
+                select(
                     FlowTestCaseRunModel.test_case_id,
                     FlowTestCaseRunModel.status,
-                )
-                .join(
+                ).join(
                     latest_run_subquery,
                     (
                         FlowTestCaseRunModel.test_case_id
@@ -712,14 +715,14 @@ class FlowTestRepository(BaseRepository):
                         == latest_run_subquery.c.max_created_at
                     ),
                 )
-                .all()
             )
+            latest_runs = latest_run_query.all()
 
             # Create a dictionary mapping test_case_id to its latest run status
             result = dict.fromkeys(test_case_ids, TestCaseRunStatus.PENDING)
 
             # Update with actual statuses for test cases that have runs
-            for test_case_id, status in latest_run_query:
+            for test_case_id, status in latest_runs:
                 result[test_case_id] = str(status)
 
             logger.info(
@@ -729,10 +732,11 @@ class FlowTestRepository(BaseRepository):
 
         except Exception as e:
             logger.error(f"Error getting latest run statuses for test cases: {e}")
-            self.db_session.rollback()
             raise e
 
-    def get_latest_test_case_run_status(self, test_case_id: int) -> Optional[str]:
+    async def get_latest_test_case_run_status(
+        self, session: AsyncSession, test_case_id: int
+    ) -> Optional[str]:
         """
         Get the status of the latest test case run for a given test case ID.
 
@@ -744,12 +748,13 @@ class FlowTestRepository(BaseRepository):
         """
         try:
             # Query to get the latest run for the test case
-            latest_run = (
-                self.db_session.query(FlowTestCaseRunModel)
+            result = await session.execute(
+                select(FlowTestCaseRunModel)
                 .filter_by(test_case_id=test_case_id)
                 .order_by(desc(FlowTestCaseRunModel.created_at))
-                .first()
+                .limit(1)
             )
+            latest_run = result.scalar_one_or_none()
 
             if latest_run:
                 status = str(latest_run.status)
@@ -767,11 +772,10 @@ class FlowTestRepository(BaseRepository):
             logger.error(
                 f"Error getting latest run status for test case with ID {test_case_id}: {e}"
             )
-            self.db_session.rollback()
             raise e
 
-    def get_test_case_run_by_task_id(
-        self, task_run_id: str
+    async def get_test_case_run_by_task_id(
+        self, session: AsyncSession, task_run_id: str
     ) -> Optional[FlowTestCaseRunModel]:
         """
         Get a test case run by its task run ID.
@@ -783,11 +787,12 @@ class FlowTestRepository(BaseRepository):
             FlowTestCaseRunModel: The test case run model, or None if not found
         """
         try:
-            test_case_run = (
-                self.db_session.query(FlowTestCaseRunModel)
-                .filter_by(task_run_id=task_run_id)
-                .one_or_none()
+            result = await session.execute(
+                select(FlowTestCaseRunModel).where(
+                    FlowTestCaseRunModel.task_run_id == task_run_id
+                )
             )
+            test_case_run = result.scalar_one_or_none()
             if test_case_run:
                 logger.info(f"Retrieved test case run with task_run_id: {task_run_id}")
             else:
@@ -797,11 +802,10 @@ class FlowTestRepository(BaseRepository):
             logger.error(
                 f"Error retrieving test case run by task_run_id {task_run_id}: {e}"
             )
-            self.db_session.rollback()
             raise e
 
-    def get_test_case_runs_by_task_ids(
-        self, task_run_ids: list[str]
+    async def get_test_case_runs_by_task_ids(
+        self, session: AsyncSession, task_run_ids: list[str]
     ) -> dict[str, FlowTestCaseRunModel]:
         """
         Get multiple test case runs by their task run IDs.
@@ -816,22 +820,22 @@ class FlowTestRepository(BaseRepository):
             if not task_run_ids:
                 return {}
 
-            test_case_runs = (
-                self.db_session.query(FlowTestCaseRunModel)
-                .filter(FlowTestCaseRunModel.task_run_id.in_(task_run_ids))
-                .all()
+            result = await session.execute(
+                select(FlowTestCaseRunModel).filter(
+                    FlowTestCaseRunModel.task_run_id.in_(task_run_ids)
+                )
             )
+            test_case_runs = result.scalars().all()
 
-            result = {}
+            result_dict = {}
             for run in test_case_runs:
-                result[run.task_run_id] = run
+                result_dict[run.task_run_id] = run
 
             logger.info(
-                f"Retrieved {len(result)} test case runs out of {len(task_run_ids)} requested"
+                f"Retrieved {len(result_dict)} test case runs out of {len(task_run_ids)} requested"
             )
-            return result
+            return result_dict
 
         except Exception as e:
             logger.error(f"Error retrieving test case runs by task_run_ids: {e}")
-            self.db_session.rollback()
             raise e
