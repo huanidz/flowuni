@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from loguru import logger
-from src.configs.config import get_settings
+from src.configs.config import get_app_settings
 from src.configs.LoggingConfig import setup_logger
 from src.dependencies.redis_dependency import get_redis_client
 from src.routes.api_key_routes import api_key_router
@@ -22,7 +22,7 @@ from src.routes.user_global_templates_routes import user_global_templates_router
 from src.utils.launch_utils import check_db_connection, check_redis_connection
 
 # Get application settings and set up logging
-app_settings = get_settings()
+app_settings = get_app_settings()
 setup_logger(app_settings.LOG_LEVEL)
 
 

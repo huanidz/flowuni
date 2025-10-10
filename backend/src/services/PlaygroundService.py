@@ -6,6 +6,7 @@ from uuid import uuid4
 from fastapi import HTTPException
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
+from src.configs.config import get_app_settings
 from src.models.alchemy.session.SessionChatHistoryModel import SessionChatHistoryModel
 from src.models.alchemy.session.SessionModel import SessionModel
 from src.repositories.FlowRepositories import FlowRepository
@@ -125,7 +126,7 @@ class PlaygroundService(PlaygroundServiceInterface):
         Create a new playground session
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 async with session.begin():
                     # Generate a unique session ID
                     session_id = str(uuid4())
@@ -176,7 +177,7 @@ class PlaygroundService(PlaygroundServiceInterface):
         Get playground sessions for a flow with pagination
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 # Verify the flow exists
                 flow = await self.flow_repository.get_by_id(session, request.flow_id)
                 if not flow:
@@ -248,7 +249,7 @@ class PlaygroundService(PlaygroundServiceInterface):
         Get a playground session by ID
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 session_obj = (
                     await self.session_repository.get_by_user_define_session_id(
                         session, session_id
@@ -277,7 +278,7 @@ class PlaygroundService(PlaygroundServiceInterface):
         Delete a playground session
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 async with session.begin():
                     # Verify it's a playground session
                     session_obj = (
@@ -322,7 +323,7 @@ class PlaygroundService(PlaygroundServiceInterface):
         Add a chat message to a session
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 async with session.begin():
                     # Verify the session exists and is a playground session
                     session_obj = (
@@ -377,7 +378,7 @@ class PlaygroundService(PlaygroundServiceInterface):
         Get chat history for a session
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 # Verify the session exists and is a playground session
                 session_obj = (
                     await self.session_repository.get_by_user_define_session_id(
@@ -431,7 +432,7 @@ class PlaygroundService(PlaygroundServiceInterface):
         Update session metadata
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 async with session.begin():
                     # Verify the session exists and is a playground session
                     session_obj = (
@@ -493,7 +494,7 @@ class PlaygroundService(PlaygroundServiceInterface):
         Get playground sessions for a flow with their last messages
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 # Verify the flow exists
                 flow = await self.flow_repository.get_by_id(session, request.flow_id)
                 if not flow:

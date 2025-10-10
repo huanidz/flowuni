@@ -7,9 +7,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.dependencies.auth_dependency import get_current_user
 from src.dependencies.db_dependency import get_async_db
 from src.dependencies.flow_dep import get_flow_service
+from src.dependencies.flow_snapshot_depedency import (
+    get_flow_snapshot_service,
+)
 from src.exceptions.auth_exceptions import UNAUTHORIZED_EXCEPTION
 from src.exceptions.shared_exceptions import NOT_FOUND_EXCEPTION
-from src.schemas.flows.flow_schemas import Pagination
 from src.schemas.flows.flow_snapshot_schemas import (
     FlowSnapshotCreateRequest,
     FlowSnapshotListResponse,
@@ -23,26 +25,6 @@ flow_snapshot_router = APIRouter(
     prefix="/api/flow-snapshots",
     tags=["flow_snapshot_crud"],
 )
-
-
-# Dependency function for FlowSnapshotRepository
-def get_flow_snapshot_repository(db_session: AsyncSession = Depends(get_async_db)):
-    """
-    Dependency that returns FlowSnapshotRepository instance.
-    """
-    from src.repositories.FlowSnapshotRepository import FlowSnapshotRepository
-
-    return FlowSnapshotRepository(db_session=db_session)
-
-
-# Dependency function for FlowSnapshotService
-def get_flow_snapshot_service(
-    flow_snapshot_repository=Depends(get_flow_snapshot_repository),
-):
-    """
-    Dependency that returns FlowSnapshotService instance.
-    """
-    return FlowSnapshotService(snapshot_repository=flow_snapshot_repository)
 
 
 @flow_snapshot_router.post("", response_model=FlowSnapshotResponse)

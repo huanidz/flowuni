@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     ASYNC_DATABASE_URL: str
 
+    # QUERY TIMEOUT
+    QUERY_TIMEOUT: int = 30  # In seconds
+
     AUTH_SECRET: str
 
     REDIS_HOST: str
@@ -79,6 +82,6 @@ class Settings(BaseSettings):
 
 
 @lru_cache()
-def get_settings() -> Settings:
+def get_app_settings() -> Settings:
     """Get the application settings."""
     return Settings()

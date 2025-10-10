@@ -3,7 +3,7 @@ from typing import Dict
 from loguru import logger
 from redis import Redis
 from src.celery_worker.celery_worker import celery_app
-from src.configs.config import get_settings
+from src.configs.config import get_app_settings
 from src.dependencies.db_dependency import get_db
 from src.executors.ExecutionContext import ExecutionContext
 from src.executors.ExecutionEventPublisher import (
@@ -50,7 +50,7 @@ def run_flow(
     app_db_session = None  # Get a DB session for this task
 
     try:
-        app_settings = get_settings()
+        app_settings = get_app_settings()
 
         # Get DB session
         app_db_session = next(get_db())

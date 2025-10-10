@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Any, Dict, Optional
 
 from loguru import logger
-from sqlalchemy import and_, delete, desc, func, select, update
+from sqlalchemy import and_, desc, func, select
 from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.models.alchemy.flows.FlowTestCaseModel import FlowTestCaseModel

@@ -3,9 +3,9 @@ from typing import AsyncGenerator, Generator
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import Session, sessionmaker
-from src.configs.config import get_settings
+from src.configs.config import get_app_settings
 
-app_settings = get_settings()
+app_settings = get_app_settings()
 
 # Cấu hình kết nối database (thay thế bằng URL thực tế của bạn)
 DATABASE_URL = app_settings.DATABASE_URL

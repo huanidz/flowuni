@@ -7,6 +7,7 @@ from uuid import uuid4
 import redis
 from jose import JWTError, jwt
 from loguru import logger
+from src.configs.config import get_app_settings
 from src.exceptions.user_exceptions import TokenInvalidError
 
 
@@ -49,7 +50,7 @@ class AuthService(AuthServiceInterface):
         Returns token string or raises error on failure
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 now = datetime.utcnow()
 
                 access_expires = now + timedelta(seconds=self.expires_in)
@@ -95,7 +96,7 @@ class AuthService(AuthServiceInterface):
         Returns user ID if valid, raises TokenInvalidError otherwise
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 payload = jwt.decode(
                     access_token, self.secret_key, algorithms=[self.algorithm]
                 )
@@ -115,7 +116,7 @@ class AuthService(AuthServiceInterface):
         Returns user ID if valid, raises TokenInvalidError otherwise
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 payload = jwt.decode(
                     refresh_token,
                     self.secret_key,
@@ -136,7 +137,7 @@ class AuthService(AuthServiceInterface):
     async def blacklist_token(self, token: str) -> bool:
         """Blacklist a token in Redis"""
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 payload = jwt.decode(
                     token,
                     self.secret_key,
@@ -168,7 +169,7 @@ class AuthService(AuthServiceInterface):
     async def is_token_blacklisted(self, token: str) -> bool:
         """Check if a token is blacklisted"""
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 payload = jwt.decode(
                     token,
                     self.secret_key,

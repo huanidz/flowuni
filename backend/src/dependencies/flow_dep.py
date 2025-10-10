@@ -9,22 +9,16 @@ from src.services.FlowSnapshotService import FlowSnapshotService
 
 
 # Dependencies
-def get_flow_repository(
-    db_session: AsyncSession = Depends(get_async_db),
-) -> FlowRepository:
-    return FlowRepository(db_session=db_session)
+def get_flow_repository() -> FlowRepository:
+    return FlowRepository()
 
 
-def get_flow_snapshot_repository(
-    db_session: AsyncSession = Depends(get_async_db),
-) -> FlowSnapshotRepository:
-    return FlowSnapshotRepository(db_session=db_session)
+def get_flow_snapshot_repository() -> FlowSnapshotRepository:
+    return FlowSnapshotRepository()
 
 
-def get_flow_session_repository(
-    db_session: AsyncSession = Depends(get_async_db),
-) -> SessionRepository:
-    return SessionRepository(db_session=db_session)
+def get_flow_session_repository() -> SessionRepository:
+    return SessionRepository()
 
 
 def get_flow_service(flow_repository: FlowRepository = Depends(get_flow_repository)):

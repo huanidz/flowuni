@@ -1,8 +1,9 @@
-from typing import Optional
-from loguru import logger
 import sys
+from typing import Optional
 
-from .config import get_settings
+from loguru import logger
+
+from .config import get_app_settings
 
 
 def setup_logger(level: Optional[str] = None):
@@ -12,7 +13,7 @@ def setup_logger(level: Optional[str] = None):
     Args:
         level: The logging level to use. If not provided, uses the level from settings.
     """
-    settings = get_settings()
+    settings = get_app_settings()
 
     # Use the setting's log level if none is provided
     log_level = level or settings.LOG_LEVEL

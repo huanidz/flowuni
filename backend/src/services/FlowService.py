@@ -6,6 +6,7 @@ from fastapi import HTTPException
 from loguru import logger
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
+from src.configs.config import get_app_settings
 from src.exceptions.shared_exceptions import MISMATCH_EXCEPTION, NOT_FOUND_EXCEPTION
 from src.models.alchemy.flows.FlowModel import FlowModel
 from src.nodes.GraphLoader import GraphLoader
@@ -104,7 +105,7 @@ class FlowService(FlowServiceInterface):
         Get flows by user id
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 flows, total_items = await self.flow_repository.get_by_user_id_paged(
                     session=session, user_id=user_id, page=page, per_page=per_page
                 )
@@ -130,7 +131,7 @@ class FlowService(FlowServiceInterface):
 
     async def create_empty_flow(self, session: AsyncSession, user_id: int) -> str:
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 async with session.begin():
                     flow = await self.flow_repository.create_empty_flow(
                         session=session, user_id=user_id
@@ -154,7 +155,7 @@ class FlowService(FlowServiceInterface):
         Create a flow with optional name, description, and flow definition
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 async with session.begin():
                     # Validate flow definition if provided
                     if flow_request.flow_definition:
@@ -185,7 +186,7 @@ class FlowService(FlowServiceInterface):
         self, session: AsyncSession, flow_id: str
     ) -> FlowModel:
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 flow = await self.flow_repository.get_by_id(
                     session=session, flow_id=flow_id
                 )
@@ -204,7 +205,7 @@ class FlowService(FlowServiceInterface):
 
     async def delete_flow(self, session: AsyncSession, flow_id: str):
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 async with session.begin():
                     await self.flow_repository.delete_flow(
                         session=session, flow_id=flow_id
@@ -224,7 +225,7 @@ class FlowService(FlowServiceInterface):
         self, session: AsyncSession, flow_request: FlowPatchRequest, user_id: int
     ) -> Optional[FlowModel]:
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 async with session.begin():
                     # Map to FlowModel
                     flow_model = FlowModel(
@@ -284,7 +285,7 @@ class FlowService(FlowServiceInterface):
         Activate a flow by flow id
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 async with session.begin():
                     # Get the flow to verify ownership
                     existing_flow = await self.flow_repository.get_by_id(
@@ -330,7 +331,7 @@ class FlowService(FlowServiceInterface):
         Deactivate a flow by flow id
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 async with session.begin():
                     # Get the flow to verify ownership
                     existing_flow = await self.flow_repository.get_by_id(

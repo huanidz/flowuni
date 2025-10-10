@@ -5,6 +5,7 @@ from typing import List, Optional, Tuple
 from fastapi import HTTPException
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
+from src.configs.config import get_app_settings
 from src.exceptions.shared_exceptions import MISMATCH_EXCEPTION, NOT_FOUND_EXCEPTION
 from src.models.alchemy.flows.FlowSnapshotModel import FlowSnapshotModel
 from src.repositories.FlowSnapshotRepository import FlowSnapshotRepository
@@ -87,7 +88,7 @@ class FlowSnapshotService(FlowSnapshotServiceInterface):
         Get flow snapshot by id
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 snapshot = await self.snapshot_repository.get_by_id(
                     session=session, snapshot_id=snapshot_id
                 )
@@ -110,7 +111,7 @@ class FlowSnapshotService(FlowSnapshotServiceInterface):
         Get flow snapshots by flow id with pagination
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 (
                     snapshots,
                     total_items,
@@ -137,7 +138,7 @@ class FlowSnapshotService(FlowSnapshotServiceInterface):
         Create a new flow snapshot
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 async with session.begin():
                     # Get the next version number if not provided in the request
                     if snapshot_request.version is not None:
@@ -189,7 +190,7 @@ class FlowSnapshotService(FlowSnapshotServiceInterface):
         Update an existing flow snapshot
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 async with session.begin():
                     # Get the existing snapshot
                     existing_snapshot = await self.snapshot_repository.get_by_id(
@@ -256,7 +257,7 @@ class FlowSnapshotService(FlowSnapshotServiceInterface):
         Delete a flow snapshot
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 async with session.begin():
                     # Get the existing snapshot
                     existing_snapshot = await self.snapshot_repository.get_by_id(

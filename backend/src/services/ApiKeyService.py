@@ -6,6 +6,7 @@ from typing import Optional
 from fastapi import HTTPException
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
+from src.configs.config import get_app_settings
 from src.models.alchemy.auth.ApiKey import ApiKeyModel
 from src.repositories.ApiKeyRepository import ApiKeyRepository
 
@@ -101,7 +102,7 @@ class ApiKeyService(ApiKeyServiceInterface):
         Returns the full key (only shown once) and the key model
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 async with session.begin():
                     # Create the API key in the database and get both model and full key
                     (
@@ -132,7 +133,7 @@ class ApiKeyService(ApiKeyServiceInterface):
         Delete an API key by key_id
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 async with session.begin():
                     success = await self.api_key_repository.delete_api_key(
                         session, key_id
@@ -159,7 +160,7 @@ class ApiKeyService(ApiKeyServiceInterface):
         Deactivate an API key by key_id
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 async with session.begin():
                     success = await self.api_key_repository.deactivate_api_key(
                         session, key_id
@@ -186,7 +187,7 @@ class ApiKeyService(ApiKeyServiceInterface):
         Activate an API key by key_id
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 async with session.begin():
                     success = await self.api_key_repository.activate_api_key(
                         session, key_id
@@ -215,7 +216,7 @@ class ApiKeyService(ApiKeyServiceInterface):
         Validate an API key and return the key model if valid
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 # This is a read operation with a write (update last_used_at), so we need a transaction
                 async with session.begin():
                     api_key_model = await self.api_key_repository.validate_api_key(
@@ -245,7 +246,7 @@ class ApiKeyService(ApiKeyServiceInterface):
         List all API keys for a specific user
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 if include_inactive:
                     api_keys = await self.api_key_repository.get_api_keys_by_user(
                         session, user_id
@@ -277,7 +278,7 @@ class ApiKeyService(ApiKeyServiceInterface):
         Update the last used timestamp for an API key
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 async with session.begin():
                     success = await self.api_key_repository.update_api_key_usage(
                         session, key_id

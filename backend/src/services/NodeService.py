@@ -6,6 +6,7 @@ from datetime import datetime
 from fastapi import HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 from loguru import logger
+from src.configs.config import get_app_settings
 from src.core.cache import generate_catalog_etag
 from src.dependencies.redis_dependency import get_redis_client
 from src.scripts.generate_node_catalog import generate_node_catalog
@@ -38,7 +39,7 @@ class NodeService(NodeServiceInterface):
             HTTPException: If there's an error generating the catalog
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 redis_client = get_redis_client()
                 cache_key = "node_catalog"
 

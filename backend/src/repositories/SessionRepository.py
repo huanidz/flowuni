@@ -4,7 +4,6 @@ from loguru import logger
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 from src.models.alchemy.session.SessionChatHistoryModel import SessionChatHistoryModel
 from src.models.alchemy.session.SessionModel import SessionModel
 from src.repositories.BaseRepository import BaseRepository

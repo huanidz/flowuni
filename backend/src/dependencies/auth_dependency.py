@@ -8,7 +8,7 @@ from fastapi import (
     status,
 )
 from loguru import logger
-from src.configs.config import get_settings
+from src.configs.config import get_app_settings
 from src.dependencies.redis_dependency import get_redis_client
 from src.exceptions.user_exceptions import TokenInvalidError
 from src.services.AuthService import AuthService
@@ -19,7 +19,7 @@ def get_auth_service(redis_client=Depends(get_redis_client)):
     Dependency that returns AuthService instance.
     """
 
-    app_settings = get_settings()
+    app_settings = get_app_settings()
     auth_secret = app_settings.AUTH_SECRET
 
     if not auth_secret:

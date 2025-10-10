@@ -8,6 +8,7 @@ from loguru import logger
 from redis import Redis
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
+from src.configs.config import get_app_settings
 from src.consts.cache_consts import CACHE_PREFIX
 from src.exceptions.shared_exceptions import NOT_FOUND_EXCEPTION
 from src.helpers.CacheHelper import CacheHelper
@@ -333,7 +334,7 @@ class FlowTestService(FlowTestServiceInterface):
         Create a new test suite for a flow
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 async with session.begin():
                     test_suite = await self.test_repository.create_test_suite(
                         session=session,
@@ -361,7 +362,7 @@ class FlowTestService(FlowTestServiceInterface):
         Delete a test suite by its ID
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 async with session.begin():
                     # First check if the test suite exists
                     test_suite = await self.test_repository.get_test_suite_by_id(
@@ -407,7 +408,7 @@ class FlowTestService(FlowTestServiceInterface):
             Updated test suite model
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 async with session.begin():
                     # First check if the test suite exists
                     test_suite = await self.test_repository.get_test_suite_by_id(
@@ -444,7 +445,7 @@ class FlowTestService(FlowTestServiceInterface):
         Get a test suite by its ID
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 test_suite = await self.test_repository.get_test_suite_by_id(
                     session=session, suite_id=suite_id
                 )
@@ -467,7 +468,7 @@ class FlowTestService(FlowTestServiceInterface):
         Get all test suites for a specific flow
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 test_suites = await self.test_repository.get_test_suites_by_flow_id(
                     session=session, flow_id=flow_id
                 )
@@ -491,7 +492,7 @@ class FlowTestService(FlowTestServiceInterface):
         cache_key = f"{CACHE_PREFIX.TEST_CASE}:{case_id}"
 
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 # Try to get from cache first
                 cached_test_case = self.cache_helper.get(cache_key, FlowTestCaseModel)
                 if cached_test_case:
@@ -534,7 +535,7 @@ class FlowTestService(FlowTestServiceInterface):
         Create a new empty test case for a test suite
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 async with session.begin():
                     # First check if the test suite exists
                     test_suite = await self.test_repository.get_test_suite_by_id(
@@ -567,7 +568,7 @@ class FlowTestService(FlowTestServiceInterface):
         cache_key = f"{CACHE_PREFIX.TEST_CASE}:{case_id}"
 
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 async with session.begin():
                     # First check if the test case exists
                     test_case = await self.test_repository.get_test_case_by_id(
@@ -629,7 +630,7 @@ class FlowTestService(FlowTestServiceInterface):
         cache_key = f"{CACHE_PREFIX.TEST_CASE}:{case_id}"
 
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 async with session.begin():
                     # First check if the test case exists
                     test_case = await self.test_repository.get_test_case_by_id(
@@ -677,7 +678,7 @@ class FlowTestService(FlowTestServiceInterface):
         Get all test suites for a specific flow with test case previews
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 test_suites = (
                     await self.test_repository.get_test_suites_with_case_previews(
                         session=session, flow_id=flow_id
@@ -701,7 +702,7 @@ class FlowTestService(FlowTestServiceInterface):
         Queue a test case for execution
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 async with session.begin():
                     # First check if the test case exists
                     test_case = await self.test_repository.get_test_case_by_id(
@@ -759,7 +760,7 @@ class FlowTestService(FlowTestServiceInterface):
             Updated test case run model
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 async with session.begin():
                     # Update the test case run
                     updated_test_case_run = (
@@ -799,7 +800,7 @@ class FlowTestService(FlowTestServiceInterface):
             status: The status to set for the test case run
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 async with session.begin():
                     await self.test_repository.set_test_case_run_status(
                         session=session, task_run_id=task_run_id, status=status
@@ -829,7 +830,7 @@ class FlowTestService(FlowTestServiceInterface):
             str: The status of the latest test case run, or PENDING if no runs exist
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 # First check if the test case exists
                 test_case = await self.test_repository.get_test_case_by_id(
                     session=session, case_id=test_case_id
@@ -870,7 +871,7 @@ class FlowTestService(FlowTestServiceInterface):
                            or PENDING if no runs exist for a test case
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 if not test_case_ids:
                     return {}
 
@@ -920,7 +921,7 @@ class FlowTestService(FlowTestServiceInterface):
             Optional[FlowTestCaseRunModel]: The test case run model, or None if not found
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 test_case_run = await self.test_repository.get_test_case_run_by_task_id(
                     session=session, task_run_id=task_run_id
                 )
@@ -954,7 +955,7 @@ class FlowTestService(FlowTestServiceInterface):
                                            or None if not found
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 # First check if the test case exists
                 test_case = await self.test_repository.get_test_case_by_id(
                     session=session, case_id=test_case_id
@@ -990,7 +991,7 @@ class FlowTestService(FlowTestServiceInterface):
             bool: True if the test was successfully cancelled, False otherwise
         """
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 async with session.begin():
                     # Get the test case run to check its current status
                     test_case_run = (

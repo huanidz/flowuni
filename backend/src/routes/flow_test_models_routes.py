@@ -2,13 +2,11 @@ import traceback
 
 from fastapi import APIRouter, Depends, HTTPException, Path
 from loguru import logger
-from redis import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.dependencies.auth_dependency import get_current_user
 from src.dependencies.db_dependency import get_async_db
 from src.dependencies.flow_dep import get_flow_service
 from src.dependencies.flow_test_dep import get_flow_test_service
-from src.dependencies.redis_dependency import get_redis_client
 from src.exceptions.auth_exceptions import UNAUTHORIZED_EXCEPTION
 from src.exceptions.shared_exceptions import NOT_FOUND_EXCEPTION
 from src.schemas.flows.flow_test_schemas import (

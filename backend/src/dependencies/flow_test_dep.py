@@ -6,9 +6,7 @@ from src.repositories.FlowTestRepository import FlowTestRepository
 from src.services.FlowTestService import FlowTestService
 
 
-def get_flow_test_repository(
-    session: AsyncSession = Depends(get_async_db),
-) -> FlowTestRepository:
+def get_flow_test_repository() -> FlowTestRepository:
     """
     Dependency that returns FlowTestRepository instance.
     """

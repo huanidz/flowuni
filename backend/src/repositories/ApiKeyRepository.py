@@ -3,9 +3,8 @@ from datetime import datetime
 from typing import List, Optional
 
 from loguru import logger
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 from src.models.alchemy.auth.ApiKey import ApiKeyModel
 from src.repositories.BaseRepository import BaseRepository
 

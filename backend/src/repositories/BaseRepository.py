@@ -1,8 +1,7 @@
 from typing import Any, Dict, Generic, List, Optional, Type, TypeVar
 
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 ModelType = TypeVar("ModelType")
 

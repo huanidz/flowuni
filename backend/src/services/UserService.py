@@ -5,11 +5,10 @@ from typing import Optional
 from fastapi import HTTPException
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
+from src.configs.config import get_app_settings
 from src.exceptions.user_exceptions import (
     InvalidCredentialsError,
     UserAlreadyExistsError,
-    UserLoginError,
-    UserRegistrationError,
 )
 from src.models.alchemy.users.UserModel import UserModel
 from src.repositories.UserRepository import UserRepository
@@ -58,7 +57,7 @@ class UserService(UserServiceInterface):
     ) -> UserModel:
         """Register a new user with transaction management"""
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 async with session.begin():  # Transaction for write operation
                     existing_user = await self.user_repo.get_by_username(
                         session, username
@@ -89,7 +88,7 @@ class UserService(UserServiceInterface):
     ) -> Optional[UserModel]:
         """Login a user - read operation, no transaction needed"""
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 user = await self.user_repo.get_by_username(session, username)
                 if not user:
                     logger.warning(f"Login failed - user not found: {username}")

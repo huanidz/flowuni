@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional, Union
 from fastapi import HTTPException
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
+from src.configs.config import get_app_settings
 from src.models.alchemy.users.UserGlobalTemplateModel import (
     UserGlobalTemplateModel,
 )
@@ -107,7 +108,7 @@ class UserGlobalTemplateService(UserGlobalTemplateServiceInterface):
     ) -> UserGlobalTemplateModel:
         """Create a new LLM judge template"""
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 async with session.begin():
                     template = await self.template_repo.create_llm_judge(
                         session=session,
@@ -136,7 +137,7 @@ class UserGlobalTemplateService(UserGlobalTemplateServiceInterface):
     ) -> List[UserGlobalTemplateModel]:
         """Get all LLM judge templates for a user"""
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 templates = await self.template_repo.get_llm_judges_by_user_id(
                     session, user_id
                 )
@@ -166,7 +167,7 @@ class UserGlobalTemplateService(UserGlobalTemplateServiceInterface):
     ) -> Optional[UserGlobalTemplateModel]:
         """Update an LLM judge template"""
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 async with session.begin():
                     template = await self.template_repo.update_template(
                         session=session,
@@ -203,7 +204,7 @@ class UserGlobalTemplateService(UserGlobalTemplateServiceInterface):
     ) -> bool:
         """Delete an LLM judge template"""
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 async with session.begin():
                     success = await self.template_repo.delete_template(
                         session, template_id, user_id

@@ -9,7 +9,9 @@ from src.core.cache import generate_catalog_etag
 from src.dependencies.auth_dependency import get_current_user
 from src.dependencies.db_dependency import get_async_db
 from src.dependencies.redis_dependency import get_redis_client
-from src.repositories.UserGlobalTemplateRepository import UserGlobalTemplateRepository
+from src.dependencies.user_global_templates_dep import (
+    get_user_global_template_service,
+)
 from src.schemas.users.user_global_template_schemas import (
     CreateLLMJudgeRequest,
     LLMJudgeListResponse,
@@ -23,11 +25,6 @@ user_global_templates_router = APIRouter(
     prefix="/api/user-global-templates",
     tags=["user_global_templates"],
 )
-
-
-def get_user_global_template_service() -> UserGlobalTemplateService:
-    """Dependency to get UserGlobalTemplateService instance"""
-    return UserGlobalTemplateService(UserGlobalTemplateRepository())
 
 
 @user_global_templates_router.post(
