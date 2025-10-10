@@ -1,5 +1,7 @@
+import asyncio
 import json
 from abc import ABC, abstractmethod
+from datetime import datetime
 
 from fastapi import HTTPException, Request, Response
 from fastapi.responses import JSONResponse
@@ -11,7 +13,7 @@ from src.scripts.generate_node_catalog import generate_node_catalog
 
 class NodeServiceInterface(ABC):
     @abstractmethod
-    def get_catalog(self) -> dict:
+    async def get_catalog(self, request: Request) -> JSONResponse:
         pass
 
 
@@ -21,7 +23,7 @@ class NodeService(NodeServiceInterface):
         self.generate_catalog = generate_node_catalog
         self.generate_etag = generate_catalog_etag
 
-    def get_catalog(self, request: Request) -> JSONResponse:
+    async def get_catalog(self, request: Request) -> JSONResponse:
         """
         Generate and return the node catalog with proper cache headers.
         Uses Redis for server-side caching.
@@ -36,39 +38,45 @@ class NodeService(NodeServiceInterface):
             HTTPException: If there's an error generating the catalog
         """
         try:
-            redis_client = get_redis_client()
-            cache_key = "node_catalog"
+            async with asyncio.timeout(30):
+                redis_client = get_redis_client()
+                cache_key = "node_catalog"
 
-            # Try to get catalog from Redis cache
-            cached_catalog = redis_client.get(cache_key)
-            if cached_catalog:
-                catalog = json.loads(cached_catalog)
-            else:
-                # Generate the catalog
-                catalog = self.generate_catalog()
-                # Cache it in Redis for 1 hour (3600 seconds)
-                redis_client.setex(cache_key, 3600, json.dumps(catalog))
+                # Try to get catalog from Redis cache
+                cached_catalog = redis_client.get(cache_key)
+                if cached_catalog:
+                    catalog = json.loads(cached_catalog)
+                else:
+                    # Generate the catalog
+                    catalog = self.generate_catalog()
+                    # Cache it in Redis for 1 hour (3600 seconds)
+                    redis_client.setex(cache_key, 3600, json.dumps(catalog))
 
-            # Generate ETag from catalog
-            etag = self.generate_etag(catalog)
+                # Generate ETag from catalog
+                etag = self.generate_etag(catalog)
 
-            # Check for 304 Not Modified
-            if request.headers.get("If-None-Match") == etag:
-                logger.info("304 Not Modified")
-                return Response(status_code=304, headers={"ETag": etag})
+                # Check for 304 Not Modified
+                if request.headers.get("If-None-Match") == etag:
+                    logger.info("304 Not Modified")
+                    return Response(status_code=304, headers={"ETag": etag})
 
-            # Get the current time for Last-Modified header
-            now = __import__("datetime").datetime.utcnow()
+                # Get the current time for Last-Modified header
+                now = datetime.utcnow()
 
-            # Set proper cache headers for public caching
-            headers = {
-                "Cache-Control": "public, max-age=31536000, immutable",
-                "ETag": etag,
-                "Last-Modified": now.strftime("%a, %d %b %Y %H:%M:%S GMT"),
-            }
+                # Set proper cache headers for public caching
+                headers = {
+                    "Cache-Control": "public, max-age=31536000, immutable",
+                    "ETag": etag,
+                    "Last-Modified": now.strftime("%a, %d %b %Y %H:%M:%S GMT"),
+                }
 
-            # Return the catalog with proper headers
-            return JSONResponse(content=catalog, headers=headers)
+                # Return the catalog with proper headers
+                return JSONResponse(content=catalog, headers=headers)
+        except asyncio.TimeoutError:
+            logger.error("Timeout generating node catalog")
+            raise HTTPException(
+                status_code=503, detail="Node catalog generation timed out"
+            )
         except Exception as e:
             logger.error(f"Error generating node catalog: {str(e)}", exc_info=True)
             raise HTTPException(

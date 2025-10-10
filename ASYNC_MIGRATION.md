@@ -30,9 +30,9 @@ services/
 ├── FlowService.py [x]
 ├── FlowSnapshotService.py [x]
 ├── FlowTestService.py [x]
-├── NodeService.py [ ]
-├── PlaygroundService.py [ ]
-├── UserGlobalTemplateService.py [ ]
+├── NodeService.py [x]
+├── PlaygroundService.py [x]
+├── UserGlobalTemplateService.py [x]
 └── UserService.py [x]
 ```
 
