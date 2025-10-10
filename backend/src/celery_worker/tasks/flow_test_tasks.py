@@ -1,4 +1,3 @@
-import asyncio
 import random
 import signal
 import sys
@@ -18,6 +17,7 @@ from src.repositories.FlowTestRepository import FlowTestRepository
 from src.repositories.RepositoriesContainer import RepositoriesContainer
 from src.services.FlowService import FlowService
 from src.services.FlowTestService import FlowTestService
+from src.utils.async_utils import run_async
 from src.workers.FlowAsyncWorker import FlowAsyncWorker
 
 
@@ -31,54 +31,49 @@ def dispatch_run_test(
     """
 
     try:
-        # Create event loop to run async code
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
 
-            async def check_and_dispatch():
-                async with AsyncSessionLocal() as db_session:
-                    flow_test_service = FlowTestService(
-                        test_repository=FlowTestRepository(),
+        async def check_and_dispatch():
+            async with AsyncSessionLocal() as db_session:
+                flow_test_service = FlowTestService(
+                    test_repository=FlowTestRepository(),
+                )
+                latest_test_case_run = (
+                    await flow_test_service.get_test_case_run_by_task_id(
+                        session=db_session,
+                        task_run_id=generated_task_id,
                     )
-                    latest_test_case_run = (
-                        await flow_test_service.get_test_case_run_by_task_id(
-                            session=db_session,
-                            task_run_id=generated_task_id,
-                        )
+                )
+                case_run_status = latest_test_case_run.status
+
+                if case_run_status == TestCaseRunStatus.CANCELLED:
+                    logger.info(f"Case {case_id} has already been cancelled.")
+                    return
+
+                # Sử dụng helper function để gọi async code safely
+                has_slot = acquire_user_slot_sync(user_id)
+
+                if has_slot:
+                    # Có slot, gọi task xử lý thật
+                    # Dùng .delay() hoặc .apply_async() để không block dispatcher
+                    # Sử dụng task_id của dispatcher task cho task 'run_flow_test'
+                    run_flow_test.apply_async(
+                        kwargs={
+                            "task_id": generated_task_id,
+                            "user_id": user_id,
+                            "case_id": case_id,
+                            "flow_id": flow_id,
+                        },
+                        task_id=generated_task_id,  # Force Celery to use your generated_task_id
                     )
-                    case_run_status = latest_test_case_run.status
+                    return
+                else:
+                    countdown = 6 + random.randint(-3, 3)
+                    # Hết slot, retry sau 10 giây
+                    # Celery sẽ tự động đưa task này về queue
+                    raise self.retry(countdown=countdown)
 
-                    if case_run_status == TestCaseRunStatus.CANCELLED:
-                        logger.info(f"Case {case_id} has already been cancelled.")
-                        return
-
-                    # Sử dụng helper function để gọi async code safely
-                    has_slot = acquire_user_slot_sync(user_id)
-
-                    if has_slot:
-                        # Có slot, gọi task xử lý thật
-                        # Dùng .delay() hoặc .apply_async() để không block dispatcher
-                        # Sử dụng task_id của dispatcher task cho task 'run_flow_test'
-                        run_flow_test.apply_async(
-                            kwargs={
-                                "task_id": generated_task_id,
-                                "user_id": user_id,
-                                "case_id": case_id,
-                                "flow_id": flow_id,
-                            },
-                            task_id=generated_task_id,  # Force Celery to use your generated_task_id
-                        )
-                        return
-                    else:
-                        countdown = 6 + random.randint(-3, 3)
-                        # Hết slot, retry sau 10 giây
-                        # Celery sẽ tự động đưa task này về queue
-                        raise self.retry(countdown=countdown)
-
-            loop.run_until_complete(check_and_dispatch())
-        finally:
-            loop.close()
+        # Run the async function using run_async utility
+        run_async(check_and_dispatch())
 
     except Exception as e:
         # Nếu có lỗi bất ngờ, retry
@@ -115,26 +110,21 @@ def run_flow_test(  # noqa: C901
         logger.warning(f"Task {task_id} received termination signal, cleaning up...")
 
         try:
-            # Create event loop for async cleanup
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
 
-                async def cleanup_async():
-                    async with AsyncSessionLocal() as db_session:
-                        flow_test_service = FlowTestService(
-                            test_repository=FlowTestRepository(),
-                        )
-                        await flow_test_service.update_test_case_run(
-                            session=db_session,
-                            run_id=task_id,
-                            status=TestCaseRunStatus.CANCELLED,
-                            finished_at=datetime.now(),
-                        )
+            async def cleanup_async():
+                async with AsyncSessionLocal() as db_session:
+                    flow_test_service = FlowTestService(
+                        test_repository=FlowTestRepository(),
+                    )
+                    await flow_test_service.update_test_case_run(
+                        session=db_session,
+                        run_id=task_id,
+                        status=TestCaseRunStatus.CANCELLED,
+                        finished_at=datetime.now(),
+                    )
 
-                loop.run_until_complete(cleanup_async())
-            finally:
-                loop.close()
+            # Run the async cleanup using run_async utility
+            run_async(cleanup_async())
 
         except Exception as e:
             logger.error(f"Error in emergency cleanup: {e}")
@@ -158,25 +148,18 @@ def run_flow_test(  # noqa: C901
     try:
         logger.info(f"Starting flow test task for case_id: {case_id}")
 
-        # Create event loop to run async worker
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
+        async def run_test_async():
+            flow_async_worker = FlowAsyncWorker(user_id=user_id, task_id=task_id)
 
-            async def run_test_async():
-                flow_async_worker = FlowAsyncWorker(user_id=user_id, task_id=task_id)
+            # The worker now handles session management internally
+            await flow_async_worker.run_flow_test(
+                flow_id=flow_id,
+                case_id=case_id,
+                session_id=None,
+            )
 
-                # The worker now handles session management internally
-                await flow_async_worker.run_flow_test(
-                    flow_id=flow_id,
-                    case_id=case_id,
-                    session_id=None,
-                )
-
-            loop.run_until_complete(run_test_async())
-        finally:
-            loop.close()
-
+        # Run the async test using run_async utility
+        run_async(run_test_async())
         return
 
     except GraphCompilerError as e:

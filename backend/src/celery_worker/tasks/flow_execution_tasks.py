@@ -1,4 +1,3 @@
-import asyncio
 from typing import Dict
 
 from loguru import logger
@@ -14,6 +13,7 @@ from src.executors.GraphExecutor import GraphExecutor
 from src.nodes.GraphCompiler import GraphCompiler
 from src.nodes.GraphLoader import GraphLoader
 from src.schemas.flowbuilder.flow_graph_schemas import CanvasFlowRunRequest
+from src.utils.async_utils import run_async
 
 
 @celery_app.task
@@ -34,13 +34,8 @@ def compile_flow(flow_id: str, flow_graph_request_dict: Dict):
 
         compiler = GraphCompiler(graph=G)
 
-        # Run the async compile function in an event loop
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            loop.run_until_complete(compiler.async_compile())
-        finally:
-            loop.close()
+        # Run the async compile function using run_async utility
+        run_async(compiler.async_compile())
 
         return {"status": "compiled", "flow_id": flow_id}
     except Exception as e:
@@ -94,13 +89,8 @@ def run_flow(
             graph=G, remove_standalone=False
         )  # Keep standalone nodes
 
-        # Run the async compile in an event loop
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            execution_plan = loop.run_until_complete(compiler.async_compile())
-        finally:
-            loop.close()
+        # Run the async compile using run_async utility
+        execution_plan = run_async(compiler.async_compile())
 
         # Create executor
         redis_client = Redis(
@@ -134,16 +124,9 @@ def run_flow(
             enable_debug=enable_debug,
         )
 
-        # Run the async execution in an event loop
+        # Run the async execution using run_async utility
         logger.info("Starting graph execution")
-
-        # Create a new event loop and run the async executor
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            execution_result = loop.run_until_complete(executor.execute())
-        finally:
-            loop.close()
+        execution_result = run_async(executor.execute())
 
         logger.success(f"Flow execution completed successfully for flow_id: {flow_id}")
 
