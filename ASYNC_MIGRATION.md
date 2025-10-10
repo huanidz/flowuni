@@ -44,9 +44,9 @@ routers/
 ├── flow_snapshot_routes.py [x]
 ├── flow_test_models_routes.py [ ]
 ├── flow_test_run_routes.py [ ]
-├── node_routes.py [ ]
-├── user_event_routes.py [ ]
-└── user_global_templates_routes.py [ ]
+├── node_routes.py [x]
+├── user_event_routes.py [x]
+└── user_global_templates_routes.py [x]
 ```
 
 ---

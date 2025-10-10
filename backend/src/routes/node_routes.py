@@ -17,7 +17,7 @@ node_router = APIRouter(
 
 
 @node_router.get("/catalog", response_model=List[NodeSpec])
-def get_catalog(
+async def get_catalog(
     request: Request,
     user_id: int = Depends(get_current_user),
     node_service: NodeService = Depends(get_node_service),
@@ -43,7 +43,7 @@ def get_catalog(
     """  # noqa
     try:
         # Call service method to generate and return catalog with proper caching
-        response = node_service.get_catalog(request)
+        response = await node_service.get_catalog(request)
 
         # Log successful operation with user context
         logger.info(f"Successfully generated node catalog for user {user_id}")
@@ -69,7 +69,7 @@ def get_catalog(
 
 
 @node_router.post("/resolve")
-def resolve_dynamic_input(
+async def resolve_dynamic_input(
     req: ResolveRequest,
     node_registry: NodeRegistry = Depends(get_node_registry),
 ):
