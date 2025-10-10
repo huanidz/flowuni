@@ -1,16 +1,20 @@
+from typing import Optional
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.models.alchemy.users.UserModel import UserModel
 from src.repositories.BaseRepository import BaseRepository
 
 
 class UserRepository(BaseRepository):
-    def __init__(self, db_session):
-        super().__init__(db_session)
-        self.model = UserModel
+    def __init__(self):
+        super().__init__(UserModel)
 
-    def get_by_username(self, username: str):
+    async def get_by_username(
+        self, session: AsyncSession, username: str
+    ) -> Optional[UserModel]:
         """Get user by username"""
-        return (
-            self.db_session.query(UserModel)
-            .filter(UserModel.username == username)
-            .first()
+        result = await session.execute(
+            select(UserModel).where(UserModel.username == username)
         )
+        return result.scalar_one_or_none()

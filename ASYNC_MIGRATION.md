@@ -20,9 +20,9 @@ repositories/
 ├── FlowRepositories.py  [x]
 ├── FlowSnapshotRepository.py [x]
 ├── FlowTestRepository.py [x]
-├── SessionRepository.py [ ]
-├── UserGlobalTemplateRepository.py [ ]
-└── UserRepository.py [ ]
+├── SessionRepository.py [x]
+├── UserGlobalTemplateRepository.py [x]
+└── UserRepository.py [x]
 
 services/
 ├── ApiKeyService.py [x]
