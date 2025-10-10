@@ -1,8 +1,11 @@
+import asyncio
 from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Optional
 
+from fastapi import HTTPException
 from loguru import logger
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.models.alchemy.auth.ApiKey import ApiKeyModel
 from src.repositories.ApiKeyRepository import ApiKeyRepository
 
@@ -13,8 +16,9 @@ class ApiKeyServiceInterface(ABC):
     """
 
     @abstractmethod
-    def issue_new_key(
+    async def issue_new_key(
         self,
+        session: AsyncSession,
         user_id: int,
         name: str,
         description: Optional[str] = None,
@@ -27,36 +31,38 @@ class ApiKeyServiceInterface(ABC):
         pass
 
     @abstractmethod
-    def delete_key(self, key_id: str) -> bool:
+    async def delete_key(self, session: AsyncSession, key_id: str) -> bool:
         """
         Delete an API key by key_id
         """
         pass
 
     @abstractmethod
-    def deactivate_key(self, key_id: str) -> bool:
+    async def deactivate_key(self, session: AsyncSession, key_id: str) -> bool:
         """
         Deactivate an API key by key_id
         """
         pass
 
     @abstractmethod
-    def activate_key(self, key_id: str) -> bool:
+    async def activate_key(self, session: AsyncSession, key_id: str) -> bool:
         """
         Activate an API key by key_id
         """
         pass
 
     @abstractmethod
-    def validate_key(self, api_key_value: str) -> Optional[ApiKeyModel]:
+    async def validate_key(
+        self, session: AsyncSession, api_key_value: str
+    ) -> Optional[ApiKeyModel]:
         """
         Validate an API key and return the key model if valid
         """
         pass
 
     @abstractmethod
-    def list_api_keys(
-        self, user_id: int, include_inactive: bool = False
+    async def list_api_keys(
+        self, session: AsyncSession, user_id: int, include_inactive: bool = False
     ) -> list[ApiKeyModel]:
         """
         List all API keys for a specific user
@@ -64,7 +70,7 @@ class ApiKeyServiceInterface(ABC):
         pass
 
     @abstractmethod
-    def set_last_used_at(self, key_id: str) -> bool:
+    async def set_last_used_at(self, session: AsyncSession, key_id: str) -> bool:
         """
         Update the last used timestamp for an API key
         """
@@ -76,14 +82,15 @@ class ApiKeyService(ApiKeyServiceInterface):
     API Key service implementation
     """
 
-    def __init__(self, api_key_repository: ApiKeyRepository):
+    def __init__(self, api_key_repository: ApiKeyRepository | None = None):
         """
         Initialize API key service with repository
         """
-        self.api_key_repository = api_key_repository
+        self.api_key_repository = api_key_repository or ApiKeyRepository()
 
-    def issue_new_key(
+    async def issue_new_key(
         self,
+        session: AsyncSession,
         user_id: int,
         name: str,
         description: Optional[str] = None,
@@ -94,129 +101,202 @@ class ApiKeyService(ApiKeyServiceInterface):
         Returns the full key (only shown once) and the key model
         """
         try:
-            # Create the API key in the database and get both model and full key
-            api_key_model, full_key = self.api_key_repository.create_api_key(
-                user_id=user_id,
-                name=name,
-                description=description,
-                expires_at=expires_at,
-            )
+            async with asyncio.timeout(30):
+                async with session.begin():
+                    # Create the API key in the database and get both model and full key
+                    (
+                        api_key_model,
+                        full_key,
+                    ) = await self.api_key_repository.create_api_key(
+                        session=session,
+                        user_id=user_id,
+                        name=name,
+                        description=description,
+                        expires_at=expires_at,
+                    )
 
-            logger.info(f"Successfully issued new API key '{name}' for user {user_id}")
-            return full_key, api_key_model
-
+                    logger.info(
+                        f"Successfully issued new API key '{name}' for user {user_id}"
+                    )
+                    return full_key, api_key_model
+        except asyncio.TimeoutError:
+            raise HTTPException(status_code=503, detail="Database operation timed out")
         except Exception as e:
             logger.error(f"Error issuing new API key for user {user_id}: {str(e)}")
-            raise
+            raise HTTPException(
+                status_code=500, detail=f"Failed to issue API key: {str(e)}"
+            )
 
-    def delete_key(self, key_id: str) -> bool:
+    async def delete_key(self, session: AsyncSession, key_id: str) -> bool:
         """
         Delete an API key by key_id
         """
         try:
-            success = self.api_key_repository.delete_api_key(key_id)
-            if success:
-                logger.info(f"Successfully deleted API key with key_id: {key_id}")
-            else:
-                logger.warning(
-                    f"Failed to delete API key with key_id: {key_id} (key not found)"
-                )
-            return success
+            async with asyncio.timeout(30):
+                async with session.begin():
+                    success = await self.api_key_repository.delete_api_key(
+                        session, key_id
+                    )
+                    if success:
+                        logger.info(
+                            f"Successfully deleted API key with key_id: {key_id}"
+                        )
+                    else:
+                        logger.warning(
+                            f"Failed to delete API key with key_id: {key_id} (key not found)"
+                        )
+                    return success
+        except asyncio.TimeoutError:
+            raise HTTPException(status_code=503, detail="Database operation timed out")
         except Exception as e:
             logger.error(f"Error deleting API key with key_id {key_id}: {str(e)}")
-            raise
+            raise HTTPException(
+                status_code=500, detail=f"Failed to delete API key: {str(e)}"
+            )
 
-    def deactivate_key(self, key_id: str) -> bool:
+    async def deactivate_key(self, session: AsyncSession, key_id: str) -> bool:
         """
         Deactivate an API key by key_id
         """
         try:
-            success = self.api_key_repository.deactivate_api_key(key_id)
-            if success:
-                logger.info(f"Successfully deactivated API key with key_id: {key_id}")
-            else:
-                logger.warning(
-                    f"Failed to deactivate API key with key_id: {key_id} (key not found)"
-                )
-            return success
+            async with asyncio.timeout(30):
+                async with session.begin():
+                    success = await self.api_key_repository.deactivate_api_key(
+                        session, key_id
+                    )
+                    if success:
+                        logger.info(
+                            f"Successfully deactivated API key with key_id: {key_id}"
+                        )
+                    else:
+                        logger.warning(
+                            f"Failed to deactivate API key with key_id: {key_id} (key not found)"
+                        )
+                    return success
+        except asyncio.TimeoutError:
+            raise HTTPException(status_code=503, detail="Database operation timed out")
         except Exception as e:
             logger.error(f"Error deactivating API key with key_id {key_id}: {str(e)}")
-            raise
+            raise HTTPException(
+                status_code=500, detail=f"Failed to deactivate API key: {str(e)}"
+            )
 
-    def activate_key(self, key_id: str) -> bool:
+    async def activate_key(self, session: AsyncSession, key_id: str) -> bool:
         """
         Activate an API key by key_id
         """
         try:
-            success = self.api_key_repository.activate_api_key(key_id)
-            if success:
-                logger.info(f"Successfully activated API key with key_id: {key_id}")
-            else:
-                logger.warning(
-                    f"Failed to activate API key with key_id: {key_id} (key not found)"
-                )
-            return success
+            async with asyncio.timeout(30):
+                async with session.begin():
+                    success = await self.api_key_repository.activate_api_key(
+                        session, key_id
+                    )
+                    if success:
+                        logger.info(
+                            f"Successfully activated API key with key_id: {key_id}"
+                        )
+                    else:
+                        logger.warning(
+                            f"Failed to activate API key with key_id: {key_id} (key not found)"
+                        )
+                    return success
+        except asyncio.TimeoutError:
+            raise HTTPException(status_code=503, detail="Database operation timed out")
         except Exception as e:
             logger.error(f"Error activating API key with key_id {key_id}: {str(e)}")
-            raise
+            raise HTTPException(
+                status_code=500, detail=f"Failed to activate API key: {str(e)}"
+            )
 
-    def validate_key(self, api_key_value: str) -> Optional[ApiKeyModel]:
+    async def validate_key(
+        self, session: AsyncSession, api_key_value: str
+    ) -> Optional[ApiKeyModel]:
         """
         Validate an API key and return the key model if valid
         """
         try:
-            api_key_model = self.api_key_repository.validate_api_key(api_key_value)
-            if api_key_model:
-                logger.info(
-                    f"Successfully validated API key for user {api_key_model.user_id}"
-                )
-            else:
-                logger.warning("API key validation failed - invalid or expired key")
-            return api_key_model
+            async with asyncio.timeout(30):
+                # This is a read operation with a write (update last_used_at), so we need a transaction
+                async with session.begin():
+                    api_key_model = await self.api_key_repository.validate_api_key(
+                        session, api_key_value
+                    )
+                    if api_key_model:
+                        logger.info(
+                            f"Successfully validated API key for user {api_key_model.user_id}"
+                        )
+                    else:
+                        logger.warning(
+                            "API key validation failed - invalid or expired key"
+                        )
+                    return api_key_model
+        except asyncio.TimeoutError:
+            raise HTTPException(status_code=503, detail="Database operation timed out")
         except Exception as e:
             logger.error(f"Error validating API key: {str(e)}")
-            raise
+            raise HTTPException(
+                status_code=500, detail=f"API key validation failed: {str(e)}"
+            )
 
-    def list_api_keys(
-        self, user_id: int, include_inactive: bool = False
+    async def list_api_keys(
+        self, session: AsyncSession, user_id: int, include_inactive: bool = False
     ) -> list[ApiKeyModel]:
         """
         List all API keys for a specific user
         """
         try:
-            if include_inactive:
-                api_keys = self.api_key_repository.get_api_keys_by_user(user_id)
-                logger.info(
-                    f"Retrieved {len(api_keys)} API keys (including inactive) for user {user_id}"
-                )
-            else:
-                api_keys = self.api_key_repository.get_active_api_keys_by_user(user_id)
-                logger.info(
-                    f"Retrieved {len(api_keys)} active API keys for user {user_id}"
-                )
+            async with asyncio.timeout(30):
+                if include_inactive:
+                    api_keys = await self.api_key_repository.get_api_keys_by_user(
+                        session, user_id
+                    )
+                    logger.info(
+                        f"Retrieved {len(api_keys)} API keys (including inactive) for user {user_id}"
+                    )
+                else:
+                    api_keys = (
+                        await self.api_key_repository.get_active_api_keys_by_user(
+                            session, user_id
+                        )
+                    )
+                    logger.info(
+                        f"Retrieved {len(api_keys)} active API keys for user {user_id}"
+                    )
 
-            return api_keys
+                return api_keys
+        except asyncio.TimeoutError:
+            raise HTTPException(status_code=503, detail="Database operation timed out")
         except Exception as e:
             logger.error(f"Error listing API keys for user {user_id}: {str(e)}")
-            raise
+            raise HTTPException(
+                status_code=500, detail=f"Failed to list API keys: {str(e)}"
+            )
 
-    def set_last_used_at(self, key_id: str) -> bool:
+    async def set_last_used_at(self, session: AsyncSession, key_id: str) -> bool:
         """
         Update the last used timestamp for an API key
         """
         try:
-            success = self.api_key_repository.update_api_key_usage(key_id)
-            if success:
-                logger.info(
-                    f"Successfully updated last_used_at for API key with key_id: {key_id}"
-                )
-            else:
-                logger.warning(
-                    f"Failed to update last_used_at for API key with key_id: {key_id} (key not found)"
-                )
-            return success
+            async with asyncio.timeout(30):
+                async with session.begin():
+                    success = await self.api_key_repository.update_api_key_usage(
+                        session, key_id
+                    )
+                    if success:
+                        logger.info(
+                            f"Successfully updated last_used_at for API key with key_id: {key_id}"
+                        )
+                    else:
+                        logger.warning(
+                            f"Failed to update last_used_at for API key with key_id: {key_id} (key not found)"
+                        )
+                    return success
+        except asyncio.TimeoutError:
+            raise HTTPException(status_code=503, detail="Database operation timed out")
         except Exception as e:
             logger.error(
                 f"Error updating last_used_at for API key with key_id {key_id}: {str(e)}"
             )
-            raise
+            raise HTTPException(
+                status_code=500, detail=f"Failed to update API key usage: {str(e)}"
+            )

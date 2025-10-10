@@ -15,8 +15,8 @@ You will mark a code file is [x] when its done.
 ## Total repositories code:
 ```
 repositories/
-├── ApiKeyRepository.py [ ]
-├── BaseRepository.py  [ ]
+├── ApiKeyRepository.py [x]
+├── BaseRepository.py  [x]
 ├── FlowRepositories.py  [ ]
 ├── FlowSnapshotRepository.py [ ]
 ├── FlowTestRepository.py [ ]
@@ -25,7 +25,7 @@ repositories/
 └── UserRepository.py [ ]
 
 services/
-├── ApiKeyService.py [ ]
+├── ApiKeyService.py [x]
 ├── AuthService.py [ ]
 ├── FlowService.py [ ]
 ├── FlowSnapshotService.py [ ]
@@ -41,7 +41,7 @@ services/
 ## Migration Steps:
 
 ### 1. Migrate the dependency injection in dependencies/db_dependency.py
-**Status: <DONE>**
+**Migration Status: <DONE>**
 
 ---
 
