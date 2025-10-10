@@ -374,28 +374,32 @@ class FlowAsyncWorker:
         self,
         flow_id: str,
         case_id: int,
-        flow_service: FlowService,
-        flow_test_service: FlowTestService,
-        session: AsyncSession,
         session_id: Optional[str] = None,
     ) -> None:
         try:
             logger.info(f"Starting validated flow execution for flow_id: {flow_id}")
 
-            # Retrieve and validate flow
-            flow_definition = await self._get_validated_flow(
-                flow_id, flow_service, session
-            )
+            with AsyncSessionLocal() as session:
+                flow_service = FlowService(flow_repository=FlowRepository())
+                # Retrieve and validate flow
+                flow_definition = await self._get_validated_flow(
+                    flow_id, flow_service, session
+                )
 
-            # Execute the flow
-            await self.run_test_async(
-                case_id=case_id,
-                flow_id=flow_id,
-                flow_graph_request_dict=flow_definition,
-                session_id=session_id,
-                flow_test_service=flow_test_service,
-                session=session,
-            )
+                flow_test_service = FlowTestService(
+                    test_repository=FlowTestRepository(),
+                    redis_client=get_redis_client(),
+                )
+
+                # Execute the flow
+                await self.run_test_async(
+                    case_id=case_id,
+                    flow_id=flow_id,
+                    flow_graph_request_dict=flow_definition,
+                    session_id=session_id,
+                    flow_test_service=flow_test_service,
+                    session=session,
+                )
 
             logger.success(f"Validated flow execution completed for flow_id: {flow_id}")
             return
