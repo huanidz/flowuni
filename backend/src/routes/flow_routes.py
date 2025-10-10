@@ -3,7 +3,9 @@ import traceback
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from loguru import logger
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.dependencies.auth_dependency import get_current_user
+from src.dependencies.db_dependency import get_async_db
 from src.dependencies.flow_dep import get_flow_service
 from src.exceptions.auth_exceptions import UNAUTHORIZED_EXCEPTION
 from src.exceptions.shared_exceptions import NOT_FOUND_EXCEPTION
@@ -34,6 +36,7 @@ async def create_flow(
     request: FlowCreateRequest = None,
     flow_service: FlowService = Depends(get_flow_service),
     auth_user_id: int = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_db),
 ):
     """
     Create a flow with optional name, description, and flow definition.
@@ -44,13 +47,17 @@ async def create_flow(
         if request is None or (
             not request.name and not request.description and not request.flow_definition
         ):
-            flow_id = flow_service.create_empty_flow(user_id=auth_user_id)
+            flow_id = await flow_service.create_empty_flow(
+                session=session, user_id=auth_user_id
+            )
             # Get the created flow to return full response
-            flow = flow_service.get_flow_detail_by_id(flow_id=flow_id)
+            flow = await flow_service.get_flow_detail_by_id(
+                session=session, flow_id=flow_id
+            )
         else:
             # Create flow with data
-            flow = flow_service.create_flow_with_data(
-                user_id=auth_user_id, flow_request=request
+            flow = await flow_service.create_flow_with_data(
+                session=session, user_id=auth_user_id, flow_request=request
             )
 
         response = FlowCreateResponse(
@@ -81,6 +88,7 @@ async def get_by_user_id(
     per_page: int = Query(10, description="Number of items per page", ge=1, le=100),
     auth_user_id: int = Depends(get_current_user),
     flow_service: FlowService = Depends(get_flow_service),
+    session: AsyncSession = Depends(get_async_db),
 ):
     """
     Get flows by user id
@@ -93,8 +101,8 @@ async def get_by_user_id(
             )
             raise UNAUTHORIZED_EXCEPTION
 
-        flows, total_items = flow_service.get_by_user_id_paged(
-            user_id=user_id, page=page, per_page=per_page
+        flows, total_items = await flow_service.get_by_user_id_paged(
+            session=session, user_id=user_id, page=page, per_page=per_page
         )
 
         # Interpolate total pages
@@ -129,12 +137,15 @@ async def get_flow_detail_by_id(
     flow_id: str,
     flow_service: FlowService = Depends(get_flow_service),
     auth_user_id: int = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_db),
 ):
     """
     Get flow by id
     """
     try:
-        flow = flow_service.get_flow_detail_by_id(flow_id=flow_id)
+        flow = await flow_service.get_flow_detail_by_id(
+            session=session, flow_id=flow_id
+        )
 
         if not flow:
             logger.warning(f"Flow with ID {flow_id} not found.")
@@ -174,13 +185,16 @@ async def update_flow_by_id(
     request: FlowPatchRequest,
     flow_service: FlowService = Depends(get_flow_service),
     auth_user_id: int = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_db),
 ):
     """
     Update flow by id
     """
     try:
         logger.info(f"Update flow by id: {request}")
-        flow = flow_service.save_flow_detail(flow_request=request, user_id=auth_user_id)
+        flow = await flow_service.save_flow_detail(
+            session=session, flow_request=request, user_id=auth_user_id
+        )
 
         if not flow:
             logger.warning(f"Flow with ID {request.flow_id} not found.")
@@ -214,12 +228,15 @@ async def delete_flow_by_id(
     flow_id: str,
     flow_service: FlowService = Depends(get_flow_service),
     auth_user_id: int = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_db),
 ):
     """
     Delete flow by id
     """
     try:
-        flow = flow_service.get_flow_detail_by_id(flow_id=flow_id)
+        flow = await flow_service.get_flow_detail_by_id(
+            session=session, flow_id=flow_id
+        )
 
         if not flow:
             logger.warning(f"Flow with ID {flow_id} not found.")
@@ -232,7 +249,7 @@ async def delete_flow_by_id(
             )
             raise UNAUTHORIZED_EXCEPTION
 
-        flow_service.delete_flow(flow_id=flow_id)
+        await flow_service.delete_flow(session=session, flow_id=flow_id)
 
         # No response body for 204 No Content
         return
@@ -255,13 +272,16 @@ async def set_activating_status(
     request: FlowActivationRequest,
     flow_service: FlowService = Depends(get_flow_service),
     auth_user_id: int = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_db),
 ):
     """
     Set the activation status of a flow (activate/deactivate)
     """
     try:
         # Verify flow exists and user owns it
-        flow = flow_service.get_flow_detail_by_id(flow_id=request.flow_id)
+        flow = await flow_service.get_flow_detail_by_id(
+            session=session, flow_id=request.flow_id
+        )
 
         if not flow:
             logger.warning(f"Flow with ID {request.flow_id} not found.")
@@ -276,12 +296,12 @@ async def set_activating_status(
 
         # Activate or deactivate based on request
         if request.is_active:
-            updated_flow = flow_service.activate_flow(
-                flow_id=request.flow_id, user_id=auth_user_id
+            updated_flow = await flow_service.activate_flow(
+                session=session, flow_id=request.flow_id, user_id=auth_user_id
             )
         else:
-            updated_flow = flow_service.deactivate_flow(
-                flow_id=request.flow_id, user_id=auth_user_id
+            updated_flow = await flow_service.deactivate_flow(
+                session=session, flow_id=request.flow_id, user_id=auth_user_id
             )
 
         response = FlowActivationResponse(
