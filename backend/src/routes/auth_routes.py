@@ -9,8 +9,10 @@ from fastapi import (
 )
 from fastapi.responses import JSONResponse
 from loguru import logger
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.consts.auth_consts import AuthConsts
 from src.dependencies.auth_dependency import get_auth_service
+from src.dependencies.db_dependency import get_async_db
 from src.dependencies.user_dependency import get_user_service
 from src.exceptions.user_exceptions import InvalidCredentialsError, TokenInvalidError
 from src.schemas.users.user_schemas import (
@@ -35,12 +37,15 @@ auth_router = APIRouter(
 )
 async def register_user(
     register_request: UserRegisterRequest,
+    session: AsyncSession = Depends(get_async_db),
     user_service: UserService = Depends(get_user_service),
 ):
     """Register a new user"""
     try:
-        registered_user = user_service.register(
-            register_request.username, register_request.password
+        registered_user = await user_service.register(
+            session=session,
+            username=register_request.username,
+            password=register_request.password,
         )
 
         return RegisterResponse(
@@ -68,12 +73,15 @@ async def register_user(
 async def login_user(
     user: UserLoginRequest,
     response: Response,
+    session: AsyncSession = Depends(get_async_db),
     user_service: UserService = Depends(get_user_service),
     auth_service: AuthService = Depends(get_auth_service),
 ):
     """Login a user"""
     try:
-        user = user_service.login(username=user.username, password=user.password)
+        user = await user_service.login(
+            session=session, username=user.username, password=user.password
+        )
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -81,7 +89,7 @@ async def login_user(
             )
 
         # Generate JWT tokens
-        access_token, refresh_token = auth_service.generate_tokens(user.id)
+        access_token, refresh_token = await auth_service.generate_tokens(user.id)
 
         # Set the refresh token in a secure, HTTP-only cookie
         response.set_cookie(
@@ -138,7 +146,7 @@ async def validate_token(
             )
         token = authorization.removeprefix("Bearer ").strip()
 
-        user_id = auth_service.verify_token(access_token=token)
+        user_id = await auth_service.verify_token(access_token=token)
         return ValidateTokenResponse(user_id=user_id)
     except TokenInvalidError as e:
         logger.warning(f"Invalid token during token validation: {e}")
@@ -182,10 +190,12 @@ async def refresh_access_token(
 
     try:
         # Verify the refresh token and extract user ID
-        user_id = auth_service.verify_refresh_token(refresh_token=refresh_token)
+        user_id = await auth_service.verify_refresh_token(refresh_token=refresh_token)
 
         # Generate new tokens
-        new_access_token, new_refresh_token = auth_service.generate_tokens(user_id)
+        new_access_token, new_refresh_token = await auth_service.generate_tokens(
+            user_id
+        )
 
         # Set new refresh token in secure cookie
         response.set_cookie(
@@ -240,7 +250,7 @@ async def logout_user(
 
         logger.info(f"Refresh token blacklisted: {refresh_token}")
 
-        success = auth_service.blacklist_token(refresh_token)
+        success = await auth_service.blacklist_token(refresh_token)
 
         if success:
             logger.info("User logged out successfully (refresh token blacklisted)")

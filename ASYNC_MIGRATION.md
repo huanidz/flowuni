@@ -34,6 +34,20 @@ services/
 ├── PlaygroundService.py [x]
 ├── UserGlobalTemplateService.py [x]
 └── UserService.py [x]
+
+routers/
+├── api_key_routes.py [x]
+├── auth_routes.py [x]
+├── common_routes.py [ ]
+├── flow_playground_session_routes.py [ ]
+├── flow_routes.py [ ]
+├── flow_runner_routes.py [ ]
+├── flow_snapshot_routes.py [ ]
+├── flow_test_models_routes.py [ ]
+├── flow_test_run_routes.py [ ]
+├── node_routes.py [ ]
+├── user_event_routes.py [ ]
+└── user_global_templates_routes.py [ ]
 ```
 
 ---
