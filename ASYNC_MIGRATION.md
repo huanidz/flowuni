@@ -26,14 +26,14 @@ repositories/
 
 services/
 ├── ApiKeyService.py [x]
-├── AuthService.py [ ]
+├── AuthService.py [x]
 ├── FlowService.py [x]
 ├── FlowSnapshotService.py [x]
 ├── FlowTestService.py [x]
 ├── NodeService.py [ ]
 ├── PlaygroundService.py [ ]
 ├── UserGlobalTemplateService.py [ ]
-└── UserService.py [ ]
+└── UserService.py [x]
 ```
 
 ---

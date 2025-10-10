@@ -18,3 +18,10 @@ class UserRepository(BaseRepository):
             select(UserModel).where(UserModel.username == username)
         )
         return result.scalar_one_or_none()
+
+    async def add(self, session: AsyncSession, user: UserModel) -> UserModel:
+        """Add a new user to the database"""
+        session.add(user)
+        await session.flush()
+        await session.refresh(user)
+        return user
