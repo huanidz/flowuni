@@ -1,9 +1,10 @@
 from typing import List, Optional, Tuple
 
 from loguru import logger
-from sqlalchemy import func
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError, NoResultFound
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from src.models.alchemy.flows.FlowSnapshotModel import FlowSnapshotModel
 from src.repositories.BaseRepository import BaseRepository
 
@@ -13,21 +14,23 @@ class FlowSnapshotRepository(BaseRepository):
     Flow Snapshot repository
     """
 
-    def __init__(self, db_session: Session):
-        super().__init__(db_session=db_session)
-        self.model = FlowSnapshotModel
+    def __init__(self):
+        super().__init__(model=FlowSnapshotModel)
         logger.info("FlowSnapshotRepository initialized.")
 
-    def get_by_id(self, snapshot_id: int) -> Optional[FlowSnapshotModel]:
+    async def get_by_id(
+        self, session: AsyncSession, snapshot_id: int
+    ) -> Optional[FlowSnapshotModel]:
         """
         Get flow snapshot by id
         """
         try:
-            snapshot = (
-                self.db_session.query(FlowSnapshotModel)
-                .filter_by(id=snapshot_id)
-                .one_or_none()
+            result = await session.execute(
+                select(FlowSnapshotModel)
+                .options(selectinload(FlowSnapshotModel.flow))
+                .where(FlowSnapshotModel.id == snapshot_id)
             )
+            snapshot = result.scalar_one_or_none()
             if snapshot:
                 logger.info(f"Retrieved flow snapshot with ID: {snapshot_id}")
             else:
@@ -35,29 +38,30 @@ class FlowSnapshotRepository(BaseRepository):
             return snapshot
         except Exception as e:
             logger.error(f"Error retrieving flow snapshot by ID {snapshot_id}: {e}")
-            self.db_session.rollback()
             raise e
 
-    def get_by_flow_id(self, flow_id: int) -> List[FlowSnapshotModel]:
+    async def get_by_flow_id(
+        self, session: AsyncSession, flow_id: int
+    ) -> List[FlowSnapshotModel]:
         """
         Get all flow snapshots for a specific flow
         """
         try:
-            snapshots = (
-                self.db_session.query(FlowSnapshotModel)
-                .filter_by(flow_id=flow_id)
+            result = await session.execute(
+                select(FlowSnapshotModel)
+                .where(FlowSnapshotModel.flow_id == flow_id)
                 .order_by(FlowSnapshotModel.version.desc())
-                .all()
             )
+            snapshots = result.scalars().all()
             logger.info(f"Retrieved {len(snapshots)} snapshots for flow ID: {flow_id}")
             return snapshots
         except Exception as e:
             logger.error(f"Error retrieving snapshots for flow ID {flow_id}: {e}")
-            self.db_session.rollback()
             raise e
 
-    def get_by_flow_id_paged(
+    async def get_by_flow_id_paged(
         self,
+        session: AsyncSession,
         flow_id: int,
         page: int = 1,
         per_page: int = 10,
@@ -69,23 +73,28 @@ class FlowSnapshotRepository(BaseRepository):
         """
         try:
             # 1) total count
-            total_items = (
-                self.db_session.query(func.count(FlowSnapshotModel.id))
-                .filter_by(flow_id=flow_id)
-                .scalar()
+            count_result = await session.execute(
+                select(func.count(FlowSnapshotModel.id)).where(
+                    FlowSnapshotModel.flow_id == flow_id
+                )
             )
+            total_items = count_result.scalar()
 
             # 2) paged items
-            query = self.db_session.query(FlowSnapshotModel).filter_by(flow_id=flow_id)
+            query = select(FlowSnapshotModel).where(
+                FlowSnapshotModel.flow_id == flow_id
+            )
 
             # 3) sort by version descending
             if sort_by_version_desc:
                 query = query.order_by(FlowSnapshotModel.version.desc())
 
             # Apply pagination after ordering
-            query = query.offset((page - 1) * per_page).limit(per_page)
+            offset = (page - 1) * per_page
+            query = query.offset(offset).limit(per_page)
 
-            snapshots = query.all()
+            result = await session.execute(query)
+            snapshots = result.scalars().all()
 
             logger.info(
                 f"Flow {flow_id} – page {page}: "
@@ -96,21 +105,24 @@ class FlowSnapshotRepository(BaseRepository):
 
         except Exception as e:
             logger.error(f"Error retrieving snapshots for flow ID {flow_id}: {e}")
-            self.db_session.rollback()
             raise
 
-    def get_by_flow_and_version(
-        self, flow_id: int, version: int
+    async def get_by_flow_and_version(
+        self, session: AsyncSession, flow_id: int, version: int
     ) -> Optional[FlowSnapshotModel]:
         """
         Get a specific snapshot by flow ID and version
         """
         try:
-            snapshot = (
-                self.db_session.query(FlowSnapshotModel)
-                .filter_by(flow_id=flow_id, version=version)
-                .one_or_none()
+            result = await session.execute(
+                select(FlowSnapshotModel)
+                .options(selectinload(FlowSnapshotModel.flow))
+                .where(
+                    FlowSnapshotModel.flow_id == flow_id,
+                    FlowSnapshotModel.version == version,
+                )
             )
+            snapshot = result.scalar_one_or_none()
             if snapshot:
                 logger.info(
                     f"Retrieved snapshot for flow ID: {flow_id}, version: {version}"
@@ -124,23 +136,23 @@ class FlowSnapshotRepository(BaseRepository):
             logger.error(
                 f"Error retrieving snapshot for flow ID {flow_id}, version {version}: {e}"
             )
-            self.db_session.rollback()
             raise e
 
-    def create_snapshot(self, snapshot: FlowSnapshotModel) -> FlowSnapshotModel:
+    async def create_snapshot(
+        self, session: AsyncSession, snapshot: FlowSnapshotModel
+    ) -> FlowSnapshotModel:
         """
         Create a new flow snapshot
         """
         try:
-            self.db_session.add(snapshot)
-            self.db_session.commit()
-            self.db_session.refresh(snapshot)
+            session.add(snapshot)
+            await session.flush()
+            await session.refresh(snapshot)
             logger.info(
                 f"Created new snapshot for flow ID: {snapshot.flow_id}, version: {snapshot.version}"
             )
             return snapshot
         except IntegrityError as e:
-            self.db_session.rollback()
             logger.error(
                 f"Integrity error when creating snapshot for flow {snapshot.flow_id}: {e}"
             )
@@ -149,20 +161,21 @@ class FlowSnapshotRepository(BaseRepository):
                 f"A snapshot with version {snapshot.version} may already exist for this flow."
             ) from e
         except Exception as e:
-            self.db_session.rollback()
             logger.error(f"Error creating snapshot for flow {snapshot.flow_id}: {e}")
             raise e
 
-    def update_snapshot(self, snapshot: FlowSnapshotModel) -> FlowSnapshotModel:
+    async def update_snapshot(
+        self, session: AsyncSession, snapshot: FlowSnapshotModel
+    ) -> FlowSnapshotModel:
         """
         Update an existing flow snapshot
         """
         try:
-            existing_snapshot = (
-                self.db_session.query(FlowSnapshotModel)
-                .filter_by(id=snapshot.id)
-                .first()
+            # Get the existing snapshot
+            result = await session.execute(
+                select(FlowSnapshotModel).where(FlowSnapshotModel.id == snapshot.id)
             )
+            existing_snapshot = result.scalar_one_or_none()
             if not existing_snapshot:
                 logger.warning(
                     f"Attempted to update non-existent snapshot with ID: {snapshot.id}"
@@ -181,63 +194,59 @@ class FlowSnapshotRepository(BaseRepository):
                     ]:  # Add other fields to skip as needed
                         setattr(existing_snapshot, attr, value)
 
-            self.db_session.commit()
-            self.db_session.refresh(existing_snapshot)
+            await session.flush()
+            await session.refresh(existing_snapshot)
             logger.info(f"Updated snapshot with ID: {existing_snapshot.id}")
             return existing_snapshot
 
         except NoResultFound as e:
-            self.db_session.rollback()
             logger.error(
                 f"NoResultFound error when updating snapshot with ID {snapshot.id}: {e}"
             )
             raise e
         except Exception as e:
-            self.db_session.rollback()
             logger.error(f"Error updating snapshot with ID {snapshot.id}: {e}")
             raise e
 
-    def delete_snapshot(self, snapshot_id: int) -> None:
+    async def delete_snapshot(self, session: AsyncSession, snapshot_id: int) -> None:
         """
         Delete a flow snapshot
         """
         try:
-            snapshot = (
-                self.db_session.query(FlowSnapshotModel)
-                .filter_by(id=snapshot_id)
-                .first()
+            result = await session.execute(
+                select(FlowSnapshotModel).where(FlowSnapshotModel.id == snapshot_id)
             )
+            snapshot = result.scalar_one_or_none()
             if not snapshot:
                 logger.warning(
                     f"Attempted to delete non-existent snapshot with ID: {snapshot_id}"
                 )
                 raise NoResultFound(f"Snapshot with ID {snapshot_id} not found.")
 
-            self.db_session.delete(snapshot)
-            self.db_session.commit()
+            await session.delete(snapshot)
+            await session.flush()
             logger.info(f"Deleted snapshot with ID: {snapshot_id}")
         except NoResultFound as e:
-            self.db_session.rollback()
             logger.error(
                 f"NoResultFound error when deleting snapshot with ID {snapshot_id}: {e}"
             )
             raise e
         except Exception as e:
-            self.db_session.rollback()
             logger.error(f"Error deleting snapshot with ID {snapshot_id}: {e}")
             raise e
 
-    def get_next_version(self, flow_id: int) -> int:
+    async def get_next_version(self, session: AsyncSession, flow_id: int) -> int:
         """
         Get the next available version number for a flow snapshot
         """
         try:
             # Get the maximum version number for this flow
-            max_version = (
-                self.db_session.query(func.max(FlowSnapshotModel.version))
-                .filter_by(flow_id=flow_id)
-                .scalar()
+            result = await session.execute(
+                select(func.max(FlowSnapshotModel.version)).where(
+                    FlowSnapshotModel.flow_id == flow_id
+                )
             )
+            max_version = result.scalar()
 
             # If no snapshots exist, start with version 1
             next_version = (max_version or 0) + 1
@@ -245,5 +254,4 @@ class FlowSnapshotRepository(BaseRepository):
             return next_version
         except Exception as e:
             logger.error(f"Error getting next version for flow {flow_id}: {e}")
-            self.db_session.rollback()
             raise e

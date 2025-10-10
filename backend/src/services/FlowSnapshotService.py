@@ -1,7 +1,10 @@
+import asyncio
 from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple
 
+from fastapi import HTTPException
 from loguru import logger
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.exceptions.shared_exceptions import MISMATCH_EXCEPTION, NOT_FOUND_EXCEPTION
 from src.models.alchemy.flows.FlowSnapshotModel import FlowSnapshotModel
 from src.repositories.FlowSnapshotRepository import FlowSnapshotRepository
@@ -18,15 +21,17 @@ class FlowSnapshotServiceInterface(ABC):
     """
 
     @abstractmethod
-    def get_snapshot_by_id(self, snapshot_id: int) -> Optional[FlowSnapshotResponse]:
+    async def get_snapshot_by_id(
+        self, session: AsyncSession, snapshot_id: int
+    ) -> Optional[FlowSnapshotResponse]:
         """
         Get flow snapshot by id
         """
         pass
 
     @abstractmethod
-    def get_snapshots_by_flow_id(
-        self, flow_id: int, page: int = 1, per_page: int = 10
+    async def get_snapshots_by_flow_id(
+        self, session: AsyncSession, flow_id: int, page: int = 1, per_page: int = 10
     ) -> Tuple[List[FlowSnapshotModel], int]:
         """
         Get flow snapshots by flow id with pagination
@@ -34,8 +39,11 @@ class FlowSnapshotServiceInterface(ABC):
         pass
 
     @abstractmethod
-    def create_snapshot(
-        self, snapshot_request: FlowSnapshotCreateRequest, user_id: int
+    async def create_snapshot(
+        self,
+        session: AsyncSession,
+        snapshot_request: FlowSnapshotCreateRequest,
+        user_id: int,
     ) -> FlowSnapshotResponse:
         """
         Create a new flow snapshot
@@ -43,8 +51,11 @@ class FlowSnapshotServiceInterface(ABC):
         pass
 
     @abstractmethod
-    def update_snapshot(
-        self, snapshot_request: FlowSnapshotUpdateRequest, user_id: int
+    async def update_snapshot(
+        self,
+        session: AsyncSession,
+        snapshot_request: FlowSnapshotUpdateRequest,
+        user_id: int,
     ) -> Optional[FlowSnapshotResponse]:
         """
         Update an existing flow snapshot
@@ -52,7 +63,9 @@ class FlowSnapshotServiceInterface(ABC):
         pass
 
     @abstractmethod
-    def delete_snapshot(self, snapshot_id: int, user_id: int) -> None:
+    async def delete_snapshot(
+        self, session: AsyncSession, snapshot_id: int, user_id: int
+    ) -> None:
         """
         Delete a flow snapshot
         """
@@ -64,164 +77,219 @@ class FlowSnapshotService(FlowSnapshotServiceInterface):
     Flow snapshot service
     """
 
-    def __init__(self, snapshot_repository: FlowSnapshotRepository):
-        self.snapshot_repository = snapshot_repository
+    def __init__(self, snapshot_repository: FlowSnapshotRepository | None = None):
+        self.snapshot_repository = snapshot_repository or FlowSnapshotRepository()
 
-    def get_snapshot_by_id(self, snapshot_id: int) -> Optional[FlowSnapshotResponse]:
+    async def get_snapshot_by_id(
+        self, session: AsyncSession, snapshot_id: int
+    ) -> Optional[FlowSnapshotResponse]:
         """
         Get flow snapshot by id
         """
         try:
-            snapshot = self.snapshot_repository.get_by_id(snapshot_id=snapshot_id)
-            if not snapshot:
-                logger.warning(f"Snapshot with id {snapshot_id} not found")
-                return None
+            async with asyncio.timeout(30):
+                snapshot = await self.snapshot_repository.get_by_id(
+                    session=session, snapshot_id=snapshot_id
+                )
+                if not snapshot:
+                    logger.warning(f"Snapshot with id {snapshot_id} not found")
+                    return None
 
-            logger.info(f"Successfully retrieved snapshot with id {snapshot_id}")
-            return self._map_to_response(snapshot)
+                logger.info(f"Successfully retrieved snapshot with id {snapshot_id}")
+                return self._map_to_response(snapshot)
+        except asyncio.TimeoutError:
+            raise HTTPException(status_code=503, detail="Database operation timed out")
         except Exception as e:
             logger.error(f"Error retrieving snapshot by id {snapshot_id}: {str(e)}")
-            raise
+            raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
-    def get_snapshots_by_flow_id(
-        self, flow_id: int, page: int = 1, per_page: int = 10
+    async def get_snapshots_by_flow_id(
+        self, session: AsyncSession, flow_id: int, page: int = 1, per_page: int = 10
     ) -> Tuple[List[FlowSnapshotModel], int]:
         """
         Get flow snapshots by flow id with pagination
         """
         try:
-            snapshots, total_items = self.snapshot_repository.get_by_flow_id_paged(
-                flow_id=flow_id, page=page, per_page=per_page
-            )
-            logger.info(
-                f"Successfully retrieved {len(snapshots)} snapshots for flow {flow_id}"
-            )
-            return snapshots, total_items
+            async with asyncio.timeout(30):
+                (
+                    snapshots,
+                    total_items,
+                ) = await self.snapshot_repository.get_by_flow_id_paged(
+                    session=session, flow_id=flow_id, page=page, per_page=per_page
+                )
+                logger.info(
+                    f"Successfully retrieved {len(snapshots)} snapshots for flow {flow_id}"
+                )
+                return snapshots, total_items
+        except asyncio.TimeoutError:
+            raise HTTPException(status_code=503, detail="Database operation timed out")
         except Exception as e:
             logger.error(f"Error retrieving snapshots for flow {flow_id}: {str(e)}")
-            raise
+            raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
-    def create_snapshot(
-        self, snapshot_request: FlowSnapshotCreateRequest, user_id: int
+    async def create_snapshot(
+        self,
+        session: AsyncSession,
+        snapshot_request: FlowSnapshotCreateRequest,
+        user_id: int,
     ) -> FlowSnapshotResponse:
         """
         Create a new flow snapshot
         """
         try:
-            # Get the next version number if not provided in the request
-            if snapshot_request.version is not None:
-                version = snapshot_request.version
-            else:
-                version = self.snapshot_repository.get_next_version(
-                    flow_id=snapshot_request.flow_id
-                )
+            async with asyncio.timeout(30):
+                async with session.begin():
+                    # Get the next version number if not provided in the request
+                    if snapshot_request.version is not None:
+                        version = snapshot_request.version
+                    else:
+                        version = await self.snapshot_repository.get_next_version(
+                            session=session, flow_id=snapshot_request.flow_id
+                        )
 
-            # Create the snapshot model
-            snapshot = FlowSnapshotModel(
-                flow_id=snapshot_request.flow_id,
-                version=version,
-                name=snapshot_request.name,
-                description=snapshot_request.description,
-                flow_definition=snapshot_request.flow_definition,
-                snapshot_metadata=snapshot_request.snapshot_metadata,
-                flow_schema_version=snapshot_request.flow_schema_version,
-            )
+                    # Create the snapshot model
+                    snapshot = FlowSnapshotModel(
+                        flow_id=snapshot_request.flow_id,
+                        version=version,
+                        name=snapshot_request.name,
+                        description=snapshot_request.description,
+                        flow_definition=snapshot_request.flow_definition,
+                        snapshot_metadata=snapshot_request.snapshot_metadata,
+                        flow_schema_version=snapshot_request.flow_schema_version,
+                    )
 
-            # Save the snapshot
-            created_snapshot = self.snapshot_repository.create_snapshot(
-                snapshot=snapshot
-            )
+                    # Save the snapshot
+                    created_snapshot = await self.snapshot_repository.create_snapshot(
+                        session=session, snapshot=snapshot
+                    )
 
-            logger.info(
-                f"Successfully created snapshot for flow {snapshot_request.flow_id}"
-            )
-            return self._map_to_response(created_snapshot)
+                    logger.info(
+                        f"Successfully created snapshot for flow {snapshot_request.flow_id}"
+                    )
+                    return self._map_to_response(created_snapshot)
+        except asyncio.TimeoutError:
+            raise HTTPException(status_code=503, detail="Database operation timed out")
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
         except Exception as e:
             logger.error(
                 f"Error creating snapshot for flow {snapshot_request.flow_id}: {str(e)}"
             )
-            raise
+            raise HTTPException(
+                status_code=500, detail=f"Failed to create snapshot: {str(e)}"
+            )
 
-    def update_snapshot(
-        self, snapshot_request: FlowSnapshotUpdateRequest, user_id: int
+    async def update_snapshot(
+        self,
+        session: AsyncSession,
+        snapshot_request: FlowSnapshotUpdateRequest,
+        user_id: int,
     ) -> Optional[FlowSnapshotResponse]:
         """
         Update an existing flow snapshot
         """
         try:
-            # Get the existing snapshot
-            existing_snapshot = self.snapshot_repository.get_by_id(
-                snapshot_id=snapshot_request.id
+            async with asyncio.timeout(30):
+                async with session.begin():
+                    # Get the existing snapshot
+                    existing_snapshot = await self.snapshot_repository.get_by_id(
+                        session=session, snapshot_id=snapshot_request.id
+                    )
+                    if not existing_snapshot:
+                        logger.warning(
+                            f"Snapshot with id {snapshot_request.id} not found"
+                        )
+                        raise NOT_FOUND_EXCEPTION
+
+                    # Check if the user owns the flow this snapshot belongs to
+                    if existing_snapshot.flow.user_id != user_id:
+                        logger.warning(
+                            f"User {user_id} attempted to modify snapshot {snapshot_request.id} "
+                            f"owned by different user"
+                        )
+                        raise MISMATCH_EXCEPTION
+
+                    # Create a new snapshot model with the updated values
+                    updated_snapshot = FlowSnapshotModel(
+                        id=snapshot_request.id,
+                        flow_id=existing_snapshot.flow_id,
+                        version=existing_snapshot.version,
+                        name=snapshot_request.name
+                        if snapshot_request.name is not None
+                        else existing_snapshot.name,
+                        description=snapshot_request.description
+                        if snapshot_request.description is not None
+                        else existing_snapshot.description,
+                        flow_definition=snapshot_request.flow_definition
+                        if snapshot_request.flow_definition is not None
+                        else existing_snapshot.flow_definition,
+                        snapshot_metadata=snapshot_request.snapshot_metadata
+                        if snapshot_request.snapshot_metadata is not None
+                        else existing_snapshot.snapshot_metadata,
+                        flow_schema_version=snapshot_request.flow_schema_version
+                        if snapshot_request.flow_schema_version is not None
+                        else existing_snapshot.flow_schema_version,
+                    )
+
+                    # Update the snapshot
+                    result = await self.snapshot_repository.update_snapshot(
+                        session=session, snapshot=updated_snapshot
+                    )
+                    logger.info(f"Successfully updated snapshot {snapshot_request.id}")
+                    return self._map_to_response(result)
+        except asyncio.TimeoutError:
+            raise HTTPException(status_code=503, detail="Database operation timed out")
+        except (NOT_FOUND_EXCEPTION, MISMATCH_EXCEPTION) as e:
+            raise HTTPException(
+                status_code=404 if e == NOT_FOUND_EXCEPTION else 403, detail=str(e)
             )
-            if not existing_snapshot:
-                logger.warning(f"Snapshot with id {snapshot_request.id} not found")
-                raise NOT_FOUND_EXCEPTION
-
-            # Check if the user owns the flow this snapshot belongs to
-            if existing_snapshot.flow.user_id != user_id:
-                logger.warning(
-                    f"User {user_id} attempted to modify snapshot {snapshot_request.id} "
-                    f"owned by different user"
-                )
-                raise MISMATCH_EXCEPTION
-
-            # Create a new snapshot model with the updated values
-            updated_snapshot = FlowSnapshotModel(
-                id=snapshot_request.id,
-                flow_id=existing_snapshot.flow_id,
-                version=existing_snapshot.version,
-                name=snapshot_request.name
-                if snapshot_request.name is not None
-                else existing_snapshot.name,
-                description=snapshot_request.description
-                if snapshot_request.description is not None
-                else existing_snapshot.description,
-                flow_definition=snapshot_request.flow_definition
-                if snapshot_request.flow_definition is not None
-                else existing_snapshot.flow_definition,
-                snapshot_metadata=snapshot_request.snapshot_metadata
-                if snapshot_request.snapshot_metadata is not None
-                else existing_snapshot.snapshot_metadata,
-                flow_schema_version=snapshot_request.flow_schema_version
-                if snapshot_request.flow_schema_version is not None
-                else existing_snapshot.flow_schema_version,
-            )
-
-            # Update the snapshot
-            result = self.snapshot_repository.update_snapshot(snapshot=updated_snapshot)
-            logger.info(f"Successfully updated snapshot {snapshot_request.id}")
-            return self._map_to_response(result)
         except Exception as e:
             logger.error(f"Error updating snapshot {snapshot_request.id}: {str(e)}")
-            raise
+            raise HTTPException(
+                status_code=500, detail=f"Failed to update snapshot: {str(e)}"
+            )
 
-    def delete_snapshot(self, snapshot_id: int, user_id: int) -> None:
+    async def delete_snapshot(
+        self, session: AsyncSession, snapshot_id: int, user_id: int
+    ) -> None:
         """
         Delete a flow snapshot
         """
         try:
-            # Get the existing snapshot
-            existing_snapshot = self.snapshot_repository.get_by_id(
-                snapshot_id=snapshot_id
+            async with asyncio.timeout(30):
+                async with session.begin():
+                    # Get the existing snapshot
+                    existing_snapshot = await self.snapshot_repository.get_by_id(
+                        session=session, snapshot_id=snapshot_id
+                    )
+                    if not existing_snapshot:
+                        logger.warning(f"Snapshot with id {snapshot_id} not found")
+                        raise NOT_FOUND_EXCEPTION
+
+                    # Check if the user owns the flow this snapshot belongs to
+                    if existing_snapshot.flow.user_id != user_id:
+                        logger.warning(
+                            f"User {user_id} attempted to delete snapshot {snapshot_id} "
+                            f"owned by different user"
+                        )
+                        raise MISMATCH_EXCEPTION
+
+                    # Delete the snapshot
+                    await self.snapshot_repository.delete_snapshot(
+                        session=session, snapshot_id=snapshot_id
+                    )
+                    logger.info(f"Successfully deleted snapshot {snapshot_id}")
+        except asyncio.TimeoutError:
+            raise HTTPException(status_code=503, detail="Database operation timed out")
+        except (NOT_FOUND_EXCEPTION, MISMATCH_EXCEPTION) as e:
+            raise HTTPException(
+                status_code=404 if e == NOT_FOUND_EXCEPTION else 403, detail=str(e)
             )
-            if not existing_snapshot:
-                logger.warning(f"Snapshot with id {snapshot_id} not found")
-                raise NOT_FOUND_EXCEPTION
-
-            # Check if the user owns the flow this snapshot belongs to
-            if existing_snapshot.flow.user_id != user_id:
-                logger.warning(
-                    f"User {user_id} attempted to delete snapshot {snapshot_id} "
-                    f"owned by different user"
-                )
-                raise MISMATCH_EXCEPTION
-
-            # Delete the snapshot
-            self.snapshot_repository.delete_snapshot(snapshot_id=snapshot_id)
-            logger.info(f"Successfully deleted snapshot {snapshot_id}")
         except Exception as e:
             logger.error(f"Error deleting snapshot {snapshot_id}: {str(e)}")
-            raise
+            raise HTTPException(
+                status_code=500, detail=f"Failed to delete snapshot: {str(e)}"
+            )
 
     def _map_to_response(self, snapshot: FlowSnapshotModel) -> FlowSnapshotResponse:
         """
