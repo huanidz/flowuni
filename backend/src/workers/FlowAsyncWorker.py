@@ -2,6 +2,7 @@ from typing import Dict, List, Optional
 
 from fastapi import HTTPException
 from loguru import logger
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.exceptions.auth_exceptions import UNAUTHORIZED_EXCEPTION
 from src.executors.ExecutionContext import ExecutionContext
 from src.executors.ExecutionEventPublisher import (
@@ -113,6 +114,7 @@ class FlowAsyncWorker:
         request_api_key: Optional[str],
         api_key_service: ApiKeyService,
         flow_service: FlowService,
+        session: AsyncSession,
         stream: bool = False,
         is_test: bool = False,
     ) -> FlowRunResult:
@@ -140,7 +142,7 @@ class FlowAsyncWorker:
         """
         try:
             # Validate API key
-            self._validate_api_key(request_api_key, api_key_service)
+            await self._validate_api_key(request_api_key, api_key_service, session)
 
             # Check streaming support
             if stream:
@@ -150,7 +152,9 @@ class FlowAsyncWorker:
                 )
 
             # Retrieve and validate flow
-            flow_definition = self._get_validated_flow(flow_id, flow_service)
+            flow_definition = await self._get_validated_flow(
+                flow_id, flow_service, session
+            )
 
             # Execute the flow
             logger.info(f"Starting validated flow execution for flow_id: {flow_id}")
@@ -173,8 +177,11 @@ class FlowAsyncWorker:
             )
             raise
 
-    def _validate_api_key(
-        self, api_key: Optional[str], api_key_service: ApiKeyService
+    async def _validate_api_key(
+        self,
+        api_key: Optional[str],
+        api_key_service: ApiKeyService,
+        session: AsyncSession,
     ) -> None:
         """
         Validate the provided API key.
@@ -182,6 +189,7 @@ class FlowAsyncWorker:
         Args:
             api_key: The API key to validate
             api_key_service: Service for API key operations
+            session: AsyncSession for database operations
 
         Raises:
             HTTPException: If API key is missing or invalid (401)
@@ -190,21 +198,24 @@ class FlowAsyncWorker:
             logger.warning("No API key provided")
             raise UNAUTHORIZED_EXCEPTION
 
-        api_key_model = api_key_service.validate_key(api_key)
+        api_key_model = await api_key_service.validate_key(api_key, session)
         if not api_key_model:
             logger.warning("Invalid API key provided")
             raise UNAUTHORIZED_EXCEPTION
 
         # Update last used timestamp
-        api_key_service.set_last_used_at(api_key_model.key_id)
+        await api_key_service.set_last_used_at(api_key_model.key_id, session)
 
-    def _get_validated_flow(self, flow_id: str, flow_service: FlowService) -> Dict:
+    async def _get_validated_flow(
+        self, flow_id: str, flow_service: FlowService, session: AsyncSession
+    ) -> Dict:
         """
         Retrieve and validate flow from the database.
 
         Args:
             flow_id: Unique identifier for the flow
             flow_service: Service for flow operations
+            session: AsyncSession for database operations
 
         Returns:
             Dict: Flow definition dictionary
@@ -214,7 +225,9 @@ class FlowAsyncWorker:
                           or has no definition (400)
         """
         logger.info(f"Retrieving flow definition for flow_id: {flow_id}")
-        flow = flow_service.get_flow_detail_by_id(flow_id=flow_id)
+        flow = await flow_service.get_flow_detail_by_id(
+            flow_id=flow_id, session=session
+        )
 
         if not flow:
             logger.warning(f"Flow not found: {flow_id}")

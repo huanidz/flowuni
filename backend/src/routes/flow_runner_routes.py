@@ -7,12 +7,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import JSONResponse, StreamingResponse
 from loguru import logger
 from redis import Redis
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.celery_worker.tasks.flow_execution_tasks import compile_flow, run_flow
 from src.dependencies.api_key_dependency import get_api_key_service
 from src.dependencies.auth_dependency import (
     auth_through_url_param,
     get_current_user,
 )
+from src.dependencies.db_dependency import get_async_db
 from src.dependencies.flow_dep import get_flow_service
 from src.dependencies.redis_dependency import get_redis_client
 from src.schemas.flowbuilder.flow_graph_schemas import (
@@ -192,6 +194,7 @@ async def run_flow_endpoint(
     stream: bool = Query(False),
     api_key_service: ApiKeyService = Depends(get_api_key_service),
     flow_service: FlowService = Depends(get_flow_service),
+    session: AsyncSession = Depends(get_async_db),
 ):
     """
     Execute a flow with proper validation and error handling.
@@ -239,14 +242,15 @@ async def run_flow_endpoint(
                     detail="Invalid authorization header format.",
                 )
 
-        # Create FlowSyncWorker and execute with validation
-        flow_sync_worker = FlowAsyncWorker()
-        execution_result = await flow_sync_worker.run_flow_from_api(
+        # Create FlowAsyncWorker and execute with validation
+        flow_async_worker = FlowAsyncWorker()
+        execution_result = await flow_async_worker.run_flow_from_api(
             flow_id=flow_id,
             flow_run_request=flow_run_request,
             request_api_key=request_api_key,
             api_key_service=api_key_service,
             flow_service=flow_service,
+            session=session,
             stream=stream,
         )
 
