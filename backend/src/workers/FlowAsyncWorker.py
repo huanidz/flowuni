@@ -214,13 +214,17 @@ class FlowAsyncWorker:
             logger.warning("No API key provided")
             raise UNAUTHORIZED_EXCEPTION
 
-        api_key_model = await api_key_service.validate_key(api_key, session)
+        api_key_model = await api_key_service.validate_key(
+            api_key_value=api_key, session=session
+        )
         if not api_key_model:
             logger.warning("Invalid API key provided")
             raise UNAUTHORIZED_EXCEPTION
 
         # Update last used timestamp
-        await api_key_service.set_last_used_at(api_key_model.key_id, session)
+        await api_key_service.set_last_used_at(
+            key_id=api_key_model.key_id, session=session
+        )
 
     async def _get_validated_flow(
         self, flow_id: str, flow_service: FlowService, session: AsyncSession

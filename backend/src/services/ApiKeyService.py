@@ -210,7 +210,7 @@ class ApiKeyService(ApiKeyServiceInterface):
                 # This is a read operation with a write (update last_used_at), so we need a transaction
 
                 api_key_model = await self.api_key_repository.validate_api_key(
-                    session, api_key_value
+                    session=session, api_key_value=api_key_value
                 )
                 if api_key_model:
                     logger.info(
