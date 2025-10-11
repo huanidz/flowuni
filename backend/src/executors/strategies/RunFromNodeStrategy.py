@@ -58,7 +58,7 @@ class RunFromNodeStrategy:
             self.graph_executor.execution_control.scope == "node_only"
         ):
             logger.info(f"Node '{start_node}' is a standalone node, executing it only")
-            return self._execute_standalone_node(start_node)
+            return await self._execute_standalone_node(start_node)
 
         # Find all ancestors that need to be executed
         ancestors_to_execute = self._find_ancestors_to_execute(start_node)
@@ -430,7 +430,7 @@ class RunFromNodeStrategy:
         # Publish the queue event for all nodes in each layer
         for layer_index, layer_nodes in enumerate(execution_plan, start=1):
             for node_id in layer_nodes:
-                self.graph_executor.push_event(
+                await self.graph_executor.push_event(
                     node_id=node_id,
                     event=NODE_EXECUTION_STATUS.QUEUED,
                     data={},
@@ -587,7 +587,7 @@ class RunFromNodeStrategy:
                     f"Updated graph with ancestor result for node {result.node_id}"
                 )
 
-    def _execute_standalone_node(self, start_node: str) -> Dict[str, Any]:
+    async def _execute_standalone_node(self, start_node: str) -> Dict[str, Any]:
         """
         Execute a standalone node (no ancestors and no successors).
 
@@ -600,7 +600,7 @@ class RunFromNodeStrategy:
         start_time = time.time()
 
         # Publish queue event for the standalone node
-        self.graph_executor.push_event(
+        await self.graph_executor.push_event(
             node_id=start_node,
             event=NODE_EXECUTION_STATUS.QUEUED,
             data={},
@@ -608,7 +608,9 @@ class RunFromNodeStrategy:
 
         try:
             # Execute the standalone node
-            layer_results = [self.graph_executor._execute_single_node(start_node, 1)]
+            layer_results = [
+                await self.graph_executor._execute_single_node(start_node, 1)
+            ]
 
             # Check for failure
             failed_nodes = [r for r in layer_results if not r.success]
