@@ -40,6 +40,15 @@ class FlowSnapshotServiceInterface(ABC):
         pass
 
     @abstractmethod
+    async def get_current_snapshot(
+        self, session: AsyncSession, flow_id: int
+    ) -> Optional[FlowSnapshotResponse]:
+        """
+        Get the current (latest version) flow snapshot for a specific flow
+        """
+        pass
+
+    @abstractmethod
     async def create_snapshot(
         self,
         session: AsyncSession,
@@ -126,6 +135,33 @@ class FlowSnapshotService(FlowSnapshotServiceInterface):
             raise HTTPException(status_code=503, detail="Database operation timed out")
         except Exception as e:
             logger.error(f"Error retrieving snapshots for flow {flow_id}: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+    async def get_current_snapshot(
+        self, session: AsyncSession, flow_id: int
+    ) -> Optional[FlowSnapshotResponse]:
+        """
+        Get the current (latest version) flow snapshot for a specific flow
+        """
+        try:
+            async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
+                snapshot = await self.snapshot_repository.get_current_snapshot(
+                    session=session, flow_id=flow_id
+                )
+                if not snapshot:
+                    logger.warning(f"No current snapshot found for flow {flow_id}")
+                    return None
+
+                logger.info(
+                    f"Successfully retrieved current snapshot for flow {flow_id}"
+                )
+                return self._map_to_response(snapshot)
+        except asyncio.TimeoutError:
+            raise HTTPException(status_code=503, detail="Database operation timed out")
+        except Exception as e:
+            logger.error(
+                f"Error retrieving current snapshot for flow {flow_id}: {str(e)}"
+            )
             raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
     async def create_snapshot(

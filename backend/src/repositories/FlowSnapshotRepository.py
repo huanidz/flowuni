@@ -138,6 +138,32 @@ class FlowSnapshotRepository(BaseRepository):
             )
             raise e
 
+    async def get_current_snapshot(
+        self, session: AsyncSession, flow_id: int
+    ) -> Optional[FlowSnapshotModel]:
+        """
+        Get the current (latest version) flow snapshot for a specific flow
+        """
+        try:
+            result = await session.execute(
+                select(FlowSnapshotModel)
+                .options(selectinload(FlowSnapshotModel.flow))
+                .where(FlowSnapshotModel.flow_id == flow_id)
+                .order_by(FlowSnapshotModel.version.desc())
+                .limit(1)
+            )
+            snapshot = result.scalar_one_or_none()
+            if snapshot:
+                logger.info(f"Retrieved current snapshot for flow ID: {flow_id}")
+            else:
+                logger.info(f"No current snapshot found for flow ID: {flow_id}")
+            return snapshot
+        except Exception as e:
+            logger.error(
+                f"Error retrieving current snapshot for flow ID {flow_id}: {e}"
+            )
+            raise e
+
     async def create_snapshot(
         self, session: AsyncSession, snapshot: FlowSnapshotModel
     ) -> FlowSnapshotModel:
