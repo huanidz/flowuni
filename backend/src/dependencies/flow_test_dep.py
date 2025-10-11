@@ -1,15 +1,16 @@
 from fastapi import Depends
-from src.dependencies.db_dependency import get_db
+from sqlalchemy.ext.asyncio import AsyncSession
+from src.dependencies.db_dependency import get_async_db
 from src.dependencies.redis_dependency import get_redis_client
 from src.repositories.FlowTestRepository import FlowTestRepository
 from src.services.FlowTestService import FlowTestService
 
 
-def get_flow_test_repository(db_session=Depends(get_db)) -> FlowTestRepository:
+def get_flow_test_repository() -> FlowTestRepository:
     """
     Dependency that returns FlowTestRepository instance.
     """
-    return FlowTestRepository(db_session=db_session)
+    return FlowTestRepository()
 
 
 def get_flow_test_service(

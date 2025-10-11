@@ -1,6 +1,5 @@
 import time
-from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Dict, List
+from typing import TYPE_CHECKING, Any, Dict, List
 
 from loguru import logger
 from src.consts.node_consts import NODE_EXECUTION_STATUS
@@ -14,6 +13,9 @@ from src.schemas.flowbuilder.flow_graph_schemas import (
     NodeExecutionResult,
 )
 
+if TYPE_CHECKING:
+    from src.executors.GraphExecutor import GraphExecutor
+
 
 class RunFromNodeStrategy:
     """
@@ -23,16 +25,16 @@ class RunFromNodeStrategy:
     necessary ancestors first and then proceeding with the modified execution plan.
     """
 
-    def __init__(self, graph_executor):
+    def __init__(self, graph_executor: "GraphExecutor"):
         """
         Initialize the RunFromNodeStrategy.
 
         Args:
             graph_executor: The GraphExecutor instance that owns this strategy
         """
-        self.graph_executor = graph_executor
+        self.graph_executor: "GraphExecutor" = graph_executor
 
-    def execute(self, start_node: str) -> Dict[str, Any]:
+    async def execute(self, start_node: str) -> Dict[str, Any]:
         """
         Execute the graph starting from a specific node.
 
@@ -56,7 +58,7 @@ class RunFromNodeStrategy:
             self.graph_executor.execution_control.scope == "node_only"
         ):
             logger.info(f"Node '{start_node}' is a standalone node, executing it only")
-            return self._execute_standalone_node(start_node)
+            return await self._execute_standalone_node(start_node)
 
         # Find all ancestors that need to be executed
         ancestors_to_execute = self._find_ancestors_to_execute(start_node)
@@ -80,7 +82,7 @@ class RunFromNodeStrategy:
                 f"Executing {len(ancestors_to_run_first)} ancestors first: {ancestors_to_run_first}"
             )
             # Execute the ancestors first
-            ancestors_execution_result = self._execute_ancestors_first(
+            ancestors_execution_result = await self._execute_ancestors_first(
                 ancestors_to_run_first
             )
             # Update the graph with the execution results
@@ -96,7 +98,7 @@ class RunFromNodeStrategy:
         modified_execution_plan = self._create_modified_execution_plan(start_node)
 
         # Execute the modified plan
-        return self._execute_modified_plan(
+        return await self._execute_modified_plan(
             modified_execution_plan, ancestors_to_execute
         )
 
@@ -168,7 +170,7 @@ class RunFromNodeStrategy:
                 f"Ancestor '{ancestor_id}' is properly executed with valid output values"
             )
 
-    def _prepare_start_node_from_ancestors(
+    def _prepare_start_node_from_ancestors(  # noqa: C901
         self, start_node: str, ancestors: List[str]
     ) -> None:
         """
@@ -272,20 +274,20 @@ class RunFromNodeStrategy:
 
                     if output_handle_from_ancestor is None:
                         logger.warning(
-                            f"Source handle '{source_handle}' not found in ancestor '{ancestor_id}' outputs"
+                            f"Source handle '{source_handle}' not found in ancestor '{ancestor_id}' outputs"  # noqa
                         )
                         continue
 
                     if input_handle_from_start_node is None:
                         logger.warning(
-                            f"Target handle '{target_handle}' not found in start_node '{start_node}' inputs"
+                            f"Target handle '{target_handle}' not found in start_node '{start_node}' inputs"  # noqa
                         )
                         continue
 
                     # Validate that the source handle exists in the ancestor's output data
                     if source_handle not in ancestor_data.output_values:
                         logger.warning(
-                            f"Source handle '{source_handle}' not found in ancestor '{ancestor_id}' outputs"
+                            f"Source handle '{source_handle}' not found in ancestor '{ancestor_id}' outputs"  # noqa
                         )
                         continue
 
@@ -294,18 +296,18 @@ class RunFromNodeStrategy:
                         ancestor_data.output_values[source_handle]
                     )
 
-                    # Adapt the output value to the target handle type using NodeDataFlowAdapter
+                    # Adapt the output value to the target handle type using NodeDataFlowAdapter  # noqa E501
                     adapted_output_value_to_transfer = NodeDataFlowAdapter.adapt(
                         output_data_to_transfer=output_value_to_transfer,
                         source_handle_type=type(output_handle_from_ancestor.type),
                         target_handle_type=type(input_handle_from_start_node.type),
                     )
                     logger.info(
-                        f"👉 Adapted data transfer from ancestor '{ancestor_id}' to start_node '{start_node}': "
-                        f"{source_handle} -> {target_handle} = {adapted_output_value_to_transfer}"
+                        f"👉 Adapted data transfer from ancestor '{ancestor_id}' to start_node '{start_node}': "  # noqa E501
+                        f"{source_handle} -> {target_handle} = {adapted_output_value_to_transfer}"  # noqa E501
                     )
 
-                    # Assign the adapted value to the target handle in start_node's input_values
+                    # Assign the adapted value to the target handle in start_node's input_values  # noqa E501
                     start_node_data.input_values[target_handle] = (
                         adapted_output_value_to_transfer
                     )
@@ -313,7 +315,7 @@ class RunFromNodeStrategy:
             # Update the graph with the modified start_node data
             self.graph_executor.graph.nodes[start_node]["data"] = start_node_data
             logger.info(
-                f"Prepared start_node '{start_node}' input_values from {len(ancestors)} ancestors"
+                f"Prepared start_node '{start_node}' input_values from {len(ancestors)} ancestors"  # noqa E501
             )
 
         except Exception as e:
@@ -404,7 +406,7 @@ class RunFromNodeStrategy:
 
         return True
 
-    def _execute_modified_plan(
+    async def _execute_modified_plan(  # noqa: C901
         self,
         execution_plan: List[List[str]],
         ancestors: List[str],
@@ -428,57 +430,52 @@ class RunFromNodeStrategy:
         # Publish the queue event for all nodes in each layer
         for layer_index, layer_nodes in enumerate(execution_plan, start=1):
             for node_id in layer_nodes:
-                self.graph_executor.push_event(
+                await self.graph_executor.push_event(
                     node_id=node_id,
                     event=NODE_EXECUTION_STATUS.QUEUED,
                     data={},
                 )
 
         try:
-            # Use ThreadPoolExecutor for parallel execution within layers
-            with ThreadPoolExecutor(
-                max_workers=self.graph_executor.max_workers
-            ) as executor:
-                for layer_index, layer_nodes in enumerate(execution_plan, 1):
-                    layer_start_time = time.time()
+            # Execute layers sequentially with parallel execution within each layer
+            for layer_index, layer_nodes in enumerate(execution_plan, 1):
+                layer_start_time = time.time()
 
-                    # Execute all nodes in this layer in parallel
-                    layer_results = self.graph_executor._execute_layer_parallel(
-                        executor, layer_nodes, layer_index
-                    )
+                # Execute all nodes in this layer in parallel
+                layer_results = await self.graph_executor._execute_layer_parallel(
+                    layer_nodes, layer_index
+                )
 
-                    layer_execution_time = time.time() - layer_start_time
+                layer_execution_time = time.time() - layer_start_time
 
-                    # Check for failures
-                    failed_nodes = [r for r in layer_results if not r.success]
-                    successful_nodes = [r for r in layer_results if r.success]
+                # Check for failures
+                failed_nodes = [r for r in layer_results if not r.success]
+                successful_nodes = [r for r in layer_results if r.success]
 
-                    if failed_nodes:
-                        error_msg = f"Layer {layer_index} execution failed. Failed nodes: {[r.node_id for r in failed_nodes]}"
-                        logger.error(error_msg)
+                if failed_nodes:
+                    error_msg = f"Layer {layer_index} execution failed. Failed nodes: {[r.node_id for r in failed_nodes]}"  # noqa E501
+                    logger.error(error_msg)
 
-                        for result in failed_nodes:
-                            logger.error(
-                                f"Node {result.node_id} failed: {result.error}"
-                            )
+                    for result in failed_nodes:
+                        logger.error(f"Node {result.node_id} failed: {result.error}")
 
-                        raise GraphExecutorError(error_msg)
+                    raise GraphExecutorError(error_msg)
 
-                    logger.success(
-                        f"Layer {layer_index} completed successfully in {layer_execution_time:.3f}s. "
-                        f"Processed {len(successful_nodes)} nodes."
-                    )
+                logger.success(
+                    f"Layer {layer_index} completed successfully in {layer_execution_time:.3f}s. "  # noqa E501
+                    f"Processed {len(successful_nodes)} nodes."
+                )
 
-                    completed_nodes += len(successful_nodes)
+                completed_nodes += len(successful_nodes)
 
-                    # Update successors for all successful nodes
-                    self.graph_executor._update_all_successors(successful_nodes)
+                # Update successors for all successful nodes
+                self.graph_executor._update_all_successors(successful_nodes)
 
             total_time = time.time() - start_time
 
             logger.success(
                 f"Graph execution completed successfully in {total_time:.3f}s. "
-                f"Processed {completed_nodes} nodes across {len(execution_plan)} layers."
+                f"Processed {completed_nodes} nodes across {len(execution_plan)} layers."  # noqa E501
             )
 
             # Collect results from the final layer
@@ -526,7 +523,7 @@ class RunFromNodeStrategy:
         except Exception as e:
             raise GraphExecutorError(f"Execution failed: {str(e)}.") from e
 
-    def _execute_ancestors_first(
+    async def _execute_ancestors_first(
         self, ancestors_to_run: List[str]
     ) -> List[NodeExecutionResult]:
         """
@@ -547,14 +544,14 @@ class RunFromNodeStrategy:
         for ancestor_id in ancestors_to_run:
             try:
                 # Publish queue event
-                self.graph_executor.push_event(
+                await self.graph_executor.push_event(
                     node_id=ancestor_id,
                     event=NODE_EXECUTION_STATUS.QUEUED,
                     data={},
                 )
 
                 # Execute the ancestor
-                result = self.graph_executor._execute_single_node(ancestor_id, 1)
+                result = await self.graph_executor._execute_single_node(ancestor_id, 1)
                 results.append(result)
 
                 # Update successors with the ancestor's output
@@ -590,7 +587,7 @@ class RunFromNodeStrategy:
                     f"Updated graph with ancestor result for node {result.node_id}"
                 )
 
-    def _execute_standalone_node(self, start_node: str) -> Dict[str, Any]:
+    async def _execute_standalone_node(self, start_node: str) -> Dict[str, Any]:
         """
         Execute a standalone node (no ancestors and no successors).
 
@@ -603,7 +600,7 @@ class RunFromNodeStrategy:
         start_time = time.time()
 
         # Publish queue event for the standalone node
-        self.graph_executor.push_event(
+        await self.graph_executor.push_event(
             node_id=start_node,
             event=NODE_EXECUTION_STATUS.QUEUED,
             data={},
@@ -611,14 +608,16 @@ class RunFromNodeStrategy:
 
         try:
             # Execute the standalone node
-            layer_results = [self.graph_executor._execute_single_node(start_node, 1)]
+            layer_results = [
+                await self.graph_executor._execute_single_node(start_node, 1)
+            ]
 
             # Check for failure
             failed_nodes = [r for r in layer_results if not r.success]
             successful_nodes = [r for r in layer_results if r.success]
 
             if failed_nodes:
-                error_msg = f"Standalone node execution failed. Failed nodes: {[r.node_id for r in failed_nodes]}"
+                error_msg = f"Standalone node execution failed. Failed nodes: {[r.node_id for r in failed_nodes]}"  # noqa
                 logger.error(error_msg)
 
                 for result in failed_nodes:

@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Optional
 
-from src.decorators.common_decorators import futureuse
+from sqlalchemy.ext.asyncio import AsyncSession
 
 if TYPE_CHECKING:
     from src.services.ApiKeyService import ApiKeyService, ApiKeyServiceInterface

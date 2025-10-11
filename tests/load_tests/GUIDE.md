@@ -1,0 +1,1 @@
+# ALL TEST IN HERE MUST BE WRITTEN USING GRAFANA's k6 load testing lib.

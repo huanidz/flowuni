@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Union
 
 from loguru import logger
 from src.consts.node_consts import NODE_GROUP_CONSTS, NODE_TAGS_CONSTS
+from src.dependencies.db_dependency import AsyncSessionLocal
 from src.models.parsers.SessionChatHistoryParser import (
     SessionChatHistoryListParser,
     SessionChatHistoryParser,
@@ -12,6 +13,8 @@ from src.nodes.core.NodeOutput import NodeOutput
 from src.nodes.handles.basics.inputs.NumberInputHandle import NumberInputHandle
 from src.nodes.handles.basics.outputs.StringOutputHandle import StringOutputHandle
 from src.nodes.NodeBase import Node, NodeSpec
+from src.repositories import FlowRepositories, SessionRepository
+from src.services.PlaygroundService import PlaygroundService
 
 if TYPE_CHECKING:
     from src.models.alchemy.session.SessionChatHistoryModel import (
@@ -46,7 +49,7 @@ class MemoryNode(Node):
         icon=NodeIconIconify(icon_value="material-symbols:memory"),
     )
 
-    def process(
+    async def process(
         self, inputs: Dict[str, Any], parameters: Dict[str, Any]
     ) -> Dict[str, Union[str]]:
         """
@@ -61,8 +64,6 @@ class MemoryNode(Node):
         """
         recent_messages_count = inputs.get("recent_messages", None)
 
-        session_repo = self.context.repositories.session_repository
-
         session_id = self.context.session_id
 
         # If no session_id, construct a dummy chat_history_list and return empty messages
@@ -76,10 +77,19 @@ class MemoryNode(Node):
 
         logger.info(f"Context: {self.context.to_dict()}")
 
-        messages: List[SessionChatHistoryModel] = session_repo.get_chat_history(
-            session_id=session_id,
-            num_messages=recent_messages_count,
-        )
+        # Properly manage database session to avoid resource leaks
+        async with AsyncSessionLocal() as db_session:
+            playground_service = PlaygroundService(
+                flow_repository=FlowRepositories(),
+                flow_session_repository=SessionRepository(),
+            )
+            messages: List[
+                SessionChatHistoryModel
+            ] = await playground_service.get_chat_history(
+                session=db_session,
+                session_id=session_id,
+                num_messages=recent_messages_count,
+            )
 
         chat_histories = [
             SessionChatHistoryParser.model_validate(chat_history)

@@ -2,7 +2,9 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from loguru import logger
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.dependencies.auth_dependency import get_current_user
+from src.dependencies.db_dependency import get_async_db
 from src.dependencies.playground_dependency import get_playground_service
 from src.schemas.playground.playground_schemas import (
     AddChatMessageRequest,
@@ -25,9 +27,10 @@ playground_router = APIRouter(prefix="/api/playground", tags=["playground"])
     response_model=PlaygroundSessionResponse,
     status_code=status.HTTP_201_CREATED,
 )
-def create_playground_session(
+async def create_playground_session(
     request: CreatePlaygroundSessionRequest,
     user_id: int = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_db),
     playground_service=Depends(get_playground_service),
 ):
     """
@@ -37,7 +40,7 @@ def create_playground_session(
         logger.info(
             f"User {user_id} creating playground session for flow {request.flow_id}"
         )
-        return playground_service.create_playground_session(request)
+        return await playground_service.create_playground_session(session, request)
     except ValueError as e:
         logger.warning(f"Validation error creating playground session: {str(e)}")
         raise HTTPException(
@@ -56,11 +59,12 @@ def create_playground_session(
     "/sessions",
     response_model=GetPlaygroundSessionsResponse,
 )
-def get_playground_sessions(
+async def get_playground_sessions(
     flow_id: str = Query(..., description="Flow ID"),
     page: int = Query(1, description="Page number", ge=1),
     per_page: int = Query(10, description="Number of items per page", ge=1, le=100),
     user_id: int = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_db),
     playground_service=Depends(get_playground_service),
 ):
     """
@@ -71,7 +75,7 @@ def get_playground_sessions(
         request = GetPlaygroundSessionsRequest(
             flow_id=flow_id, page=page, per_page=per_page
         )
-        return playground_service.get_playground_sessions(request)
+        return await playground_service.get_playground_sessions(session, request)
     except Exception as e:
         logger.error(
             f"Error retrieving playground sessions for flow {flow_id}: {str(e)}"
@@ -86,9 +90,10 @@ def get_playground_sessions(
     "/sessions/{session_id}",
     response_model=PlaygroundSessionResponse,
 )
-def get_playground_session(
+async def get_playground_session(
     session_id: str,
     user_id: int = Depends(get_current_user),
+    db_session: AsyncSession = Depends(get_async_db),
     playground_service=Depends(get_playground_service),
 ):
     """
@@ -96,7 +101,7 @@ def get_playground_session(
     """
     try:
         logger.info(f"User {user_id} retrieving playground session {session_id}")
-        session = playground_service.get_session_by_id(session_id)
+        session = await playground_service.get_session_by_id(db_session, session_id)
 
         if not session:
             raise HTTPException(
@@ -119,9 +124,10 @@ def get_playground_session(
     "/sessions/{session_id}",
     status_code=status.HTTP_204_NO_CONTENT,
 )
-def delete_playground_session(
+async def delete_playground_session(
     session_id: str,
     user_id: int = Depends(get_current_user),
+    db_session: AsyncSession = Depends(get_async_db),
     playground_service=Depends(get_playground_service),
 ):
     """
@@ -129,7 +135,7 @@ def delete_playground_session(
     """
     try:
         logger.info(f"User {user_id} deleting playground session {session_id}")
-        success = playground_service.delete_session(session_id)
+        success = await playground_service.delete_session(db_session, session_id)
 
         if not success:
             raise HTTPException(
@@ -153,9 +159,10 @@ def delete_playground_session(
     response_model=ChatMessageResponse,
     status_code=status.HTTP_201_CREATED,
 )
-def add_chat_message(
+async def add_chat_message(
     request: AddChatMessageRequest,
     user_id: int = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_db),
     playground_service=Depends(get_playground_service),
 ):
     """
@@ -165,7 +172,7 @@ def add_chat_message(
         logger.info(
             f"User {user_id} adding chat message to session {request.session_id}"
         )
-        return playground_service.add_chat_message(request)
+        return await playground_service.add_chat_message(session, request)
     except ValueError as e:
         logger.warning(f"Validation error adding chat message: {str(e)}")
         raise HTTPException(
@@ -184,10 +191,11 @@ def add_chat_message(
     "/sessions/{session_id}/chat",
     response_model=GetChatHistoryResponse,
 )
-def get_chat_history(
+async def get_chat_history(
     session_id: str,
     num_messages: Optional[int] = None,
     user_id: int = Depends(get_current_user),
+    db_session: AsyncSession = Depends(get_async_db),
     playground_service=Depends(get_playground_service),
 ):
     """
@@ -195,7 +203,9 @@ def get_chat_history(
     """
     try:
         logger.info(f"User {user_id} retrieving chat history for session {session_id}")
-        return playground_service.get_chat_history(session_id, num_messages)
+        return await playground_service.get_chat_history(
+            db_session, session_id, num_messages
+        )
     except ValueError as e:
         logger.warning(f"Validation error retrieving chat history: {str(e)}")
         raise HTTPException(
@@ -214,10 +224,11 @@ def get_chat_history(
     "/sessions/{session_id}/metadata",
     response_model=UpdateSessionMetadataResponse,
 )
-def update_session_metadata(
+async def update_session_metadata(
     session_id: str,
     metadata: dict,
     user_id: int = Depends(get_current_user),
+    db_session: AsyncSession = Depends(get_async_db),
     playground_service=Depends(get_playground_service),
 ):
     """
@@ -226,7 +237,7 @@ def update_session_metadata(
     try:
         logger.info(f"User {user_id} updating metadata for session {session_id}")
         request = UpdateSessionMetadataRequest(session_id=session_id, metadata=metadata)
-        return playground_service.update_session_metadata(request)
+        return await playground_service.update_session_metadata(db_session, request)
     except ValueError as e:
         logger.warning(f"Validation error updating session metadata: {str(e)}")
         raise HTTPException(
@@ -245,11 +256,12 @@ def update_session_metadata(
     "/sessions-with-last-message",
     response_model=GetSessionsWithLastMessageResponse,
 )
-def get_sessions_with_last_message(
+async def get_sessions_with_last_message(
     flow_id: str = Query(..., description="Flow ID"),
     page: int = Query(1, description="Page number", ge=1),
     per_page: int = Query(10, description="Number of items per page", ge=1, le=100),
     user_id: int = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_db),
     playground_service=Depends(get_playground_service),
 ):
     """
@@ -262,7 +274,7 @@ def get_sessions_with_last_message(
         request = GetPlaygroundSessionsRequest(
             flow_id=flow_id, page=page, per_page=per_page
         )
-        return playground_service.get_sessions_with_last_message(request)
+        return await playground_service.get_sessions_with_last_message(session, request)
     except Exception as e:
         logger.error(
             f"Error retrieving playground sessions with last messages for flow {flow_id}: {str(e)}"

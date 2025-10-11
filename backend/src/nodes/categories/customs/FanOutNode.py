@@ -33,7 +33,7 @@ class FanOutNode(Node):
         icon=NodeIconIconify(icon_value="material-symbols:call-split"),
     )
 
-    def process(
+    async def process(
         self, inputs: Dict[str, Any], parameters: Dict[str, Any]
     ) -> Dict[str, Union[str, dict]]:
         """

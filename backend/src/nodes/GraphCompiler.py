@@ -1,3 +1,4 @@
+import asyncio
 from collections import deque
 from typing import Any, Dict, List, Optional
 
@@ -121,6 +122,22 @@ class GraphCompiler:
         self._execution_plan = execution_plan
         logger.info(f"Compilation successful: {len(execution_plan)} execution layers")
         return execution_plan
+
+    async def async_compile(self) -> List[List[str]]:
+        """
+        Asynchronously compile the graph into a layered execution plan using Kahn's algorithm.
+
+        This method provides an async interface for graph compilation, allowing for
+        non-blocking execution in async contexts. The actual compilation logic is
+        the same as the synchronous compile() method.
+
+        Returns:
+            A list of layers, where each layer contains node IDs that can be executed in parallel
+
+        Raises:
+            GraphCompilerError: If compilation fails due to graph structure issues
+        """
+        return await asyncio.to_thread(self.compile)
 
     def _kahn_topological_sort(self) -> List[List[str]]:
         """

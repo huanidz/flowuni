@@ -3,8 +3,7 @@ from typing import Dict
 from loguru import logger
 from redis import Redis
 from src.celery_worker.celery_worker import celery_app
-from src.configs.config import get_settings
-from src.dependencies.db_dependency import get_db
+from src.configs.config import get_app_settings
 from src.executors.ExecutionContext import ExecutionContext
 from src.executors.ExecutionEventPublisher import (
     ExecutionControl,
@@ -13,19 +12,35 @@ from src.executors.ExecutionEventPublisher import (
 from src.executors.GraphExecutor import GraphExecutor
 from src.nodes.GraphCompiler import GraphCompiler
 from src.nodes.GraphLoader import GraphLoader
-from src.repositories.RepositoriesContainer import RepositoriesContainer
 from src.schemas.flowbuilder.flow_graph_schemas import CanvasFlowRunRequest
+from src.utils.async_utils import run_async
 
 
 @celery_app.task
 def compile_flow(flow_id: str, flow_graph_request_dict: Dict):
-    flow_graph_request = CanvasFlowRunRequest(**flow_graph_request_dict)
-    G = GraphLoader.from_request(flow_graph_request)
+    """
+    Synchronous Celery task that compiles a flow graph.
 
-    compiler = GraphCompiler(graph=G)
-    compiler.compile()
+    Args:
+        flow_id: Unique identifier for the flow
+        flow_graph_request_dict: Serialized flow graph request
 
-    return {"status": "compiled", "flow_id": flow_id}
+    Returns:
+        Dictionary with compilation status
+    """
+    try:
+        flow_graph_request = CanvasFlowRunRequest(**flow_graph_request_dict)
+        G = GraphLoader.from_request(flow_graph_request)
+
+        compiler = GraphCompiler(graph=G)
+
+        # Run the async compile function using run_async utility
+        run_async(compiler.async_compile())
+
+        return {"status": "compiled", "flow_id": flow_id}
+    except Exception as e:
+        logger.error(f"Error in compile_flow task: {str(e)}")
+        raise
 
 
 @celery_app.task(bind=True)
@@ -47,15 +62,18 @@ def run_flow(
         Dictionary with execution results
     """
 
-    app_db_session = None  # Get a DB session for this task
+    """
+    Synchronous Celery task that runs graph execution.
 
+    Args:
+        flow_id: Unique identifier for the flow
+        flow_graph_request_dict: Serialized flow graph request
+
+    Returns:
+        Dictionary with execution results
+    """
     try:
-        app_settings = get_settings()
-
-        # Get DB session
-        app_db_session = next(get_db())
-        repositories = RepositoriesContainer.auto_init_all(db_session=app_db_session)
-
+        app_settings = get_app_settings()
         logger.info(f"Starting flow execution task for flow_id: {flow_id}")
 
         # Parse the request
@@ -70,7 +88,9 @@ def run_flow(
         compiler = GraphCompiler(
             graph=G, remove_standalone=False
         )  # Keep standalone nodes
-        execution_plan = compiler.compile()
+
+        # Run the async compile using run_async utility
+        execution_plan = run_async(compiler.async_compile())
 
         # Create executor
         redis_client = Redis(
@@ -90,7 +110,6 @@ def run_flow(
             session_id=flow_graph_request.session_id,
             user_id=None,
             metadata={},
-            repositories=repositories,
         )
         exe_control = ExecutionControl(
             start_node=flow_graph_request.start_node, scope=flow_graph_request.scope
@@ -105,24 +124,21 @@ def run_flow(
             enable_debug=enable_debug,
         )
 
-        # Run the SYNCHRONOUS execution - NO asyncio needed
+        # Run the async execution using run_async utility
         logger.info("Starting graph execution")
-
-        # Since executor.execute() is now synchronous, call it directly
-        execution_result = executor.execute()
+        execution_result = run_async(executor.execute())
 
         logger.success(f"Flow execution completed successfully for flow_id: {flow_id}")
 
         return {
             "status": "executed",
             "flow_id": flow_id,
-            "execution_stats": execution_result,
+            "execution_stats": execution_result.model_dump()
+            if hasattr(execution_result, "model_dump")
+            else execution_result,
         }
 
     except Exception as e:
         logger.error(f"Flow execution failed for flow_id {flow_id}: {str(e)}")
         # Re-raise the exception so Celery marks the task as failed
         raise
-    finally:
-        if app_db_session:
-            app_db_session.close()

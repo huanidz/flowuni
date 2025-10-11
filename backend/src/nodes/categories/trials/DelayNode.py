@@ -1,3 +1,4 @@
+import asyncio
 import time
 from typing import Any, Dict
 
@@ -42,7 +43,7 @@ class DelayNode(Node):
         tags=["delay", "sleep", "text", "trial"],
     )
 
-    def process(
+    async def process(
         self, inputs: Dict[str, Any], parameters: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Process the inputs with a delay and return the text as output."""
@@ -51,7 +52,7 @@ class DelayNode(Node):
 
         # Simulate delay/sleep
         if delay_seconds > 0:
-            time.sleep(delay_seconds)
+            await asyncio.sleep(delay_seconds)
 
         return {"text_output": text_input}
 

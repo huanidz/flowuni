@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from loguru import logger
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.dependencies.api_key_dependency import get_api_key_service
 from src.dependencies.auth_dependency import get_current_user
+from src.dependencies.db_dependency import get_async_db
 from src.schemas.api_keys.api_key_schemas import (
     ApiKeyInfoResponse,
     ApiKeyListResponse,
@@ -23,6 +25,7 @@ api_key_router = APIRouter(
 )
 async def create_api_key(
     request: CreateApiKeyRequest,
+    session: AsyncSession = Depends(get_async_db),
     api_key_service: ApiKeyService = Depends(get_api_key_service),
     auth_user_id: int = Depends(get_current_user),
 ):
@@ -31,7 +34,8 @@ async def create_api_key(
     """
     try:
         # Issue new API key
-        full_key, api_key_model = api_key_service.issue_new_key(
+        full_key, api_key_model = await api_key_service.issue_new_key(
+            session=session,
             user_id=auth_user_id,
             name=request.name,
             description=request.description,
@@ -60,6 +64,7 @@ async def create_api_key(
 @api_key_router.delete("/{key_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_api_key(
     key_id: str,
+    session: AsyncSession = Depends(get_async_db),
     api_key_service: ApiKeyService = Depends(get_api_key_service),
     auth_user_id: int = Depends(get_current_user),
 ):
@@ -67,7 +72,7 @@ async def delete_api_key(
     Delete an API key by key_id
     """
     try:
-        success = api_key_service.delete_key(key_id)
+        success = await api_key_service.delete_key(session=session, key_id=key_id)
 
         if not success:
             logger.warning(f"API key with key_id {key_id} not found for deletion")
@@ -92,6 +97,7 @@ async def delete_api_key(
 @api_key_router.patch("/{key_id}/deactivate", status_code=status.HTTP_200_OK)
 async def deactivate_api_key(
     key_id: str,
+    session: AsyncSession = Depends(get_async_db),
     api_key_service: ApiKeyService = Depends(get_api_key_service),
     auth_user_id: int = Depends(get_current_user),
 ):
@@ -99,7 +105,7 @@ async def deactivate_api_key(
     Deactivate an API key by key_id
     """
     try:
-        success = api_key_service.deactivate_key(key_id)
+        success = await api_key_service.deactivate_key(session=session, key_id=key_id)
 
         if not success:
             logger.warning(f"API key with key_id {key_id} not found for deactivation")
@@ -123,6 +129,7 @@ async def deactivate_api_key(
 @api_key_router.patch("/{key_id}/activate", status_code=status.HTTP_200_OK)
 async def activate_api_key(
     key_id: str,
+    session: AsyncSession = Depends(get_async_db),
     api_key_service: ApiKeyService = Depends(get_api_key_service),
     auth_user_id: int = Depends(get_current_user),
 ):
@@ -130,7 +137,7 @@ async def activate_api_key(
     Activate an API key by key_id
     """
     try:
-        success = api_key_service.activate_key(key_id)
+        success = await api_key_service.activate_key(session=session, key_id=key_id)
 
         if not success:
             logger.warning(f"API key with key_id {key_id} not found for activation")
@@ -156,13 +163,16 @@ async def activate_api_key(
 )
 async def validate_api_key(
     request: ValidateApiKeyRequest,
+    session: AsyncSession = Depends(get_async_db),
     api_key_service: ApiKeyService = Depends(get_api_key_service),
 ):
     """
     Validate an API key and return its information
     """
     try:
-        api_key_model = api_key_service.validate_key(request.api_key)
+        api_key_model = await api_key_service.validate_key(
+            session=session, api_key_value=request.api_key
+        )
 
         if api_key_model:
             response = ValidateApiKeyResponse(
@@ -194,6 +204,7 @@ async def validate_api_key(
 )
 async def list_api_keys(
     include_inactive: bool = False,
+    session: AsyncSession = Depends(get_async_db),
     api_key_service: ApiKeyService = Depends(get_api_key_service),
     auth_user_id: int = Depends(get_current_user),
 ):
@@ -201,8 +212,8 @@ async def list_api_keys(
     List all API keys for the authenticated user
     """
     try:
-        api_keys = api_key_service.list_api_keys(
-            user_id=auth_user_id, include_inactive=include_inactive
+        api_keys = await api_key_service.list_api_keys(
+            session=session, user_id=auth_user_id, include_inactive=include_inactive
         )
 
         # Convert to response format

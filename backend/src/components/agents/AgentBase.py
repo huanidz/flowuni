@@ -58,7 +58,7 @@ class Agent(ABC):
         self.tools_map = self._build_tools_map()
         self.max_loop_count = max_loop_count  # NEW
 
-    def chat(
+    async def chat(
         self,
         message: ChatMessage,
         prev_histories: Optional[List[ChatMessage]] = None,
@@ -86,7 +86,7 @@ class Agent(ABC):
 
             # Execute tools if any are planned for this iteration
             if getattr(agent_response, "planned_tool_calls", None):
-                agent_response = self._handle_tool_execution(
+                agent_response = await self._handle_tool_execution(
                     agent_response, chat_messages, agent_response_schema
                 )
                 logger.info(
@@ -292,7 +292,7 @@ class Agent(ABC):
 
         return agent_response_schema, chat_messages
 
-    def _execute_single_tool(self, tool_call, chat_messages: List[ChatMessage]):
+    async def _execute_single_tool(self, tool_call, chat_messages: List[ChatMessage]):
         """
         Execute a single tool call and return the result.
 
@@ -350,7 +350,7 @@ class Agent(ABC):
                 f"🎯 LLM tool inputs: {tool_call_response.model_dump_json(indent=2)}"
             )
 
-            processed_result = node_instance.process_tool(
+            processed_result = await node_instance.process_tool(
                 inputs_values=tool_parser.input_values,
                 parameter_values=tool_parser.parameter_values,
                 tool_inputs=tool_call_response.model_dump(),
@@ -358,7 +358,7 @@ class Agent(ABC):
         else:
             # Tool can run with pre-configured parameters
             logger.info("⚡ Tool can run directly with existing parameters")
-            processed_result = node_instance.process_tool(
+            processed_result = await node_instance.process_tool(
                 inputs_values=tool_parser.input_values,
                 parameter_values=tool_parser.parameter_values,
                 tool_inputs={},
@@ -367,7 +367,7 @@ class Agent(ABC):
         logger.info(f"✨ Tool execution completed with result: {processed_result}")
         return processed_result
 
-    def _handle_tool_execution(
+    async def _handle_tool_execution(
         self, agent_response, chat_messages: List[ChatMessage], agent_response_schema
     ):
         logger.info(
@@ -377,7 +377,7 @@ class Agent(ABC):
         all_tool_results = []
 
         for tool_call in agent_response.planned_tool_calls:
-            processed_result = self._execute_single_tool(tool_call, chat_messages)
+            processed_result = await self._execute_single_tool(tool_call, chat_messages)
 
             if processed_result is None:
                 continue

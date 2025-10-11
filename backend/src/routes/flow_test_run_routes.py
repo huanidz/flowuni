@@ -9,10 +9,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from loguru import logger
 from redis import Redis
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.celery_worker.tasks.flow_test_tasks import (
     dispatch_run_test,
 )
 from src.dependencies.auth_dependency import auth_through_url_param, get_current_user
+from src.dependencies.db_dependency import get_async_db
 from src.dependencies.flow_test_dep import get_flow_test_service
 from src.dependencies.redis_dependency import get_redis_client
 from src.models.alchemy.flows.FlowTestCaseRunModel import TestCaseRunStatus
@@ -37,6 +39,7 @@ flow_test_run_router = APIRouter(
 @flow_test_run_router.post("", response_model=FlowTestRunResponse)
 async def run_single_test(
     request: FlowTestRunRequest,
+    session: AsyncSession = Depends(get_async_db),
     flow_test_service: FlowTestService = Depends(get_flow_test_service),
     auth_user_id: int = Depends(get_current_user),
 ):
@@ -45,7 +48,9 @@ async def run_single_test(
     """
     try:
         # Verify the test case exists and the user has access to it
-        test_case = flow_test_service.get_test_case_by_id(case_id=request.case_id)
+        test_case = await flow_test_service.get_test_case_by_id(
+            session=session, case_id=request.case_id
+        )
         if not test_case:
             logger.warning(f"Test case with ID {request.case_id} not found")
             raise HTTPException(
@@ -54,8 +59,8 @@ async def run_single_test(
             )
 
         # Check the latest test case run status
-        latest_status = flow_test_service.get_latest_test_case_run_status(
-            test_case_id=request.case_id
+        latest_status = await flow_test_service.get_latest_test_case_run_status(
+            session=session, test_case_id=request.case_id
         )
 
         if str(latest_status) in (
@@ -72,8 +77,8 @@ async def run_single_test(
 
         # NOTE: This to generate a unique task ID instead of using from celery to avoid race conditions of accessing the TestCaseRun with task_id may not be exist yet # noqa
         generated_task_id = str(uuid4())
-        flow_test_service.queue_test_case_run(
-            test_case_id=request.case_id, task_run_id=generated_task_id
+        await flow_test_service.queue_test_case_run(
+            session=session, test_case_id=request.case_id, task_run_id=generated_task_id
         )
 
         # Submit run task to Celery
@@ -112,6 +117,7 @@ async def run_single_test(
 @flow_test_run_router.post("/batch", response_model=FlowBatchTestRunResponse)
 async def run_batch_test(
     request: FlowBatchTestRunRequest,
+    session: AsyncSession = Depends(get_async_db),
     flow_test_service: FlowTestService = Depends(get_flow_test_service),
     auth_user_id: int = Depends(get_current_user),
 ):
@@ -121,7 +127,9 @@ async def run_batch_test(
     try:
         # Verify all test cases exist and the user has access to them
         for case_id in request.case_ids:
-            test_case = flow_test_service.get_test_case_by_id(case_id=case_id)
+            test_case = await flow_test_service.get_test_case_by_id(
+                session=session, case_id=case_id
+            )
             if not test_case:
                 logger.warning(f"Test case with ID {case_id} not found")
                 raise HTTPException(
@@ -130,8 +138,8 @@ async def run_batch_test(
                 )
 
         # Check the latest test case run status for all cases
-        latest_statuses = flow_test_service.get_latest_test_cases_run_status(
-            test_case_ids=request.case_ids
+        latest_statuses = await flow_test_service.get_latest_test_cases_run_status(
+            session=session, test_case_ids=request.case_ids
         )
 
         # Filter out test cases that are already QUEUED or RUNNING
@@ -170,8 +178,8 @@ async def run_batch_test(
             generated_task_id = str(uuid4())
             generated_task_ids.append(generated_task_id)
 
-            flow_test_service.queue_test_case_run(
-                test_case_id=case_id, task_run_id=generated_task_id
+            await flow_test_service.queue_test_case_run(
+                session=session, test_case_id=case_id, task_run_id=generated_task_id
             )
 
             dispatch_run_test.delay(
@@ -281,6 +289,7 @@ async def stream_events(
 @flow_test_run_router.post("/cancel", response_model=FlowTestCancelResponse)
 async def cancel_single_test(
     request: FlowTestCancelRequest,
+    session: AsyncSession = Depends(get_async_db),
     flow_test_service: FlowTestService = Depends(get_flow_test_service),
     auth_user_id: int = Depends(get_current_user),
 ):
@@ -289,8 +298,8 @@ async def cancel_single_test(
     """
     try:
         # Get the test case run to verify it exists and check its current status
-        test_case_run = flow_test_service.get_test_case_run_by_task_id(
-            task_run_id=request.task_id
+        test_case_run = await flow_test_service.get_test_case_run_by_task_id(
+            session=session, task_run_id=request.task_id
         )
 
         if not test_case_run:
@@ -328,7 +337,9 @@ async def cancel_single_test(
             # Continue with database update even if Celery revocation fails
 
         # Update the database status to CANCELLED
-        cancelled = flow_test_service.cancel_test_case_run(task_run_id=request.task_id)
+        cancelled = await flow_test_service.cancel_test_case_run(
+            session=session, task_run_id=request.task_id
+        )
 
         if cancelled:
             logger.info(
@@ -367,6 +378,7 @@ async def cancel_single_test(
 @flow_test_run_router.post("/batch/cancel", response_model=FlowBatchTestCancelResponse)
 async def cancel_batch_tests(
     request: FlowBatchTestCancelRequest,
+    session: AsyncSession = Depends(get_async_db),
     flow_test_service: FlowTestService = Depends(get_flow_test_service),
     auth_user_id: int = Depends(get_current_user),
 ):
@@ -386,8 +398,8 @@ async def cancel_batch_tests(
 
         # Get all test case runs to verify they exist
         test_case_runs = (
-            flow_test_service.test_repository.get_test_case_runs_by_task_ids(
-                task_run_ids=request.task_ids
+            await flow_test_service.test_repository.get_test_case_runs_by_task_ids(
+                session=session, task_run_ids=request.task_ids
             )
         )
 
@@ -403,8 +415,8 @@ async def cancel_batch_tests(
                 logger.warning(f"Test case run with task_id {task_id} not found")
 
         # Cancel valid test case runs
-        cancellation_results = flow_test_service.cancel_test_case_runs(
-            task_run_ids=valid_task_ids
+        cancellation_results = await flow_test_service.cancel_test_case_runs(
+            session=session, task_run_ids=valid_task_ids
         )
 
         # Revoke Celery tasks for successfully cancelled tests

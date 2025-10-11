@@ -3,13 +3,15 @@ import traceback
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from loguru import logger
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.dependencies.auth_dependency import get_current_user
-from src.dependencies.db_dependency import get_db
+from src.dependencies.db_dependency import get_async_db
 from src.dependencies.flow_dep import get_flow_service
+from src.dependencies.flow_snapshot_depedency import (
+    get_flow_snapshot_service,
+)
 from src.exceptions.auth_exceptions import UNAUTHORIZED_EXCEPTION
 from src.exceptions.shared_exceptions import NOT_FOUND_EXCEPTION
-from src.schemas.flows.flow_schemas import Pagination
 from src.schemas.flows.flow_snapshot_schemas import (
     FlowSnapshotCreateRequest,
     FlowSnapshotListResponse,
@@ -25,39 +27,22 @@ flow_snapshot_router = APIRouter(
 )
 
 
-# Dependency function for FlowSnapshotRepository
-def get_flow_snapshot_repository(db_session: Session = Depends(get_db)):
-    """
-    Dependency that returns FlowSnapshotRepository instance.
-    """
-    from src.repositories.FlowSnapshotRepository import FlowSnapshotRepository
-
-    return FlowSnapshotRepository(db_session=db_session)
-
-
-# Dependency function for FlowSnapshotService
-def get_flow_snapshot_service(
-    flow_snapshot_repository=Depends(get_flow_snapshot_repository),
-):
-    """
-    Dependency that returns FlowSnapshotService instance.
-    """
-    return FlowSnapshotService(snapshot_repository=flow_snapshot_repository)
-
-
 @flow_snapshot_router.post("", response_model=FlowSnapshotResponse)
 async def create_flow_snapshot(
     request: FlowSnapshotCreateRequest,
     flow_snapshot_service: FlowSnapshotService = Depends(get_flow_snapshot_service),
     flow_service: FlowService = Depends(get_flow_service),
     auth_user_id: int = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_db),
 ):
     """
     Create a new flow snapshot
     """
     try:
         # Verify the user owns the flow
-        flow = flow_service.get_flow_detail_by_id(flow_id=str(request.flow_id))
+        flow = await flow_service.get_flow_detail_by_id(
+            session=session, flow_id=str(request.flow_id)
+        )
         if not flow:
             logger.warning(f"Flow with ID {request.flow_id} not found")
             raise NOT_FOUND_EXCEPTION
@@ -71,8 +56,8 @@ async def create_flow_snapshot(
 
         # Create the snapshot
         # The service will automatically calculate the next version if not provided
-        snapshot = flow_snapshot_service.create_snapshot(
-            snapshot_request=request, user_id=auth_user_id
+        snapshot = await flow_snapshot_service.create_snapshot(
+            session=session, snapshot_request=request, user_id=auth_user_id
         )
 
         return snapshot
@@ -95,13 +80,16 @@ async def get_flow_snapshots(
     flow_snapshot_service: FlowSnapshotService = Depends(get_flow_snapshot_service),
     flow_service: FlowService = Depends(get_flow_service),
     auth_user_id: int = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_db),
 ):
     """
     Get flow snapshots by flow ID with pagination
     """
     try:
         # Verify the user owns the flow
-        flow = flow_service.get_flow_detail_by_id(flow_id=str(flow_id))
+        flow = await flow_service.get_flow_detail_by_id(
+            session=session, flow_id=str(flow_id)
+        )
         if not flow:
             logger.warning(f"Flow with ID {flow_id} not found")
             raise NOT_FOUND_EXCEPTION
@@ -114,8 +102,8 @@ async def get_flow_snapshots(
             raise UNAUTHORIZED_EXCEPTION
 
         # Get the snapshots
-        snapshots, total_items = flow_snapshot_service.get_snapshots_by_flow_id(
-            flow_id=flow_id, page=page, per_page=per_page
+        snapshots, total_items = await flow_snapshot_service.get_snapshots_by_flow_id(
+            session=session, flow_id=flow_id, page=page, per_page=per_page
         )
 
         # Map to response format using the full FlowSnapshotResponse
@@ -158,13 +146,16 @@ async def get_current_flow_snapshot(
     flow_snapshot_service: FlowSnapshotService = Depends(get_flow_snapshot_service),
     flow_service: FlowService = Depends(get_flow_service),
     auth_user_id: int = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_db),
 ):
     """
     Get the current flow snapshot for a flow
     """
     try:
         # Verify the user owns the flow
-        flow = flow_service.get_flow_detail_by_id(flow_id=str(flow_id))
+        flow = await flow_service.get_flow_detail_by_id(
+            session=session, flow_id=str(flow_id)
+        )
         if not flow:
             logger.warning(f"Flow with ID {flow_id} not found")
             raise NOT_FOUND_EXCEPTION
@@ -177,7 +168,9 @@ async def get_current_flow_snapshot(
             raise UNAUTHORIZED_EXCEPTION
 
         # Get the current snapshot
-        snapshot = flow_snapshot_service.get_current_snapshot(flow_id=flow_id)
+        snapshot = await flow_snapshot_service.get_current_snapshot(
+            session=session, flow_id=flow_id
+        )
         if not snapshot:
             logger.warning(f"No current snapshot found for flow {flow_id}")
             raise HTTPException(
@@ -205,13 +198,16 @@ async def get_flow_snapshot_by_id(
     snapshot_id: int,
     flow_snapshot_service: FlowSnapshotService = Depends(get_flow_snapshot_service),
     auth_user_id: int = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_db),
 ):
     """
     Get a flow snapshot by ID
     """
     try:
         # Get the snapshot
-        snapshot = flow_snapshot_service.get_snapshot_by_id(snapshot_id=snapshot_id)
+        snapshot = await flow_snapshot_service.get_snapshot_by_id(
+            session=session, snapshot_id=snapshot_id
+        )
         if not snapshot:
             logger.warning(f"Snapshot with ID {snapshot_id} not found")
             raise NOT_FOUND_EXCEPTION
@@ -238,6 +234,7 @@ async def update_flow_snapshot(
     request: FlowSnapshotUpdateRequest,
     flow_snapshot_service: FlowSnapshotService = Depends(get_flow_snapshot_service),
     auth_user_id: int = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_db),
 ):
     """
     Update a flow snapshot by ID
@@ -255,8 +252,8 @@ async def update_flow_snapshot(
             )
 
         # Update the snapshot
-        snapshot = flow_snapshot_service.update_snapshot(
-            snapshot_request=request, user_id=auth_user_id
+        snapshot = await flow_snapshot_service.update_snapshot(
+            session=session, snapshot_request=request, user_id=auth_user_id
         )
 
         if not snapshot:
@@ -280,14 +277,15 @@ async def delete_flow_snapshot(
     snapshot_id: int,
     flow_snapshot_service: FlowSnapshotService = Depends(get_flow_snapshot_service),
     auth_user_id: int = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_db),
 ):
     """
     Delete a flow snapshot by ID
     """
     try:
         # Delete the snapshot
-        flow_snapshot_service.delete_snapshot(
-            snapshot_id=snapshot_id, user_id=auth_user_id
+        await flow_snapshot_service.delete_snapshot(
+            session=session, snapshot_id=snapshot_id, user_id=auth_user_id
         )
 
         # No response body for 204 No Content

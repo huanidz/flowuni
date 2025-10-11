@@ -1,7 +1,6 @@
 import random
 import signal
 import sys
-import time
 from datetime import datetime
 
 from celery.exceptions import SoftTimeLimitExceeded
@@ -9,14 +8,13 @@ from loguru import logger
 from src.celery_worker.BaseTask import BaseTask
 from src.celery_worker.celery_worker import celery_app
 from src.core.semaphore import acquire_user_slot_sync, release_user_slot_sync
-from src.dependencies.db_dependency import get_db
+from src.dependencies.db_dependency import AsyncNullPoolSessionLocal
 from src.exceptions.graph_exceptions import GraphCompilerError
 from src.models.alchemy.flows.FlowTestCaseRunModel import TestCaseRunStatus
 from src.repositories.FlowTestRepository import FlowTestRepository
-from src.repositories.RepositoriesContainer import RepositoriesContainer
-from src.services.FlowService import FlowService
 from src.services.FlowTestService import FlowTestService
-from src.workers.FlowSyncWorker import FlowSyncWorker
+from src.utils.async_utils import run_async
+from src.workers.FlowAsyncWorker import FlowAsyncWorker
 
 
 @celery_app.task(bind=True, max_retries=None, time_limit=3600)
@@ -26,30 +24,51 @@ def dispatch_run_test(
     """
     Task dispatcher: Kiểm tra slot và gọi task worker nếu có slot.
     Tự động retry nếu không có slot.
+
+    IMPORTANT: This task creates a NEW database session in each worker process
+    to avoid connection sharing issues across forked processes.
     """
 
-    app_db_session = None
+    async def check_and_dispatch():
+        """All async operations must be in the same function to use the same loop"""
+        # Create a fresh session in this worker process
+        async with AsyncNullPoolSessionLocal() as db_session:
+            try:
+                flow_test_service = FlowTestService(
+                    test_repository=FlowTestRepository(),
+                )
+                latest_test_case_run = (
+                    await flow_test_service.get_test_case_run_by_task_id(
+                        session=db_session,
+                        task_run_id=generated_task_id,
+                    )
+                )
+                case_run_status = latest_test_case_run.status
+
+                if case_run_status == TestCaseRunStatus.CANCELLED:
+                    logger.info(f"Case {case_id} has already been cancelled.")
+                    return {"cancelled": True}
+
+                return {"cancelled": False}
+
+            except Exception as e:
+                logger.error(f"Error checking test case status: {e}")
+                raise
 
     try:
-        app_db_session = next(get_db())
-        repositories = RepositoriesContainer.auto_init_all(db_session=app_db_session)
+        # Run the async function using run_async utility
+        result = run_async(check_and_dispatch())
 
-        flow_test_repository: FlowTestRepository = repositories.flow_test_repository
-        case_run_status = flow_test_repository.get_test_case_run_status(
-            task_run_id=generated_task_id
-        )
-
-        if case_run_status == TestCaseRunStatus.CANCELLED:
-            logger.info(f"Case {case_id} has already been cancelled.")
+        # If cancelled, don't proceed
+        if result and result.get("cancelled"):
             return
 
-        # Sử dụng helper function để gọi async code safely
+        # IMPORTANT: acquire_user_slot_sync must be called OUTSIDE the async context
+        # to avoid mixing sync operations with the async event loop
         has_slot = acquire_user_slot_sync(user_id)
 
         if has_slot:
             # Có slot, gọi task xử lý thật
-            # Dùng .delay() hoặc .apply_async() để không block dispatcher
-            # Sử dụng task_id của dispatcher task cho task 'run_flow_test'
             run_flow_test.apply_async(
                 kwargs={
                     "task_id": generated_task_id,
@@ -57,26 +76,32 @@ def dispatch_run_test(
                     "case_id": case_id,
                     "flow_id": flow_id,
                 },
-                task_id=generated_task_id,  # Force Celery to use your generated_task_id
+                task_id=generated_task_id,
             )
+            logger.info(f"Dispatched test task {generated_task_id} to run_flow_test")
             return
         else:
             countdown = 6 + random.randint(-3, 3)
-            # Hết slot, retry sau 10 giây
-            # Celery sẽ tự động đưa task này về queue
+            # Hết slot, retry sau countdown giây
+            logger.info(
+                f"No slot available, retrying task {generated_task_id} in {countdown}s"
+            )
             raise self.retry(countdown=countdown)
 
+    except self.retry:
+        # Re-raise retry exception
+        raise
     except Exception as e:
-        # Nếu có lỗi bất ngờ, retry
-        logger.error(f"Error dispatching run test task {generated_task_id}: " + str(e))
+        # Nếu có lỗi bất ngờ, log và return
+        logger.error(
+            f"Error dispatching run test task {generated_task_id}: {str(e)}",
+            exc_info=True,
+        )
         return
-    finally:
-        if app_db_session:
-            app_db_session.close()
 
 
 @celery_app.task(bind=True, base=BaseTask, time_limit=3600, soft_time_limit=3540)
-def run_flow_test(
+def run_flow_test(  # noqa: C901
     self,
     task_id: str,
     user_id: int,
@@ -86,42 +111,49 @@ def run_flow_test(
     """
     Celery task that runs a flow test.
 
+    IMPORTANT: Creates a NEW database session in each worker process
+    to avoid connection sharing issues.
+
     Args:
         case_id: Test case ID
 
     Returns:
         Dictionary with test execution results
     """
-    app_db_session = None
     cleanup_done = False
 
     def emergency_cleanup(signum, frame):
         """Runs when SIGTERM is received"""
-        nonlocal app_db_session, cleanup_done
+        nonlocal cleanup_done
 
         if cleanup_done:
             return
 
         logger.warning(f"Task {task_id} received termination signal, cleaning up...")
 
-        try:
-            # Update status to CANCELLED
-            if app_db_session:
-                repositories = RepositoriesContainer.auto_init_all(
-                    db_session=app_db_session
-                )
-                repositories.flow_test_repository.update_test_case_run(
-                    run_id=task_id,
-                    status=TestCaseRunStatus.CANCELLED,
-                    finished_at=datetime.now(),
-                )
-                app_db_session.commit()
-                app_db_session.close()
+        async def cleanup_async():
+            """All async operations in one function with fresh session"""
+            # Create a fresh session for cleanup in this process
+            async with AsyncNullPoolSessionLocal() as db_session:
+                try:
+                    flow_test_service = FlowTestService(
+                        test_repository=FlowTestRepository(),
+                    )
+                    await flow_test_service.update_test_case_run(
+                        session=db_session,
+                        run_id=task_id,
+                        status=TestCaseRunStatus.CANCELLED,
+                        finished_at=datetime.now(),
+                    )
+                except Exception as e:
+                    logger.error(f"Error updating test case run during cleanup: {e}")
+                    raise
 
+        try:
+            # Run the async cleanup using run_async utility
+            run_async(cleanup_async())
         except Exception as e:
-            logger.error(f"Error in emergency cleanup: {e}")
-        finally:
-            release_user_slot_sync(user_id)
+            logger.error(f"Error in emergency cleanup: {e}", exc_info=True)
 
         try:
             release_user_slot_sync(user_id)
@@ -140,34 +172,24 @@ def run_flow_test(
     try:
         logger.info(f"Starting flow test task for case_id: {case_id}")
 
-        # Get DB session
-        db_start = time.time()
-        app_db_session = next(get_db())
-        db_end = time.time()
-        logger.info(f"Database session acquisition took: {(db_end - db_start):.3f}s")
-        repositories = RepositoriesContainer.auto_init_all(db_session=app_db_session)
+        async def run_test_async():
+            """All async operations in one function"""
+            flow_async_worker = FlowAsyncWorker(user_id=user_id, task_id=task_id)
 
-        # Initialize services
-        flow_test_service = FlowTestService(
-            test_repository=repositories.flow_test_repository,
-            redis_client=None,
-        )
+            # The worker now handles session management internally
+            await flow_async_worker.run_flow_test(
+                flow_id=flow_id,
+                case_id=case_id,
+                session_id=None,
+            )
 
-        flow_service = FlowService(
-            flow_repository=repositories.flow_repository,
-        )
-        flow_sync_worker = FlowSyncWorker(user_id=user_id, task_id=task_id)
-        flow_sync_worker.run_flow_test(
-            flow_id=flow_id,
-            case_id=case_id,
-            flow_service=flow_service,
-            session_id=None,
-            flow_test_service=flow_test_service,
-        )
-
+        # Run the async test using run_async utility
+        run_async(run_test_async())
+        logger.info(f"Flow test completed successfully for case_id: {case_id}")
         return
 
     except GraphCompilerError as e:
+        logger.error(f"Graph compiler error for case_id {case_id}: {e}")
         raise self.retry(
             exc=e,
             countdown=2,
@@ -183,12 +205,10 @@ def run_flow_test(
         # Let the signal handler's sys.exit() work
         raise
     except Exception as e:
-        logger.error(f"Flow test failed for case_id {case_id}: {str(e)}")
+        logger.error(f"Flow test failed for case_id {case_id}: {str(e)}", exc_info=True)
         # Re-raise the exception so Celery marks the task as failed
+        raise
     finally:
-        if app_db_session:
-            app_db_session.close()
-
         # Release user slot
         logger.info(f"Releasing user slot for user_id: {user_id}")
         release_user_slot_sync(user_id)

@@ -71,7 +71,7 @@ class ComparisonRouterNode(Node):
         icon=NodeIconIconify(icon_value="tabler:route-alt-right"),
     )
 
-    def process(
+    async def process(
         self, inputs: Dict[str, Any], parameters: Dict[str, Any]
     ) -> Dict[str, Union[str, bool]]:
         """

@@ -5,9 +5,9 @@ from typing import List, Optional, Tuple
 from uuid import uuid4
 
 from loguru import logger
-from sqlalchemy import func
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError, NoResultFound
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.models.alchemy.flows.FlowModel import FlowModel
 from src.repositories.BaseRepository import BaseRepository
 
@@ -17,60 +17,61 @@ class FlowRepository(BaseRepository):
     Flow repository
     """
 
-    def __init__(self, db_session: Session):
-        super().__init__(db_session=db_session)
+    def __init__(self):
+        super().__init__(model=FlowModel)
         logger.info("FlowRepository initialized.")
 
-    def save_flow_definition(self, flow: FlowModel) -> FlowModel:
+    async def save_flow_definition(
+        self, session: AsyncSession, flow: FlowModel
+    ) -> FlowModel:
         """
         Save flow definition, either by adding a new flow or updating an existing one.
         """
         try:
-            return self.update_flow(flow)
+            return await self.update_flow(session, flow)
         except NoResultFound as e:
-            self.db_session.rollback()
+            await session.rollback()
             logger.error(
                 f"NoResultFound error when saving \
                 flow definition for flow with ID {flow.flow_id}: {e}"
             )
             raise e
         except Exception as e:
-            self.db_session.rollback()
+            await session.rollback()
             logger.error(
                 f"Error saving flow definition for flow with ID {flow.flow_id}: {e}"
             )
             raise e
 
-    def get_all_paged(self, page: int = 1, per_page: int = 10) -> List[FlowModel]:
+    async def get_all_paged(
+        self, session: AsyncSession, page: int = 1, per_page: int = 10
+    ) -> List[FlowModel]:
         """
         Get all flows
         """
         try:
-            flows = (
-                self.db_session.query(FlowModel)
-                .offset((page - 1) * per_page)
-                .limit(per_page)
-                .all()
+            result = await session.execute(
+                select(FlowModel).offset((page - 1) * per_page).limit(per_page)
             )
+            flows = result.scalars().all()
             logger.info(
                 f"Retrieved {len(flows)} flows for page {page}, per_page {per_page}."
             )
             return flows
         except Exception as e:
             logger.error(f"Error retrieving all flows paged: {e}")
-            self.db_session.rollback()
+            await session.rollback()
             raise e
 
-    def get_by_id(self, flow_id: str) -> Optional[FlowModel]:
+    async def get_by_id(
+        self, session: AsyncSession, flow_id: str
+    ) -> Optional[FlowModel]:
         """
         Get flow by id
         """
         try:
-            flow = (
-                self.db_session.query(FlowModel)
-                .filter_by(flow_id=flow_id)
-                .one_or_none()
-            )
+            result = await session.execute(select(FlowModel).filter_by(flow_id=flow_id))
+            flow = result.scalar_one_or_none()
             if flow:
                 logger.info(f"Retrieved flow with ID: {flow_id}")
             else:
@@ -78,24 +79,28 @@ class FlowRepository(BaseRepository):
             return flow
         except Exception as e:
             logger.error(f"Error retrieving flow by ID {flow_id}: {e}")
-            self.db_session.rollback()
+            await session.rollback()
             raise e
 
-    def get_by_user_id(self, user_id: int) -> List[FlowModel]:
+    async def get_by_user_id(
+        self, session: AsyncSession, user_id: int
+    ) -> List[FlowModel]:
         """
         Get flows by user id
         """
         try:
-            flows = self.db_session.query(FlowModel).filter_by(user_id=user_id).all()
+            result = await session.execute(select(FlowModel).filter_by(user_id=user_id))
+            flows = result.scalars().all()
             logger.info(f"Retrieved {len(flows)} flows for user ID: {user_id}.")
             return flows
         except Exception as e:
             logger.error(f"Error retrieving flows by user ID {user_id}: {e}")
-            self.db_session.rollback()
+            await session.rollback()
             raise e
 
-    def get_by_user_id_paged(
+    async def get_by_user_id_paged(
         self,
+        session: AsyncSession,
         user_id: int,
         page: int = 1,
         per_page: int = 10,
@@ -106,20 +111,19 @@ class FlowRepository(BaseRepository):
         """
         try:
             # 1) total count
-            total_items = (
-                self.db_session.query(func.count(FlowModel.flow_id))
-                .filter_by(user_id=user_id)
-                .scalar()
+            count_result = await session.execute(
+                select(func.count(FlowModel.flow_id)).filter_by(user_id=user_id)
             )
+            total_items = count_result.scalar()
 
             # 2) paged items
-            flows = (
-                self.db_session.query(FlowModel)
+            result = await session.execute(
+                select(FlowModel)
                 .filter_by(user_id=user_id)
                 .offset((page - 1) * per_page)
                 .limit(per_page)
-                .all()
             )
+            flows = result.scalars().all()
 
             # 3) sort by time created
             if sort_by_time_created:
@@ -136,10 +140,10 @@ class FlowRepository(BaseRepository):
 
         except Exception as e:
             logger.error(f"Error retrieving flows by user ID {user_id}: {e}")
-            self.db_session.rollback()
+            await session.rollback()
             raise
 
-    def create_empty_flow(self, user_id: int) -> FlowModel:
+    async def create_empty_flow(self, session: AsyncSession, user_id: int) -> FlowModel:
         """
         Create a new flow with auto-incremented name like 'New Flow', 'New Flow (1)', etc.,
         scoped to the given user_id.
@@ -148,16 +152,12 @@ class FlowRepository(BaseRepository):
             base_name = "New Flow"
 
             # Fetch all existing names for this user that start with 'New Flow'
-            existing_names = (
-                self.db_session.query(FlowModel.name)
-                .filter(
+            existing_names_result = await session.execute(
+                select(FlowModel.name).filter(
                     FlowModel.user_id == user_id, FlowModel.name.ilike(f"{base_name}%")
                 )
-                .all()
             )
-
-            # Extract just the name strings
-            existing_names = [name[0] for name in existing_names]
+            existing_names = [name[0] for name in existing_names_result.all()]
 
             # Find the next available number
             used_numbers = set()
@@ -189,9 +189,9 @@ class FlowRepository(BaseRepository):
                 user_id=user_id,  # Assign user_id
                 is_active=True,
             )
-            self.db_session.add(flow)
-            self.db_session.commit()
-            self.db_session.refresh(flow)
+            session.add(flow)
+            await session.flush()
+            await session.refresh(flow)
 
             logger.info(
                 f"Created new flow with name: '{name}', ID: {flow.flow_id}, for user ID: {user_id}"
@@ -199,18 +199,19 @@ class FlowRepository(BaseRepository):
             return flow
 
         except IntegrityError as e:
-            self.db_session.rollback()
+            await session.rollback()
             logger.error(f"Integrity error when creating flow for user {user_id}: {e}")
             raise ValueError(
                 "Failed to create flow due to database integrity error."
             ) from e
         except Exception as e:
-            self.db_session.rollback()
+            await session.rollback()
             logger.error(f"Error creating flow for user {user_id}: {e}")
             raise e
 
-    def create_flow_with_data(
+    async def create_flow_with_data(
         self,
+        session: AsyncSession,
         user_id: int,
         name: str = None,
         description: str = None,
@@ -226,17 +227,13 @@ class FlowRepository(BaseRepository):
                 base_name = "New Flow"
 
                 # Fetch all existing names for this user that start with 'New Flow'
-                existing_names = (
-                    self.db_session.query(FlowModel.name)
-                    .filter(
+                existing_names_result = await session.execute(
+                    select(FlowModel.name).filter(
                         FlowModel.user_id == user_id,
                         FlowModel.name.ilike(f"{base_name}%"),
                     )
-                    .all()
                 )
-
-                # Extract just the name strings
-                existing_names = [name[0] for name in existing_names]
+                existing_names = [name[0] for name in existing_names_result.all()]
 
                 # Find the next available number
                 used_numbers = set()
@@ -273,9 +270,9 @@ class FlowRepository(BaseRepository):
                 flow_definition=flow_definition,
                 is_active=True,
             )
-            self.db_session.add(flow)
-            self.db_session.commit()
-            self.db_session.refresh(flow)
+            session.add(flow)
+            await session.flush()
+            await session.refresh(flow)
 
             logger.info(
                 f"Created new flow with name: '{name}', ID: {flow.flow_id}, for user ID: {user_id}"
@@ -283,46 +280,47 @@ class FlowRepository(BaseRepository):
             return flow
 
         except IntegrityError as e:
-            self.db_session.rollback()
+            await session.rollback()
             logger.error(f"Integrity error when creating flow for user {user_id}: {e}")
             raise ValueError(
                 "Failed to create flow due to database integrity error."
             ) from e
         except Exception as e:
-            self.db_session.rollback()
+            await session.rollback()
             logger.error(f"Error creating flow for user {user_id}: {e}")
             raise e
 
-    def add_flow(self, flow: FlowModel) -> FlowModel:
+    async def add_flow(self, session: AsyncSession, flow: FlowModel) -> FlowModel:
         """
         Add flow
         """
         try:
-            self.db_session.add(flow)
-            self.db_session.commit()
-            self.db_session.refresh(flow)
+            session.add(flow)
+            await session.flush()
+            await session.refresh(flow)
             logger.info(f"Added new flow with ID: {flow.flow_id}")
             return flow
         except IntegrityError as e:
-            self.db_session.rollback()
+            await session.rollback()
             logger.error(
                 f"Integrity error when adding flow with ID {flow.flow_id}: {e}"
             )
             raise ValueError(f"Flow with ID {flow.flow_id} already exists.") from e
         except Exception as e:
-            self.db_session.rollback()
+            await session.rollback()
             logger.error(f"Error adding flow with ID {flow.flow_id}: {e}")
             raise e
 
-    def update_flow(self, flow: FlowModel) -> FlowModel:
+    async def update_flow(self, session: AsyncSession, flow: FlowModel) -> FlowModel:
         """
         Update flow
         """
         logger.info(f"Update flow with ID: {flow.flow_id}")
         try:
-            existing_flow = (
-                self.db_session.query(FlowModel).filter_by(flow_id=flow.flow_id).first()
+            result = await session.execute(
+                select(FlowModel).filter_by(flow_id=flow.flow_id)
             )
+            existing_flow = result.scalar_one_or_none()
             if not existing_flow:
                 logger.warning(
                     f"Attempted to update non-existent flow with ID: {flow.flow_id}"
@@ -344,53 +342,55 @@ class FlowRepository(BaseRepository):
                 datetime.utcnow()
             )  # or however you handle timestamps
 
-            self.db_session.commit()
-            self.db_session.refresh(existing_flow)
+            await session.flush()
+            await session.refresh(existing_flow)
             logger.info(f"Updated flow with ID: {existing_flow.flow_id}")
             return existing_flow
 
         except NoResultFound as e:
-            self.db_session.rollback()
+            await session.rollback()
             logger.error(
                 f"NoResultFound error when updating flow with ID {flow.flow_id}: {e}"
             )
             raise e
         except Exception as e:
-            self.db_session.rollback()
+            await session.rollback()
             logger.error(f"Error updating flow with ID {flow.flow_id}: {e}")
             raise e
 
-    def delete_flow(self, flow_id: str) -> None:
+    async def delete_flow(self, session: AsyncSession, flow_id: str) -> None:
         """
         Delete flow
         """
         try:
-            flow = self.db_session.query(FlowModel).filter_by(flow_id=flow_id).first()
+            result = await session.execute(select(FlowModel).filter_by(flow_id=flow_id))
+            flow = result.scalar_one_or_none()
             if not flow:
                 logger.warning(
                     f"Attempted to delete non-existent flow with ID: {flow_id}"
                 )
                 raise NoResultFound(f"Flow with ID {flow_id} not found.")
-            self.db_session.delete(flow)
-            self.db_session.commit()
+            await session.delete(flow)
+            await session.flush()
             logger.info(f"Deleted flow with ID: {flow_id}")
         except NoResultFound as e:
-            self.db_session.rollback()
+            await session.rollback()
             logger.error(
                 f"NoResultFound error when deleting flow with ID {flow_id}: {e}"
             )
             raise e
         except Exception as e:
-            self.db_session.rollback()
+            await session.rollback()
             logger.error(f"Error deleting flow with ID {flow_id}: {e}")
             raise e
 
-    def activate_flow(self, flow_id: str) -> FlowModel:
+    async def activate_flow(self, session: AsyncSession, flow_id: str) -> FlowModel:
         """
         Activate a flow by setting is_active to True
         """
         try:
-            flow = self.db_session.query(FlowModel).filter_by(flow_id=flow_id).first()
+            result = await session.execute(select(FlowModel).filter_by(flow_id=flow_id))
+            flow = result.scalar_one_or_none()
             if not flow:
                 logger.warning(
                     f"Attempted to activate non-existent flow with ID: {flow_id}"
@@ -399,27 +399,28 @@ class FlowRepository(BaseRepository):
 
             flow.is_active = True
             flow.modified_at = datetime.utcnow()
-            self.db_session.commit()
-            self.db_session.refresh(flow)
+            await session.flush()
+            await session.refresh(flow)
             logger.info(f"Activated flow with ID: {flow_id}")
             return flow
         except NoResultFound as e:
-            self.db_session.rollback()
+            await session.rollback()
             logger.error(
                 f"NoResultFound error when activating flow with ID {flow_id}: {e}"
             )
             raise e
         except Exception as e:
-            self.db_session.rollback()
+            await session.rollback()
             logger.error(f"Error activating flow with ID {flow_id}: {e}")
             raise e
 
-    def deactivate_flow(self, flow_id: str) -> FlowModel:
+    async def deactivate_flow(self, session: AsyncSession, flow_id: str) -> FlowModel:
         """
         Deactivate a flow by setting is_active to False
         """
         try:
-            flow = self.db_session.query(FlowModel).filter_by(flow_id=flow_id).first()
+            result = await session.execute(select(FlowModel).filter_by(flow_id=flow_id))
+            flow = result.scalar_one_or_none()
             if not flow:
                 logger.warning(
                     f"Attempted to deactivate non-existent flow with ID: {flow_id}"
@@ -428,17 +429,17 @@ class FlowRepository(BaseRepository):
 
             flow.is_active = False
             flow.modified_at = datetime.utcnow()
-            self.db_session.commit()
-            self.db_session.refresh(flow)
+            await session.flush()
+            await session.refresh(flow)
             logger.info(f"Deactivated flow with ID: {flow_id}")
             return flow
         except NoResultFound as e:
-            self.db_session.rollback()
+            await session.rollback()
             logger.error(
                 f"NoResultFound error when deactivating flow with ID {flow_id}: {e}"
             )
             raise e
         except Exception as e:
-            self.db_session.rollback()
+            await session.rollback()
             logger.error(f"Error deactivating flow with ID {flow_id}: {e}")
             raise e

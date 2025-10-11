@@ -162,7 +162,7 @@ class WeaviateDBNode(Node):
         icon=NodeIconIconify(icon_value="mdi:database"),
     )
 
-    def process(
+    async def process(
         self, input_values: Dict[str, Any], parameter_values: Dict[str, Any]
     ) -> Any:
         """

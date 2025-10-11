@@ -164,7 +164,7 @@ class HttpRequestNode(Node):
         icon=NodeIconIconify(icon_value="zondicons:network"),
     )
 
-    def process(  # noqa
+    async def process(  # noqa
         self, inputs: Dict[str, Any], parameters: Dict[str, Any]
     ) -> Dict[str, Union[float, int, str, dict]]:
         """

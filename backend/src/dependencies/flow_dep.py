@@ -1,6 +1,6 @@
 from fastapi import Depends
-from sqlalchemy.orm import Session
-from src.dependencies.db_dependency import get_db
+from sqlalchemy.ext.asyncio import AsyncSession
+from src.dependencies.db_dependency import get_async_db
 from src.repositories.FlowRepositories import FlowRepository
 from src.repositories.FlowSnapshotRepository import FlowSnapshotRepository
 from src.repositories.SessionRepository import SessionRepository
@@ -9,20 +9,16 @@ from src.services.FlowSnapshotService import FlowSnapshotService
 
 
 # Dependencies
-def get_flow_repository(db_session: Session = Depends(get_db)) -> FlowRepository:
-    return FlowRepository(db_session=db_session)
+def get_flow_repository() -> FlowRepository:
+    return FlowRepository()
 
 
-def get_flow_snapshot_repository(
-    db_session: Session = Depends(get_db),
-) -> FlowSnapshotRepository:
-    return FlowSnapshotRepository(db_session=db_session)
+def get_flow_snapshot_repository() -> FlowSnapshotRepository:
+    return FlowSnapshotRepository()
 
 
-def get_flow_session_repository(
-    db_session: Session = Depends(get_db),
-) -> SessionRepository:
-    return SessionRepository(db_session=db_session)
+def get_flow_session_repository() -> SessionRepository:
+    return SessionRepository()
 
 
 def get_flow_service(flow_repository: FlowRepository = Depends(get_flow_repository)):

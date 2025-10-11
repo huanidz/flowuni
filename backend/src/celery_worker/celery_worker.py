@@ -2,11 +2,11 @@ import os
 import sys
 
 from celery import Celery
-from src.configs.config import get_settings
+from src.configs.config import get_app_settings
 
 sys.path.insert(0, os.getcwd())
 
-app_settings = get_settings()
+app_settings = get_app_settings()
 
 BROKER_URL = app_settings.CELERY_BROKER_URL
 RESULT_BACKEND = app_settings.CELERY_RESULT_BACKEND
@@ -26,7 +26,9 @@ celery_app.conf.update(
     result_expires=3600,
 )
 
-celery_app.autodiscover_tasks([
-    "src.celery_worker.tasks.flow_execution_tasks",
-    "src.celery_worker.tasks.flow_test_tasks",
-])
+celery_app.autodiscover_tasks(
+    [
+        "src.celery_worker.tasks.flow_execution_tasks",
+        "src.celery_worker.tasks.flow_test_tasks",
+    ]
+)

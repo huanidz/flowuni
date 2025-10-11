@@ -1,8 +1,10 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from loguru import logger
-from src.configs.config import get_settings
+from src.configs.config import get_app_settings
 from src.configs.LoggingConfig import setup_logger
 from src.dependencies.redis_dependency import get_redis_client
 from src.routes.api_key_routes import api_key_router
@@ -20,26 +22,13 @@ from src.routes.user_global_templates_routes import user_global_templates_router
 from src.utils.launch_utils import check_db_connection, check_redis_connection
 
 # Get application settings and set up logging
-app_settings = get_settings()
+app_settings = get_app_settings()
 setup_logger(app_settings.LOG_LEVEL)
 
-app = FastAPI(
-    title="AI Service",
-    description="AI Service API",
-    version="0.0.1",
-    redirect_slashes=False,
-)
 
-origins = [
-    "http://localhost:5173",
-    "https://flowuni.app",
-    "https://www.flowuni.app",
-]
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Clear cached node catalog on app startup to ensure fresh data."""
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup logic
     try:
         redis_client = get_redis_client()
         redis_client.delete("node_catalog")
@@ -47,6 +36,23 @@ async def startup_event():
         logger.info("Cleared some redis global cache items on startup")
     except Exception as e:
         logger.error(f"Failed to clear node catalog cache on startup: {str(e)}")
+
+    yield
+
+
+app = FastAPI(
+    title="AI Service",
+    description="AI Service API",
+    version="0.0.1",
+    redirect_slashes=True,
+    lifespan=lifespan,
+)
+
+origins = [
+    "http://localhost:5173",
+    "https://flowuni.app",
+    "https://www.flowuni.app",
+]
 
 
 # Check external service connections

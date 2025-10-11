@@ -1,7 +1,7 @@
 import redis
-from src.configs.config import get_settings
+from src.configs.config import get_app_settings
 
-app_settings = get_settings()
+app_settings = get_app_settings()
 
 REDIS_HOST = app_settings.REDIS_HOST
 REDIS_PORT = app_settings.REDIS_PORT

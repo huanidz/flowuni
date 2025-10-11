@@ -70,7 +70,7 @@ class LLMRouterNode(Node):
         tags=[NODE_TAGS_CONSTS.ROUTING],
     )
 
-    def process(
+    async def process(
         self, inputs: Dict[str, Any], parameters: Dict[str, Any]
     ) -> Dict[str, Union[float, int, str]]:
         llm_provider = inputs["llm_provider"]

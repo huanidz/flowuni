@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Optional, Union
 
-from sqlalchemy import and_
-from sqlalchemy.orm import Session
+from sqlalchemy import and_, select
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.models.alchemy.users.UserGlobalTemplateModel import (
     TemplateType,
     UserGlobalTemplateModel,
@@ -11,54 +11,59 @@ from src.repositories.BaseRepository import BaseRepository
 
 
 class UserGlobalTemplateRepository(BaseRepository):
-    def __init__(self, db_session: Session):
-        super().__init__(db_session)
-        self.model = UserGlobalTemplateModel
+    def __init__(self):
+        super().__init__(UserGlobalTemplateModel)
 
-    def get_by_user_id(self, user_id: int) -> List[UserGlobalTemplateModel]:
+    async def get_by_user_id(
+        self, session: AsyncSession, user_id: int
+    ) -> List[UserGlobalTemplateModel]:
         """Get all templates for a specific user"""
-        return (
-            self.db_session.query(UserGlobalTemplateModel)
-            .filter(UserGlobalTemplateModel.user_id == user_id)
-            .all()
+        result = await session.execute(
+            select(UserGlobalTemplateModel).where(
+                UserGlobalTemplateModel.user_id == user_id
+            )
         )
+        return result.scalars().all()
 
-    def get_by_user_id_and_type(
-        self, user_id: int, template_type: TemplateType
+    async def get_by_user_id_and_type(
+        self, session: AsyncSession, user_id: int, template_type: TemplateType
     ) -> List[UserGlobalTemplateModel]:
         """Get all templates for a specific user and type"""
-        return (
-            self.db_session.query(UserGlobalTemplateModel)
-            .filter(
+        result = await session.execute(
+            select(UserGlobalTemplateModel).where(
                 and_(
                     UserGlobalTemplateModel.user_id == user_id,
                     UserGlobalTemplateModel.type == template_type,
                 )
             )
-            .all()
         )
+        return result.scalars().all()
 
-    def get_by_id_and_user_id(
-        self, template_id: int, user_id: int
+    async def get_by_id_and_user_id(
+        self, session: AsyncSession, template_id: int, user_id: int
     ) -> Optional[UserGlobalTemplateModel]:
         """Get a template by ID and user ID"""
-        return (
-            self.db_session.query(UserGlobalTemplateModel)
-            .filter(
+        result = await session.execute(
+            select(UserGlobalTemplateModel).where(
                 and_(
                     UserGlobalTemplateModel.id == template_id,
                     UserGlobalTemplateModel.user_id == user_id,
                 )
             )
-            .first()
+        )
+        return result.scalar_one_or_none()
+
+    async def get_llm_judges_by_user_id(
+        self, session: AsyncSession, user_id: int
+    ) -> List[UserGlobalTemplateModel]:
+        """Get all LLM judge templates for a specific user"""
+        return await self.get_by_user_id_and_type(
+            session, user_id, TemplateType.LLM_JUDGE
         )
 
-    def get_llm_judges_by_user_id(self, user_id: int) -> List[UserGlobalTemplateModel]:
-        """Get all LLM judge templates for a specific user"""
-        return self.get_by_user_id_and_type(user_id, TemplateType.LLM_JUDGE)
-
-    def create_template(
+    async def create_template(
         self,
+        session: AsyncSession,
         user_id: int,
         template_type: TemplateType,
         name: Optional[str] = None,
@@ -77,17 +82,22 @@ class UserGlobalTemplateRepository(BaseRepository):
             description=description,
             data=data,
         )
-        return self.add(template)
+        session.add(template)
+        await session.flush()
+        await session.refresh(template)
+        return template
 
-    def create_llm_judge(
+    async def create_llm_judge(
         self,
+        session: AsyncSession,
         user_id: int,
         name: Optional[str] = None,
         description: Optional[str] = None,
         data: Optional[Union[Dict[str, Any], LLMProviderParser]] = None,
     ) -> UserGlobalTemplateModel:
         """Create a new LLM judge template"""
-        return self.create_template(
+        return await self.create_template(
+            session=session,
             user_id=user_id,
             template_type=TemplateType.LLM_JUDGE,
             name=name,
@@ -95,8 +105,9 @@ class UserGlobalTemplateRepository(BaseRepository):
             data=data,
         )
 
-    def update_template(
+    async def update_template(
         self,
+        session: AsyncSession,
         template_id: int,
         user_id: int,
         name: Optional[str] = None,
@@ -104,7 +115,7 @@ class UserGlobalTemplateRepository(BaseRepository):
         data: Optional[Union[Dict[str, Any], LLMProviderParser]] = None,
     ) -> Optional[UserGlobalTemplateModel]:
         """Update a template"""
-        template = self.get_by_id_and_user_id(template_id, user_id)
+        template = await self.get_by_id_and_user_id(session, template_id, user_id)
         if not template:
             return None
 
@@ -117,13 +128,18 @@ class UserGlobalTemplateRepository(BaseRepository):
         elif data is not None:
             template.data = data
 
-        return self.update(template)
+        await session.flush()
+        await session.refresh(template)
+        return template
 
-    def delete_template(self, template_id: int, user_id: int) -> bool:
+    async def delete_template(
+        self, session: AsyncSession, template_id: int, user_id: int
+    ) -> bool:
         """Delete a template"""
-        template = self.get_by_id_and_user_id(template_id, user_id)
+        template = await self.get_by_id_and_user_id(session, template_id, user_id)
         if not template:
             return False
 
-        self.delete(template)
+        await session.delete(template)
+        await session.flush()
         return True

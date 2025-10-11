@@ -1,8 +1,8 @@
+import asyncio
 import json
 import threading
 import time
 import traceback
-from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 import networkx as nx
@@ -86,25 +86,25 @@ class GraphExecutor:
         self._run_full_strategy = RunFullStrategy(self)
         self._run_from_node_strategy = RunFromNodeStrategy(self)
 
-    def push_event(self, node_id: str, event: str, data: Any = {}):
+    async def push_event(self, node_id: str, event: str, data: Any = {}):
         # Publish node event to Redis
         if self.execution_event_publisher and self.enable_debug:
             self.execution_event_publisher.publish_node_event(
                 node_id=node_id, event=event, data=data
             )
 
-    def end_event(self, data: Dict = {}):
+    async def end_event(self, data: Dict = {}):
         # Publish DONE event to Redis
         if self.execution_event_publisher and self.enable_debug:
             self.execution_event_publisher.end(data=data)
 
-    def execute(self) -> FlowExecutionResult:
+    async def execute(self) -> FlowExecutionResult:
         """
         Execute the graph with parallel processing within layers.
 
         This is the synchronous version that matches your old working code structure.
         Checks the execution control to determine if execution should start from a specific node.
-        """
+        """  # noqa
 
         if len(self.execution_plan) == 0:
             execute_result = FlowExecutionResult(
@@ -121,18 +121,18 @@ class GraphExecutor:
 
         # Check if we should start execution from a specific node
         if self.execution_control.start_node is not None:
-            return self._run_from_node_strategy.execute(
+            return await self._run_from_node_strategy.execute(
                 self.execution_control.start_node
             )
 
         # Otherwise, execute from the beginning
-        return self._run_full_strategy.execute()
+        return await self._run_full_strategy.execute()
 
-    def _execute_layer_parallel(  # noqa
-        self, executor: ThreadPoolExecutor, layer_nodes: List[str], layer_index: int
+    async def _execute_layer_parallel(  # noqa
+        self, layer_nodes: List[str], layer_index: int
     ) -> List[NodeExecutionResult]:
         """
-        Execute all nodes in a layer in parallel.
+        Execute all nodes in a layer in parallel using asyncio.TaskGroup with semaphore.
         """
         if not layer_nodes:
             logger.warning(f"Layer {layer_index} is empty")
@@ -150,7 +150,7 @@ class GraphExecutor:
             else:
                 # Create a skipped result for this node
                 node_data = self.graph.nodes[node_id].get("data", NodeData())
-                self.push_event(
+                await self.push_event(
                     node_id=node_id,
                     event=NODE_EXECUTION_STATUS.SKIPPED,
                     data={},
@@ -164,7 +164,7 @@ class GraphExecutor:
                 )
 
         logger.info(
-            f"Layer {layer_index}: {len(executable_nodes)} executable, {len(skipped_results)} skipped"
+            f"Layer {layer_index}: {len(executable_nodes)} executable, {len(skipped_results)} skipped"  # noqa
         )
 
         if not executable_nodes:
@@ -175,71 +175,80 @@ class GraphExecutor:
         if len(executable_nodes) == 1:
             node_id = executable_nodes[0]
             logger.info(f"Executing single node in layer {layer_index}: {node_id}")
-            execution_results = [self._execute_single_node(node_id, layer_index)]
+            execution_results = [await self._execute_single_node(node_id, layer_index)]
         else:
             logger.info(
-                f"Executing {len(executable_nodes)} nodes in parallel for layer {layer_index}"
+                f"Executing {len(executable_nodes)} nodes in parallel for layer {layer_index}"  # noqa
             )
 
-            # Submit all executable nodes to thread pool
-            futures: Dict[Future, str] = {}
+            # Create semaphore with limit of 5 concurrent tasks
+            semaphore = asyncio.Semaphore(5)
 
-            for node_id in executable_nodes:
-                try:
-                    node_data = GraphExecutionUtil.get_node_data_copy(
-                        self.graph, node_id
-                    )
-                    future = executor.submit(
-                        self._execute_single_node, node_id, layer_index, node_data
-                    )
-                    futures[future] = node_id
-                    logger.debug(f"Submitted node {node_id} for parallel execution")
-                except Exception as e:
-                    logger.error(f"Failed to submit node {node_id}: {str(e)}")
-                    return [
-                        NodeExecutionResult(
-                            node_id=node_id, success=False, error=str(e)
-                        )
-                    ]
-
-            # Collect results as they complete
+            # Create tasks for all executable nodes
             execution_results = []
+
             try:
-                for future in as_completed(futures.keys()):
-                    node_id = futures[future]
+                async with asyncio.TaskGroup() as task_group:
+                    tasks = []
+                    for node_id in executable_nodes:
+                        # Create task that respects semaphore limit and returns result
+                        task = task_group.create_task(
+                            self._execute_node_with_semaphore_and_return_result(
+                                semaphore, node_id, layer_index
+                            )
+                        )
+                        tasks.append(task)
+
+                # Collect results from completed tasks
+                for task in tasks:
                     try:
-                        result = future.result()
+                        result = await task
                         execution_results.append(result)
 
                         if result.success:
                             logger.debug(
-                                f"Node {node_id} completed successfully in {result.execution_time:.3f}s"
+                                f"Node {result.node_id} completed successfully in {result.execution_time:.3f}s"  # noqa
                             )
                         else:
-                            logger.error(f"Node {node_id} failed: {result.error}")
-
-                    except Exception as e:
-                        logger.error(
-                            f"Failed to get result for node {node_id}: {str(e)}"
-                        )
-                        execution_results.append(
-                            NodeExecutionResult(
-                                node_id=node_id, success=False, error=str(e)
+                            logger.error(
+                                f"Node {result.node_id} failed: {result.error}"
                             )
-                        )
+                    except Exception as e:
+                        logger.error(f"Failed to get result from task: {str(e)}")
+                        # This shouldn't happen with TaskGroup as it would have raised
+                        # an exception already, but we handle it for safety
+                        pass
+
             except Exception as e:
-                logger.error(
-                    f"Error collecting results for layer {layer_index}: {str(e)}"
-                )
-                for future in futures.keys():
-                    future.cancel()
+                logger.error(f"Error in TaskGroup for layer {layer_index}: {str(e)}")
                 raise
 
         # Combine execution results with skipped results
         all_results = execution_results + skipped_results
         return all_results
 
-    def _execute_single_node(
+    async def _execute_node_with_semaphore_and_return_result(
+        self, semaphore: asyncio.Semaphore, node_id: str, layer_index: int
+    ) -> NodeExecutionResult:
+        """
+        Execute a node with semaphore control and return the result.
+
+        This method respects the semaphore limit and returns the execution result.
+        """
+        async with semaphore:
+            try:
+                node_data = GraphExecutionUtil.get_node_data_copy(self.graph, node_id)
+                result = await self._execute_single_node(
+                    node_id, layer_index, node_data
+                )
+                logger.debug(f"Completed node {node_id} execution in TaskGroup")
+                return result
+            except Exception as e:
+                logger.error(f"Failed to execute node {node_id} in TaskGroup: {str(e)}")
+                # Return a failure result instead of raising to avoid failing the entire group
+                return NodeExecutionResult(node_id=node_id, success=False, error=str(e))
+
+    async def _execute_single_node(
         self, node_id: str, layer_index: int, node_data: Optional[NodeData] = None
     ) -> NodeExecutionResult:
         """
@@ -253,7 +262,7 @@ class GraphExecutor:
         start_time = time.time()
 
         try:
-            self.push_event(
+            await self.push_event(
                 node_id=node_id, event=NODE_EXECUTION_STATUS.RUNNING, data={}
             )
 
@@ -273,7 +282,7 @@ class GraphExecutor:
             # Check for skipping
             if node_data.execution_status == NODE_EXECUTION_STATUS.SKIPPED:
                 logger.info(f"Node {node_id} is skipped")
-                self.push_event(
+                await self.push_event(
                     node_id=node_id,
                     event=NODE_EXECUTION_STATUS.SKIPPED,
                     data=node_data.model_dump(),
@@ -303,12 +312,12 @@ class GraphExecutor:
             logger.info(f"Executing node [{layer_index}]: {node_spec.name}")
 
             # Execute the node
-            executed_data: NodeData = node_instance.run(
+            executed_data: NodeData = await node_instance.run(
                 node_id=node_id,
                 node_data=node_data,
                 exec_context=self.execution_context,
             )
-            self.push_event(
+            await self.push_event(
                 node_id=node_id,
                 event=NODE_EXECUTION_STATUS.COMPLETED,
                 data=executed_data.model_dump(),
@@ -330,7 +339,7 @@ class GraphExecutor:
                 f"❌ Node {node_id} execution failed 🛑: {str(e)}\n🔍 Trace: {trace}"
             )
 
-            self.push_event(
+            await self.push_event(
                 node_id=node_id,
                 event=NODE_EXECUTION_STATUS.FAILED,
                 data={"error": str(e)},
@@ -360,7 +369,7 @@ class GraphExecutor:
                     f"Failed to update successors for node {result.node_id}: {str(e)}"
                 )
 
-    def _update_successors(
+    def _update_successors(  # noqa
         self, node_id: str, successors: List[str], executed_data: NodeData
     ):
         """
@@ -405,7 +414,7 @@ class GraphExecutor:
                             "data"
                         )
 
-                        # If successor node's exec state is in SKIPPED, then skip this node.
+                        # If successor node's exec state is in SKIPPED, then skip this node.  # noqa
                         if (
                             successor_node_data.execution_status
                             == NODE_EXECUTION_STATUS.SKIPPED
@@ -455,7 +464,7 @@ class GraphExecutor:
                         f"Failed to update successor {successor_node_id}: {str(e)}"
                     )
 
-    def _update_normal_mode_successor(
+    def _update_normal_mode_successor(  # noqa
         self,
         node_id: str,
         successor_node_id: str,
@@ -491,7 +500,7 @@ class GraphExecutor:
 
             if not edge_data:
                 logger.warning(
-                    f"No edge data between {node_id} and {successor_node_id} with key {edge_key}"
+                    f"No edge data between {node_id} and {successor_node_id} with key {edge_key}"  # noqa
                 )
                 return
 

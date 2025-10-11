@@ -2,9 +2,9 @@ import traceback
 
 from celery import Task
 from loguru import logger
-from src.configs.config import get_settings
+from src.configs.config import get_app_settings
 
-app_settings = get_settings()
+app_settings = get_app_settings()
 
 
 class BaseTask(Task):

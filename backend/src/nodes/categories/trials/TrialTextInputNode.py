@@ -32,7 +32,7 @@ class TrialTextInputNode(Node):
         tags=["input", "text", "trial"],
     )
 
-    def process(self, inputs, parameters):
+    async def process(self, inputs, parameters):
         """Process the text input and return it as output."""
         return {"text_output": inputs["text_input"]}
 

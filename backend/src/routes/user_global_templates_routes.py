@@ -3,12 +3,15 @@ import json
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
 from loguru import logger
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.components.llm.registry.LLMConstructingRegistry import LLMConstructingRegistry
 from src.core.cache import generate_catalog_etag
 from src.dependencies.auth_dependency import get_current_user
-from src.dependencies.db_dependency import get_db
+from src.dependencies.db_dependency import get_async_db
 from src.dependencies.redis_dependency import get_redis_client
-from src.repositories.UserGlobalTemplateRepository import UserGlobalTemplateRepository
+from src.dependencies.user_global_templates_dep import (
+    get_user_global_template_service,
+)
 from src.schemas.users.user_global_template_schemas import (
     CreateLLMJudgeRequest,
     LLMJudgeListResponse,
@@ -24,25 +27,12 @@ user_global_templates_router = APIRouter(
 )
 
 
-def get_user_global_template_repository(
-    db=Depends(get_db),
-) -> UserGlobalTemplateRepository:
-    """Dependency to get UserGlobalTemplateRepository instance"""
-    return UserGlobalTemplateRepository(db)
-
-
-def get_user_global_template_service(
-    repo: UserGlobalTemplateRepository = Depends(get_user_global_template_repository),
-) -> UserGlobalTemplateService:
-    """Dependency to get UserGlobalTemplateService instance"""
-    return UserGlobalTemplateService(repo)
-
-
 @user_global_templates_router.post(
     "/llm-judges", response_model=LLMJudgeResponse, status_code=status.HTTP_201_CREATED
 )
 async def create_llm_judge(
     request: CreateLLMJudgeRequest,
+    session: AsyncSession = Depends(get_async_db),
     template_service: UserGlobalTemplateService = Depends(
         get_user_global_template_service
     ),
@@ -52,7 +42,8 @@ async def create_llm_judge(
     Create a new LLM judge template for the authenticated user
     """
     try:
-        template = template_service.create_llm_judge(
+        template = await template_service.create_llm_judge(
+            session=session,
             user_id=auth_user_id,
             name=request.name,
             description=request.description,
@@ -84,6 +75,7 @@ async def create_llm_judge(
     "/llm-judges", response_model=LLMJudgeListResponse, status_code=status.HTTP_200_OK
 )
 async def get_llm_judges(
+    session: AsyncSession = Depends(get_async_db),
     template_service: UserGlobalTemplateService = Depends(
         get_user_global_template_service
     ),
@@ -93,7 +85,7 @@ async def get_llm_judges(
     Get all LLM judge templates for the authenticated user
     """
     try:
-        templates = template_service.get_llm_judges(auth_user_id)
+        templates = await template_service.get_llm_judges(session, auth_user_id)
 
         template_responses = [
             LLMJudgeResponse(
@@ -129,6 +121,7 @@ async def get_llm_judges(
 async def update_llm_judge(
     template_id: int,
     request: UpdateLLMJudgeRequest,
+    session: AsyncSession = Depends(get_async_db),
     template_service: UserGlobalTemplateService = Depends(
         get_user_global_template_service
     ),
@@ -138,7 +131,8 @@ async def update_llm_judge(
     Update an LLM judge template for the authenticated user
     """
     try:
-        template = template_service.update_llm_judge(
+        template = await template_service.update_llm_judge(
+            session=session,
             template_id=template_id,
             user_id=auth_user_id,
             name=request.name,
@@ -183,6 +177,7 @@ async def update_llm_judge(
 )
 async def delete_llm_judge(
     template_id: int,
+    session: AsyncSession = Depends(get_async_db),
     template_service: UserGlobalTemplateService = Depends(
         get_user_global_template_service
     ),
@@ -192,7 +187,9 @@ async def delete_llm_judge(
     Delete an LLM judge template for the authenticated user
     """
     try:
-        success = template_service.delete_llm_judge(template_id, auth_user_id)
+        success = await template_service.delete_llm_judge(
+            session, template_id, auth_user_id
+        )
 
         if not success:
             logger.warning(

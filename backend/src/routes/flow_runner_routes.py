@@ -7,12 +7,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import JSONResponse, StreamingResponse
 from loguru import logger
 from redis import Redis
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.celery_worker.tasks.flow_execution_tasks import compile_flow, run_flow
 from src.dependencies.api_key_dependency import get_api_key_service
 from src.dependencies.auth_dependency import (
     auth_through_url_param,
     get_current_user,
 )
+from src.dependencies.db_dependency import get_async_db
 from src.dependencies.flow_dep import get_flow_service
 from src.dependencies.redis_dependency import get_redis_client
 from src.schemas.flowbuilder.flow_graph_schemas import (
@@ -21,7 +23,7 @@ from src.schemas.flowbuilder.flow_graph_schemas import (
 )
 from src.services.ApiKeyService import ApiKeyService
 from src.services.FlowService import FlowService
-from src.workers.FlowSyncWorker import FlowSyncWorker
+from src.workers.FlowAsyncWorker import FlowAsyncWorker
 
 flow_execution_router = APIRouter(
     prefix="/api/exec",
@@ -45,7 +47,9 @@ async def compile_flow_endpoint(
         flow_graph_request = CanvasFlowRunRequest(**request_json)
 
         # Submit compile task to Celery
-        task = compile_flow.delay("flow-compile", flow_graph_request.model_dump())
+        task = compile_flow.apply_async(
+            args=["flow-compile", flow_graph_request.model_dump()]
+        )
 
         logger.info(
             f"Compilation task submitted to Celery. (submitted_by u_id: {_auth_user_id})"
@@ -89,7 +93,13 @@ async def execute_flow_endpoint(
 
         # Submit run task to Celery
         flow_id = flow_graph_request.flow_id
-        task = run_flow.delay(_auth_user_id, flow_id, flow_graph_request.model_dump())
+        task = run_flow.apply_async(
+            kwargs={
+                "user_id": _auth_user_id,
+                "flow_id": flow_id,
+                "flow_graph_request_dict": flow_graph_request.model_dump(),
+            }
+        )
 
         logger.info(
             f"Execution task submitted to Celery. (submitted_by u_id: {_auth_user_id}). Task ID: {task.id}"  # noqa: E501
@@ -192,6 +202,7 @@ async def run_flow_endpoint(
     stream: bool = Query(False),
     api_key_service: ApiKeyService = Depends(get_api_key_service),
     flow_service: FlowService = Depends(get_flow_service),
+    session: AsyncSession = Depends(get_async_db),
 ):
     """
     Execute a flow with proper validation and error handling.
@@ -239,14 +250,15 @@ async def run_flow_endpoint(
                     detail="Invalid authorization header format.",
                 )
 
-        # Create FlowSyncWorker and execute with validation
-        flow_sync_worker = FlowSyncWorker()
-        execution_result = flow_sync_worker.run_flow_from_api(
+        # Create FlowAsyncWorker and execute with validation
+        flow_async_worker = FlowAsyncWorker()
+        execution_result = await flow_async_worker.run_flow_from_api(
             flow_id=flow_id,
             flow_run_request=flow_run_request,
             request_api_key=request_api_key,
             api_key_service=api_key_service,
             flow_service=flow_service,
+            session=session,
             stream=stream,
         )
 

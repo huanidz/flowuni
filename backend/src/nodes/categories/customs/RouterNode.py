@@ -48,7 +48,7 @@ class RouterNode(Node):
         tags=[NODE_TAGS_CONSTS.ROUTING],
     )
 
-    def process(
+    async def process(
         self, inputs: Dict[str, Any], parameters: Dict[str, Any]
     ) -> Dict[str, Union[float, int, str]]:
         sample_label_decisions = inputs[SPECIAL_NODE_INPUT_CONSTS.ROUTER_ROUTE_LABELS]

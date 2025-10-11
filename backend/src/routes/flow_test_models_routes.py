@@ -2,14 +2,13 @@ import traceback
 
 from fastapi import APIRouter, Depends, HTTPException, Path
 from loguru import logger
-from redis import Redis
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.dependencies.auth_dependency import get_current_user
-from src.dependencies.db_dependency import get_db
+from src.dependencies.db_dependency import get_async_db
 from src.dependencies.flow_dep import get_flow_service
-from src.dependencies.redis_dependency import get_redis_client
+from src.dependencies.flow_test_dep import get_flow_test_service
 from src.exceptions.auth_exceptions import UNAUTHORIZED_EXCEPTION
 from src.exceptions.shared_exceptions import NOT_FOUND_EXCEPTION
-from src.repositories.FlowTestRepository import FlowTestRepository
 from src.schemas.flows.flow_test_schemas import (
     TestCaseCreateRequest,
     TestCaseCreateResponse,
@@ -33,24 +32,10 @@ flow_test_router = APIRouter(
 )
 
 
-# Dependencies
-def get_flow_test_repository(db_session=Depends(get_db)) -> FlowTestRepository:
-    return FlowTestRepository(db_session=db_session)
-
-
-def get_flow_test_service(
-    test_repository: FlowTestRepository = Depends(get_flow_test_repository),
-    redis_client: Redis = Depends(get_redis_client),
-) -> FlowTestService:
-    """
-    Dependency that returns FlowTestService instance.
-    """
-    return FlowTestService(test_repository=test_repository, redis_client=redis_client)
-
-
 @flow_test_router.post("/suites", response_model=TestSuiteCreateResponse)
 async def create_test_suite(
     request: TestSuiteCreateRequest,
+    session: AsyncSession = Depends(get_async_db),
     flow_test_service: FlowTestService = Depends(get_flow_test_service),
     flow_service: FlowService = Depends(get_flow_service),
     auth_user_id: int = Depends(get_current_user),
@@ -60,7 +45,9 @@ async def create_test_suite(
     """
     try:
         # Verify the flow exists and the user has access to it
-        flow = flow_service.get_flow_detail_by_id(flow_id=request.flow_id)
+        flow = await flow_service.get_flow_detail_by_id(
+            session=session, flow_id=request.flow_id
+        )
         if not flow:
             logger.warning(f"Flow with ID {request.flow_id} not found")
             raise NOT_FOUND_EXCEPTION
@@ -74,7 +61,8 @@ async def create_test_suite(
             raise UNAUTHORIZED_EXCEPTION
 
         # Create the test suite
-        test_suite = flow_test_service.create_test_suite(
+        test_suite = await flow_test_service.create_test_suite(
+            session=session,
             flow_id=request.flow_id,
             name=request.name,
             description=request.description,
@@ -107,6 +95,7 @@ async def create_test_suite(
 @flow_test_router.delete("/suites/{suite_id}", status_code=204)
 async def delete_test_suite(
     suite_id: int = Path(..., description="Test suite ID"),
+    session: AsyncSession = Depends(get_async_db),
     flow_test_service: FlowTestService = Depends(get_flow_test_service),
     flow_service: FlowService = Depends(get_flow_service),
     auth_user_id: int = Depends(get_current_user),
@@ -116,13 +105,17 @@ async def delete_test_suite(
     """
     try:
         # First get the test suite to verify it exists
-        test_suite = flow_test_service.get_test_suite_by_id(suite_id=suite_id)
+        test_suite = await flow_test_service.get_test_suite_by_id(
+            session=session, suite_id=suite_id
+        )
         if not test_suite:
             logger.warning(f"Test suite with ID {suite_id} not found")
             raise NOT_FOUND_EXCEPTION
 
         # Get the flow to verify user ownership
-        flow = flow_service.get_flow_detail_by_id(flow_id=test_suite.flow_id)
+        flow = await flow_service.get_flow_detail_by_id(
+            session=session, flow_id=test_suite.flow_id
+        )
         if not flow:
             logger.warning(f"Flow with ID {test_suite.flow_id} not found")
             raise NOT_FOUND_EXCEPTION
@@ -136,7 +129,7 @@ async def delete_test_suite(
             raise UNAUTHORIZED_EXCEPTION
 
         # Delete the test suite
-        flow_test_service.delete_test_suite(suite_id=suite_id)
+        await flow_test_service.delete_test_suite(session=session, suite_id=suite_id)
 
         # No response body for 204 No Content
         return
@@ -159,6 +152,7 @@ async def delete_test_suite(
 async def update_test_suite(
     suite_id: int = Path(..., description="Test suite ID"),
     request: TestSuiteUpdateRequest = ...,
+    session: AsyncSession = Depends(get_async_db),
     flow_test_service: FlowTestService = Depends(get_flow_test_service),
     flow_service: FlowService = Depends(get_flow_service),
     auth_user_id: int = Depends(get_current_user),
@@ -168,13 +162,17 @@ async def update_test_suite(
     """
     try:
         # First get the test suite to verify it exists
-        test_suite = flow_test_service.get_test_suite_by_id(suite_id=suite_id)
+        test_suite = await flow_test_service.get_test_suite_by_id(
+            session=session, suite_id=suite_id
+        )
         if not test_suite:
             logger.warning(f"Test suite with ID {suite_id} not found")
             raise NOT_FOUND_EXCEPTION
 
         # Get the flow to verify user ownership
-        flow = flow_service.get_flow_detail_by_id(flow_id=test_suite.flow_id)
+        flow = await flow_service.get_flow_detail_by_id(
+            session=session, flow_id=test_suite.flow_id
+        )
         if not flow:
             logger.warning(f"Flow with ID {test_suite.flow_id} not found")
             raise NOT_FOUND_EXCEPTION
@@ -188,7 +186,8 @@ async def update_test_suite(
             raise UNAUTHORIZED_EXCEPTION
 
         # Update the test suite
-        updated_test_suite = flow_test_service.update_test_suite(
+        updated_test_suite = await flow_test_service.update_test_suite(
+            session=session,
             suite_id=suite_id,
             flow_id=request.flow_id,
             name=request.name,
@@ -225,6 +224,7 @@ async def update_test_suite(
 async def partial_update_test_suite(
     suite_id: int = Path(..., description="Test suite ID"),
     request: TestSuitePartialUpdateRequest = ...,
+    session: AsyncSession = Depends(get_async_db),
     flow_test_service: FlowTestService = Depends(get_flow_test_service),
     flow_service: FlowService = Depends(get_flow_service),
     auth_user_id: int = Depends(get_current_user),
@@ -234,13 +234,17 @@ async def partial_update_test_suite(
     """
     try:
         # First get the test suite to verify it exists
-        test_suite = flow_test_service.get_test_suite_by_id(suite_id=suite_id)
+        test_suite = await flow_test_service.get_test_suite_by_id(
+            session=session, suite_id=suite_id
+        )
         if not test_suite:
             logger.warning(f"Test suite with ID {suite_id} not found")
             raise NOT_FOUND_EXCEPTION
 
         # Get the flow to verify user ownership
-        flow = flow_service.get_flow_detail_by_id(flow_id=test_suite.flow_id)
+        flow = await flow_service.get_flow_detail_by_id(
+            session=session, flow_id=test_suite.flow_id
+        )
         if not flow:
             logger.warning(f"Flow with ID {test_suite.flow_id} not found")
             raise NOT_FOUND_EXCEPTION
@@ -254,7 +258,8 @@ async def partial_update_test_suite(
             raise UNAUTHORIZED_EXCEPTION
 
         # Update the test suite with only the provided fields
-        updated_test_suite = flow_test_service.update_test_suite(
+        updated_test_suite = await flow_test_service.update_test_suite(
+            session=session,
             suite_id=suite_id,
             flow_id=request.flow_id,
             name=request.name,
@@ -293,6 +298,7 @@ async def partial_update_test_suite(
 @flow_test_router.delete("/cases/{case_id}", status_code=204)
 async def delete_test_case(
     case_id: int = Path(..., description="Test case ID"),
+    session: AsyncSession = Depends(get_async_db),
     flow_test_service: FlowTestService = Depends(get_flow_test_service),
     flow_service: FlowService = Depends(get_flow_service),
     auth_user_id: int = Depends(get_current_user),
@@ -302,19 +308,25 @@ async def delete_test_case(
     """
     try:
         # First get the test case to verify it exists
-        test_case = flow_test_service.get_test_case_by_id(case_id=case_id)
+        test_case = await flow_test_service.get_test_case_by_id(
+            session=session, case_id=case_id
+        )
         if not test_case:
             logger.warning(f"Test case with ID {case_id} not found")
             raise NOT_FOUND_EXCEPTION
 
         # Get the test suite to verify user ownership
-        test_suite = flow_test_service.get_test_suite_by_id(suite_id=test_case.suite_id)
+        test_suite = await flow_test_service.get_test_suite_by_id(
+            session=session, suite_id=test_case.suite_id
+        )
         if not test_suite:
             logger.warning(f"Test suite with ID {test_case.suite_id} not found")
             raise NOT_FOUND_EXCEPTION
 
         # Get the flow to verify user ownership
-        flow = flow_service.get_flow_detail_by_id(flow_id=test_suite.flow_id)
+        flow = await flow_service.get_flow_detail_by_id(
+            session=session, flow_id=test_suite.flow_id
+        )
         if not flow:
             logger.warning(f"Flow with ID {test_suite.flow_id} not found")
             raise NOT_FOUND_EXCEPTION
@@ -328,7 +340,7 @@ async def delete_test_case(
             raise UNAUTHORIZED_EXCEPTION
 
         # Delete the test case
-        flow_test_service.delete_test_case(case_id=case_id)
+        await flow_test_service.delete_test_case(session=session, case_id=case_id)
 
         # No response body for 204 No Content
         return
@@ -350,6 +362,7 @@ async def delete_test_case(
 @flow_test_router.post("/cases", response_model=TestCaseCreateResponse)
 async def create_test_case(
     request: TestCaseCreateRequest,
+    session: AsyncSession = Depends(get_async_db),
     flow_test_service: FlowTestService = Depends(get_flow_test_service),
     flow_service: FlowService = Depends(get_flow_service),
     auth_user_id: int = Depends(get_current_user),
@@ -359,13 +372,17 @@ async def create_test_case(
     """
     try:
         # First get the test suite to verify it exists
-        test_suite = flow_test_service.get_test_suite_by_id(suite_id=request.suite_id)
+        test_suite = await flow_test_service.get_test_suite_by_id(
+            session=session, suite_id=request.suite_id
+        )
         if not test_suite:
             logger.warning(f"Test suite with ID {request.suite_id} not found")
             raise NOT_FOUND_EXCEPTION
 
         # Get the flow to verify user ownership
-        flow = flow_service.get_flow_detail_by_id(flow_id=test_suite.flow_id)
+        flow = await flow_service.get_flow_detail_by_id(
+            session=session, flow_id=test_suite.flow_id
+        )
         if not flow:
             logger.warning(f"Flow with ID {test_suite.flow_id} not found")
             raise NOT_FOUND_EXCEPTION
@@ -379,7 +396,8 @@ async def create_test_case(
             raise UNAUTHORIZED_EXCEPTION
 
         # Create the test case
-        test_case = flow_test_service.create_empty_test_case(
+        test_case = await flow_test_service.create_empty_test_case(
+            session=session,
             suite_id=request.suite_id,
             name=request.name,
             desc=request.desc,
@@ -412,6 +430,7 @@ async def create_test_case(
 @flow_test_router.get("/cases/{case_id}", response_model=TestCaseGetResponse)
 async def get_test_case(
     case_id: int = Path(..., description="Test case ID"),
+    session: AsyncSession = Depends(get_async_db),
     flow_test_service: FlowTestService = Depends(get_flow_test_service),
     flow_service: FlowService = Depends(get_flow_service),
     auth_user_id: int = Depends(get_current_user),
@@ -421,19 +440,25 @@ async def get_test_case(
     """
     try:
         # First get the test case to verify it exists
-        test_case = flow_test_service.get_test_case_by_id(case_id=case_id)
+        test_case = await flow_test_service.get_test_case_by_id(
+            session=session, case_id=case_id
+        )
         if not test_case:
             logger.warning(f"Test case with ID {case_id} not found")
             raise NOT_FOUND_EXCEPTION
 
         # Get the test suite to verify user ownership
-        test_suite = flow_test_service.get_test_suite_by_id(suite_id=test_case.suite_id)
+        test_suite = await flow_test_service.get_test_suite_by_id(
+            session=session, suite_id=test_case.suite_id
+        )
         if not test_suite:
             logger.warning(f"Test suite with ID {test_case.suite_id} not found")
             raise NOT_FOUND_EXCEPTION
 
         # Get the flow to verify user ownership
-        flow = flow_service.get_flow_detail_by_id(flow_id=test_suite.flow_id)
+        flow = await flow_service.get_flow_detail_by_id(
+            session=session, flow_id=test_suite.flow_id
+        )
         if not flow:
             logger.warning(f"Flow with ID {test_suite.flow_id} not found")
             raise NOT_FOUND_EXCEPTION
@@ -479,6 +504,7 @@ async def get_test_case(
 async def update_test_case(
     case_id: int = Path(..., description="Test case ID"),
     request: TestCaseUpdateRequest = ...,
+    session: AsyncSession = Depends(get_async_db),
     flow_test_service: FlowTestService = Depends(get_flow_test_service),
     flow_service: FlowService = Depends(get_flow_service),
     auth_user_id: int = Depends(get_current_user),
@@ -488,19 +514,25 @@ async def update_test_case(
     """
     try:
         # First get the test case to verify it exists
-        test_case = flow_test_service.get_test_case_by_id(case_id=case_id)
+        test_case = await flow_test_service.get_test_case_by_id(
+            session=session, case_id=case_id
+        )
         if not test_case:
             logger.warning(f"Test case with ID {case_id} not found")
             raise NOT_FOUND_EXCEPTION
 
         # Get the test suite to verify user ownership
-        test_suite = flow_test_service.get_test_suite_by_id(suite_id=test_case.suite_id)
+        test_suite = await flow_test_service.get_test_suite_by_id(
+            session=session, suite_id=test_case.suite_id
+        )
         if not test_suite:
             logger.warning(f"Test suite with ID {test_case.suite_id} not found")
             raise NOT_FOUND_EXCEPTION
 
         # Get the flow to verify user ownership
-        flow = flow_service.get_flow_detail_by_id(flow_id=test_suite.flow_id)
+        flow = await flow_service.get_flow_detail_by_id(
+            session=session, flow_id=test_suite.flow_id
+        )
         if not flow:
             logger.warning(f"Flow with ID {test_suite.flow_id} not found")
             raise NOT_FOUND_EXCEPTION
@@ -514,7 +546,8 @@ async def update_test_case(
             raise UNAUTHORIZED_EXCEPTION
 
         # Update the test case
-        updated_test_case = flow_test_service.update_test_case(
+        updated_test_case = await flow_test_service.update_test_case(
+            session=session,
             case_id=case_id,
             suite_id=request.suite_id,
             name=request.name,
@@ -559,6 +592,7 @@ async def update_test_case(
 async def partial_update_test_case(
     case_id: int = Path(..., description="Test case ID"),
     request: TestCasePartialUpdateRequest = ...,
+    session: AsyncSession = Depends(get_async_db),
     flow_test_service: FlowTestService = Depends(get_flow_test_service),
     flow_service: FlowService = Depends(get_flow_service),
     auth_user_id: int = Depends(get_current_user),
@@ -568,19 +602,25 @@ async def partial_update_test_case(
     """
     try:
         # First get the test case to verify it exists
-        test_case = flow_test_service.get_test_case_by_id(case_id=case_id)
+        test_case = await flow_test_service.get_test_case_by_id(
+            session=session, case_id=case_id
+        )
         if not test_case:
             logger.warning(f"Test case with ID {case_id} not found")
             raise NOT_FOUND_EXCEPTION
 
         # Get the test suite to verify user ownership
-        test_suite = flow_test_service.get_test_suite_by_id(suite_id=test_case.suite_id)
+        test_suite = await flow_test_service.get_test_suite_by_id(
+            session=session, suite_id=test_case.suite_id
+        )
         if not test_suite:
             logger.warning(f"Test suite with ID {test_case.suite_id} not found")
             raise NOT_FOUND_EXCEPTION
 
         # Get the flow to verify user ownership
-        flow = flow_service.get_flow_detail_by_id(flow_id=test_suite.flow_id)
+        flow = await flow_service.get_flow_detail_by_id(
+            session=session, flow_id=test_suite.flow_id
+        )
         if not flow:
             logger.warning(f"Flow with ID {test_suite.flow_id} not found")
             raise NOT_FOUND_EXCEPTION
@@ -594,7 +634,8 @@ async def partial_update_test_case(
             raise UNAUTHORIZED_EXCEPTION
 
         # Update the test case with only the provided fields
-        updated_test_case = flow_test_service.update_test_case(
+        updated_test_case = await flow_test_service.update_test_case(
+            session=session,
             case_id=case_id,
             suite_id=request.suite_id,
             name=request.name,
@@ -641,6 +682,7 @@ async def partial_update_test_case(
 )
 async def list_test_suites_with_case_previews(
     flow_id: str = Path(..., description="Flow ID"),
+    session: AsyncSession = Depends(get_async_db),
     flow_test_service: FlowTestService = Depends(get_flow_test_service),
     flow_service: FlowService = Depends(get_flow_service),
     auth_user_id: int = Depends(get_current_user),
@@ -650,7 +692,9 @@ async def list_test_suites_with_case_previews(
     """
     try:
         # Verify the flow exists and the user has access to it
-        flow = flow_service.get_flow_detail_by_id(flow_id=flow_id)
+        flow = await flow_service.get_flow_detail_by_id(
+            session=session, flow_id=flow_id
+        )
         if not flow:
             logger.warning(f"Flow with ID {flow_id} not found")
             raise NOT_FOUND_EXCEPTION
@@ -664,8 +708,8 @@ async def list_test_suites_with_case_previews(
             raise UNAUTHORIZED_EXCEPTION
 
         # Get test suites with case previews
-        test_suites = flow_test_service.get_test_suites_with_case_previews(
-            flow_id=flow_id
+        test_suites = await flow_test_service.get_test_suites_with_case_previews(
+            session=session, flow_id=flow_id
         )
 
         # The data is already in the correct format from the service
