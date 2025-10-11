@@ -1,7 +1,6 @@
 import random
 import signal
 import sys
-import time
 from datetime import datetime
 
 from celery.exceptions import SoftTimeLimitExceeded
@@ -9,13 +8,10 @@ from loguru import logger
 from src.celery_worker.BaseTask import BaseTask
 from src.celery_worker.celery_worker import celery_app
 from src.core.semaphore import acquire_user_slot_sync, release_user_slot_sync
-from src.dependencies.db_dependency import AsyncSessionLocal, get_db
+from src.dependencies.db_dependency import AsyncSessionLocal
 from src.exceptions.graph_exceptions import GraphCompilerError
 from src.models.alchemy.flows.FlowTestCaseRunModel import TestCaseRunStatus
-from src.repositories.FlowRepositories import FlowRepository
 from src.repositories.FlowTestRepository import FlowTestRepository
-from src.repositories.RepositoriesContainer import RepositoriesContainer
-from src.services.FlowService import FlowService
 from src.services.FlowTestService import FlowTestService
 from src.utils.async_utils import run_async
 from src.workers.FlowAsyncWorker import FlowAsyncWorker
@@ -30,53 +26,49 @@ def dispatch_run_test(
     Tự động retry nếu không có slot.
     """
 
+    async def check_and_dispatch():
+        """All async operations must be in the same function to use the same loop"""
+        async with AsyncSessionLocal() as db_session:
+            flow_test_service = FlowTestService(
+                test_repository=FlowTestRepository(),
+            )
+            latest_test_case_run = await flow_test_service.get_test_case_run_by_task_id(
+                session=db_session,
+                task_run_id=generated_task_id,
+            )
+            case_run_status = latest_test_case_run.status
+
+            if case_run_status == TestCaseRunStatus.CANCELLED:
+                logger.info(f"Case {case_id} has already been cancelled.")
+                return
+
+        # IMPORTANT: acquire_user_slot_sync must be called OUTSIDE the async context
+        # to avoid mixing sync operations with the async event loop
+        has_slot = acquire_user_slot_sync(user_id)
+
+        if has_slot:
+            # Có slot, gọi task xử lý thật
+            run_flow_test.apply_async(
+                kwargs={
+                    "task_id": generated_task_id,
+                    "user_id": user_id,
+                    "case_id": case_id,
+                    "flow_id": flow_id,
+                },
+                task_id=generated_task_id,
+            )
+            return
+        else:
+            countdown = 6 + random.randint(-3, 3)
+            # Hết slot, retry sau countdown giây
+            raise self.retry(countdown=countdown)
+
     try:
-
-        async def check_and_dispatch():
-            async with AsyncSessionLocal() as db_session:
-                flow_test_service = FlowTestService(
-                    test_repository=FlowTestRepository(),
-                )
-                latest_test_case_run = (
-                    await flow_test_service.get_test_case_run_by_task_id(
-                        session=db_session,
-                        task_run_id=generated_task_id,
-                    )
-                )
-                case_run_status = latest_test_case_run.status
-
-                if case_run_status == TestCaseRunStatus.CANCELLED:
-                    logger.info(f"Case {case_id} has already been cancelled.")
-                    return
-
-                # Sử dụng helper function để gọi async code safely
-                has_slot = acquire_user_slot_sync(user_id)
-
-                if has_slot:
-                    # Có slot, gọi task xử lý thật
-                    # Dùng .delay() hoặc .apply_async() để không block dispatcher
-                    # Sử dụng task_id của dispatcher task cho task 'run_flow_test'
-                    run_flow_test.apply_async(
-                        kwargs={
-                            "task_id": generated_task_id,
-                            "user_id": user_id,
-                            "case_id": case_id,
-                            "flow_id": flow_id,
-                        },
-                        task_id=generated_task_id,  # Force Celery to use your generated_task_id
-                    )
-                    return
-                else:
-                    countdown = 6 + random.randint(-3, 3)
-                    # Hết slot, retry sau 10 giây
-                    # Celery sẽ tự động đưa task này về queue
-                    raise self.retry(countdown=countdown)
-
         # Run the async function using run_async utility
         run_async(check_and_dispatch())
 
     except Exception as e:
-        # Nếu có lỗi bất ngờ, retry
+        # Nếu có lỗi bất ngờ, log và return
         logger.error(f"Error dispatching run test task {generated_task_id}: " + str(e))
         return
 
@@ -109,27 +101,24 @@ def run_flow_test(  # noqa: C901
 
         logger.warning(f"Task {task_id} received termination signal, cleaning up...")
 
+        async def cleanup_async():
+            """All async operations in one function"""
+            async with AsyncSessionLocal() as db_session:
+                flow_test_service = FlowTestService(
+                    test_repository=FlowTestRepository(),
+                )
+                await flow_test_service.update_test_case_run(
+                    session=db_session,
+                    run_id=task_id,
+                    status=TestCaseRunStatus.CANCELLED,
+                    finished_at=datetime.now(),
+                )
+
         try:
-
-            async def cleanup_async():
-                async with AsyncSessionLocal() as db_session:
-                    flow_test_service = FlowTestService(
-                        test_repository=FlowTestRepository(),
-                    )
-                    await flow_test_service.update_test_case_run(
-                        session=db_session,
-                        run_id=task_id,
-                        status=TestCaseRunStatus.CANCELLED,
-                        finished_at=datetime.now(),
-                    )
-
             # Run the async cleanup using run_async utility
             run_async(cleanup_async())
-
         except Exception as e:
             logger.error(f"Error in emergency cleanup: {e}")
-        finally:
-            release_user_slot_sync(user_id)
 
         try:
             release_user_slot_sync(user_id)
@@ -149,6 +138,7 @@ def run_flow_test(  # noqa: C901
         logger.info(f"Starting flow test task for case_id: {case_id}")
 
         async def run_test_async():
+            """All async operations in one function"""
             flow_async_worker = FlowAsyncWorker(user_id=user_id, task_id=task_id)
 
             # The worker now handles session management internally
@@ -180,6 +170,7 @@ def run_flow_test(  # noqa: C901
     except Exception as e:
         logger.error(f"Flow test failed for case_id {case_id}: {str(e)}")
         # Re-raise the exception so Celery marks the task as failed
+        raise
     finally:
         # Release user slot
         logger.info(f"Releasing user slot for user_id: {user_id}")
