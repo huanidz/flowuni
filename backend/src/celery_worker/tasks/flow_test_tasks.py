@@ -8,7 +8,7 @@ from loguru import logger
 from src.celery_worker.BaseTask import BaseTask
 from src.celery_worker.celery_worker import celery_app
 from src.core.semaphore import acquire_user_slot_sync, release_user_slot_sync
-from src.dependencies.db_dependency import AsyncSessionLocal
+from src.dependencies.db_dependency import AsyncNullPoolSessionLocal
 from src.exceptions.graph_exceptions import GraphCompilerError
 from src.models.alchemy.flows.FlowTestCaseRunModel import TestCaseRunStatus
 from src.repositories.FlowTestRepository import FlowTestRepository
@@ -24,23 +24,44 @@ def dispatch_run_test(
     """
     Task dispatcher: Kiểm tra slot và gọi task worker nếu có slot.
     Tự động retry nếu không có slot.
+
+    IMPORTANT: This task creates a NEW database session in each worker process
+    to avoid connection sharing issues across forked processes.
     """
 
     async def check_and_dispatch():
         """All async operations must be in the same function to use the same loop"""
-        async with AsyncSessionLocal() as db_session:
-            flow_test_service = FlowTestService(
-                test_repository=FlowTestRepository(),
-            )
-            latest_test_case_run = await flow_test_service.get_test_case_run_by_task_id(
-                session=db_session,
-                task_run_id=generated_task_id,
-            )
-            case_run_status = latest_test_case_run.status
+        # Create a fresh session in this worker process
+        async with AsyncNullPoolSessionLocal() as db_session:
+            try:
+                flow_test_service = FlowTestService(
+                    test_repository=FlowTestRepository(),
+                )
+                latest_test_case_run = (
+                    await flow_test_service.get_test_case_run_by_task_id(
+                        session=db_session,
+                        task_run_id=generated_task_id,
+                    )
+                )
+                case_run_status = latest_test_case_run.status
 
-            if case_run_status == TestCaseRunStatus.CANCELLED:
-                logger.info(f"Case {case_id} has already been cancelled.")
-                return
+                if case_run_status == TestCaseRunStatus.CANCELLED:
+                    logger.info(f"Case {case_id} has already been cancelled.")
+                    return {"cancelled": True}
+
+                return {"cancelled": False}
+
+            except Exception as e:
+                logger.error(f"Error checking test case status: {e}")
+                raise
+
+    try:
+        # Run the async function using run_async utility
+        result = run_async(check_and_dispatch())
+
+        # If cancelled, don't proceed
+        if result and result.get("cancelled"):
+            return
 
         # IMPORTANT: acquire_user_slot_sync must be called OUTSIDE the async context
         # to avoid mixing sync operations with the async event loop
@@ -57,19 +78,25 @@ def dispatch_run_test(
                 },
                 task_id=generated_task_id,
             )
+            logger.info(f"Dispatched test task {generated_task_id} to run_flow_test")
             return
         else:
             countdown = 6 + random.randint(-3, 3)
             # Hết slot, retry sau countdown giây
+            logger.info(
+                f"No slot available, retrying task {generated_task_id} in {countdown}s"
+            )
             raise self.retry(countdown=countdown)
 
-    try:
-        # Run the async function using run_async utility
-        run_async(check_and_dispatch())
-
+    except self.retry:
+        # Re-raise retry exception
+        raise
     except Exception as e:
         # Nếu có lỗi bất ngờ, log và return
-        logger.error(f"Error dispatching run test task {generated_task_id}: " + str(e))
+        logger.error(
+            f"Error dispatching run test task {generated_task_id}: {str(e)}",
+            exc_info=True,
+        )
         return
 
 
@@ -83,6 +110,9 @@ def run_flow_test(  # noqa: C901
 ):
     """
     Celery task that runs a flow test.
+
+    IMPORTANT: Creates a NEW database session in each worker process
+    to avoid connection sharing issues.
 
     Args:
         case_id: Test case ID
@@ -102,23 +132,28 @@ def run_flow_test(  # noqa: C901
         logger.warning(f"Task {task_id} received termination signal, cleaning up...")
 
         async def cleanup_async():
-            """All async operations in one function"""
-            async with AsyncSessionLocal() as db_session:
-                flow_test_service = FlowTestService(
-                    test_repository=FlowTestRepository(),
-                )
-                await flow_test_service.update_test_case_run(
-                    session=db_session,
-                    run_id=task_id,
-                    status=TestCaseRunStatus.CANCELLED,
-                    finished_at=datetime.now(),
-                )
+            """All async operations in one function with fresh session"""
+            # Create a fresh session for cleanup in this process
+            async with AsyncNullPoolSessionLocal() as db_session:
+                try:
+                    flow_test_service = FlowTestService(
+                        test_repository=FlowTestRepository(),
+                    )
+                    await flow_test_service.update_test_case_run(
+                        session=db_session,
+                        run_id=task_id,
+                        status=TestCaseRunStatus.CANCELLED,
+                        finished_at=datetime.now(),
+                    )
+                except Exception as e:
+                    logger.error(f"Error updating test case run during cleanup: {e}")
+                    raise
 
         try:
             # Run the async cleanup using run_async utility
             run_async(cleanup_async())
         except Exception as e:
-            logger.error(f"Error in emergency cleanup: {e}")
+            logger.error(f"Error in emergency cleanup: {e}", exc_info=True)
 
         try:
             release_user_slot_sync(user_id)
@@ -150,9 +185,11 @@ def run_flow_test(  # noqa: C901
 
         # Run the async test using run_async utility
         run_async(run_test_async())
+        logger.info(f"Flow test completed successfully for case_id: {case_id}")
         return
 
     except GraphCompilerError as e:
+        logger.error(f"Graph compiler error for case_id {case_id}: {e}")
         raise self.retry(
             exc=e,
             countdown=2,
@@ -168,7 +205,7 @@ def run_flow_test(  # noqa: C901
         # Let the signal handler's sys.exit() work
         raise
     except Exception as e:
-        logger.error(f"Flow test failed for case_id {case_id}: {str(e)}")
+        logger.error(f"Flow test failed for case_id {case_id}: {str(e)}", exc_info=True)
         # Re-raise the exception so Celery marks the task as failed
         raise
     finally:
