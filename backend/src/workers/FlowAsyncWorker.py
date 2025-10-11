@@ -412,6 +412,8 @@ class FlowAsyncWorker:
                     session=session,
                 )
 
+                await session.commit()
+
             logger.success(f"Validated flow execution completed for flow_id: {flow_id}")
             return
 
