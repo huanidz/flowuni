@@ -504,6 +504,7 @@ async def get_test_case(
 async def update_test_case(
     case_id: int = Path(..., description="Test case ID"),
     request: TestCaseUpdateRequest = ...,
+    session: AsyncSession = Depends(get_async_db),
     flow_test_service: FlowTestService = Depends(get_flow_test_service),
     flow_service: FlowService = Depends(get_flow_service),
     auth_user_id: int = Depends(get_current_user),
@@ -513,19 +514,25 @@ async def update_test_case(
     """
     try:
         # First get the test case to verify it exists
-        test_case = flow_test_service.get_test_case_by_id(case_id=case_id)
+        test_case = await flow_test_service.get_test_case_by_id(
+            session=session, case_id=case_id
+        )
         if not test_case:
             logger.warning(f"Test case with ID {case_id} not found")
             raise NOT_FOUND_EXCEPTION
 
         # Get the test suite to verify user ownership
-        test_suite = flow_test_service.get_test_suite_by_id(suite_id=test_case.suite_id)
+        test_suite = await flow_test_service.get_test_suite_by_id(
+            session=session, suite_id=test_case.suite_id
+        )
         if not test_suite:
             logger.warning(f"Test suite with ID {test_case.suite_id} not found")
             raise NOT_FOUND_EXCEPTION
 
         # Get the flow to verify user ownership
-        flow = flow_service.get_flow_detail_by_id(flow_id=test_suite.flow_id)
+        flow = await flow_service.get_flow_detail_by_id(
+            session=session, flow_id=test_suite.flow_id
+        )
         if not flow:
             logger.warning(f"Flow with ID {test_suite.flow_id} not found")
             raise NOT_FOUND_EXCEPTION
@@ -539,7 +546,8 @@ async def update_test_case(
             raise UNAUTHORIZED_EXCEPTION
 
         # Update the test case
-        updated_test_case = flow_test_service.update_test_case(
+        updated_test_case = await flow_test_service.update_test_case(
+            session=session,
             case_id=case_id,
             suite_id=request.suite_id,
             name=request.name,
@@ -584,6 +592,7 @@ async def update_test_case(
 async def partial_update_test_case(
     case_id: int = Path(..., description="Test case ID"),
     request: TestCasePartialUpdateRequest = ...,
+    session: AsyncSession = Depends(get_async_db),
     flow_test_service: FlowTestService = Depends(get_flow_test_service),
     flow_service: FlowService = Depends(get_flow_service),
     auth_user_id: int = Depends(get_current_user),
@@ -593,19 +602,25 @@ async def partial_update_test_case(
     """
     try:
         # First get the test case to verify it exists
-        test_case = flow_test_service.get_test_case_by_id(case_id=case_id)
+        test_case = await flow_test_service.get_test_case_by_id(
+            session=session, case_id=case_id
+        )
         if not test_case:
             logger.warning(f"Test case with ID {case_id} not found")
             raise NOT_FOUND_EXCEPTION
 
         # Get the test suite to verify user ownership
-        test_suite = flow_test_service.get_test_suite_by_id(suite_id=test_case.suite_id)
+        test_suite = await flow_test_service.get_test_suite_by_id(
+            session=session, suite_id=test_case.suite_id
+        )
         if not test_suite:
             logger.warning(f"Test suite with ID {test_case.suite_id} not found")
             raise NOT_FOUND_EXCEPTION
 
         # Get the flow to verify user ownership
-        flow = flow_service.get_flow_detail_by_id(flow_id=test_suite.flow_id)
+        flow = await flow_service.get_flow_detail_by_id(
+            session=session, flow_id=test_suite.flow_id
+        )
         if not flow:
             logger.warning(f"Flow with ID {test_suite.flow_id} not found")
             raise NOT_FOUND_EXCEPTION
@@ -619,7 +634,8 @@ async def partial_update_test_case(
             raise UNAUTHORIZED_EXCEPTION
 
         # Update the test case with only the provided fields
-        updated_test_case = flow_test_service.update_test_case(
+        updated_test_case = await flow_test_service.update_test_case(
+            session=session,
             case_id=case_id,
             suite_id=request.suite_id,
             name=request.name,

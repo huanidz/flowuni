@@ -44,7 +44,7 @@ app = FastAPI(
     title="AI Service",
     description="AI Service API",
     version="0.0.1",
-    redirect_slashes=False,
+    redirect_slashes=True,
     lifespan=lifespan,
 )
 
