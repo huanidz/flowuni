@@ -6,7 +6,7 @@ import networkx as nx
 from fastapi import HTTPException
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.dependencies.db_dependency import AsyncSessionLocal
+from src.dependencies.db_dependency import AsyncNullPoolSessionLocal
 from src.dependencies.redis_dependency import get_redis_client
 from src.exceptions.auth_exceptions import UNAUTHORIZED_EXCEPTION
 from src.exceptions.graph_exceptions import GraphCompilerError
@@ -390,7 +390,7 @@ class FlowAsyncWorker:
         try:
             logger.info(f"Starting validated flow execution for flow_id: {flow_id}")
 
-            async with AsyncSessionLocal() as session:
+            async with AsyncNullPoolSessionLocal() as session:
                 flow_service = FlowService(flow_repository=FlowRepository())
                 # Retrieve and validate flow
                 flow_definition = await self._get_validated_flow(
