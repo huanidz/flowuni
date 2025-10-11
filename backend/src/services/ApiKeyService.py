@@ -103,23 +103,22 @@ class ApiKeyService(ApiKeyServiceInterface):
         """
         try:
             async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
-                async with session.begin():
-                    # Create the API key in the database and get both model and full key
-                    (
-                        api_key_model,
-                        full_key,
-                    ) = await self.api_key_repository.create_api_key(
-                        session=session,
-                        user_id=user_id,
-                        name=name,
-                        description=description,
-                        expires_at=expires_at,
-                    )
+                # Create the API key in the database and get both model and full key
+                (
+                    api_key_model,
+                    full_key,
+                ) = await self.api_key_repository.create_api_key(
+                    session=session,
+                    user_id=user_id,
+                    name=name,
+                    description=description,
+                    expires_at=expires_at,
+                )
 
-                    logger.info(
-                        f"Successfully issued new API key '{name}' for user {user_id}"
-                    )
-                    return full_key, api_key_model
+                logger.info(
+                    f"Successfully issued new API key '{name}' for user {user_id}"
+                )
+                return full_key, api_key_model
         except asyncio.TimeoutError:
             raise HTTPException(status_code=503, detail="Database operation timed out")
         except Exception as e:
@@ -134,19 +133,14 @@ class ApiKeyService(ApiKeyServiceInterface):
         """
         try:
             async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
-                async with session.begin():
-                    success = await self.api_key_repository.delete_api_key(
-                        session, key_id
+                success = await self.api_key_repository.delete_api_key(session, key_id)
+                if success:
+                    logger.info(f"Successfully deleted API key with key_id: {key_id}")
+                else:
+                    logger.warning(
+                        f"Failed to delete API key with key_id: {key_id} (key not found)"
                     )
-                    if success:
-                        logger.info(
-                            f"Successfully deleted API key with key_id: {key_id}"
-                        )
-                    else:
-                        logger.warning(
-                            f"Failed to delete API key with key_id: {key_id} (key not found)"
-                        )
-                    return success
+                return success
         except asyncio.TimeoutError:
             raise HTTPException(status_code=503, detail="Database operation timed out")
         except Exception as e:
@@ -161,19 +155,18 @@ class ApiKeyService(ApiKeyServiceInterface):
         """
         try:
             async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
-                async with session.begin():
-                    success = await self.api_key_repository.deactivate_api_key(
-                        session, key_id
+                success = await self.api_key_repository.deactivate_api_key(
+                    session, key_id
+                )
+                if success:
+                    logger.info(
+                        f"Successfully deactivated API key with key_id: {key_id}"
                     )
-                    if success:
-                        logger.info(
-                            f"Successfully deactivated API key with key_id: {key_id}"
-                        )
-                    else:
-                        logger.warning(
-                            f"Failed to deactivate API key with key_id: {key_id} (key not found)"
-                        )
-                    return success
+                else:
+                    logger.warning(
+                        f"Failed to deactivate API key with key_id: {key_id} (key not found)"
+                    )
+                return success
         except asyncio.TimeoutError:
             raise HTTPException(status_code=503, detail="Database operation timed out")
         except Exception as e:
@@ -188,19 +181,16 @@ class ApiKeyService(ApiKeyServiceInterface):
         """
         try:
             async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
-                async with session.begin():
-                    success = await self.api_key_repository.activate_api_key(
-                        session, key_id
+                success = await self.api_key_repository.activate_api_key(
+                    session, key_id
+                )
+                if success:
+                    logger.info(f"Successfully activated API key with key_id: {key_id}")
+                else:
+                    logger.warning(
+                        f"Failed to activate API key with key_id: {key_id} (key not found)"
                     )
-                    if success:
-                        logger.info(
-                            f"Successfully activated API key with key_id: {key_id}"
-                        )
-                    else:
-                        logger.warning(
-                            f"Failed to activate API key with key_id: {key_id} (key not found)"
-                        )
-                    return success
+                return success
         except asyncio.TimeoutError:
             raise HTTPException(status_code=503, detail="Database operation timed out")
         except Exception as e:
@@ -218,19 +208,17 @@ class ApiKeyService(ApiKeyServiceInterface):
         try:
             async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
                 # This is a read operation with a write (update last_used_at), so we need a transaction
-                async with session.begin():
-                    api_key_model = await self.api_key_repository.validate_api_key(
-                        session, api_key_value
+
+                api_key_model = await self.api_key_repository.validate_api_key(
+                    session, api_key_value
+                )
+                if api_key_model:
+                    logger.info(
+                        f"Successfully validated API key for user {api_key_model.user_id}"
                     )
-                    if api_key_model:
-                        logger.info(
-                            f"Successfully validated API key for user {api_key_model.user_id}"
-                        )
-                    else:
-                        logger.warning(
-                            "API key validation failed - invalid or expired key"
-                        )
-                    return api_key_model
+                else:
+                    logger.warning("API key validation failed - invalid or expired key")
+                return api_key_model
         except asyncio.TimeoutError:
             raise HTTPException(status_code=503, detail="Database operation timed out")
         except Exception as e:
@@ -279,19 +267,18 @@ class ApiKeyService(ApiKeyServiceInterface):
         """
         try:
             async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
-                async with session.begin():
-                    success = await self.api_key_repository.update_api_key_usage(
-                        session, key_id
+                success = await self.api_key_repository.update_api_key_usage(
+                    session, key_id
+                )
+                if success:
+                    logger.info(
+                        f"Successfully updated last_used_at for API key with key_id: {key_id}"
                     )
-                    if success:
-                        logger.info(
-                            f"Successfully updated last_used_at for API key with key_id: {key_id}"
-                        )
-                    else:
-                        logger.warning(
-                            f"Failed to update last_used_at for API key with key_id: {key_id} (key not found)"
-                        )
-                    return success
+                else:
+                    logger.warning(
+                        f"Failed to update last_used_at for API key with key_id: {key_id} (key not found)"
+                    )
+                return success
         except asyncio.TimeoutError:
             raise HTTPException(status_code=503, detail="Database operation timed out")
         except Exception as e:

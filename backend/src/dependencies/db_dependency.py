@@ -35,6 +35,7 @@ AsyncSessionLocal = async_sessionmaker(
     bind=async_engine,
     class_=AsyncSession,  # Explicitly set the session class
     expire_on_commit=False,
+    autobegin=True,
 )
 
 

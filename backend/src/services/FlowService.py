@@ -132,12 +132,11 @@ class FlowService(FlowServiceInterface):
     async def create_empty_flow(self, session: AsyncSession, user_id: int) -> str:
         try:
             async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
-                async with session.begin():
-                    flow = await self.flow_repository.create_empty_flow(
-                        session=session, user_id=user_id
-                    )
-                    logger.info(f"Successfully created empty flow for user {user_id}")
-                    return flow.flow_id
+                flow = await self.flow_repository.create_empty_flow(
+                    session=session, user_id=user_id
+                )
+                logger.info(f"Successfully created empty flow for user {user_id}")
+                return flow.flow_id
         except asyncio.TimeoutError:
             raise HTTPException(status_code=503, detail="Database operation timed out")
         except ValueError as e:
@@ -156,22 +155,19 @@ class FlowService(FlowServiceInterface):
         """
         try:
             async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
-                async with session.begin():
-                    # Validate flow definition if provided
-                    if flow_request.flow_definition:
-                        GraphLoader.from_flow_create_request(flow_request)
+                # Validate flow definition if provided
+                if flow_request.flow_definition:
+                    GraphLoader.from_flow_create_request(flow_request)
 
-                    flow = await self.flow_repository.create_flow_with_data(
-                        session=session,
-                        user_id=user_id,
-                        name=flow_request.name,
-                        description=flow_request.description,
-                        flow_definition=flow_request.flow_definition,
-                    )
-                    logger.info(
-                        f"Successfully created flow with data for user {user_id}"
-                    )
-                    return flow
+                flow = await self.flow_repository.create_flow_with_data(
+                    session=session,
+                    user_id=user_id,
+                    name=flow_request.name,
+                    description=flow_request.description,
+                    flow_definition=flow_request.flow_definition,
+                )
+                logger.info(f"Successfully created flow with data for user {user_id}")
+                return flow
         except asyncio.TimeoutError:
             raise HTTPException(status_code=503, detail="Database operation timed out")
         except ValueError as e:
@@ -206,11 +202,8 @@ class FlowService(FlowServiceInterface):
     async def delete_flow(self, session: AsyncSession, flow_id: str):
         try:
             async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
-                async with session.begin():
-                    await self.flow_repository.delete_flow(
-                        session=session, flow_id=flow_id
-                    )
-                    logger.info(f"Successfully deleted flow {flow_id}")
+                await self.flow_repository.delete_flow(session=session, flow_id=flow_id)
+                logger.info(f"Successfully deleted flow {flow_id}")
         except asyncio.TimeoutError:
             raise HTTPException(status_code=503, detail="Database operation timed out")
         except NoResultFound:
@@ -226,44 +219,43 @@ class FlowService(FlowServiceInterface):
     ) -> Optional[FlowModel]:
         try:
             async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
-                async with session.begin():
-                    # Map to FlowModel
-                    flow_model = FlowModel(
-                        flow_id=flow_request.flow_id,
-                        name=flow_request.name,
-                        description=flow_request.description,
-                        is_active=flow_request.is_active,
-                        flow_definition=flow_request.flow_definition,
-                    )
+                # Map to FlowModel
+                flow_model = FlowModel(
+                    flow_id=flow_request.flow_id,
+                    name=flow_request.name,
+                    description=flow_request.description,
+                    is_active=flow_request.is_active,
+                    flow_definition=flow_request.flow_definition,
+                )
 
-                    # Try get flow by flow_id
-                    existing_flow = await self.flow_repository.get_by_id(
-                        session=session, flow_id=flow_model.flow_id
-                    )
+                # Try get flow by flow_id
+                existing_flow = await self.flow_repository.get_by_id(
+                    session=session, flow_id=flow_model.flow_id
+                )
 
-                    if existing_flow:
-                        # If it exists, check if its user_id is the same as owner
-                        if existing_flow.user_id != user_id:
-                            logger.warning(
-                                f"User {user_id} attempted to modify flow {flow_model.flow_id} owned by different user"
-                            )
-                            raise MISMATCH_EXCEPTION
-                        else:
-                            # If it exists, update it
-                            flow_model.user_id = user_id
-                            result = await self.flow_repository.save_flow_definition(
-                                session=session, flow=flow_model
-                            )
-                            logger.info(
-                                f"Successfully updated flow {flow_model.flow_id} for user {user_id}"
-                            )
-                            return result
-                    else:
-                        # If it doesn't exist, create it
+                if existing_flow:
+                    # If it exists, check if its user_id is the same as owner
+                    if existing_flow.user_id != user_id:
                         logger.warning(
-                            f"Flow with id {flow_model.flow_id} not found during save operation"
+                            f"User {user_id} attempted to modify flow {flow_model.flow_id} owned by different user"
                         )
-                        raise NOT_FOUND_EXCEPTION
+                        raise MISMATCH_EXCEPTION
+                    else:
+                        # If it exists, update it
+                        flow_model.user_id = user_id
+                        result = await self.flow_repository.save_flow_definition(
+                            session=session, flow=flow_model
+                        )
+                        logger.info(
+                            f"Successfully updated flow {flow_model.flow_id} for user {user_id}"
+                        )
+                        return result
+                else:
+                    # If it doesn't exist, create it
+                    logger.warning(
+                        f"Flow with id {flow_model.flow_id} not found during save operation"
+                    )
+                    raise NOT_FOUND_EXCEPTION
         except asyncio.TimeoutError:
             raise HTTPException(status_code=503, detail="Database operation timed out")
         except NoResultFound:
@@ -286,30 +278,27 @@ class FlowService(FlowServiceInterface):
         """
         try:
             async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
-                async with session.begin():
-                    # Get the flow to verify ownership
-                    existing_flow = await self.flow_repository.get_by_id(
-                        session=session, flow_id=flow_id
-                    )
-                    if not existing_flow:
-                        logger.warning(f"Flow with id {flow_id} not found")
-                        raise NOT_FOUND_EXCEPTION
+                # Get the flow to verify ownership
+                existing_flow = await self.flow_repository.get_by_id(
+                    session=session, flow_id=flow_id
+                )
+                if not existing_flow:
+                    logger.warning(f"Flow with id {flow_id} not found")
+                    raise NOT_FOUND_EXCEPTION
 
-                    # Check if the user owns the flow
-                    if existing_flow.user_id != user_id:
-                        logger.warning(
-                            f"User {user_id} attempted to activate flow {flow_id} owned by different user"
-                        )
-                        raise MISMATCH_EXCEPTION
+                # Check if the user owns the flow
+                if existing_flow.user_id != user_id:
+                    logger.warning(
+                        f"User {user_id} attempted to activate flow {flow_id} owned by different user"
+                    )
+                    raise MISMATCH_EXCEPTION
 
-                    # Activate the flow
-                    result = await self.flow_repository.activate_flow(
-                        session=session, flow_id=flow_id
-                    )
-                    logger.info(
-                        f"Successfully activated flow {flow_id} for user {user_id}"
-                    )
-                    return result
+                # Activate the flow
+                result = await self.flow_repository.activate_flow(
+                    session=session, flow_id=flow_id
+                )
+                logger.info(f"Successfully activated flow {flow_id} for user {user_id}")
+                return result
         except asyncio.TimeoutError:
             raise HTTPException(status_code=503, detail="Database operation timed out")
         except NoResultFound:
@@ -332,30 +321,29 @@ class FlowService(FlowServiceInterface):
         """
         try:
             async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
-                async with session.begin():
-                    # Get the flow to verify ownership
-                    existing_flow = await self.flow_repository.get_by_id(
-                        session=session, flow_id=flow_id
-                    )
-                    if not existing_flow:
-                        logger.warning(f"Flow with id {flow_id} not found")
-                        raise NOT_FOUND_EXCEPTION
+                # Get the flow to verify ownership
+                existing_flow = await self.flow_repository.get_by_id(
+                    session=session, flow_id=flow_id
+                )
+                if not existing_flow:
+                    logger.warning(f"Flow with id {flow_id} not found")
+                    raise NOT_FOUND_EXCEPTION
 
-                    # Check if the user owns the flow
-                    if existing_flow.user_id != user_id:
-                        logger.warning(
-                            f"User {user_id} attempted to deactivate flow {flow_id} owned by different user"
-                        )
-                        raise MISMATCH_EXCEPTION
+                # Check if the user owns the flow
+                if existing_flow.user_id != user_id:
+                    logger.warning(
+                        f"User {user_id} attempted to deactivate flow {flow_id} owned by different user"
+                    )
+                    raise MISMATCH_EXCEPTION
 
-                    # Deactivate the flow
-                    result = await self.flow_repository.deactivate_flow(
-                        session=session, flow_id=flow_id
-                    )
-                    logger.info(
-                        f"Successfully deactivated flow {flow_id} for user {user_id}"
-                    )
-                    return result
+                # Deactivate the flow
+                result = await self.flow_repository.deactivate_flow(
+                    session=session, flow_id=flow_id
+                )
+                logger.info(
+                    f"Successfully deactivated flow {flow_id} for user {user_id}"
+                )
+                return result
         except asyncio.TimeoutError:
             raise HTTPException(status_code=503, detail="Database operation timed out")
         except NoResultFound:

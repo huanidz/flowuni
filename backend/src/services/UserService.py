@@ -58,18 +58,15 @@ class UserService(UserServiceInterface):
         """Register a new user with transaction management"""
         try:
             async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
-                async with session.begin():  # Transaction for write operation
-                    existing_user = await self.user_repo.get_by_username(
-                        session, username
-                    )
-                    if existing_user:
-                        raise UserAlreadyExistsError(username)
+                existing_user = await self.user_repo.get_by_username(session, username)
+                if existing_user:
+                    raise UserAlreadyExistsError(username)
 
-                    user = UserModel(username=username)
-                    user.set_password(password)
-                    user = await self.user_repo.add(session, user)
-                    logger.info(f"User registered successfully: {username}")
-                    return user
+                user = UserModel(username=username)
+                user.set_password(password)
+                user = await self.user_repo.add(session, user)
+                logger.info(f"User registered successfully: {username}")
+                return user
         except asyncio.TimeoutError:
             raise HTTPException(status_code=503, detail="User registration timed out")
         except UserAlreadyExistsError:

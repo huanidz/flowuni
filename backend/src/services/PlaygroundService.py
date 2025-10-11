@@ -127,32 +127,29 @@ class PlaygroundService(PlaygroundServiceInterface):
         """
         try:
             async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
-                async with session.begin():
-                    # Generate a unique session ID
-                    session_id = str(uuid4())
+                # Generate a unique session ID
+                session_id = str(uuid4())
 
-                    # Verify the flow exists
-                    flow = await self.flow_repository.get_by_id(
-                        session, request.flow_id
-                    )
-                    if not flow:
-                        logger.warning(f"Flow with ID {request.flow_id} not found")
-                        raise ValueError(f"Flow with ID {request.flow_id} not found")
+                # Verify the flow exists
+                flow = await self.flow_repository.get_by_id(session, request.flow_id)
+                if not flow:
+                    logger.warning(f"Flow with ID {request.flow_id} not found")
+                    raise ValueError(f"Flow with ID {request.flow_id} not found")
 
-                    # Create the session
-                    session_obj = await self.session_repository.create_session(
-                        session=session,
-                        user_defined_session_id=session_id,
-                        flow_id=request.flow_id,
-                        session_metadata=request.session_metadata,
-                        is_playground=True,
-                    )
+                # Create the session
+                session_obj = await self.session_repository.create_session(
+                    session=session,
+                    user_defined_session_id=session_id,
+                    flow_id=request.flow_id,
+                    session_metadata=request.session_metadata,
+                    is_playground=True,
+                )
 
-                    logger.info(
-                        f"Successfully created playground session {session_id} for flow {request.flow_id}"
-                    )
+                logger.info(
+                    f"Successfully created playground session {session_id} for flow {request.flow_id}"
+                )
 
-                    return self._map_session_to_response(session_obj)
+                return self._map_session_to_response(session_obj)
 
         except asyncio.TimeoutError:
             logger.error("Timeout creating playground session")
@@ -279,31 +276,24 @@ class PlaygroundService(PlaygroundServiceInterface):
         """
         try:
             async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
-                async with session.begin():
-                    # Verify it's a playground session
-                    session_obj = (
-                        await self.session_repository.get_by_user_define_session_id(
-                            session, session_id
-                        )
-                    )
-                    if not session_obj or not session_obj.is_playground:
-                        logger.warning(
-                            f"Playground session with ID {session_id} not found"
-                        )
-                        return False
-
-                    success = await self.session_repository.delete_session(
+                # Verify it's a playground session
+                session_obj = (
+                    await self.session_repository.get_by_user_define_session_id(
                         session, session_id
                     )
-                    if success:
-                        logger.info(
-                            f"Successfully deleted playground session {session_id}"
-                        )
-                    else:
-                        logger.warning(
-                            f"Failed to delete playground session {session_id}"
-                        )
-                    return success
+                )
+                if not session_obj or not session_obj.is_playground:
+                    logger.warning(f"Playground session with ID {session_id} not found")
+                    return False
+
+                success = await self.session_repository.delete_session(
+                    session, session_id
+                )
+                if success:
+                    logger.info(f"Successfully deleted playground session {session_id}")
+                else:
+                    logger.warning(f"Failed to delete playground session {session_id}")
+                return success
 
         except asyncio.TimeoutError:
             logger.error("Timeout deleting playground session")
@@ -324,35 +314,34 @@ class PlaygroundService(PlaygroundServiceInterface):
         """
         try:
             async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
-                async with session.begin():
-                    # Verify the session exists and is a playground session
-                    session_obj = (
-                        await self.session_repository.get_by_user_define_session_id(
-                            session, request.session_id
-                        )
+                # Verify the session exists and is a playground session
+                session_obj = (
+                    await self.session_repository.get_by_user_define_session_id(
+                        session, request.session_id
                     )
-                    if not session_obj or not session_obj.is_playground:
-                        logger.warning(
-                            f"Playground session with ID {request.session_id} not found"
-                        )
-                        raise ValueError(
-                            f"Playground session with ID {request.session_id} not found"
-                        )
-
-                    # Add the chat message
-                    chat_history = await self.session_repository.add_chat_history(
-                        session=session,
-                        session_id=request.session_id,
-                        role=request.role,
-                        message=request.message,
-                        chat_metadata=request.chat_metadata,
+                )
+                if not session_obj or not session_obj.is_playground:
+                    logger.warning(
+                        f"Playground session with ID {request.session_id} not found"
+                    )
+                    raise ValueError(
+                        f"Playground session with ID {request.session_id} not found"
                     )
 
-                    logger.info(
-                        f"Added chat message to playground session {request.session_id}"
-                    )
+                # Add the chat message
+                chat_history = await self.session_repository.add_chat_history(
+                    session=session,
+                    session_id=request.session_id,
+                    role=request.role,
+                    message=request.message,
+                    chat_metadata=request.chat_metadata,
+                )
 
-                    return self._map_chat_message_to_response(chat_history)
+                logger.info(
+                    f"Added chat message to playground session {request.session_id}"
+                )
+
+                return self._map_chat_message_to_response(chat_history)
 
         except asyncio.TimeoutError:
             logger.error("Timeout adding chat message")
@@ -433,43 +422,40 @@ class PlaygroundService(PlaygroundServiceInterface):
         """
         try:
             async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
-                async with session.begin():
-                    # Verify the session exists and is a playground session
-                    session_obj = (
-                        await self.session_repository.get_by_user_define_session_id(
-                            session, request.session_id
-                        )
+                # Verify the session exists and is a playground session
+                session_obj = (
+                    await self.session_repository.get_by_user_define_session_id(
+                        session, request.session_id
                     )
-                    if not session_obj or not session_obj.is_playground:
-                        logger.warning(
-                            f"Playground session with ID {request.session_id} not found"
-                        )
-                        raise ValueError(
-                            f"Playground session with ID {request.session_id} not found"
-                        )
-
-                    # Update metadata
-                    updated_session = (
-                        await self.session_repository.update_session_metadata(
-                            session=session,
-                            session_id=request.session_id,
-                            metadata=request.metadata,
-                        )
+                )
+                if not session_obj or not session_obj.is_playground:
+                    logger.warning(
+                        f"Playground session with ID {request.session_id} not found"
+                    )
+                    raise ValueError(
+                        f"Playground session with ID {request.session_id} not found"
                     )
 
-                    if not updated_session:
-                        logger.warning(
-                            f"Failed to update metadata for playground session {request.session_id}"
-                        )
-                        raise ValueError(
-                            f"Failed to update metadata for playground session {request.session_id}"
-                        )
+                # Update metadata
+                updated_session = await self.session_repository.update_session_metadata(
+                    session=session,
+                    session_id=request.session_id,
+                    metadata=request.metadata,
+                )
 
-                    logger.info(
-                        f"Updated metadata for playground session {request.session_id}"
+                if not updated_session:
+                    logger.warning(
+                        f"Failed to update metadata for playground session {request.session_id}"
+                    )
+                    raise ValueError(
+                        f"Failed to update metadata for playground session {request.session_id}"
                     )
 
-                    return self._map_session_to_update_response(updated_session)
+                logger.info(
+                    f"Updated metadata for playground session {request.session_id}"
+                )
+
+                return self._map_session_to_update_response(updated_session)
 
         except asyncio.TimeoutError:
             logger.error("Timeout updating session metadata")

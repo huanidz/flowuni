@@ -335,17 +335,16 @@ class FlowTestService(FlowTestServiceInterface):
         """
         try:
             async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
-                async with session.begin():
-                    test_suite = await self.test_repository.create_test_suite(
-                        session=session,
-                        flow_id=flow_id,
-                        name=name,
-                        description=description,
-                    )
-                    logger.info(
-                        f"Successfully created test suite '{name}' for flow {flow_id}"
-                    )
-                    return test_suite
+                test_suite = await self.test_repository.create_test_suite(
+                    session=session,
+                    flow_id=flow_id,
+                    name=name,
+                    description=description,
+                )
+                logger.info(
+                    f"Successfully created test suite '{name}' for flow {flow_id}"
+                )
+                return test_suite
         except asyncio.TimeoutError:
             raise HTTPException(status_code=503, detail="Database operation timed out")
         except ValueError as e:
@@ -363,19 +362,18 @@ class FlowTestService(FlowTestServiceInterface):
         """
         try:
             async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
-                async with session.begin():
-                    # First check if the test suite exists
-                    test_suite = await self.test_repository.get_test_suite_by_id(
-                        session=session, suite_id=suite_id
-                    )
-                    if not test_suite:
-                        logger.warning(f"Test suite with ID {suite_id} not found")
-                        raise NOT_FOUND_EXCEPTION
+                # First check if the test suite exists
+                test_suite = await self.test_repository.get_test_suite_by_id(
+                    session=session, suite_id=suite_id
+                )
+                if not test_suite:
+                    logger.warning(f"Test suite with ID {suite_id} not found")
+                    raise NOT_FOUND_EXCEPTION
 
-                    await self.test_repository.delete_test_suite(
-                        session=session, suite_id=suite_id
-                    )
-                    logger.info(f"Successfully deleted test suite with ID {suite_id}")
+                await self.test_repository.delete_test_suite(
+                    session=session, suite_id=suite_id
+                )
+                logger.info(f"Successfully deleted test suite with ID {suite_id}")
         except asyncio.TimeoutError:
             raise HTTPException(status_code=503, detail="Database operation timed out")
         except NoResultFound:
@@ -409,26 +407,25 @@ class FlowTestService(FlowTestServiceInterface):
         """
         try:
             async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
-                async with session.begin():
-                    # First check if the test suite exists
-                    test_suite = await self.test_repository.get_test_suite_by_id(
-                        session=session, suite_id=suite_id
-                    )
-                    if not test_suite:
-                        logger.warning(f"Test suite with ID {suite_id} not found")
-                        raise NOT_FOUND_EXCEPTION
+                # First check if the test suite exists
+                test_suite = await self.test_repository.get_test_suite_by_id(
+                    session=session, suite_id=suite_id
+                )
+                if not test_suite:
+                    logger.warning(f"Test suite with ID {suite_id} not found")
+                    raise NOT_FOUND_EXCEPTION
 
-                    # Update the test suite
-                    updated_test_suite = await self.test_repository.update_test_suite(
-                        session=session,
-                        suite_id=suite_id,
-                        flow_id=flow_id,
-                        name=name,
-                        description=description,
-                        is_active=is_active,
-                    )
-                    logger.info(f"Successfully updated test suite with ID {suite_id}")
-                    return updated_test_suite
+                # Update the test suite
+                updated_test_suite = await self.test_repository.update_test_suite(
+                    session=session,
+                    suite_id=suite_id,
+                    flow_id=flow_id,
+                    name=name,
+                    description=description,
+                    is_active=is_active,
+                )
+                logger.info(f"Successfully updated test suite with ID {suite_id}")
+                return updated_test_suite
         except asyncio.TimeoutError:
             raise HTTPException(status_code=503, detail="Database operation timed out")
         except NoResultFound:
@@ -536,22 +533,21 @@ class FlowTestService(FlowTestServiceInterface):
         """
         try:
             async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
-                async with session.begin():
-                    # First check if the test suite exists
-                    test_suite = await self.test_repository.get_test_suite_by_id(
-                        session=session, suite_id=suite_id
-                    )
-                    if not test_suite:
-                        logger.warning(f"Test suite with ID {suite_id} not found")
-                        raise NOT_FOUND_EXCEPTION
+                # First check if the test suite exists
+                test_suite = await self.test_repository.get_test_suite_by_id(
+                    session=session, suite_id=suite_id
+                )
+                if not test_suite:
+                    logger.warning(f"Test suite with ID {suite_id} not found")
+                    raise NOT_FOUND_EXCEPTION
 
-                    test_case = await self.test_repository.create_empty_test_case(
-                        session=session, suite_id=suite_id, name=name, desc=desc
-                    )
-                    logger.info(
-                        f"Successfully created empty test case '{name}' for suite {suite_id}"
-                    )
-                    return test_case
+                test_case = await self.test_repository.create_empty_test_case(
+                    session=session, suite_id=suite_id, name=name, desc=desc
+                )
+                logger.info(
+                    f"Successfully created empty test case '{name}' for suite {suite_id}"
+                )
+                return test_case
         except asyncio.TimeoutError:
             raise HTTPException(status_code=503, detail="Database operation timed out")
         except NoResultFound:
@@ -569,25 +565,24 @@ class FlowTestService(FlowTestServiceInterface):
 
         try:
             async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
-                async with session.begin():
-                    # First check if the test case exists
-                    test_case = await self.test_repository.get_test_case_by_id(
-                        session=session, case_id=case_id
-                    )
-                    if not test_case:
-                        logger.warning(f"Test case with ID {case_id} not found")
-                        raise NOT_FOUND_EXCEPTION
+                # First check if the test case exists
+                test_case = await self.test_repository.get_test_case_by_id(
+                    session=session, case_id=case_id
+                )
+                if not test_case:
+                    logger.warning(f"Test case with ID {case_id} not found")
+                    raise NOT_FOUND_EXCEPTION
 
-                    await self.test_repository.delete_test_case(
-                        session=session, case_id=case_id
-                    )
-                    logger.info(
-                        f"Successfully deleted test case with ID {case_id} from database"
-                    )
+                await self.test_repository.delete_test_case(
+                    session=session, case_id=case_id
+                )
+                logger.info(
+                    f"Successfully deleted test case with ID {case_id} from database"
+                )
 
-                    # Invalidate cache
-                    self.cache_helper.delete(cache_key)
-                    logger.info(f"Invalidated cache for test case with ID {case_id}")
+                # Invalidate cache
+                self.cache_helper.delete(cache_key)
+                logger.info(f"Invalidated cache for test case with ID {case_id}")
         except asyncio.TimeoutError:
             raise HTTPException(status_code=503, detail="Database operation timed out")
         except NoResultFound:
@@ -631,37 +626,34 @@ class FlowTestService(FlowTestServiceInterface):
 
         try:
             async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
-                async with session.begin():
-                    # First check if the test case exists
-                    test_case = await self.test_repository.get_test_case_by_id(
-                        session=session, case_id=case_id
-                    )
-                    if not test_case:
-                        logger.warning(f"Test case with ID {case_id} not found")
-                        raise NOT_FOUND_EXCEPTION
+                # First check if the test case exists
+                test_case = await self.test_repository.get_test_case_by_id(
+                    session=session, case_id=case_id
+                )
+                if not test_case:
+                    logger.warning(f"Test case with ID {case_id} not found")
+                    raise NOT_FOUND_EXCEPTION
 
-                    # Update the test case
-                    updated_test_case = await self.test_repository.update_test_case(
-                        session=session,
-                        case_id=case_id,
-                        suite_id=suite_id,
-                        name=name,
-                        description=description,
-                        is_active=is_active,
-                        input_text=input_text,
-                        input_metadata=input_metadata,
-                        pass_criteria=pass_criteria.model_dump()
-                        if pass_criteria
-                        else None,
-                        timeout_ms=timeout_ms,
-                    )
-                    logger.info(f"Successfully updated test case with ID {case_id}")
+                # Update the test case
+                updated_test_case = await self.test_repository.update_test_case(
+                    session=session,
+                    case_id=case_id,
+                    suite_id=suite_id,
+                    name=name,
+                    description=description,
+                    is_active=is_active,
+                    input_text=input_text,
+                    input_metadata=input_metadata,
+                    pass_criteria=pass_criteria.model_dump() if pass_criteria else None,
+                    timeout_ms=timeout_ms,
+                )
+                logger.info(f"Successfully updated test case with ID {case_id}")
 
-                    # Invalidate cache
-                    self.cache_helper.delete(cache_key)
-                    logger.info(f"Invalidated cache for test case with ID {case_id}")
+                # Invalidate cache
+                self.cache_helper.delete(cache_key)
+                logger.info(f"Invalidated cache for test case with ID {case_id}")
 
-                    return updated_test_case
+                return updated_test_case
         except asyncio.TimeoutError:
             raise HTTPException(status_code=503, detail="Database operation timed out")
         except NoResultFound:
@@ -703,23 +695,22 @@ class FlowTestService(FlowTestServiceInterface):
         """
         try:
             async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
-                async with session.begin():
-                    # First check if the test case exists
-                    test_case = await self.test_repository.get_test_case_by_id(
-                        session=session, case_id=test_case_id
-                    )
-                    if not test_case:
-                        logger.warning(f"Test case with ID {test_case_id} not found")
-                        raise NOT_FOUND_EXCEPTION
+                # First check if the test case exists
+                test_case = await self.test_repository.get_test_case_by_id(
+                    session=session, case_id=test_case_id
+                )
+                if not test_case:
+                    logger.warning(f"Test case with ID {test_case_id} not found")
+                    raise NOT_FOUND_EXCEPTION
 
-                    await self.test_repository.queue_a_test_case_run(
-                        session=session,
-                        test_case_id=test_case_id,
-                        task_run_id=task_run_id,
-                    )
-                    logger.info(
-                        f"Successfully queued test case with ID {test_case_id} for execution"
-                    )
+                await self.test_repository.queue_a_test_case_run(
+                    session=session,
+                    test_case_id=test_case_id,
+                    task_run_id=task_run_id,
+                )
+                logger.info(
+                    f"Successfully queued test case with ID {test_case_id} for execution"
+                )
         except asyncio.TimeoutError:
             raise HTTPException(status_code=503, detail="Database operation timed out")
         except NoResultFound:
@@ -761,25 +752,22 @@ class FlowTestService(FlowTestServiceInterface):
         """
         try:
             async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
-                async with session.begin():
-                    # Update the test case run
-                    updated_test_case_run = (
-                        await self.test_repository.update_test_case_run(
-                            session=session,
-                            run_id=run_id,
-                            status=status,
-                            actual_output=actual_output,
-                            error_message=error_message,
-                            execution_time_ms=execution_time_ms,
-                            run_detail=run_detail,
-                            criteria_results=criteria_results,
-                            started_at=started_at,
-                            finished_at=finished_at,
-                        )
-                    )
-                    logger.info(f"Successfully updated test case run with ID {run_id}")
+                # Update the test case run
+                updated_test_case_run = await self.test_repository.update_test_case_run(
+                    session=session,
+                    run_id=run_id,
+                    status=status,
+                    actual_output=actual_output,
+                    error_message=error_message,
+                    execution_time_ms=execution_time_ms,
+                    run_detail=run_detail,
+                    criteria_results=criteria_results,
+                    started_at=started_at,
+                    finished_at=finished_at,
+                )
+                logger.info(f"Successfully updated test case run with ID {run_id}")
 
-                    return updated_test_case_run
+                return updated_test_case_run
         except asyncio.TimeoutError:
             raise HTTPException(status_code=503, detail="Database operation timed out")
         except NoResultFound:
@@ -801,13 +789,12 @@ class FlowTestService(FlowTestServiceInterface):
         """
         try:
             async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
-                async with session.begin():
-                    await self.test_repository.set_test_case_run_status(
-                        session=session, task_run_id=task_run_id, status=status
-                    )
-                    logger.info(
-                        f"Successfully set status to '{status}' for test case run with task run ID {task_run_id}"
-                    )
+                await self.test_repository.set_test_case_run_status(
+                    session=session, task_run_id=task_run_id, status=status
+                )
+                logger.info(
+                    f"Successfully set status to '{status}' for test case run with task run ID {task_run_id}"
+                )
         except asyncio.TimeoutError:
             raise HTTPException(status_code=503, detail="Database operation timed out")
         except NoResultFound:
@@ -992,45 +979,42 @@ class FlowTestService(FlowTestServiceInterface):
         """
         try:
             async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
-                async with session.begin():
-                    # Get the test case run to check its current status
-                    test_case_run = (
-                        await self.test_repository.get_test_case_run_by_task_id(
-                            session=session, task_run_id=task_run_id
-                        )
+                # Get the test case run to check its current status
+                test_case_run = await self.test_repository.get_test_case_run_by_task_id(
+                    session=session, task_run_id=task_run_id
+                )
+
+                if not test_case_run:
+                    logger.warning(
+                        f"Test case run with task_run_id {task_run_id} not found"
                     )
+                    return False
 
-                    if not test_case_run:
-                        logger.warning(
-                            f"Test case run with task_run_id {task_run_id} not found"
-                        )
-                        return False
+                current_status = str(test_case_run.status)
 
-                    current_status = str(test_case_run.status)
-
-                    # Check if the test can be cancelled
-                    if current_status in [
-                        TestCaseRunStatus.PASSED.value,
-                        TestCaseRunStatus.FAILED.value,
-                        TestCaseRunStatus.CANCELLED.value,
-                        TestCaseRunStatus.SYSTEM_ERROR.value,
-                    ]:
-                        logger.info(
-                            f"Test case run with task_run_id {task_run_id} is already in terminal status: {current_status}"
-                        )
-                        return False
-
-                    # Update the status to CANCELLED
-                    await self.test_repository.set_test_case_run_status(
-                        session=session,
-                        task_run_id=task_run_id,
-                        status=TestCaseRunStatus.CANCELLED.value,
-                    )
-
+                # Check if the test can be cancelled
+                if current_status in [
+                    TestCaseRunStatus.PASSED.value,
+                    TestCaseRunStatus.FAILED.value,
+                    TestCaseRunStatus.CANCELLED.value,
+                    TestCaseRunStatus.SYSTEM_ERROR.value,
+                ]:
                     logger.info(
-                        f"Successfully cancelled test case run with task_run_id {task_run_id}"
+                        f"Test case run with task_run_id {task_run_id} is already in terminal status: {current_status}"
                     )
-                    return True
+                    return False
+
+                # Update the status to CANCELLED
+                await self.test_repository.set_test_case_run_status(
+                    session=session,
+                    task_run_id=task_run_id,
+                    status=TestCaseRunStatus.CANCELLED.value,
+                )
+
+                logger.info(
+                    f"Successfully cancelled test case run with task_run_id {task_run_id}"
+                )
+                return True
         except asyncio.TimeoutError:
             raise HTTPException(status_code=503, detail="Database operation timed out")
         except Exception as e:

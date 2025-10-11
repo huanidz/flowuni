@@ -109,18 +109,15 @@ class UserGlobalTemplateService(UserGlobalTemplateServiceInterface):
         """Create a new LLM judge template"""
         try:
             async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
-                async with session.begin():
-                    template = await self.template_repo.create_llm_judge(
-                        session=session,
-                        user_id=user_id,
-                        name=name,
-                        description=description,
-                        data=data,
-                    )
-                    logger.info(
-                        f"LLM judge template created successfully: {template.id}"
-                    )
-                    return template
+                template = await self.template_repo.create_llm_judge(
+                    session=session,
+                    user_id=user_id,
+                    name=name,
+                    description=description,
+                    data=data,
+                )
+                logger.info(f"LLM judge template created successfully: {template.id}")
+                return template
         except asyncio.TimeoutError:
             logger.error("Timeout creating LLM judge template")
             raise HTTPException(
@@ -168,26 +165,25 @@ class UserGlobalTemplateService(UserGlobalTemplateServiceInterface):
         """Update an LLM judge template"""
         try:
             async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
-                async with session.begin():
-                    template = await self.template_repo.update_template(
-                        session=session,
-                        template_id=template_id,
-                        user_id=user_id,
-                        name=name,
-                        description=description,
-                        data=data,
+                template = await self.template_repo.update_template(
+                    session=session,
+                    template_id=template_id,
+                    user_id=user_id,
+                    name=name,
+                    description=description,
+                    data=data,
+                )
+
+                if template:
+                    logger.info(
+                        f"LLM judge template updated successfully: {template_id}"
+                    )
+                else:
+                    logger.warning(
+                        f"LLM judge template not found for update: {template_id}"
                     )
 
-                    if template:
-                        logger.info(
-                            f"LLM judge template updated successfully: {template_id}"
-                        )
-                    else:
-                        logger.warning(
-                            f"LLM judge template not found for update: {template_id}"
-                        )
-
-                    return template
+                return template
         except asyncio.TimeoutError:
             logger.error("Timeout updating LLM judge template")
             raise HTTPException(
@@ -205,21 +201,20 @@ class UserGlobalTemplateService(UserGlobalTemplateServiceInterface):
         """Delete an LLM judge template"""
         try:
             async with asyncio.timeout(get_app_settings().QUERY_TIMEOUT):
-                async with session.begin():
-                    success = await self.template_repo.delete_template(
-                        session, template_id, user_id
+                success = await self.template_repo.delete_template(
+                    session, template_id, user_id
+                )
+
+                if success:
+                    logger.info(
+                        f"LLM judge template deleted successfully: {template_id}"
+                    )
+                else:
+                    logger.warning(
+                        f"LLM judge template not found for deletion: {template_id}"
                     )
 
-                    if success:
-                        logger.info(
-                            f"LLM judge template deleted successfully: {template_id}"
-                        )
-                    else:
-                        logger.warning(
-                            f"LLM judge template not found for deletion: {template_id}"
-                        )
-
-                    return success
+                return success
         except asyncio.TimeoutError:
             logger.error("Timeout deleting LLM judge template")
             raise HTTPException(
