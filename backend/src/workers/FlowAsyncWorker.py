@@ -287,23 +287,34 @@ class FlowAsyncWorker:
         )
 
         # Load test case and mark QUEUED
-        test_case = await flow_test_service.get_test_case_by_id(case_id, session)
+        test_case = await flow_test_service.get_test_case_by_id(
+            session=session, case_id=case_id
+        )
         pass_criteria: Dict[str, Any] = test_case.pass_criteria
         input_text: str = test_case.input_text
-        await self._mark_queued(flow_test_service, event_publisher, case_id, session)
+        await self._mark_queued(
+            service=flow_test_service,
+            publisher=event_publisher,
+            case_id=case_id,
+            session=session,
+        )
 
         start_time: float = perf_counter()
 
-        if await self._is_cancelled(case_id, flow_test_service, session):
+        if await self._is_cancelled(
+            test_case_id=case_id, service=flow_test_service, session=session
+        ):
             return
 
         # Compile flow graph
         graph, execution_plan = await self._compile_execution_plan(
-            flow_graph_request_dict, input_text
+            flow_graph_request_dict=flow_graph_request_dict, input_text=input_text
         )
 
         try:
-            if await self._is_cancelled(case_id, flow_test_service, session):
+            if await self._is_cancelled(
+                test_case_id=case_id, service=flow_test_service, session=session
+            ):
                 return
             # Execute flow
             execution_result: FlowExecutionResult = await self._execute_flow(
@@ -379,7 +390,7 @@ class FlowAsyncWorker:
         try:
             logger.info(f"Starting validated flow execution for flow_id: {flow_id}")
 
-            with AsyncSessionLocal() as session:
+            async with AsyncSessionLocal() as session:
                 flow_service = FlowService(flow_repository=FlowRepository())
                 # Retrieve and validate flow
                 flow_definition = await self._get_validated_flow(
